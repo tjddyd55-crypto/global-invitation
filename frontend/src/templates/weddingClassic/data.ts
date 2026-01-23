@@ -23,6 +23,8 @@ export type WeddingClassicMessage = {
 export type WeddingClassicData = {
   heroImage: string;
   heroOverlayText?: string;
+  heroTitle: string;
+  heroSubtitle: string;
   coupleNames: string;
   weddingDateTime: string;
   venueName: string;
@@ -72,6 +74,22 @@ function parseCoupleNames(rawTitle?: string): { coupleNames: string; groomName: 
   return { coupleNames: `${left} ♥ ${right}`, groomName: left, brideName: right };
 }
 
+function formatKoreanDateTime(date: Date): string {
+  const datePart = date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  });
+  const timePart = date.toLocaleTimeString('ko-KR', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+  const formattedTime = timePart.replace(':', '시 ') + '분';
+  return `${datePart} ${formattedTime}`;
+}
+
 function getWeddingDate(source?: string | null): Date {
   if (!source) return DEFAULT_DATE;
   const parsed = new Date(source);
@@ -79,14 +97,7 @@ function getWeddingDate(source?: string | null): Date {
 }
 
 function formatWeddingDateTime(date: Date): string {
-  return date.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+  return formatKoreanDateTime(date);
 }
 
 function buildCalendarTitle(date: Date): string {
@@ -96,19 +107,49 @@ function buildCalendarTitle(date: Date): string {
 }
 
 export const WEDDING_CLASSIC_TEMPLATE_KEYS = new Set(['wedding_classic', 'classic']);
+export const DEMO_WEDDING_CLASSIC_SLUG = 'demo-wedding-classic';
 
 export function isWeddingClassicTemplate(templateKey?: string | null): boolean {
   if (!templateKey) return false;
   return WEDDING_CLASSIC_TEMPLATE_KEYS.has(templateKey);
 }
 
+export function isWeddingClassicDemoSlug(slug?: string | null): boolean {
+  return slug === DEMO_WEDDING_CLASSIC_SLUG;
+}
+
+export function getWeddingClassicDemoInvitation(): Invitation {
+  return {
+    id: 'demo-wedding-classic',
+    slug: DEMO_WEDDING_CLASSIC_SLUG,
+    title: '유동규 ♥ 이소영',
+    eventDate: '2025-04-13T17:20:00',
+    locationText: '더링크호텔 서울',
+    message: '봄날의 햇살 아래, 결혼합니다.',
+    templateKey: 'wedding_classic',
+    musicKey: 'piano_wedding',
+    countryCode: 'GLOBAL',
+    language: 'ko',
+    status: 'published',
+    isPaid: false,
+    canShare: true,
+    paidAt: null,
+    createdAt: '2025-03-01T00:00:00',
+    updatedAt: '2025-03-01T00:00:00',
+  };
+}
+
 export function buildWeddingClassicData(invitation?: Invitation | null): WeddingClassicData {
   const weddingDate = getWeddingDate(invitation?.eventDate ?? null);
   const { coupleNames, groomName, brideName } = parseCoupleNames(invitation?.title ?? undefined);
+  const heroTitle = `${groomName} ♥ ${brideName} 결혼합니다`;
+  const heroSubtitle = formatKoreanDateTime(weddingDate);
 
   return {
     heroImage: HERO_IMAGE,
     heroOverlayText: 'Welcome to our wedding',
+    heroTitle,
+    heroSubtitle,
     coupleNames,
     weddingDateTime: formatWeddingDateTime(weddingDate),
     venueName: invitation?.locationText || '더링크호텔 서울 3층 베일리홀',

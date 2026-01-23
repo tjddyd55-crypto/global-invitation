@@ -42,7 +42,11 @@ export default function WeddingClassicInvitation({
 
       <section className={styles.hero}>
         <img className={styles.heroImage} src={data.heroImage} alt="Wedding hero" />
-        {data.heroOverlayText && <div className={styles.heroOverlay}>{data.heroOverlayText}</div>}
+        <div className={styles.heroOverlay}>
+          <div className={styles.heroTitle}>{data.heroTitle}</div>
+          <div className={styles.heroSubtitle}>{data.heroSubtitle}</div>
+          {data.heroOverlayText && <div className={styles.heroOverlayText}>{data.heroOverlayText}</div>}
+        </div>
       </section>
 
       <section className={styles.section}>
@@ -65,13 +69,13 @@ export default function WeddingClassicInvitation({
           <div className={styles.coupleCard}>
             <img className={styles.coupleImage} src={data.groom.image} alt={data.groom.name} />
             <div className={styles.coupleName}>{data.groom.name}</div>
-            <div>{data.groom.phone}</div>
+            <div className={styles.contactLine}>📞 {data.groom.phone}</div>
             <div className={styles.coupleParents}>{data.groom.parentsText}</div>
           </div>
           <div className={styles.coupleCard}>
             <img className={styles.coupleImage} src={data.bride.image} alt={data.bride.name} />
             <div className={styles.coupleName}>{data.bride.name}</div>
-            <div>{data.bride.phone}</div>
+            <div className={styles.contactLine}>📞 {data.bride.phone}</div>
             <div className={styles.coupleParents}>{data.bride.parentsText}</div>
           </div>
         </div>
@@ -112,6 +116,11 @@ export default function WeddingClassicInvitation({
           <div>{data.address}</div>
         </div>
         <img className={styles.mapImage} src={data.mapImage} alt="Map" />
+        <div className={styles.navButtons}>
+          <button className={styles.navButton}>티맵</button>
+          <button className={styles.navButton}>카카오내비</button>
+          <button className={styles.navButton}>네이버지도</button>
+        </div>
         <div className={styles.infoList}>
           <strong>셔틀버스 타는 곳</strong>
           {data.transportInfo.map((line) => (
@@ -137,7 +146,10 @@ export default function WeddingClassicInvitation({
         <div className={styles.accountList}>
           {data.accounts.map((account) => (
             <div key={`${account.role}-${account.number}`} className={styles.accountCard}>
-              <strong>{account.role}</strong>
+              <div className={styles.accountHeader}>
+                <strong>{account.role}</strong>
+                <button className={styles.copyButton} type="button">복사</button>
+              </div>
               <div>{account.bank} {account.number}</div>
               <div>{account.holder}</div>
             </div>

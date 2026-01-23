@@ -26,9 +26,24 @@
   right: 0;
   text-align: center;
   color: #f4f0e8;
-  font-size: 1.4rem;
-  letter-spacing: 0.1rem;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.heroTitle {
+  font-size: 1.4rem;
+  letter-spacing: 0.08rem;
+  font-weight: 600;
+}
+
+.heroSubtitle {
+  font-size: 0.95rem;
+  margin-top: 0.35rem;
+}
+
+.heroOverlayText {
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+  letter-spacing: 0.04rem;
 }
 
 .headerTitle {
@@ -80,6 +95,11 @@
 .coupleParents {
   font-size: 0.95rem;
   color: #6a6a6a;
+}
+
+.contactLine {
+  margin-bottom: 0.35rem;
+  color: #5b5b5b;
 }
 
 .contactButton {
@@ -141,6 +161,23 @@
   margin: 1.5rem 0;
 }
 
+.navButtons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.navButton {
+  padding: 0.65rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid #d6d0c7;
+  background: #fff;
+  color: #5a5a5a;
+  font-size: 0.9rem;
+}
+
 .infoList {
   text-align: left;
   margin: 0.5rem auto;
@@ -171,6 +208,22 @@
   border-radius: 12px;
   padding: 1rem 1.2rem;
   background: #fff;
+}
+
+.accountHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.copyButton {
+  border: 1px solid #d0cabf;
+  background: #fdfcf8;
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  color: #6a6a6a;
 }
 
 .messageList {

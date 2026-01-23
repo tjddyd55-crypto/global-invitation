@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { buildWeddingClassicMetadata, isWeddingClassicTemplate } from '@/src/templates/weddingClassic/data';
+import {
+  buildWeddingClassicMetadata,
+  getWeddingClassicDemoInvitation,
+  isWeddingClassicDemoSlug,
+  isWeddingClassicTemplate,
+} from '@/src/templates/weddingClassic/data';
 import type { Invitation } from '@/src/lib/api';
 
 async function fetchInvitation(slug: string): Promise<Invitation | null> {
@@ -23,6 +28,33 @@ function getBaseUrl(): URL | undefined {
 export async function generateMetadata(
   { params }: { params: { slug: string } }
 ): Promise<Metadata> {
+  if (isWeddingClassicDemoSlug(params.slug)) {
+    const demoInvitation = getWeddingClassicDemoInvitation();
+    const baseUrl = getBaseUrl();
+    const meta = buildWeddingClassicMetadata(demoInvitation);
+    const imageUrl = baseUrl ? new URL(meta.heroImage, baseUrl).toString() : meta.heroImage;
+    const pageUrl = baseUrl ? new URL(`/invitation/${demoInvitation.slug}`, baseUrl).toString() : undefined;
+
+    return {
+      metadataBase: baseUrl,
+      title: meta.title,
+      description: meta.description,
+      openGraph: {
+        title: meta.title,
+        description: meta.description,
+        images: [imageUrl],
+        type: 'website',
+        url: pageUrl,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: meta.title,
+        description: meta.description,
+        images: [imageUrl],
+      },
+    };
+  }
+
   const invitation = await fetchInvitation(params.slug);
   if (!invitation) return {};
 

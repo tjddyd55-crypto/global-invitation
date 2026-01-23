@@ -8,7 +8,12 @@ import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS, type I18nKey } from '@/src/i18n';
 import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
-import { buildWeddingClassicData, isWeddingClassicTemplate } from '@/src/templates/weddingClassic/data';
+import {
+  buildWeddingClassicData,
+  getWeddingClassicDemoInvitation,
+  isWeddingClassicDemoSlug,
+  isWeddingClassicTemplate,
+} from '@/src/templates/weddingClassic/data';
 
 export default function InvitationPage() {
   const params = useParams();
@@ -27,6 +32,12 @@ export default function InvitationPage() {
   useEffect(() => {
     if (!slug) {
       router.replace('/create');
+      return;
+    }
+
+    if (isWeddingClassicDemoSlug(slug)) {
+      setInvitation(getWeddingClassicDemoInvitation());
+      setLoading(false);
       return;
     }
 
