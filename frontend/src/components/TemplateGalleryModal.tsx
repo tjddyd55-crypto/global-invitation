@@ -43,6 +43,10 @@ export default function TemplateGalleryModal({ onSelect, onClose }: TemplateGall
 
   // 필터링 및 정렬된 템플릿 목록
   const filteredTemplates = useMemo(() => {
+    const selectedCountryTags = selectedTags.filter((tag) => allTags.country.includes(tag));
+    const selectedMoodTags = selectedTags.filter((tag) => allTags.mood.includes(tag));
+    const selectedEventTags = selectedTags.filter((tag) => allTags.event.includes(tag));
+
     let filtered = TEMPLATES.filter((template) => {
       // 검색 필터
       if (searchQuery) {
@@ -60,15 +64,17 @@ export default function TemplateGalleryModal({ onSelect, onClose }: TemplateGall
         }
       }
 
-      // 태그 필터
-      if (selectedTags.length > 0) {
-        const templateAllTags = [
-          ...(template.tags.country || []),
-          ...(template.tags.mood || []),
-          ...(template.tags.event || []),
-        ];
-        const hasAnyTag = selectedTags.some((tag) => templateAllTags.includes(tag));
-        if (!hasAnyTag) return false;
+      // 태그 필터 (그룹 내 OR, 그룹 간 AND)
+      const matchesCountry =
+        selectedCountryTags.length === 0 ||
+        selectedCountryTags.some((tag) => template.tags.country?.includes(tag));
+      const matchesMood =
+        selectedMoodTags.length === 0 || selectedMoodTags.some((tag) => template.tags.mood?.includes(tag));
+      const matchesEvent =
+        selectedEventTags.length === 0 || selectedEventTags.some((tag) => template.tags.event?.includes(tag));
+
+      if (!matchesCountry || !matchesMood || !matchesEvent) {
+        return false;
       }
 
       return true;
@@ -91,7 +97,7 @@ export default function TemplateGalleryModal({ onSelect, onClose }: TemplateGall
     });
 
       return filtered;
-    }, [searchQuery, selectedTags, sortOption, t]);
+    }, [searchQuery, selectedTags, sortOption, t, allTags.country, allTags.event, allTags.mood]);
 
   const handleTagClick = (tag: string) => {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -104,6 +110,25 @@ export default function TemplateGalleryModal({ onSelect, onClose }: TemplateGall
   const handleSelectTemplate = (template: Template) => {
     onSelect(template);
     onClose();
+  };
+
+  const getDisplayTags = (template: Template): string[] => {
+    const templateTags = [
+      ...(template.tags.country || []),
+      ...(template.tags.mood || []),
+      ...(template.tags.event || []),
+    ];
+    const selectedInTemplate = selectedTags.filter((tag) => templateTags.includes(tag));
+    if (selectedInTemplate.length >= 3) {
+      return selectedInTemplate.slice(0, 3);
+    }
+
+    const result = [...selectedInTemplate];
+    for (const tag of templateTags) {
+      if (result.length >= 3) break;
+      if (!result.includes(tag)) result.push(tag);
+    }
+    return result;
   };
 
   return (
@@ -346,9 +371,7 @@ export default function TemplateGalleryModal({ onSelect, onClose }: TemplateGall
 
                   {/* 태그 */}
                   <div style={{ marginBottom: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                    {[...(template.tags.country || []), ...(template.tags.mood || []), ...(template.tags.event || [])]
-                      .slice(0, 3)
-                      .map((tag) => (
+                    {getDisplayTags(template).map((tag) => (
                         <span
                           key={tag}
                           style={{
@@ -361,7 +384,7 @@ export default function TemplateGalleryModal({ onSelect, onClose }: TemplateGall
                         >
                           {getTagName(tag, t)}
                         </span>
-                      ))}
+                    ))}
                   </div>
 
                   {/* 가격 배지 */}
