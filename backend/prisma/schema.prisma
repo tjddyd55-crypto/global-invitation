@@ -1,0 +1,45 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String?  @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  invitations Invitation[]
+
+  @@map("users")
+}
+
+model Invitation {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String?   @map("user_id") @db.Uuid
+  slug        String    @unique
+  title       String?   // 행사명 또는 제목
+  eventDate   DateTime? @map("event_date") @db.Timestamptz(6)
+  locationText String?  @map("location_text") // 장소 정보
+  message     String?   // 초대장 메시지
+  templateKey String    @default("basic") @map("template_key")
+  musicKey    String?   @map("music_key")
+  countryCode String    @default("GLOBAL") @map("country_code")
+  language    String    @default("en")
+  status      String    @default("draft") // draft | published
+  isPaid      Boolean   @default(false) @map("is_paid")
+  canShare    Boolean   @default(false) @map("can_share")
+  paidAt      DateTime? @map("paid_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("invitations")
+}
