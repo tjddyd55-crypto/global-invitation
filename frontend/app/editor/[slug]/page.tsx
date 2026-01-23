@@ -15,7 +15,8 @@ export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
   const { t } = useI18n();
-  const slug = params.slug as string;
+  const slugParam = params.slug;
+  const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,6 +32,11 @@ export default function EditorPage() {
   const [musicKey, setMusicKey] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!slug) {
+      router.replace('/create');
+      return;
+    }
+
     async function loadInvitation() {
       try {
         const data = await getInvitation(slug);
@@ -49,10 +55,8 @@ export default function EditorPage() {
       }
     }
 
-    if (slug) {
-      loadInvitation();
-    }
-  }, [slug]);
+    loadInvitation();
+  }, [slug, router]);
 
   const handleSave = async () => {
     if (!slug) return;
@@ -78,6 +82,14 @@ export default function EditorPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handlePreview = () => {
+    if (!slug) {
+      router.replace('/create');
+      return;
+    }
+    router.push(`/invitation/${slug}`);
   };
 
   if (loading) {
@@ -318,7 +330,7 @@ export default function EditorPage() {
         </button>
 
         <button
-          onClick={() => router.push(`/invitation/${slug}`)}
+          onClick={handlePreview}
           style={{
             padding: '0.75rem 1.5rem',
             fontSize: '1rem',

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { getInvitation } from '@/src/lib/api';
 import type { Invitation } from '@/src/lib/api';
 import { getMusicByKey } from '@/src/constants/music';
@@ -10,8 +10,10 @@ import { I18N_KEYS, type I18nKey } from '@/src/i18n';
 
 export default function InvitationPage() {
   const params = useParams();
+  const router = useRouter();
   const { t, language } = useI18n();
-  const slug = params.slug as string;
+  const slugParam = params.slug;
+  const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<I18nKey | null>(null);
@@ -21,6 +23,11 @@ export default function InvitationPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    if (!slug) {
+      router.replace('/create');
+      return;
+    }
+
     async function loadInvitation() {
       try {
         const data = await getInvitation(slug);
@@ -33,10 +40,8 @@ export default function InvitationPage() {
       }
     }
 
-    if (slug) {
-      loadInvitation();
-    }
-  }, [slug]);
+    loadInvitation();
+  }, [slug, router]);
 
   // 음악 자동 재생 시도
   useEffect(() => {

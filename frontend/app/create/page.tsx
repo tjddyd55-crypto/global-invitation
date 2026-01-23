@@ -110,7 +110,13 @@ export default function CreatePage() {
 
     try {
       const response = await createInvitation(selectedTemplate.key);
-      router.push(`/editor/${response.slug}`);
+      const slug = typeof response?.slug === 'string' ? response.slug.trim() : '';
+      if (!slug) {
+        setError(I18N_KEYS.notice.createFailed);
+        setLoading(false);
+        return;
+      }
+      router.push(`/editor/${slug}`);
     } catch (err) {
       console.error('Error creating invitation:', err);
       const backendUnavailable =

@@ -73,6 +73,10 @@ Access it at: [http://localhost:3000/payment-info](http://localhost:3000/payment
 
 ## Environment Variables
 
+### Frontend
+- `NEXT_PUBLIC_API_URL`: Backend public base URL (required in production).
+  - Example: `https://<backend-public-url>`
+
 ### Backend
 - `DATABASE_URL`: PostgreSQL connection string (required)
 - `PORT`: Server port (default: 3001)
