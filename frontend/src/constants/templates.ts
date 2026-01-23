@@ -28,7 +28,7 @@ export const TEMPLATES: Template[] = [
     isRecommended: true,
   },
   {
-    key: 'classic',
+    key: 'wedding_classic',
     i18nKey: 'CLASSIC',
     defaultMusicKey: 'piano_wedding',
     thumbnail: '/templates/classic.jpg',
@@ -118,7 +118,8 @@ export const TEMPLATES: Template[] = [
 ];
 
 export const getTemplateByKey = (key: string): Template | undefined => {
-  return TEMPLATES.find((t) => t.key === key);
+  const normalizedKey = key === 'classic' ? 'wedding_classic' : key;
+  return TEMPLATES.find((t) => t.key === normalizedKey);
 };
 
 // 샘플 데이터 (Quick Preview용)

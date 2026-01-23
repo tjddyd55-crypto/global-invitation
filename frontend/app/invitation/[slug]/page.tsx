@@ -7,6 +7,8 @@ import type { Invitation } from '@/src/lib/api';
 import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS, type I18nKey } from '@/src/i18n';
+import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
+import { buildWeddingClassicData, isWeddingClassicTemplate } from '@/src/templates/weddingClassic/data';
 
 export default function InvitationPage() {
   const params = useParams();
@@ -104,6 +106,17 @@ export default function InvitationPage() {
 
   if (!invitation) {
     return null;
+  }
+
+  if (isWeddingClassicTemplate(invitation.templateKey)) {
+    const weddingClassicData = buildWeddingClassicData(invitation);
+    return (
+      <WeddingClassicInvitation
+        data={weddingClassicData}
+        showPlayButton={showPlayButton}
+        onPlayMusic={handlePlayMusic}
+      />
+    );
   }
 
   const formatDate = (dateString: string | null | undefined) => {

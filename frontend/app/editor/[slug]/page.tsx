@@ -45,7 +45,8 @@ export default function EditorPage() {
         setEventDate(data.eventDate ? new Date(data.eventDate).toISOString().slice(0, 16) : '');
         setLocationText(data.locationText || '');
         setMessage(data.message || '');
-        setTemplateKey(data.templateKey || 'basic');
+        const normalizedTemplateKey = data.templateKey ? getTemplateByKey(data.templateKey)?.key : null;
+        setTemplateKey(normalizedTemplateKey || data.templateKey || 'basic');
         setMusicKey(data.musicKey || null);
       } catch (err) {
         const isNotFound = err instanceof Error && err.message === 'Invitation not found';

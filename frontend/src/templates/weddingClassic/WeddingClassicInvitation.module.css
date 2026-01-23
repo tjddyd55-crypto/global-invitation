@@ -1,0 +1,207 @@
+.page {
+  background: #f7f5f2;
+  color: #3b3b3b;
+  font-family: "Noto Serif KR", "Times New Roman", serif;
+  line-height: 1.7;
+}
+
+.section {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.hero {
+  position: relative;
+}
+
+.heroImage {
+  width: 100%;
+  display: block;
+}
+
+.heroOverlay {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #f4f0e8;
+  font-size: 1.4rem;
+  letter-spacing: 0.1rem;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.headerTitle {
+  font-size: 1.6rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.headerMeta {
+  font-size: 1rem;
+  margin: 0.2rem 0;
+  color: #5a5a5a;
+}
+
+.introQuote {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  color: #5c5c5c;
+}
+
+.introText {
+  margin: 0.4rem 0;
+}
+
+.coupleGrid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-top: 2rem;
+}
+
+.coupleCard {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.coupleImage {
+  width: 100%;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.coupleName {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.coupleParents {
+  font-size: 0.95rem;
+  color: #6a6a6a;
+}
+
+.contactButton {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #c9c2b8;
+  background: #fdfcf8;
+  color: #5a5a5a;
+}
+
+.calendarTitle {
+  font-size: 1.4rem;
+  color: #6a7b66;
+  margin-bottom: 1.5rem;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.calendarCell {
+  padding: 0.4rem 0;
+  border-radius: 999px;
+}
+
+.calendarHeader {
+  font-weight: 600;
+  color: #6a6a6a;
+}
+
+.calendarHighlight {
+  background: #a9ba7a;
+  color: #fff;
+}
+
+.galleryGrid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+}
+
+.galleryImage {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.locationBlock {
+  margin-bottom: 1.5rem;
+}
+
+.mapImage {
+  width: 100%;
+  border-radius: 12px;
+  margin: 1.5rem 0;
+}
+
+.infoList {
+  text-align: left;
+  margin: 0.5rem auto;
+  max-width: 420px;
+  color: #5a5a5a;
+}
+
+.rsvpButton {
+  margin-top: 1.5rem;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  border: none;
+  background: #a9ba7a;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.accountList {
+  display: grid;
+  gap: 1rem;
+  text-align: left;
+  max-width: 520px;
+  margin: 2rem auto 0;
+}
+
+.accountCard {
+  border: 1px solid #ded8ce;
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  background: #fff;
+}
+
+.messageList {
+  display: grid;
+  gap: 1rem;
+  text-align: left;
+  max-width: 520px;
+  margin: 2rem auto 0;
+}
+
+.messageCard {
+  border-radius: 12px;
+  border: 1px solid #e2ddd5;
+  padding: 1rem 1.2rem;
+  background: #fff;
+}
+
+.messageMeta {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
+.audioButton {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: #f7f5f2;
+  border: 1px solid #dcd5c8;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+}
