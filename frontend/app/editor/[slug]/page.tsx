@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { getInvitation, updateInvitation } from '@/src/lib/api';
 import type { Invitation } from '@/src/lib/api';
 import { TEMPLATES, getTemplateByKey, type Template } from '@/src/constants/templates';
-import { getTemplateName } from '@/src/utils/templateI18n';
+import { getTemplateDescription, getTemplateName } from '@/src/utils/templateI18n';
 import { MUSIC_LIST } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
 import TemplateGalleryModal from '@/src/components/TemplateGalleryModal';
@@ -270,7 +270,7 @@ export default function EditorPage() {
         >
           {TEMPLATES.map((template) => (
             <option key={template.key} value={template.key}>
-              {template.displayName} - {template.description}
+              {getTemplateName(template, t)} - {getTemplateDescription(template, t)}
             </option>
           ))}
         </select>

@@ -5,10 +5,14 @@
   "description": "Global SaaS platform for creating and sharing digital invitations",
   "scripts": {
     "install:all": "npm install --prefix frontend && npm install --prefix backend",
+    "install:backend": "npm ci --prefix backend --include=dev",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
     "build:frontend": "npm run build --prefix frontend",
     "build:backend": "npm run build --prefix backend",
+    "prebuild": "npm run install:backend",
+    "build": "npm run build:backend",
+    "start": "npm run start --prefix backend",
     "check:i18n": "ts-node scripts/check-i18n.ts"
   },
   "workspaces": [],
