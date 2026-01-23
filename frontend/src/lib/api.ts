@@ -1,4 +1,11 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+function getApiBaseUrl(): string {
+  if (!API_BASE_URL) {
+    throw new Error('NEXT_PUBLIC_API_URL is not set.');
+  }
+  return API_BASE_URL;
+}
 
 export interface Invitation {
   id: string;
@@ -30,7 +37,7 @@ export interface CreateInvitationResponse {
 // Create invitation
 export async function createInvitation(templateKey?: string): Promise<CreateInvitationResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/invitations`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/invitations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -54,7 +61,7 @@ export async function createInvitation(templateKey?: string): Promise<CreateInvi
 
 // Get invitation by slug
 export async function getInvitation(slug: string): Promise<Invitation> {
-  const response = await fetch(`${API_BASE_URL}/api/invitations/${slug}`);
+  const response = await fetch(`${getApiBaseUrl()}/api/invitations/${slug}`);
 
   if (response.status === 404) {
     throw new Error('Invitation not found');
@@ -79,7 +86,7 @@ export async function updateInvitation(
     musicKey?: string | null;
   }
 ): Promise<Invitation> {
-  const response = await fetch(`${API_BASE_URL}/api/invitations/${slug}`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/invitations/${slug}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
