@@ -2,6 +2,8 @@
 
 import styles from './WeddingClassicInvitation.module.css';
 import type { WeddingClassicData } from './data';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { I18N_KEYS } from '@/src/i18n';
 
 type WeddingClassicInvitationProps = {
   data: WeddingClassicData;
@@ -29,6 +31,7 @@ export default function WeddingClassicInvitation({
   showPlayButton,
   onPlayMusic,
 }: WeddingClassicInvitationProps) {
+  const { t } = useI18n();
   const calendarCells = buildCalendarCells(data.weddingDate);
   const highlightDay = data.weddingDate.getDate();
 
@@ -79,7 +82,7 @@ export default function WeddingClassicInvitation({
             <div className={styles.coupleParents}>{data.bride.parentsText}</div>
           </div>
         </div>
-        <button className={styles.contactButton}>혼주에게 연락하기</button>
+        <button className={styles.contactButton}>{t(I18N_KEYS.weddingClassic.contactButton)}</button>
       </section>
 
       <section className={styles.section}>
@@ -102,7 +105,7 @@ export default function WeddingClassicInvitation({
       </section>
 
       <section className={styles.section}>
-        <h2>갤러리</h2>
+        <h2>{t(I18N_KEYS.weddingClassic.galleryTitle)}</h2>
         <div className={styles.galleryGrid}>
           {data.galleryImages.map((image) => (
             <img key={image} className={styles.galleryImage} src={image} alt="Gallery" />
@@ -117,18 +120,18 @@ export default function WeddingClassicInvitation({
         </div>
         <img className={styles.mapImage} src={data.mapImage} alt="Map" />
         <div className={styles.navButtons}>
-          <button className={styles.navButton}>티맵</button>
-          <button className={styles.navButton}>카카오내비</button>
-          <button className={styles.navButton}>네이버지도</button>
+          <button className={styles.navButton}>{t(I18N_KEYS.weddingClassic.navTmap)}</button>
+          <button className={styles.navButton}>{t(I18N_KEYS.weddingClassic.navKakao)}</button>
+          <button className={styles.navButton}>{t(I18N_KEYS.weddingClassic.navNaver)}</button>
         </div>
         <div className={styles.infoList}>
-          <strong>셔틀버스 타는 곳</strong>
+          <strong>{t(I18N_KEYS.weddingClassic.transportTitle)}</strong>
           {data.transportInfo.map((line) => (
             <div key={line}>- {line}</div>
           ))}
         </div>
         <div className={styles.infoList}>
-          <strong>자가용 이용 시</strong>
+          <strong>{t(I18N_KEYS.weddingClassic.parkingTitle)}</strong>
           {data.parkingInfo.map((line) => (
             <div key={line}>- {line}</div>
           ))}
@@ -148,7 +151,9 @@ export default function WeddingClassicInvitation({
             <div key={`${account.role}-${account.number}`} className={styles.accountCard}>
               <div className={styles.accountHeader}>
                 <strong>{account.role}</strong>
-                <button className={styles.copyButton} type="button">복사</button>
+                <button className={styles.copyButton} type="button">
+                  {t(I18N_KEYS.weddingClassic.copyButton)}
+                </button>
               </div>
               <div>{account.bank} {account.number}</div>
               <div>{account.holder}</div>

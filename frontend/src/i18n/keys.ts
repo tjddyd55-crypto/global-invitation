@@ -65,6 +65,16 @@ export const I18N_KEYS = {
     templateChanged: 'templateChanged',
     audioPlayFailed: 'audioPlayFailed',
   },
+  weddingClassic: {
+    contactButton: 'weddingClassic.contactButton',
+    galleryTitle: 'weddingClassic.galleryTitle',
+    transportTitle: 'weddingClassic.transportTitle',
+    parkingTitle: 'weddingClassic.parkingTitle',
+    navTmap: 'weddingClassic.navTmap',
+    navKakao: 'weddingClassic.navKakao',
+    navNaver: 'weddingClassic.navNaver',
+    copyButton: 'weddingClassic.copyButton',
+  },
   sample: {
     title: 'sampleTitle',
     location: 'sampleLocation',
