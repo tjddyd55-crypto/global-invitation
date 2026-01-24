@@ -171,6 +171,14 @@ export default function MessageCardPage() {
     );
   }
 
+  if (!data) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <p>{error || '메시지 카드를 불러올 수 없습니다.'}</p>
+      </div>
+    );
+  }
+
   return (
     <MessageThankYouCard
       data={data}
