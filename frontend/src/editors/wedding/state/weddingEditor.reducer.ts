@@ -1,4 +1,5 @@
-import type { WeddingEditorAction, WeddingEditorState } from './weddingEditor.reducer.types';
+import type { WeddingEditorAction } from './weddingEditor.reducer.types';
+import type { WeddingEditorState } from './weddingEditor.types';
 
 export function weddingEditorReducer(state: WeddingEditorState, action: WeddingEditorAction): WeddingEditorState {
   switch (action.type) {
