@@ -22,6 +22,13 @@ module.exports = {
       },
     },
     {
+      files: ['src/editors/**/*.{ts,tsx}', 'src/templates/**/*.{ts,tsx}'],
+      rules: {
+        // Demo templates/editors contain curated copy; localize later.
+        'i18next/no-literal-string': 'off',
+      },
+    },
+    {
       files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
       rules: {
         'i18next/no-literal-string': 'off',
