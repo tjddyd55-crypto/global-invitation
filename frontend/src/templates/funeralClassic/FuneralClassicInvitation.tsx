@@ -5,6 +5,7 @@ import type { FuneralInvitation } from './data';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
+import { formatDate, formatDateTime } from '@/src/lib/i18n/format';
 
 type FuneralClassicInvitationProps = {
   data: FuneralInvitation;
@@ -12,21 +13,48 @@ type FuneralClassicInvitationProps = {
   onKakaoShare?: () => void;
 };
 
-function formatDate(value: string, locale: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+const RELATIONSHIP_LABELS = [
+  { term: '아들', key: I18N_KEYS.relationship.son },
+  { term: '딸', key: I18N_KEYS.relationship.daughter },
+  { term: '손자', key: I18N_KEYS.relationship.grandson },
+  { term: '손녀', key: I18N_KEYS.relationship.granddaughter },
+  { term: '사위', key: I18N_KEYS.relationship.sonInLaw },
+  { term: '며느리', key: I18N_KEYS.relationship.daughterInLaw },
+];
+
+function canReplaceRelationship(member: string, term: string): boolean {
+  if (!member.startsWith(term)) return false;
+  const nextChar = member.charAt(term.length);
+  return nextChar === '' || nextChar.trim() === '' || nextChar === '·' || nextChar === ':' || nextChar === '-';
 }
 
-function formatDateTime(value: string, locale: string) {
+function translateRelationship(member: string, t: (key: string) => string): string {
+  for (const { term, key } of RELATIONSHIP_LABELS) {
+    if (canReplaceRelationship(member, term)) {
+      const rest = member.slice(term.length).trimStart();
+      const translated = t(key);
+      return rest ? `${translated} ${rest}` : translated;
+    }
+  }
+  return member;
+}
+
+function formatDateValue(value: string | undefined, language: string): string {
+  if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString(locale, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return formatDate(language, date);
+}
+
+function formatDateTimeValue(value: string | undefined, language: string): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return formatDateTime(language, date);
 }
 
 export default function FuneralClassicInvitation({ data, onCopyLink, onKakaoShare }: FuneralClassicInvitationProps) {
   const { t, language } = useI18n();
-  const locale = language === 'ko' ? 'ko-KR' : language === 'mn' ? 'mn-MN' : 'en-US';
   const heroNamePrefix = t(I18N_KEYS.funeral.heroNamePrefix);
   const heroNameSuffix = t(I18N_KEYS.funeral.heroNameSuffix);
   const hasLocation = Boolean(
@@ -36,7 +64,9 @@ export default function FuneralClassicInvitation({ data, onCopyLink, onKakaoShar
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
-        {data.heroImage && <img className={styles.heroImage} src={data.heroImage} alt="funeral hero" />}
+        {data.heroImage && (
+          <img className={styles.heroImage} src={data.heroImage} alt={t(I18N_KEYS.funeral.heroImageAlt)} />
+        )}
         <div className={styles.heroTitle}>{t(I18N_KEYS.funeral.heroTitle)}</div>
         <div className={styles.heroName}>
           {heroNamePrefix} {data.deceasedName}
@@ -45,11 +75,11 @@ export default function FuneralClassicInvitation({ data, onCopyLink, onKakaoShar
         <div className={styles.heroMeta}>
           {data.birthDate && (
             <span>
-              {formatDate(data.birthDate, locale)} {t(I18N_KEYS.funeral.birthSuffix)} ·{' '}
+              {formatDateValue(data.birthDate, language)} {t(I18N_KEYS.funeral.birthSuffix)} ·{' '}
             </span>
           )}
           <span>
-            {formatDate(data.deathDate, locale)} {t(I18N_KEYS.funeral.deathSuffix)}
+            {formatDateValue(data.deathDate, language)} {t(I18N_KEYS.funeral.deathSuffix)}
           </span>
         </div>
         <div className={styles.heroNotice}>{t(I18N_KEYS.funeral.heroNotice)}</div>
@@ -72,7 +102,7 @@ export default function FuneralClassicInvitation({ data, onCopyLink, onKakaoShar
         {data.familyMembers && data.familyMembers.length > 0 && (
           <div className={styles.familyList}>
             {data.familyMembers.map((member) => (
-              <div key={member}>{member}</div>
+              <div key={member}>{translateRelationship(member, t)}</div>
             ))}
           </div>
         )}
@@ -84,12 +114,12 @@ export default function FuneralClassicInvitation({ data, onCopyLink, onKakaoShar
           {data.schedule.wakeStart && (
             <div>
               <span className={styles.label}>{t(I18N_KEYS.funeral.labelWake)}</span>
-              {formatDateTime(data.schedule.wakeStart, locale)}
+              {formatDateTimeValue(data.schedule.wakeStart, language)}
             </div>
           )}
           <div>
             <span className={styles.label}>{t(I18N_KEYS.funeral.labelFuneral)}</span>
-            {formatDateTime(data.schedule.funeralDate, locale)}
+            {formatDateTimeValue(data.schedule.funeralDate, language)}
           </div>
           {data.schedule.burial && (
             <div>

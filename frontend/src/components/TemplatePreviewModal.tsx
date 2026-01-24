@@ -7,6 +7,7 @@ import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { getTemplateName } from '@/src/utils/templateI18n';
+import { formatDateTime } from '@/src/lib/i18n/format';
 
 interface TemplatePreviewModalProps {
   template: Template;
@@ -52,14 +53,7 @@ export default function TemplatePreviewModal({ template, onSelect, onClose }: Te
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      const locale = language === 'ko' ? 'ko-KR' : language === 'mn' ? 'mn-MN' : 'en-US';
-      return date.toLocaleString(locale, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
+      return Number.isNaN(date.getTime()) ? dateString : formatDateTime(language, date);
     } catch {
       return dateString;
     }
@@ -171,7 +165,7 @@ export default function TemplatePreviewModal({ template, onSelect, onClose }: Te
                 {previewData.eventDate && (
                   <div style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>
                     <strong style={{ color: '#666', display: 'block', marginBottom: '0.25rem' }}>
-                      {t('eventDate')}
+                      {t(I18N_KEYS.fields.eventDate)}
                     </strong>
                     <span style={{ color: '#333' }}>{formatDate(previewData.eventDate)}</span>
                   </div>
@@ -179,7 +173,9 @@ export default function TemplatePreviewModal({ template, onSelect, onClose }: Te
 
                 {previewData.locationText && (
                   <div style={{ fontSize: '1.1rem' }}>
-                    <strong style={{ color: '#666', display: 'block', marginBottom: '0.25rem' }}>{t('location')}</strong>
+                    <strong style={{ color: '#666', display: 'block', marginBottom: '0.25rem' }}>
+                      {t(I18N_KEYS.fields.location)}
+                    </strong>
                     <span style={{ color: '#333' }}>{previewData.locationText}</span>
                   </div>
                 )}
@@ -213,7 +209,7 @@ export default function TemplatePreviewModal({ template, onSelect, onClose }: Te
               cursor: 'pointer',
             }}
           >
-            {t('close')}
+            {t(I18N_KEYS.common.close)}
           </button>
           <button
             onClick={onSelect}
@@ -227,7 +223,7 @@ export default function TemplatePreviewModal({ template, onSelect, onClose }: Te
               cursor: 'pointer',
             }}
           >
-            {t('selectTemplate')}
+            {t(I18N_KEYS.gallery.selectTemplate)}
           </button>
         </div>
       </div>

@@ -27,7 +27,7 @@ export default function MessageSimpleCard({
     <div className={styles.page}>
       <div className={styles.card}>
         <div className={styles.hero}>
-          <img className={styles.heroImage} src={data.heroImage} alt="message hero" />
+          <img className={styles.heroImage} src={data.heroImage} alt={t(I18N_KEYS.message.heroImageAlt)} />
         </div>
 
         <div className={styles.textBlock}>

@@ -14,8 +14,6 @@ type WeddingClassicInvitationProps = {
   showGuestbook?: boolean;
 };
 
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
 function buildCalendarCells(targetDate: Date): (number | null)[] {
   const year = targetDate.getFullYear();
   const month = targetDate.getMonth();
@@ -37,19 +35,32 @@ export default function WeddingClassicInvitation({
   showGuestbook = true,
 }: WeddingClassicInvitationProps) {
   const { t } = useI18n();
+  const weekdays = [
+    t(I18N_KEYS.weddingClassic.weekdaySun),
+    t(I18N_KEYS.weddingClassic.weekdayMon),
+    t(I18N_KEYS.weddingClassic.weekdayTue),
+    t(I18N_KEYS.weddingClassic.weekdayWed),
+    t(I18N_KEYS.weddingClassic.weekdayThu),
+    t(I18N_KEYS.weddingClassic.weekdayFri),
+    t(I18N_KEYS.weddingClassic.weekdaySat),
+  ];
   const calendarCells = buildCalendarCells(data.weddingDate);
   const highlightDay = data.weddingDate.getDate();
 
   return (
     <div className={styles.page}>
       {showPlayButton && onPlayMusic && (
-        <button className={styles.audioButton} onClick={onPlayMusic} aria-label="Play music">
+        <button
+          className={styles.audioButton}
+          onClick={onPlayMusic}
+          aria-label={t(I18N_KEYS.fields.playMusic)}
+        >
           🔊
         </button>
       )}
 
       <section className={styles.hero}>
-        <img className={styles.heroImage} src={data.heroImage} alt="Wedding hero" />
+        <img className={styles.heroImage} src={data.heroImage} alt={t(I18N_KEYS.weddingClassic.heroImageAlt)} />
         <div className={styles.heroOverlay}>
           <div className={styles.heroTitle}>{data.heroTitle}</div>
           <div className={styles.heroSubtitle}>{data.heroSubtitle}</div>
@@ -93,7 +104,7 @@ export default function WeddingClassicInvitation({
       <section className={styles.section}>
         <div className={styles.calendarTitle}>{data.calendarTitle}</div>
         <div className={styles.calendarGrid}>
-          {WEEKDAYS.map((day) => (
+          {weekdays.map((day) => (
             <div key={day} className={`${styles.calendarCell} ${styles.calendarHeader}`}>
               {day}
             </div>
@@ -113,7 +124,7 @@ export default function WeddingClassicInvitation({
         <h2>{t(I18N_KEYS.weddingClassic.galleryTitle)}</h2>
         <div className={styles.galleryGrid}>
           {data.galleryImages.map((image) => (
-            <img key={image} className={styles.galleryImage} src={image} alt="Gallery" />
+            <img key={image} className={styles.galleryImage} src={image} alt={t(I18N_KEYS.weddingClassic.galleryImageAlt)} />
           ))}
         </div>
       </section>

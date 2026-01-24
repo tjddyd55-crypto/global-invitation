@@ -19,13 +19,17 @@ export default function MessageBrandedJCI({ data }: MessageBrandedJCIProps) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <img className={styles.logo} src={data.brand.logo} alt={`${data.brand.name} logo`} />
+        <img
+          className={styles.logo}
+          src={data.brand.logo}
+          alt={`${data.brand.name} ${t(I18N_KEYS.messageBranded.logoAlt)}`}
+        />
       </header>
 
       <main className={styles.main}>
         <div className={styles.container}>
           <div className={styles.hero}>
-            <img className={styles.heroImage} src={data.heroImage} alt="branded hero" />
+            <img className={styles.heroImage} src={data.heroImage} alt={t(I18N_KEYS.messageBranded.heroImageAlt)} />
           </div>
           <div>
             <div className={styles.title}>{data.title}</div>

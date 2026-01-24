@@ -1,3 +1,5 @@
+import { I18N_KEYS, SUPPORTED_LANGUAGES, translate, type Language } from '@/src/i18n';
+import { formatDate, formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/lib/api';
 
 export type WeddingClassicPerson = {
@@ -58,6 +60,14 @@ const GALLERY_IMAGES = Array.from({ length: 12 }, (_, index) => {
 });
 
 const DEFAULT_DATE = new Date('2025-04-13T17:20:00');
+const DEFAULT_LANGUAGE: Language = 'en';
+const SUPPORTED_LANGUAGE_SET = new Set<string>(SUPPORTED_LANGUAGES);
+
+function resolveLanguage(value?: string | null): Language {
+  if (!value) return DEFAULT_LANGUAGE;
+  const normalized = value.toLowerCase();
+  return SUPPORTED_LANGUAGE_SET.has(normalized) ? (normalized as Language) : DEFAULT_LANGUAGE;
+}
 
 function parseCoupleNames(rawTitle?: string): { coupleNames: string; groomName: string; brideName: string } {
   const fallback = { coupleNames: '동규 ♥ 소영', groomName: '유동규', brideName: '이소영' };
@@ -74,36 +84,32 @@ function parseCoupleNames(rawTitle?: string): { coupleNames: string; groomName: 
   return { coupleNames: `${left} ♥ ${right}`, groomName: left, brideName: right };
 }
 
-function formatKoreanDateTime(date: Date): string {
-  const datePart = date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'long',
-  });
-  const timePart = date.toLocaleTimeString('ko-KR', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-  const formattedTime = timePart.replace(':', '시 ') + '분';
-  return `${datePart} ${formattedTime}`;
-}
-
 function getWeddingDate(source?: string | null): Date {
   if (!source) return DEFAULT_DATE;
   const parsed = new Date(source);
   return Number.isNaN(parsed.getTime()) ? DEFAULT_DATE : parsed;
 }
 
-function formatWeddingDateTime(date: Date): string {
-  return formatKoreanDateTime(date);
+export function buildWeddingClassicCalendarTitle(date: Date, language: Language): string {
+  const template = translate(language, I18N_KEYS.weddingClassic.calendarTitle);
+  return template.replace('{date}', formatDate(language, date));
 }
 
-function buildCalendarTitle(date: Date): string {
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${month}월의 ${day}번째 날.`;
+export function getWeddingClassicDefaultLabels(language: Language) {
+  return {
+    rsvpTitle: translate(language, I18N_KEYS.weddingClassic.rsvpTitle),
+    rsvpDescription: translate(language, I18N_KEYS.weddingClassic.rsvpDescription),
+    rsvpButton: translate(language, I18N_KEYS.weddingClassic.rsvpButton),
+    accountsTitle: translate(language, I18N_KEYS.weddingClassic.accountsTitle),
+    messagesTitle: translate(language, I18N_KEYS.weddingClassic.messagesTitle),
+  };
+}
+
+export function buildWeddingClassicHeroTitle(groomName: string, brideName: string, language: Language): string {
+  const groom = groomName || translate(language, I18N_KEYS.weddingClassic.groomLabel);
+  const bride = brideName || translate(language, I18N_KEYS.weddingClassic.brideLabel);
+  const template = translate(language, I18N_KEYS.weddingClassic.heroTitleTemplate);
+  return template.replace('{groom}', groom).replace('{bride}', bride);
 }
 
 export const WEDDING_CLASSIC_TEMPLATE_KEYS = new Set(['wedding_classic', 'classic']);
@@ -141,17 +147,19 @@ export function getWeddingClassicDemoInvitation(): Invitation {
 
 export function buildWeddingClassicData(invitation?: Invitation | null): WeddingClassicData {
   const weddingDate = getWeddingDate(invitation?.eventDate ?? null);
+  const language = resolveLanguage(invitation?.language);
+  const defaultLabels = getWeddingClassicDefaultLabels(language);
   const { coupleNames, groomName, brideName } = parseCoupleNames(invitation?.title ?? undefined);
-  const heroTitle = `${groomName} ♥ ${brideName} 결혼합니다`;
-  const heroSubtitle = formatKoreanDateTime(weddingDate);
+  const heroTitle = buildWeddingClassicHeroTitle(groomName, brideName, language);
+  const heroSubtitle = formatDateTime(language, weddingDate);
 
   return {
     heroImage: HERO_IMAGE,
-    heroOverlayText: 'Welcome to our wedding',
+    heroOverlayText: translate(language, I18N_KEYS.weddingClassic.heroOverlayText),
     heroTitle,
     heroSubtitle,
     coupleNames,
-    weddingDateTime: formatWeddingDateTime(weddingDate),
+    weddingDateTime: formatDateTime(language, weddingDate),
     venueName: invitation?.locationText || '더링크호텔 서울 3층 베일리홀',
     introQuote: '예쁜 예감이 들었다. 우리는 언제나 손을 잡고 있게 될 것이다.',
     introText: [
@@ -175,22 +183,22 @@ export function buildWeddingClassicData(invitation?: Invitation | null): Wedding
       parentsText: '이상금 · 형명숙 의 딸',
     },
     weddingDate,
-    calendarTitle: buildCalendarTitle(weddingDate),
+    calendarTitle: buildWeddingClassicCalendarTitle(weddingDate, language),
     galleryImages: GALLERY_IMAGES,
     address: '서울 구로구 경인로 610',
     mapImage: MAP_IMAGE,
     transportInfo: ['신도림역 1번 출구 앞'],
     parkingInfo: ['웨딩고객 주차 1시간 30분 무료'],
-    rsvpTitle: '참석 여부 전달',
-    rsvpDescription: '결혼식에 참석해주시는 모든 분들을 더욱 특별하게 모시고자 하오니, 참석 여부 전달을 부탁드립니다.',
-    rsvpButton: '참석 여부 전달',
-    accountsTitle: '마음 전하실 곳',
+    rsvpTitle: defaultLabels.rsvpTitle,
+    rsvpDescription: defaultLabels.rsvpDescription,
+    rsvpButton: defaultLabels.rsvpButton,
+    accountsTitle: defaultLabels.accountsTitle,
     accounts: [
       { role: '신랑', bank: '신한은행', number: '110464926697', holder: groomName },
       { role: '신부', bank: '신한은행', number: '110237577153', holder: brideName },
       { role: '신부 아버지', bank: '국민은행', number: '29870204098895', holder: '이상금' },
     ],
-    messagesTitle: '축하의 메시지를 남겨주세요!',
+    messagesTitle: defaultLabels.messagesTitle,
     messages: [
       { name: '서문교', content: '두 분 결혼 축하드려요~ 알콩달콩 이쁘게 잘 살아요^^', createdAt: '2025.04.13 17:21' },
       { name: '스윙 이소영', content: '소식 전해줘서 고마워요! 행복하게 잘 살아줘요.', createdAt: '2025.04.12 19:45' },
@@ -201,7 +209,8 @@ export function buildWeddingClassicData(invitation?: Invitation | null): Wedding
 export function buildWeddingClassicMetadata(invitation?: Invitation | null) {
   const weddingDate = getWeddingDate(invitation?.eventDate ?? null);
   const { groomName, brideName } = parseCoupleNames(invitation?.title ?? undefined);
-  const title = `${groomName} ♥ ${brideName} 결혼합니다`;
-  const description = `${formatWeddingDateTime(weddingDate)} · ${invitation?.locationText || '더링크호텔 서울'}`;
+  const language = resolveLanguage(invitation?.language);
+  const title = buildWeddingClassicHeroTitle(groomName, brideName, language);
+  const description = `${formatDateTime(language, weddingDate)} · ${invitation?.locationText || '더링크호텔 서울'}`;
   return { title, description, heroImage: HERO_IMAGE };
 }

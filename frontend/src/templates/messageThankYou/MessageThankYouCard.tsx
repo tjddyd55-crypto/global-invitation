@@ -4,6 +4,7 @@ import styles from './MessageThankYouCard.module.css';
 import type { MessageCardData } from '@/src/models/messageCard';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
+import { formatDateTime } from '@/src/lib/i18n/format';
 
 type MessageThankYouCardProps = {
   data: MessageCardData;
@@ -24,7 +25,13 @@ export default function MessageThankYouCard({
   const isDark = data.theme === 'dark';
   const canInteract = interactive;
   const hasActions = data.actions.calendar || data.actions.copyLink || data.actions.kakaoShare;
-  const locale = language === 'ko' ? 'ko-KR' : language === 'mn' ? 'mn-MN' : 'en-US';
+
+  const formatEventDate = (value?: string | null) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return formatDateTime(language, date);
+  };
 
   return (
     <div className={`${styles.page} ${isDark ? styles.pageDark : ''}`}>
@@ -40,7 +47,7 @@ export default function MessageThankYouCard({
           {data.description && <p className={styles.description}>{data.description}</p>}
           {(data.eventDate || data.location) && (
             <div className={styles.meta}>
-              {data.eventDate && <span>📅 {new Date(data.eventDate).toLocaleString(locale)}</span>}
+              {data.eventDate && <span>📅 {formatEventDate(data.eventDate)}</span>}
               {data.location && <span>📍 {data.location}</span>}
             </div>
           )}

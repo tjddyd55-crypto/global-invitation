@@ -1,4 +1,7 @@
+import { I18N_KEYS, translate, type Language } from '@/src/i18n';
+import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/lib/api';
+import { buildWeddingClassicHeroTitle } from '@/src/templates/weddingClassic/data';
 import type {
   WeddingEditorAccount,
   WeddingEditorImage,
@@ -62,7 +65,7 @@ function splitMessage(source?: string | null): string[] {
   return lines.length > 0 ? lines : DEFAULT_MESSAGE_BODY;
 }
 
-function normalizeLanguage(language?: string | null): 'ko' | 'en' | 'mn' {
+function normalizeLanguage(language?: string | null): Language {
   if (language === 'en' || language === 'mn') return language;
   return 'ko';
 }
@@ -82,24 +85,35 @@ function buildDefaultAccounts({ groomName, brideName }: { groomName: string; bri
   }));
 }
 
-function buildOgTitle({ groomName, brideName }: { groomName: string; brideName: string }): string {
-  return `${groomName} ♥ ${brideName} 결혼합니다`;
+function buildOgTitle({
+  groomName,
+  brideName,
+  language,
+}: {
+  groomName: string;
+  brideName: string;
+  language: Language;
+}): string {
+  return buildWeddingClassicHeroTitle(groomName, brideName, language);
 }
 
-function buildOgDescription(eventDateTime: string, venueName: string): string {
-  return `${eventDateTime.replace('T', ' ')} · ${venueName}`;
+function buildOgDescription(eventDateTime: string, venueName: string, language: Language): string {
+  const parsed = new Date(eventDateTime);
+  const formattedDate = Number.isNaN(parsed.getTime()) ? eventDateTime : formatDateTime(language, parsed);
+  return `${formattedDate} · ${venueName}`;
 }
 
 export function createWeddingEditorState(invitation?: Invitation | null): WeddingEditorState {
   const { groomName, brideName } = parseCoupleNames(invitation?.title ?? undefined);
   const eventDateTime = toDateTimeLocal(invitation?.eventDate ?? null);
   const venueName = invitation?.locationText || DEFAULT_VENUE_NAME;
+  const language = normalizeLanguage(invitation?.language ?? null);
 
   return {
     setup: {
       invitationType: 'wedding',
       templateKey: 'wedding_classic',
-      language: normalizeLanguage(invitation?.language ?? null),
+      language,
     },
     basic: {
       title: invitation?.title || `${groomName} ♥ ${brideName}`,
@@ -110,7 +124,7 @@ export function createWeddingEditorState(invitation?: Invitation | null): Weddin
     },
     hero: {
       heroImage: DEFAULT_HERO_IMAGE,
-      overlayText: 'Welcome to our wedding',
+      overlayText: translate(language, I18N_KEYS.weddingClassic.heroOverlayText),
     },
     invitationMessage: {
       quote: DEFAULT_INTRO_QUOTE,
@@ -142,11 +156,11 @@ export function createWeddingEditorState(invitation?: Invitation | null): Weddin
     extras: {
       rsvpEnabled: true,
       guestbookEnabled: true,
-      rsvpButtonText: '참석 여부 전달',
+      rsvpButtonText: translate(language, I18N_KEYS.weddingClassic.rsvpButton),
     },
     share: {
-      ogTitle: buildOgTitle({ groomName, brideName }),
-      ogDescription: buildOgDescription(eventDateTime, venueName),
+      ogTitle: buildOgTitle({ groomName, brideName, language }),
+      ogDescription: buildOgDescription(eventDateTime, venueName, language),
       ogImage: undefined,
     },
   };
