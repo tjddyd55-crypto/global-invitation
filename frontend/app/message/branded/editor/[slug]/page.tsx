@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import styles from './MessageBrandedEditorPage.module.css';
+import styles from '../MessageBrandedEditorPage.module.css';
 import MessageBrandedJCIEditor from '@/src/editors/messageBranded/jci/MessageBrandedJCIEditor';
 import {
   getMessageBrandedJciDemoData,
