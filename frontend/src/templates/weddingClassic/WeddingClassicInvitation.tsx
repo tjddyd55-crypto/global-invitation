@@ -4,6 +4,7 @@ import styles from './WeddingClassicInvitation.module.css';
 import type { WeddingClassicData } from './data';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
+import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 
 type WeddingClassicInvitationProps = {
   data: WeddingClassicData;
@@ -118,28 +119,21 @@ export default function WeddingClassicInvitation({
       </section>
 
       <section className={styles.section}>
-        <div className={styles.locationBlock}>
-          <h2>{data.venueName}</h2>
-          <div>{data.address}</div>
-        </div>
-        <img className={styles.mapImage} src={data.mapImage} alt="Map" />
-        <div className={styles.navButtons}>
-          <button className={styles.navButton}>{t(I18N_KEYS.weddingClassic.navTmap)}</button>
-          <button className={styles.navButton}>{t(I18N_KEYS.weddingClassic.navKakao)}</button>
-          <button className={styles.navButton}>{t(I18N_KEYS.weddingClassic.navNaver)}</button>
-        </div>
-        <div className={styles.infoList}>
-          <strong>{t(I18N_KEYS.weddingClassic.transportTitle)}</strong>
-          {data.transportInfo.map((line) => (
-            <div key={line}>- {line}</div>
-          ))}
-        </div>
-        <div className={styles.infoList}>
-          <strong>{t(I18N_KEYS.weddingClassic.parkingTitle)}</strong>
-          {data.parkingInfo.map((line) => (
-            <div key={line}>- {line}</div>
-          ))}
-        </div>
+        <LocationMapSection
+          title={data.venueName}
+          address={data.address}
+          mapImage={data.mapImage}
+          mapImageAlt={t(I18N_KEYS.common.mapAlt)}
+          navLabels={{
+            tmap: t(I18N_KEYS.weddingClassic.navTmap),
+            kakao: t(I18N_KEYS.weddingClassic.navKakao),
+            naver: t(I18N_KEYS.weddingClassic.navNaver),
+          }}
+          transportTitle={t(I18N_KEYS.weddingClassic.transportTitle)}
+          transportInfo={data.transportInfo}
+          parkingTitle={t(I18N_KEYS.weddingClassic.parkingTitle)}
+          parkingInfo={data.parkingInfo}
+        />
       </section>
 
       {showRsvp && (

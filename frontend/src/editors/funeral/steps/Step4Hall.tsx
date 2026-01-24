@@ -32,10 +32,9 @@ export default function Step4Hall({ funeralHall, contact, onHallChange, onContac
         <span className={styles.fieldLabel}>주소</span>
         <input
           type="text"
-          value={funeralHall.address}
+          value={funeralHall.address ?? ''}
           onChange={(event) => onHallChange({ ...funeralHall, address: event.target.value })}
           placeholder="예: 서울특별시 송파구 올림픽로 43길 88"
-          required
         />
       </label>
       <ImageUploader

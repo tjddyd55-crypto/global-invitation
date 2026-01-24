@@ -2,6 +2,8 @@
 
 import styles from './MessageSimpleCard.module.css';
 import type { MessageCardSimple } from '@/src/models/messageSimple';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { I18N_KEYS } from '@/src/i18n';
 
 type MessageSimpleCardProps = {
   data: MessageCardSimple;
@@ -16,6 +18,7 @@ export default function MessageSimpleCard({
   onKakaoShare,
   onCalendarSave,
 }: MessageSimpleCardProps) {
+  const { t } = useI18n();
   const hasSchedule = Boolean(data.schedule?.date || data.schedule?.time || data.schedule?.place);
   const hasActions = data.actions.copyLink || data.actions.kakaoShare || data.actions.calendarSave;
   const isCalendarEnabled = data.actions.calendarSave && Boolean(data.schedule?.date);
@@ -38,19 +41,19 @@ export default function MessageSimpleCard({
           <div className={styles.schedule}>
             {data.schedule?.date && (
               <div>
-                <span className={styles.scheduleLabel}>날짜</span>
+                <span className={styles.scheduleLabel}>{t(I18N_KEYS.message.labelDate)}</span>
                 {data.schedule.date}
               </div>
             )}
             {data.schedule?.time && (
               <div>
-                <span className={styles.scheduleLabel}>시간</span>
+                <span className={styles.scheduleLabel}>{t(I18N_KEYS.message.labelTime)}</span>
                 {data.schedule.time}
               </div>
             )}
             {data.schedule?.place && (
               <div>
-                <span className={styles.scheduleLabel}>장소</span>
+                <span className={styles.scheduleLabel}>{t(I18N_KEYS.message.labelPlace)}</span>
                 {data.schedule.place}
               </div>
             )}
@@ -62,7 +65,7 @@ export default function MessageSimpleCard({
             <div className={styles.actionButtons}>
               {data.actions.copyLink && (
                 <button type="button" className={styles.actionButton} onClick={onCopyLink}>
-                  링크 복사
+                  {t(I18N_KEYS.message.actionCopyLink)}
                 </button>
               )}
               {data.actions.kakaoShare && (
@@ -71,7 +74,7 @@ export default function MessageSimpleCard({
                   className={`${styles.actionButton} ${styles.actionButtonPrimary}`}
                   onClick={onKakaoShare}
                 >
-                  카카오 공유
+                  {t(I18N_KEYS.message.actionKakaoShare)}
                 </button>
               )}
               {data.actions.calendarSave && (
@@ -81,11 +84,11 @@ export default function MessageSimpleCard({
                   onClick={onCalendarSave}
                   disabled={!isCalendarEnabled}
                 >
-                  일정 저장
+                  {t(I18N_KEYS.message.actionCalendarSave)}
                 </button>
               )}
             </div>
-            <div className={styles.actionHint}>공유 버튼은 서비스 준비 단계에서 stub 상태입니다.</div>
+            <div className={styles.actionHint}>{t(I18N_KEYS.message.actionHint)}</div>
           </div>
         )}
       </div>

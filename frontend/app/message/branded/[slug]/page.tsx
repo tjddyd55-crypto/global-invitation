@@ -9,6 +9,7 @@ import {
   isMessageBrandedJciDemoSlug,
 } from '@/src/templates/messageBranded/jci/data';
 import type { BrandedMessageCard } from '@/src/models/messageBranded';
+import EditorBackButton from '@/app/_components/EditorBackButton';
 
 export default function MessageBrandedPage() {
   const params = useParams();
@@ -39,5 +40,10 @@ export default function MessageBrandedPage() {
     );
   }
 
-  return <MessageBrandedJCI data={data} />;
+  return (
+    <>
+      <EditorBackButton fallbackUrl={`/message/branded/editor/${slug}`} />
+      <MessageBrandedJCI data={data} />
+    </>
+  );
 }

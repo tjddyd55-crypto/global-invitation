@@ -11,6 +11,7 @@ import type { MessageCardData } from '@/src/models/messageCard';
 import MessageSimpleCard from '@/src/templates/messageSimple/MessageSimpleCard';
 import { getMessageSimpleDemoData, isMessageSimpleDemoSlug } from '@/src/templates/messageSimple/data';
 import type { MessageCardSimple } from '@/src/models/messageSimple';
+import EditorBackButton from '@/app/_components/EditorBackButton';
 
 function formatIcsDate(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -162,12 +163,15 @@ export default function MessageCardPage() {
 
   if (simpleData && simpleData.templateKey === 'message_simple') {
     return (
-      <MessageSimpleCard
-        data={simpleData}
-        onCopyLink={simpleActionHandlers?.onCopyLink}
-        onKakaoShare={simpleActionHandlers?.onKakaoShare}
-        onCalendarSave={simpleActionHandlers?.onCalendarSave}
-      />
+      <>
+        <EditorBackButton fallbackUrl={`/message/editor/${slug}`} />
+        <MessageSimpleCard
+          data={simpleData}
+          onCopyLink={simpleActionHandlers?.onCopyLink}
+          onKakaoShare={simpleActionHandlers?.onKakaoShare}
+          onCalendarSave={simpleActionHandlers?.onCalendarSave}
+        />
+      </>
     );
   }
 
@@ -180,11 +184,14 @@ export default function MessageCardPage() {
   }
 
   return (
-    <MessageThankYouCard
-      data={data}
-      onCalendar={actionHandlers?.onCalendar}
-      onCopyLink={actionHandlers?.onCopyLink}
-      onKakaoShare={actionHandlers?.onKakaoShare}
-    />
+    <>
+      <EditorBackButton fallbackUrl={`/message/editor/${slug}`} />
+      <MessageThankYouCard
+        data={data}
+        onCalendar={actionHandlers?.onCalendar}
+        onCopyLink={actionHandlers?.onCopyLink}
+        onKakaoShare={actionHandlers?.onKakaoShare}
+      />
+    </>
   );
 }

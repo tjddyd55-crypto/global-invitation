@@ -20,6 +20,7 @@ import {
   isFuneralClassicDemoSlug,
   isFuneralClassicTemplate,
 } from '@/src/templates/funeralClassic/data';
+import EditorBackButton from '@/app/_components/EditorBackButton';
 
 export default function InvitationPage() {
   const params = useParams();
@@ -145,11 +146,14 @@ export default function InvitationPage() {
     };
 
     return (
-      <FuneralClassicInvitation
-        data={funeralData}
-        onCopyLink={handleCopyLink}
-        onKakaoShare={handleKakaoShare}
-      />
+      <>
+        <EditorBackButton fallbackUrl={`/editor/${slug}`} />
+        <FuneralClassicInvitation
+          data={funeralData}
+          onCopyLink={handleCopyLink}
+          onKakaoShare={handleKakaoShare}
+        />
+      </>
     );
   }
 
@@ -160,11 +164,14 @@ export default function InvitationPage() {
   if (isWeddingClassicTemplate(invitation.templateKey)) {
     const weddingClassicData = buildWeddingClassicData(invitation);
     return (
-      <WeddingClassicInvitation
-        data={weddingClassicData}
-        showPlayButton={showPlayButton}
-        onPlayMusic={handlePlayMusic}
-      />
+      <>
+        <EditorBackButton fallbackUrl={`/editor/${slug}`} />
+        <WeddingClassicInvitation
+          data={weddingClassicData}
+          showPlayButton={showPlayButton}
+          onPlayMusic={handlePlayMusic}
+        />
+      </>
     );
   }
 

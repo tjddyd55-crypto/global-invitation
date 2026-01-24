@@ -1,0 +1,85 @@
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+.pageTitle {
+  margin: 0 0 1.5rem;
+  font-size: 1.8rem;
+}
+
+.section {
+  margin-bottom: 2.5rem;
+}
+
+.sectionHeader {
+  margin-bottom: 1rem;
+}
+
+.sectionTitle {
+  margin: 0 0 0.3rem;
+  font-size: 1.3rem;
+}
+
+.sectionSubtitle {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.card {
+  border: 1px solid #e2e2e2;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cardTitle {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.cardDescription {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.actionPrimary {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: none;
+  background: #2b7cff;
+  color: #fff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.actionGhost {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid #d6d6d6;
+  background: #fff;
+  color: #444;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+}

@@ -8,8 +8,10 @@ export type FuneralInvitation = {
   message: string;
   funeralHall: {
     name: string;
-    address: string;
+    address?: string;
     mapImage?: string;
+    mapLat?: number;
+    mapLng?: number;
   };
   schedule: {
     wakeStart?: string;
@@ -47,7 +49,7 @@ export function getFuneralClassicDemoData(): FuneralInvitation {
     funeralHall: {
       name: '서울아산병원장례식장 특실',
       address: '서울특별시 송파구 올림픽로 43길 88 (풍납동)',
-      mapImage: undefined,
+      mapImage: '/images/wedding/classic/map.jpg',
     },
     schedule: {
       wakeStart: '2035-05-02T09:00:00',

@@ -1,0 +1,24 @@
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid #e5e5e5;
+  padding: 0.6rem 1rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  background: transparent;
+  color: #333;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.button:hover {
+  text-decoration: underline;
+}

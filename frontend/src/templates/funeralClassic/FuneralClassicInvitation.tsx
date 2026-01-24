@@ -2,6 +2,9 @@
 
 import styles from './FuneralClassicInvitation.module.css';
 import type { FuneralInvitation } from './data';
+import LocationMapSection from '@/src/templates/shared/LocationMapSection';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { I18N_KEYS } from '@/src/i18n';
 
 type FuneralClassicInvitationProps = {
   data: FuneralInvitation;
@@ -9,45 +12,60 @@ type FuneralClassicInvitationProps = {
   onKakaoShare?: () => void;
 };
 
-function formatDate(value?: string) {
-  if (!value) return '';
+function formatDate(value: string, locale: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+  return date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function formatDateTime(value?: string) {
-  if (!value) return '';
+function formatDateTime(value: string, locale: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleString(locale, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export default function FuneralClassicInvitation({ data, onCopyLink, onKakaoShare }: FuneralClassicInvitationProps) {
+  const { t, language } = useI18n();
+  const locale = language === 'ko' ? 'ko-KR' : language === 'mn' ? 'mn-MN' : 'en-US';
+  const heroNamePrefix = t(I18N_KEYS.funeral.heroNamePrefix);
+  const heroNameSuffix = t(I18N_KEYS.funeral.heroNameSuffix);
+  const hasLocation = Boolean(
+    data.funeralHall?.address || (data.funeralHall?.mapLat != null && data.funeralHall?.mapLng != null)
+  );
+
   return (
     <div className={styles.page}>
       <section className={styles.hero}>
         {data.heroImage && <img className={styles.heroImage} src={data.heroImage} alt="funeral hero" />}
-        <div className={styles.heroTitle}>謹 弔</div>
-        <div className={styles.heroName}>故 {data.deceasedName} 님</div>
-        <div className={styles.heroMeta}>
-          {data.birthDate && <span>{formatDate(data.birthDate)} 生 · </span>}
-          <span>{formatDate(data.deathDate)} 별세</span>
+        <div className={styles.heroTitle}>{t(I18N_KEYS.funeral.heroTitle)}</div>
+        <div className={styles.heroName}>
+          {heroNamePrefix} {data.deceasedName}
+          {heroNameSuffix ? ` ${heroNameSuffix}` : ''}
         </div>
-        <div className={styles.heroNotice}>삼가 고인의 명복을 빕니다.</div>
-        <div className={styles.heroSubNotice}>별세하셨음을 삼가 알려드립니다.</div>
+        <div className={styles.heroMeta}>
+          {data.birthDate && (
+            <span>
+              {formatDate(data.birthDate, locale)} {t(I18N_KEYS.funeral.birthSuffix)} ·{' '}
+            </span>
+          )}
+          <span>
+            {formatDate(data.deathDate, locale)} {t(I18N_KEYS.funeral.deathSuffix)}
+          </span>
+        </div>
+        <div className={styles.heroNotice}>{t(I18N_KEYS.funeral.heroNotice)}</div>
+        <div className={styles.heroSubNotice}>{t(I18N_KEYS.funeral.heroSubNotice)}</div>
       </section>
 
       <section className={styles.section}>
-        <div className={styles.sectionTitle}>알리는 글</div>
+        <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionMessage)}</div>
         <div className={styles.message}>{data.message}</div>
       </section>
 
       <section className={styles.section}>
-        <div className={styles.sectionTitle}>상주 정보</div>
+        <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionFamily)}</div>
         <div className={styles.infoList}>
           <div>
-            <span className={styles.label}>상주</span>
+            <span className={styles.label}>{t(I18N_KEYS.funeral.labelChiefMourner)}</span>
             {data.chiefMourner}
           </div>
         </div>
@@ -61,41 +79,47 @@ export default function FuneralClassicInvitation({ data, onCopyLink, onKakaoShar
       </section>
 
       <section className={styles.section}>
-        <div className={styles.sectionTitle}>장례 일정</div>
+        <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionSchedule)}</div>
         <div className={styles.scheduleGrid}>
           {data.schedule.wakeStart && (
             <div>
-              <span className={styles.label}>빈소</span>
-              {formatDateTime(data.schedule.wakeStart)}
+              <span className={styles.label}>{t(I18N_KEYS.funeral.labelWake)}</span>
+              {formatDateTime(data.schedule.wakeStart, locale)}
             </div>
           )}
           <div>
-            <span className={styles.label}>발인/장례식</span>
-            {formatDateTime(data.schedule.funeralDate)}
+            <span className={styles.label}>{t(I18N_KEYS.funeral.labelFuneral)}</span>
+            {formatDateTime(data.schedule.funeralDate, locale)}
           </div>
           {data.schedule.burial && (
             <div>
-              <span className={styles.label}>장지</span>
+              <span className={styles.label}>{t(I18N_KEYS.funeral.labelBurial)}</span>
               {data.schedule.burial}
             </div>
           )}
         </div>
       </section>
 
-      <section className={styles.section}>
-        <div className={styles.sectionTitle}>장례식장</div>
-        <div className={styles.hallBlock}>
-          <div>{data.funeralHall.name}</div>
-          <div>{data.funeralHall.address}</div>
-        </div>
-        {data.funeralHall.mapImage && (
-          <img className={styles.mapImage} src={data.funeralHall.mapImage} alt="map" />
-        )}
-      </section>
+      {hasLocation && (
+        <section className={styles.section}>
+          <LocationMapSection
+            sectionTitle={t(I18N_KEYS.funeral.sectionHallLocation)}
+            title={data.funeralHall.name}
+            address={data.funeralHall.address}
+            mapImage={data.funeralHall.mapImage}
+            mapImageAlt={t(I18N_KEYS.common.mapAlt)}
+            navLabels={{
+              tmap: t(I18N_KEYS.weddingClassic.navTmap),
+              kakao: t(I18N_KEYS.weddingClassic.navKakao),
+              naver: t(I18N_KEYS.weddingClassic.navNaver),
+            }}
+          />
+        </section>
+      )}
 
       {data.contact && (
         <section className={styles.section}>
-          <div className={styles.sectionTitle}>연락처</div>
+          <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionContact)}</div>
           <div className={styles.contactCard}>
             <div>{data.contact.name}</div>
             <div>{data.contact.phone}</div>
@@ -104,16 +128,16 @@ export default function FuneralClassicInvitation({ data, onCopyLink, onKakaoShar
       )}
 
       <section className={styles.shareSection}>
-        <div className={styles.sectionTitle}>공유하기</div>
+        <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionShare)}</div>
         <div className={styles.shareButtons}>
           <button type="button" className={styles.shareButton} onClick={onCopyLink}>
-            링크 복사
+            {t(I18N_KEYS.funeral.actionCopyLink)}
           </button>
           <button type="button" className={`${styles.shareButton} ${styles.shareButtonPrimary}`} onClick={onKakaoShare}>
-            카카오 공유
+            {t(I18N_KEYS.funeral.actionKakaoShare)}
           </button>
         </div>
-        <div className={styles.shareHint}>공유 버튼은 서비스 준비 단계에서 stub 상태입니다.</div>
+        <div className={styles.shareHint}>{t(I18N_KEYS.funeral.shareHint)}</div>
       </section>
     </div>
   );

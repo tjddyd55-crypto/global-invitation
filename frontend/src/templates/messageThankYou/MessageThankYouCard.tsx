@@ -2,6 +2,8 @@
 
 import styles from './MessageThankYouCard.module.css';
 import type { MessageCardData } from '@/src/models/messageCard';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { I18N_KEYS } from '@/src/i18n';
 
 type MessageThankYouCardProps = {
   data: MessageCardData;
@@ -18,9 +20,11 @@ export default function MessageThankYouCard({
   onKakaoShare,
   interactive = true,
 }: MessageThankYouCardProps) {
+  const { t, language } = useI18n();
   const isDark = data.theme === 'dark';
   const canInteract = interactive;
   const hasActions = data.actions.calendar || data.actions.copyLink || data.actions.kakaoShare;
+  const locale = language === 'ko' ? 'ko-KR' : language === 'mn' ? 'mn-MN' : 'en-US';
 
   return (
     <div className={`${styles.page} ${isDark ? styles.pageDark : ''}`}>
@@ -36,7 +40,7 @@ export default function MessageThankYouCard({
           {data.description && <p className={styles.description}>{data.description}</p>}
           {(data.eventDate || data.location) && (
             <div className={styles.meta}>
-              {data.eventDate && <span>📅 {new Date(data.eventDate).toLocaleString('ko-KR')}</span>}
+              {data.eventDate && <span>📅 {new Date(data.eventDate).toLocaleString(locale)}</span>}
               {data.location && <span>📍 {data.location}</span>}
             </div>
           )}
@@ -54,7 +58,7 @@ export default function MessageThankYouCard({
                 disabled={!canInteract || !onCalendar}
               >
                 <span className={styles.actionButtonIcon}>📅</span>
-                일정 등록
+                {t(I18N_KEYS.message.actionCalendar)}
               </button>
             )}
             {data.actions.copyLink && (
@@ -65,7 +69,7 @@ export default function MessageThankYouCard({
                 disabled={!canInteract || !onCopyLink}
               >
                 <span className={styles.actionButtonIcon}>🔗</span>
-                링크 복사
+                {t(I18N_KEYS.message.actionCopyLink)}
               </button>
             )}
             {data.actions.kakaoShare && (
@@ -76,7 +80,7 @@ export default function MessageThankYouCard({
                 disabled={!canInteract || !onKakaoShare}
               >
                 <span className={styles.actionButtonIcon}>💬</span>
-                카카오 공유
+                {t(I18N_KEYS.message.actionKakaoShare)}
               </button>
             )}
           </div>
