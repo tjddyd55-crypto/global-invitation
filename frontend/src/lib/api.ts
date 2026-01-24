@@ -1,3 +1,5 @@
+import type { Invitation } from '@/src/models/invitation';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function getApiBaseUrl(): string {
@@ -7,24 +9,7 @@ function getApiBaseUrl(): string {
   return API_BASE_URL;
 }
 
-export interface Invitation {
-  id: string;
-  slug: string;
-  title?: string | null;
-  eventDate?: string | null;
-  locationText?: string | null;
-  message?: string | null;
-  templateKey: string;
-  musicKey?: string | null;
-  countryCode: string;
-  language: string;
-  status: string;
-  isPaid: boolean;
-  canShare: boolean;
-  paidAt?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type { Invitation };
 
 export interface CreateInvitationResponse {
   id: string;

@@ -1,0 +1,146 @@
+.page {
+  min-height: 100vh;
+  background: #f4f2ee;
+  color: #2f2f2f;
+  display: flex;
+  justify-content: center;
+  padding: 0 1rem 5.5rem;
+}
+
+.pageDark {
+  background: #1c1b1a;
+  color: #f4f2ed;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1.5rem;
+}
+
+.hero {
+  position: relative;
+  height: 72vh;
+  min-height: 360px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #ddd6cd;
+}
+
+.heroImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.5rem 1.25rem;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.65) 100%);
+  color: #fff;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02rem;
+}
+
+.subtitle {
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.body {
+  text-align: center;
+  padding: 0 0.5rem;
+}
+
+.description {
+  margin: 0.5rem 0 0;
+  color: inherit;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.meta {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: #6e6961;
+}
+
+.pageDark .meta {
+  color: #c8c2b8;
+}
+
+.actionBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-top: 1px solid #e2ddd5;
+  padding: 0.6rem 1rem 0.8rem;
+  display: flex;
+  justify-content: center;
+  z-index: 10;
+}
+
+.pageDark .actionBar {
+  background: #262523;
+  border-color: #3b3834;
+}
+
+.actionBarInner {
+  width: 100%;
+  max-width: 420px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.actionButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.6rem 0.4rem;
+  border-radius: 12px;
+  border: 1px solid #e0d8cd;
+  background: #fdfbf7;
+  font-size: 0.78rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pageDark .actionButton {
+  background: #2f2d2a;
+  border-color: #3b3834;
+}
+
+.actionButtonIcon {
+  font-size: 1.1rem;
+}
+
+.actionButtonDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (min-width: 960px) {
+  .page {
+    padding-bottom: 5.5rem;
+  }
+}

@@ -1,0 +1,23 @@
+'use client';
+
+import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
+import type { WeddingClassicData } from '@/src/templates/weddingClassic/data';
+import styles from '../weddingEditor.module.css';
+
+type LivePreviewPanelProps = {
+  data: WeddingClassicData;
+  showRsvp: boolean;
+  showGuestbook: boolean;
+  title?: string;
+};
+
+export default function LivePreviewPanel({ data, showRsvp, showGuestbook, title }: LivePreviewPanelProps) {
+  return (
+    <div className={styles.previewPanel}>
+      {title && <div className={styles.previewTitle}>{title}</div>}
+      <div className={styles.previewFrame}>
+        <WeddingClassicInvitation data={data} showRsvp={showRsvp} showGuestbook={showGuestbook} />
+      </div>
+    </div>
+  );
+}

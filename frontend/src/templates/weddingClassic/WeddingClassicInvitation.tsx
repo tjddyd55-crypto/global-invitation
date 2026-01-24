@@ -9,6 +9,8 @@ type WeddingClassicInvitationProps = {
   data: WeddingClassicData;
   showPlayButton?: boolean;
   onPlayMusic?: () => void;
+  showRsvp?: boolean;
+  showGuestbook?: boolean;
 };
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -30,6 +32,8 @@ export default function WeddingClassicInvitation({
   data,
   showPlayButton,
   onPlayMusic,
+  showRsvp = true,
+  showGuestbook = true,
 }: WeddingClassicInvitationProps) {
   const { t } = useI18n();
   const calendarCells = buildCalendarCells(data.weddingDate);
@@ -59,8 +63,8 @@ export default function WeddingClassicInvitation({
       </section>
 
       <section className={styles.section}>
-        <p className={styles.introQuote}>{data.introQuote}</p>
-        {data.introText.map((text, index) => (
+        {data.introQuote && <p className={styles.introQuote}>{data.introQuote}</p>}
+        {data.introText.length > 0 && data.introText.map((text, index) => (
           <p key={`${text}-${index}`} className={styles.introText}>
             {text}
           </p>
@@ -138,11 +142,13 @@ export default function WeddingClassicInvitation({
         </div>
       </section>
 
-      <section className={styles.section}>
-        <h2>{data.rsvpTitle}</h2>
-        <p>{data.rsvpDescription}</p>
-        <button className={styles.rsvpButton}>{data.rsvpButton}</button>
-      </section>
+      {showRsvp && (
+        <section className={styles.section}>
+          <h2>{data.rsvpTitle}</h2>
+          <p>{data.rsvpDescription}</p>
+          <button className={styles.rsvpButton}>{data.rsvpButton}</button>
+        </section>
+      )}
 
       <section className={styles.section}>
         <h2>{data.accountsTitle}</h2>
@@ -162,17 +168,19 @@ export default function WeddingClassicInvitation({
         </div>
       </section>
 
-      <section className={styles.section}>
-        <h2>{data.messagesTitle}</h2>
-        <div className={styles.messageList}>
-          {data.messages.map((message) => (
-            <div key={`${message.name}-${message.createdAt}`} className={styles.messageCard}>
-              <div className={styles.messageMeta}>{message.name} · {message.createdAt}</div>
-              <div>{message.content}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {showGuestbook && (
+        <section className={styles.section}>
+          <h2>{data.messagesTitle}</h2>
+          <div className={styles.messageList}>
+            {data.messages.map((message) => (
+              <div key={`${message.name}-${message.createdAt}`} className={styles.messageCard}>
+                <div className={styles.messageMeta}>{message.name} · {message.createdAt}</div>
+                <div>{message.content}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

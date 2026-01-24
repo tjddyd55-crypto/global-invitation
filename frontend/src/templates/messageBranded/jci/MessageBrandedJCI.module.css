@@ -1,0 +1,107 @@
+.page {
+  --jci-primary: #0097D7;
+  --jci-secondary: #1F4789;
+  --text-light: #FFFFFF;
+  --text-dark: #2F2F2F;
+  --header-height: 64px;
+  --footer-height: 56px;
+  min-height: 100vh;
+  background: var(--text-light);
+  color: var(--text-dark);
+  font-family: "Plus Jakarta Sans", "Noto Sans KR", sans-serif;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  background: var(--jci-primary);
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  z-index: 20;
+}
+
+.logo {
+  height: 32px;
+  width: auto;
+}
+
+.main {
+  padding: calc(var(--header-height) + 1.5rem) 1.25rem calc(var(--footer-height) + 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.container {
+  max-width: 560px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.hero {
+  border-radius: 18px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.heroImage {
+  width: 100%;
+  display: block;
+}
+
+.title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.message {
+  white-space: pre-line;
+  line-height: 1.7;
+  font-size: 1rem;
+}
+
+.schedule {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+}
+
+.scheduleLabel {
+  font-weight: 600;
+  margin-right: 0.35rem;
+}
+
+.mapFrame {
+  width: 100%;
+  border: 0;
+  border-radius: 16px;
+  height: 220px;
+}
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--footer-height);
+  background: var(--jci-secondary);
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  z-index: 20;
+}
+
+.brandName {
+  font-weight: 600;
+  letter-spacing: 0.02rem;
+}

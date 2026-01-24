@@ -1,0 +1,161 @@
+import type { Invitation } from '@/src/lib/api';
+import type {
+  WeddingEditorAccount,
+  WeddingEditorImage,
+  WeddingEditorState,
+} from './weddingEditor.types';
+
+const DEFAULT_HERO_IMAGE = '/images/wedding/classic/hero.jpg';
+const DEFAULT_GROOM_IMAGE = '/images/wedding/classic/groom.jpg';
+const DEFAULT_BRIDE_IMAGE = '/images/wedding/classic/bride.jpg';
+const DEFAULT_MAP_IMAGE = '/images/wedding/classic/map.jpg';
+const DEFAULT_GALLERY_IMAGES = Array.from({ length: 12 }, (_, index) => {
+  const number = String(index + 1).padStart(2, '0');
+  return `/images/wedding/classic/gallery_${number}.jpg`;
+});
+
+const DEFAULT_EVENT_DATE_TIME = '2025-04-13T17:20';
+const DEFAULT_VENUE_NAME = '더링크호텔 서울';
+const DEFAULT_VENUE_DETAIL = '3층 베일리홀';
+const DEFAULT_INTRO_QUOTE = '예쁜 예감이 들었다. 우리는 언제나 손을 잡고 있게 될 것이다.';
+const DEFAULT_MESSAGE_BODY = [
+  '봄날의 햇살 아래, 결혼합니다.',
+  '사랑의 선율 속에서,',
+  '저희 두 사람이 하나 되어 행복한 춤을 시작하려 합니다.',
+  '소중한 분들과 함께하고 싶습니다.',
+];
+
+const DEFAULT_TRANSPORT = ['신도림역 1번 출구 앞'];
+const DEFAULT_PARKING = ['웨딩고객 주차 1시간 30분 무료'];
+
+const DEFAULT_ACCOUNTS: Omit<WeddingEditorAccount, 'id'>[] = [
+  { role: '신랑', bank: '신한은행', number: '110464926697', holder: '유동규' },
+  { role: '신부', bank: '신한은행', number: '110237577153', holder: '이소영' },
+  { role: '신부 아버지', bank: '국민은행', number: '29870204098895', holder: '이상금' },
+];
+
+function parseCoupleNames(rawTitle?: string | null): { coupleNames: string; groomName: string; brideName: string } {
+  const fallback = { coupleNames: '동규 ♥ 소영', groomName: '유동규', brideName: '이소영' };
+  if (!rawTitle) return fallback;
+
+  const normalized = rawTitle.replace('❤', '♥');
+  const separator = normalized.includes('♥') ? '♥' : normalized.includes('&') ? '&' : null;
+  if (!separator) {
+    return { ...fallback, coupleNames: rawTitle };
+  }
+
+  const [left, right] = normalized.split(separator).map((part) => part.trim()).filter(Boolean);
+  if (!left || !right) return { ...fallback, coupleNames: rawTitle };
+  return { coupleNames: `${left} ♥ ${right}`, groomName: left, brideName: right };
+}
+
+function toDateTimeLocal(source?: string | null): string {
+  if (!source) return DEFAULT_EVENT_DATE_TIME;
+  const parsed = new Date(source);
+  if (Number.isNaN(parsed.getTime())) return DEFAULT_EVENT_DATE_TIME;
+  return parsed.toISOString().slice(0, 16);
+}
+
+function splitMessage(source?: string | null): string[] {
+  if (!source) return DEFAULT_MESSAGE_BODY;
+  const lines = source.split('\n').map((line) => line.trim()).filter(Boolean);
+  return lines.length > 0 ? lines : DEFAULT_MESSAGE_BODY;
+}
+
+function normalizeLanguage(language?: string | null): 'ko' | 'en' | 'mn' {
+  if (language === 'en' || language === 'mn') return language;
+  return 'ko';
+}
+
+function buildGalleryImages(): WeddingEditorImage[] {
+  return DEFAULT_GALLERY_IMAGES.map((url, index) => ({
+    id: `gallery-${index + 1}`,
+    url,
+  }));
+}
+
+function buildDefaultAccounts({ groomName, brideName }: { groomName: string; brideName: string }): WeddingEditorAccount[] {
+  return DEFAULT_ACCOUNTS.map((account, index) => ({
+    ...account,
+    holder: account.holder === '유동규' ? groomName : account.holder === '이소영' ? brideName : account.holder,
+    id: `account-${index + 1}`,
+  }));
+}
+
+function buildOgTitle({ groomName, brideName }: { groomName: string; brideName: string }): string {
+  return `${groomName} ♥ ${brideName} 결혼합니다`;
+}
+
+function buildOgDescription(eventDateTime: string, venueName: string): string {
+  return `${eventDateTime.replace('T', ' ')} · ${venueName}`;
+}
+
+export function createWeddingEditorState(invitation?: Invitation | null): WeddingEditorState {
+  const { groomName, brideName } = parseCoupleNames(invitation?.title ?? undefined);
+  const eventDateTime = toDateTimeLocal(invitation?.eventDate ?? null);
+  const venueName = invitation?.locationText || DEFAULT_VENUE_NAME;
+
+  return {
+    setup: {
+      invitationType: 'wedding',
+      templateKey: 'wedding_classic',
+      language: normalizeLanguage(invitation?.language ?? null),
+    },
+    basic: {
+      title: invitation?.title || `${groomName} ♥ ${brideName}`,
+      subtitle: undefined,
+      eventDateTime,
+      venueName,
+      venueDetail: invitation?.locationText ? undefined : DEFAULT_VENUE_DETAIL,
+    },
+    hero: {
+      heroImage: DEFAULT_HERO_IMAGE,
+      overlayText: 'Welcome to our wedding',
+    },
+    invitationMessage: {
+      quote: DEFAULT_INTRO_QUOTE,
+      body: splitMessage(invitation?.message ?? null),
+    },
+    groom: {
+      name: groomName,
+      photo: DEFAULT_GROOM_IMAGE,
+      phone: '010-1234-5678',
+      parentsText: '유갑성 · 우재한 의 아들',
+    },
+    bride: {
+      name: brideName,
+      photo: DEFAULT_BRIDE_IMAGE,
+      phone: '010-9876-5432',
+      parentsText: '이상금 · 형명숙 의 딸',
+    },
+    gallery: {
+      images: buildGalleryImages(),
+    },
+    location: {
+      address: '서울 구로구 경인로 610',
+      mapLat: undefined,
+      mapLng: undefined,
+      transportInfo: [...DEFAULT_TRANSPORT],
+      parkingInfo: [...DEFAULT_PARKING],
+    },
+    accounts: buildDefaultAccounts({ groomName, brideName }),
+    extras: {
+      rsvpEnabled: true,
+      guestbookEnabled: true,
+      rsvpButtonText: '참석 여부 전달',
+    },
+    share: {
+      ogTitle: buildOgTitle({ groomName, brideName }),
+      ogDescription: buildOgDescription(eventDateTime, venueName),
+      ogImage: undefined,
+    },
+  };
+}
+
+export const WEDDING_EDITOR_ASSETS = {
+  DEFAULT_HERO_IMAGE,
+  DEFAULT_GROOM_IMAGE,
+  DEFAULT_BRIDE_IMAGE,
+  DEFAULT_MAP_IMAGE,
+  DEFAULT_GALLERY_IMAGES,
+};

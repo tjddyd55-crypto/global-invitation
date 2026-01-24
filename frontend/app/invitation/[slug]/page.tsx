@@ -14,6 +14,12 @@ import {
   isWeddingClassicDemoSlug,
   isWeddingClassicTemplate,
 } from '@/src/templates/weddingClassic/data';
+import FuneralClassicInvitation from '@/src/templates/funeralClassic/FuneralClassicInvitation';
+import {
+  getFuneralClassicDemoData,
+  isFuneralClassicDemoSlug,
+  isFuneralClassicTemplate,
+} from '@/src/templates/funeralClassic/data';
 
 export default function InvitationPage() {
   const params = useParams();
@@ -25,6 +31,7 @@ export default function InvitationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<I18nKey | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
+  const [funeralData, setFuneralData] = useState<ReturnType<typeof getFuneralClassicDemoData> | null>(null);
   const [copied, setCopied] = useState(false);
   const [showPlayButton, setShowPlayButton] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -32,6 +39,12 @@ export default function InvitationPage() {
   useEffect(() => {
     if (!slug) {
       router.replace('/create');
+      return;
+    }
+
+    if (isFuneralClassicDemoSlug(slug)) {
+      setFuneralData(getFuneralClassicDemoData());
+      setLoading(false);
       return;
     }
 
@@ -115,6 +128,31 @@ export default function InvitationPage() {
     );
   }
 
+  if (funeralData) {
+    const handleCopyLink = async () => {
+      const invitationUrl = `${window.location.origin}/invitation/${slug}`;
+      try {
+        await navigator.clipboard.writeText(invitationUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        alert(t('copyFailed'));
+      }
+    };
+
+    const handleKakaoShare = () => {
+      alert('카카오 공유는 준비 중입니다.');
+    };
+
+    return (
+      <FuneralClassicInvitation
+        data={funeralData}
+        onCopyLink={handleCopyLink}
+        onKakaoShare={handleKakaoShare}
+      />
+    );
+  }
+
   if (!invitation) {
     return null;
   }
@@ -127,6 +165,15 @@ export default function InvitationPage() {
         showPlayButton={showPlayButton}
         onPlayMusic={handlePlayMusic}
       />
+    );
+  }
+
+  if (isFuneralClassicTemplate(invitation.templateKey)) {
+    return (
+      <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
+        <h1>부고장 템플릿은 demo-funeral-classic에서 확인할 수 있습니다.</h1>
+        <p>실제 데이터 연동은 다음 단계에서 진행됩니다.</p>
+      </div>
     );
   }
 

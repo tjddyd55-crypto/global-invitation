@@ -1,0 +1,12 @@
+.stateContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+}
+
+.stateText {
+  color: #2F2F2F;
+  font-size: 0.95rem;
+}

@@ -1,0 +1,170 @@
+.editorPage {
+  min-height: 100vh;
+  background: #f6f4ef;
+  color: #3b3b3b;
+}
+
+.editorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e3ddd4;
+  background: #fff;
+  gap: 1rem;
+}
+
+.editorTitle {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.editorSubtitle {
+  margin: 0.25rem 0 0;
+  color: #6a665f;
+  font-size: 0.95rem;
+}
+
+.editorLayout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) 360px;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem 3rem;
+}
+
+.navColumn {
+  position: sticky;
+  top: 1.5rem;
+  align-self: start;
+}
+
+.formColumn {
+  min-width: 0;
+}
+
+.previewColumn {
+  position: sticky;
+  top: 1.5rem;
+  align-self: start;
+}
+
+.stepperNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.stepperItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #fff;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.stepperItemActive {
+  border-color: #2f2f2f;
+  background: #f0f0ee;
+  font-weight: 600;
+}
+
+.stepperIndex {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e9e4da;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.stepperTitle {
+  flex: 1;
+}
+
+.stepSection {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.sectionHeader p {
+  margin: 0.4rem 0 0;
+  color: #6a665f;
+  font-size: 0.95rem;
+}
+
+.readOnlyList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.readOnlyRow {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.95rem;
+}
+
+.rowLabel {
+  font-weight: 600;
+}
+
+.previewPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.previewTitle {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.previewFrame {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e1dbd0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  background: #fff;
+}
+
+@media (max-width: 1200px) {
+  .editorLayout {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+
+  .previewColumn {
+    display: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .editorHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .editorLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .navColumn {
+    display: none;
+  }
+}
