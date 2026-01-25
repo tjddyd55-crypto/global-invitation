@@ -1,0 +1,135 @@
+.hero {
+  padding: 72px 24px 56px;
+  text-align: center;
+  background: #fff;
+}
+
+.heroTitle {
+  font-size: 2.4rem;
+  margin-bottom: 12px;
+}
+
+.heroSubtitle {
+  font-size: 1.05rem;
+  color: #555;
+  margin: 0 auto 24px;
+  max-width: 640px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.primaryButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  background: #2f6fed;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.secondaryButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  border: 1px solid #2f6fed;
+  color: #2f6fed;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.section {
+  padding: 48px 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.sectionTitle {
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.sectionSubtitle {
+  color: #666;
+  margin: 0;
+}
+
+.featureList {
+  list-style: disc;
+  padding-left: 20px;
+  color: #444;
+  line-height: 1.7;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e4e4e4;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.cardDescription {
+  margin: 0;
+  color: #666;
+}
+
+.cardActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cardButton {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: #f0f4ff;
+  color: #2f6fed;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.pricingCard {
+  background: #fff;
+  border: 1px solid #e4e4e4;
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.textLink {
+  color: #2f6fed;
+  text-decoration: none;
+  font-weight: 600;
+}

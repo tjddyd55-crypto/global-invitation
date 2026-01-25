@@ -1,0 +1,66 @@
+.section {
+  padding: 48px 24px;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 1.8rem;
+  margin: 0 0 12px;
+}
+
+.subtitle {
+  color: #555;
+  margin: 0 0 24px;
+  line-height: 1.6;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e4e4e4;
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.cardTitle {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.cardText {
+  margin: 0;
+  color: #666;
+  line-height: 1.6;
+}
+
+.list {
+  padding-left: 20px;
+  line-height: 1.7;
+  color: #444;
+  margin: 0;
+}
+
+.infoRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 1rem;
+}
+
+.note {
+  margin-top: 16px;
+  color: #666;
+}
+
+.link {
+  color: #2f6fed;
+  text-decoration: none;
+  font-weight: 600;
+}
