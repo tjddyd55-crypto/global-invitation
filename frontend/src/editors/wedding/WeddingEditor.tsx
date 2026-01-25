@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import styles from './weddingEditor.module.css';
 import StepperNav, { type StepItem } from './components/StepperNav';
 import LivePreviewPanel from './components/LivePreviewPanel';
@@ -17,6 +17,7 @@ import Step9SharePreview from './steps/Step9SharePreview';
 import { buildSharePreview, buildWeddingClassicPreviewData } from './state/weddingEditor.mapper';
 import { weddingEditorReducer } from './state/weddingEditor.reducer';
 import type { WeddingEditorState } from './state/weddingEditor.types';
+import { logEvent } from '@/src/lib/events';
 
 const STEP_ITEMS: StepItem[] = [
   { id: 0, title: '기본 설정' },
@@ -33,22 +34,32 @@ const STEP_ITEMS: StepItem[] = [
 
 type WeddingEditorProps = {
   initialState: WeddingEditorState;
+  pageUrl: string;
   onSave?: (state: WeddingEditorState) => Promise<void> | void;
   saving?: boolean;
   isDemo?: boolean;
   saveError?: string | null;
 };
 
-export default function WeddingEditor({ initialState, onSave, saving, isDemo, saveError }: WeddingEditorProps) {
+export default function WeddingEditor({ initialState, pageUrl, onSave, saving, isDemo, saveError }: WeddingEditorProps) {
   const [state, dispatch] = useReducer(weddingEditorReducer, initialState);
   const [currentStep, setCurrentStep] = useState(0);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const previewLoggedRef = useRef(false);
 
   const previewData = useMemo(() => buildWeddingClassicPreviewData(state), [state]);
   const sharePreview = useMemo(() => buildSharePreview(state), [state]);
 
   const canGoPrev = currentStep > 0;
   const canGoNext = currentStep < STEP_ITEMS.length - 1;
+
+  useEffect(() => {
+    if (previewLoggedRef.current) return;
+    if (currentStep === 9 || mobilePreviewOpen) {
+      logEvent({ eventType: 'preview_open', templateType: 'wedding', language: state.setup.language, pageUrl });
+      previewLoggedRef.current = true;
+    }
+  }, [currentStep, mobilePreviewOpen, pageUrl, state.setup.language]);
 
   const handleSave = async () => {
     if (!onSave) return;

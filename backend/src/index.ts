@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import prisma from './lib/prisma';
 import invitationsRouter from './routes/invitations';
+import eventsRouter from './routes/events';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -23,6 +24,7 @@ app.get('/health', async (req, res) => {
 
 // API routes
 app.use('/api/invitations', invitationsRouter);
+app.use('/api/events', eventsRouter);
 
 // Start server
 app.listen(PORT, () => {

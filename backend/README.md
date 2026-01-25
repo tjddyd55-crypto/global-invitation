@@ -75,6 +75,15 @@ Server will run on http://localhost:3001
 - `created_at` (timestamp)
 - `updated_at` (timestamp)
 
+### Event Logs Table
+- `id` (uuid, primary key)
+- `event_type` (string)
+- `template_type` (string)
+- `language` (string)
+- `page_url` (string)
+- `metadata` (jsonb, nullable)
+- `created_at` (timestamp)
+
 ## Prisma Commands
 
 - `npm run db:migrate` - Create and run migrations

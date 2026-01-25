@@ -7,14 +7,16 @@ import { I18N_KEYS } from '@/src/i18n';
 
 type MessageSimpleCardProps = {
   data: MessageCardSimple;
-  onCopyLink?: () => void;
+  onShare?: () => void;
+  isShared?: boolean;
   onKakaoShare?: () => void;
   onCalendarSave?: () => void;
 };
 
 export default function MessageSimpleCard({
   data,
-  onCopyLink,
+  onShare,
+  isShared = false,
   onKakaoShare,
   onCalendarSave,
 }: MessageSimpleCardProps) {
@@ -63,9 +65,9 @@ export default function MessageSimpleCard({
         {hasActions && (
           <div className={styles.actionBar}>
             <div className={styles.actionButtons}>
-              {data.actions.copyLink && (
-                <button type="button" className={styles.actionButton} onClick={onCopyLink}>
-                  {t(I18N_KEYS.message.actionCopyLink)}
+              {data.actions.copyLink && onShare && (
+                <button type="button" className={styles.actionButton} onClick={onShare}>
+                  {isShared ? t(I18N_KEYS.common.shared) : t(I18N_KEYS.common.share)}
                 </button>
               )}
               {data.actions.kakaoShare && (

@@ -9,7 +9,8 @@ import { formatDateTime } from '@/src/lib/i18n/format';
 type MessageThankYouCardProps = {
   data: MessageCardData;
   onCalendar?: () => void;
-  onCopyLink?: () => void;
+  onShare?: () => void;
+  isShared?: boolean;
   onKakaoShare?: () => void;
   interactive?: boolean;
 };
@@ -17,7 +18,8 @@ type MessageThankYouCardProps = {
 export default function MessageThankYouCard({
   data,
   onCalendar,
-  onCopyLink,
+  onShare,
+  isShared = false,
   onKakaoShare,
   interactive = true,
 }: MessageThankYouCardProps) {
@@ -68,15 +70,15 @@ export default function MessageThankYouCard({
                 {t(I18N_KEYS.message.actionCalendar)}
               </button>
             )}
-            {data.actions.copyLink && (
+            {data.actions.copyLink && onShare && (
               <button
                 type="button"
-                className={`${styles.actionButton} ${!canInteract || !onCopyLink ? styles.actionButtonDisabled : ''}`}
-                onClick={onCopyLink}
-                disabled={!canInteract || !onCopyLink}
+                className={`${styles.actionButton} ${!canInteract || !onShare ? styles.actionButtonDisabled : ''}`}
+                onClick={onShare}
+                disabled={!canInteract || !onShare}
               >
                 <span className={styles.actionButtonIcon}>🔗</span>
-                {t(I18N_KEYS.message.actionCopyLink)}
+                {isShared ? t(I18N_KEYS.common.shared) : t(I18N_KEYS.common.share)}
               </button>
             )}
             {data.actions.kakaoShare && (

@@ -145,13 +145,19 @@ export function getWeddingClassicDemoInvitation(): Invitation {
   };
 }
 
-export function buildWeddingClassicData(invitation?: Invitation | null): WeddingClassicData {
+export function buildWeddingClassicData(
+  invitation?: Invitation | null,
+  languageOverride?: Language
+): WeddingClassicData {
   const weddingDate = getWeddingDate(invitation?.eventDate ?? null);
-  const language = resolveLanguage(invitation?.language);
+  const language = resolveLanguage(languageOverride ?? invitation?.language);
   const defaultLabels = getWeddingClassicDefaultLabels(language);
   const { coupleNames, groomName, brideName } = parseCoupleNames(invitation?.title ?? undefined);
   const heroTitle = buildWeddingClassicHeroTitle(groomName, brideName, language);
   const heroSubtitle = formatDateTime(language, weddingDate);
+  const groomLabel = translate(language, I18N_KEYS.relationship.groom);
+  const brideLabel = translate(language, I18N_KEYS.relationship.bride);
+  const brideFatherLabel = translate(language, I18N_KEYS.relationship.brideFather);
 
   return {
     heroImage: HERO_IMAGE,
@@ -172,13 +178,13 @@ export function buildWeddingClassicData(invitation?: Invitation | null): Wedding
     ],
     groom: {
       image: GROOM_IMAGE,
-      name: `신랑 ${groomName}`,
+      name: `${groomLabel} ${groomName}`,
       phone: '010-1234-5678',
       parentsText: '유갑성 · 우재한 의 아들',
     },
     bride: {
       image: BRIDE_IMAGE,
-      name: `신부 ${brideName}`,
+      name: `${brideLabel} ${brideName}`,
       phone: '010-9876-5432',
       parentsText: '이상금 · 형명숙 의 딸',
     },
@@ -194,9 +200,9 @@ export function buildWeddingClassicData(invitation?: Invitation | null): Wedding
     rsvpButton: defaultLabels.rsvpButton,
     accountsTitle: defaultLabels.accountsTitle,
     accounts: [
-      { role: '신랑', bank: '신한은행', number: '110464926697', holder: groomName },
-      { role: '신부', bank: '신한은행', number: '110237577153', holder: brideName },
-      { role: '신부 아버지', bank: '국민은행', number: '29870204098895', holder: '이상금' },
+      { role: groomLabel, bank: '신한은행', number: '110464926697', holder: groomName },
+      { role: brideLabel, bank: '신한은행', number: '110237577153', holder: brideName },
+      { role: brideFatherLabel, bank: '국민은행', number: '29870204098895', holder: '이상금' },
     ],
     messagesTitle: defaultLabels.messagesTitle,
     messages: [

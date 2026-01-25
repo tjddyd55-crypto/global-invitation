@@ -76,6 +76,8 @@ Access it at: [http://localhost:3000/payment-info](http://localhost:3000/payment
 ### Frontend
 - `NEXT_PUBLIC_API_URL`: Backend public base URL (required in production).
   - Example: `https://<backend-public-url>`
+- `NEXT_PUBLIC_SITE_URL`: Canonical/OG base URL (required in production).
+  - Example: `https://<frontend-public-url>`
 
 ### Backend
 - `DATABASE_URL`: PostgreSQL connection string (required)

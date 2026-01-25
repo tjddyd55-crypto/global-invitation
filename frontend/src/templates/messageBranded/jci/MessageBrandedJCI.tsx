@@ -7,13 +7,15 @@ import { I18N_KEYS } from '@/src/i18n';
 
 type MessageBrandedJCIProps = {
   data: BrandedMessageCard;
+  onShare?: () => void;
+  isShared?: boolean;
 };
 
 function buildMapSrc(lat: number, lng: number): string {
   return `https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
 }
 
-export default function MessageBrandedJCI({ data }: MessageBrandedJCIProps) {
+export default function MessageBrandedJCI({ data, onShare, isShared = false }: MessageBrandedJCIProps) {
   const { t } = useI18n();
 
   return (
@@ -52,6 +54,11 @@ export default function MessageBrandedJCI({ data }: MessageBrandedJCIProps) {
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
           />
+          {onShare && (
+            <button type="button" className={styles.shareButton} onClick={onShare}>
+              {isShared ? t(I18N_KEYS.common.shared) : t(I18N_KEYS.common.share)}
+            </button>
+          )}
         </div>
       </main>
 

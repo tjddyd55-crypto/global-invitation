@@ -1,14 +1,27 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import styles from './MessageBrandedJCIEditor.module.css';
 import type { BrandedMessageCard } from '@/src/models/messageBranded';
 import MessageBrandedJCI from '@/src/templates/messageBranded/jci/MessageBrandedJCI';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { logEvent } from '@/src/lib/events';
 
 type MessageBrandedJCIEditorProps = {
   data: BrandedMessageCard;
+  pageUrl: string;
 };
 
-export default function MessageBrandedJCIEditor({ data }: MessageBrandedJCIEditorProps) {
+export default function MessageBrandedJCIEditor({ data, pageUrl }: MessageBrandedJCIEditorProps) {
+  const { language } = useI18n();
+  const previewLoggedRef = useRef(false);
+
+  useEffect(() => {
+    if (previewLoggedRef.current) return;
+    logEvent({ eventType: 'preview_open', templateType: 'branded', language, pageUrl });
+    previewLoggedRef.current = true;
+  }, [language, pageUrl]);
+
   return (
     <div className={styles.editorPage}>
       <header className={styles.editorHeader}>

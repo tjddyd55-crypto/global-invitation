@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import MessageThankYouCard from '@/src/templates/messageThankYou/MessageThankYouCard';
 import {
@@ -12,6 +12,12 @@ import MessageSimpleCard from '@/src/templates/messageSimple/MessageSimpleCard';
 import { getMessageSimpleDemoData, isMessageSimpleDemoSlug } from '@/src/templates/messageSimple/data';
 import type { MessageCardSimple } from '@/src/models/messageSimple';
 import EditorBackButton from '@/app/_components/EditorBackButton';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { I18N_KEYS } from '@/src/i18n';
+import { logEvent } from '@/src/lib/events';
+import { buildShareUrl, getShareContent, shareLink } from '@/src/lib/share';
+import { buildCanonicalUrl } from '@/src/lib/siteUrl';
+import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 
 function formatIcsDate(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -44,16 +50,25 @@ export default function MessageCardPage() {
   const params = useParams();
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
+  const { t, language } = useI18n();
 
   const [data, setData] = useState<MessageCardData | null>(null);
   const [simpleData, setSimpleData] = useState<MessageCardSimple | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shared, setShared] = useState(false);
+  const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const viewLoggedRef = useRef(false);
+  const pageUrl = buildCanonicalUrl(`/message/${slug}`);
 
   useEffect(() => {
     if (!slug) return;
     setData(null);
     setSimpleData(null);
     setError(null);
+    setShared(false);
+    setShareFallbackUrl(null);
+    setIsSharing(false);
 
     if (isMessageSimpleDemoSlug(slug)) {
       setSimpleData(getMessageSimpleDemoData());
@@ -68,17 +83,45 @@ export default function MessageCardPage() {
     setError('지원하지 않는 메시지 카드입니다.');
   }, [slug]);
 
+  useEffect(() => {
+    if (viewLoggedRef.current) return;
+    if (data || simpleData) {
+      logEvent({ eventType: 'invitation_view', templateType: 'message', language, pageUrl });
+      viewLoggedRef.current = true;
+    }
+  }, [data, simpleData, language, pageUrl]);
+
+  const markShared = () => {
+    setShared(true);
+    setTimeout(() => setShared(false), 2000);
+  };
+
   const actionHandlers = useMemo(() => {
     if (!data) return null;
 
     return {
-      onCopyLink: async () => {
-        const url = window.location.href;
+      onShare: async () => {
+        if (isSharing) return;
+        setShareFallbackUrl(null);
+        setIsSharing(true);
         try {
-          await navigator.clipboard.writeText(url);
-          alert('링크가 복사되었습니다.');
-        } catch {
-          prompt('링크 복사에 실패했습니다. 아래 주소를 복사하세요.', url);
+          logEvent({ eventType: 'share_click', templateType: 'message', language, pageUrl });
+          const { title, description } = getShareContent('message', t);
+          const url = buildShareUrl(`/message/${slug}`);
+          const result = await shareLink({ url, title, text: description });
+          if (result === 'shared' || result === 'copied') {
+            markShared();
+            return;
+          }
+          if (result === 'manual') {
+            setShareFallbackUrl(url);
+            return;
+          }
+          if (result === 'failed') {
+            alert(t(I18N_KEYS.notice.copyFailed));
+          }
+        } finally {
+          setIsSharing(false);
         }
       },
       onCalendar: () => {
@@ -102,10 +145,11 @@ export default function MessageCardPage() {
         URL.revokeObjectURL(url);
       },
       onKakaoShare: () => {
-        alert('카카오 공유는 준비 중입니다.');
+        logEvent({ eventType: 'share_click', templateType: 'message', language, pageUrl });
+        alert(t(I18N_KEYS.notice.kakaoShareUnavailable));
       },
     };
-  }, [data]);
+  }, [data, isSharing, language, markShared, pageUrl, slug, t]);
 
   const simpleActionHandlers = useMemo(() => {
     if (!simpleData) return null;
@@ -117,17 +161,33 @@ export default function MessageCardPage() {
     };
 
     return {
-      onCopyLink: async () => {
-        const url = window.location.href;
+      onShare: async () => {
+        if (isSharing) return;
+        setShareFallbackUrl(null);
+        setIsSharing(true);
         try {
-          await navigator.clipboard.writeText(url);
-          alert('링크가 복사되었습니다.');
-        } catch {
-          prompt('링크 복사에 실패했습니다. 아래 주소를 복사하세요.', url);
+          logEvent({ eventType: 'share_click', templateType: 'message', language, pageUrl });
+          const { title, description } = getShareContent('message', t);
+          const url = buildShareUrl(`/message/${slug}`);
+          const result = await shareLink({ url, title, text: description });
+          if (result === 'shared' || result === 'copied') {
+            markShared();
+            return;
+          }
+          if (result === 'manual') {
+            setShareFallbackUrl(url);
+            return;
+          }
+          if (result === 'failed') {
+            alert(t(I18N_KEYS.notice.copyFailed));
+          }
+        } finally {
+          setIsSharing(false);
         }
       },
       onKakaoShare: () => {
-        alert('카카오 공유는 준비 중입니다.');
+        logEvent({ eventType: 'share_click', templateType: 'message', language, pageUrl });
+        alert(t(I18N_KEYS.notice.kakaoShareUnavailable));
       },
       onCalendarSave: () => {
         const eventDate = buildEventDate();
@@ -151,7 +211,7 @@ export default function MessageCardPage() {
         URL.revokeObjectURL(url);
       },
     };
-  }, [simpleData]);
+  }, [isSharing, language, markShared, pageUrl, simpleData, slug, t]);
 
   if (!data && !simpleData) {
     return (
@@ -167,10 +227,14 @@ export default function MessageCardPage() {
         <EditorBackButton fallbackUrl={`/message/editor/${slug}`} />
         <MessageSimpleCard
           data={simpleData}
-          onCopyLink={simpleActionHandlers?.onCopyLink}
+          onShare={simpleActionHandlers?.onShare}
+          isShared={shared}
           onKakaoShare={simpleActionHandlers?.onKakaoShare}
           onCalendarSave={simpleActionHandlers?.onCalendarSave}
         />
+        {shareFallbackUrl && (
+          <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
+        )}
       </>
     );
   }
@@ -189,9 +253,13 @@ export default function MessageCardPage() {
       <MessageThankYouCard
         data={data}
         onCalendar={actionHandlers?.onCalendar}
-        onCopyLink={actionHandlers?.onCopyLink}
+        onShare={actionHandlers?.onShare}
+        isShared={shared}
         onKakaoShare={actionHandlers?.onKakaoShare}
       />
+      {shareFallbackUrl && (
+        <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
+      )}
     </>
   );
 }

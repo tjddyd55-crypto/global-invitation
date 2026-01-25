@@ -66,6 +66,7 @@ export const I18N_KEYS = {
     saveFailed: 'saveFailed',
     templateChanged: 'templateChanged',
     audioPlayFailed: 'audioPlayFailed',
+    kakaoShareUnavailable: 'kakaoShareUnavailable',
   },
   message: {
     actionCalendar: 'message.actionCalendar',
@@ -82,6 +83,21 @@ export const I18N_KEYS = {
   messageBranded: {
     heroImageAlt: 'messageBranded.heroImageAlt',
     logoAlt: 'messageBranded.logoAlt',
+  },
+  share: {
+    titleWedding: 'share.titleWedding',
+    descriptionWedding: 'share.descriptionWedding',
+    titleFuneral: 'share.titleFuneral',
+    descriptionFuneral: 'share.descriptionFuneral',
+    titleMessage: 'share.titleMessage',
+    descriptionMessage: 'share.descriptionMessage',
+    titleBranded: 'share.titleBranded',
+    descriptionBranded: 'share.descriptionBranded',
+    manualCopyTitle: 'share.manualCopyTitle',
+    manualCopyDescription: 'share.manualCopyDescription',
+    manualCopyAction: 'share.manualCopyAction',
+    manualCopyHint: 'share.manualCopyHint',
+    manualCopyInputLabel: 'share.manualCopyInputLabel',
   },
   funeral: {
     heroTitle: 'funeral.heroTitle',
@@ -157,6 +173,9 @@ export const I18N_KEYS = {
     granddaughter: 'relationship.GRANDDAUGHTER',
     sonInLaw: 'relationship.SON_IN_LAW',
     daughterInLaw: 'relationship.DAUGHTER_IN_LAW',
+    groom: 'relationship.GROOM',
+    bride: 'relationship.BRIDE',
+    brideFather: 'relationship.BRIDE_FATHER',
   },
   sample: {
     title: 'sampleTitle',

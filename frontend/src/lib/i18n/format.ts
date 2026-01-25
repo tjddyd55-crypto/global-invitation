@@ -4,6 +4,9 @@ const LANGUAGE_LOCALE_MAP: Record<string, string> = {
   mn: 'mn-MN',
 };
 
+// NOTE: 날짜/시간 출력은 formatDate/formatTime/formatDateTime만 사용.
+// 직접 Intl.DateTimeFormat 사용 금지.
+
 function resolveLocale(locale: string): string {
   return LANGUAGE_LOCALE_MAP[locale] ?? locale;
 }

@@ -9,7 +9,8 @@ import { formatDate, formatDateTime } from '@/src/lib/i18n/format';
 
 type FuneralClassicInvitationProps = {
   data: FuneralInvitation;
-  onCopyLink?: () => void;
+  onShare?: () => void;
+  isShared?: boolean;
   onKakaoShare?: () => void;
 };
 
@@ -53,7 +54,12 @@ function formatDateTimeValue(value: string | undefined, language: string): strin
   return formatDateTime(language, date);
 }
 
-export default function FuneralClassicInvitation({ data, onCopyLink, onKakaoShare }: FuneralClassicInvitationProps) {
+export default function FuneralClassicInvitation({
+  data,
+  onShare,
+  isShared = false,
+  onKakaoShare,
+}: FuneralClassicInvitationProps) {
   const { t, language } = useI18n();
   const heroNamePrefix = t(I18N_KEYS.funeral.heroNamePrefix);
   const heroNameSuffix = t(I18N_KEYS.funeral.heroNameSuffix);
@@ -157,18 +163,28 @@ export default function FuneralClassicInvitation({ data, onCopyLink, onKakaoShar
         </section>
       )}
 
-      <section className={styles.shareSection}>
-        <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionShare)}</div>
-        <div className={styles.shareButtons}>
-          <button type="button" className={styles.shareButton} onClick={onCopyLink}>
-            {t(I18N_KEYS.funeral.actionCopyLink)}
-          </button>
-          <button type="button" className={`${styles.shareButton} ${styles.shareButtonPrimary}`} onClick={onKakaoShare}>
-            {t(I18N_KEYS.funeral.actionKakaoShare)}
-          </button>
-        </div>
-        <div className={styles.shareHint}>{t(I18N_KEYS.funeral.shareHint)}</div>
-      </section>
+      {(onShare || onKakaoShare) && (
+        <section className={styles.shareSection}>
+          <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionShare)}</div>
+          <div className={styles.shareButtons}>
+            {onShare && (
+              <button
+                type="button"
+                className={`${styles.shareButton} ${styles.shareButtonPrimary}`}
+                onClick={onShare}
+              >
+                {isShared ? t(I18N_KEYS.common.shared) : t(I18N_KEYS.common.share)}
+              </button>
+            )}
+            {onKakaoShare && (
+              <button type="button" className={styles.shareButton} onClick={onKakaoShare}>
+                {t(I18N_KEYS.funeral.actionKakaoShare)}
+              </button>
+            )}
+          </div>
+          <div className={styles.shareHint}>{t(I18N_KEYS.funeral.shareHint)}</div>
+        </section>
+      )}
     </div>
   );
 }

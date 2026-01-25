@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getInvitation, updateInvitation } from '@/src/lib/api';
 import type { Invitation } from '@/src/lib/api';
@@ -20,6 +20,9 @@ import {
   isFuneralClassicDemoSlug,
   isFuneralClassicTemplate,
 } from '@/src/templates/funeralClassic/data';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { logEvent } from '@/src/lib/events';
+import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 
 type EditorError = {
   title: string;
@@ -45,6 +48,9 @@ export default function EditorPage() {
   const router = useRouter();
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
+  const { language } = useI18n();
+  const editorLoggedRef = useRef(false);
+  const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,6 +97,22 @@ export default function EditorPage() {
 
     loadInvitation();
   }, [slug, router, isDemo, isFuneralDemo]);
+
+  useEffect(() => {
+    if (editorLoggedRef.current) return;
+
+    if (funeralData) {
+      logEvent({ eventType: 'editor_open', templateType: 'funeral', language, pageUrl });
+      editorLoggedRef.current = true;
+      return;
+    }
+
+    if (invitation) {
+      const templateType = isFuneralClassicTemplate(invitation.templateKey) ? 'funeral' : 'wedding';
+      logEvent({ eventType: 'editor_open', templateType, language, pageUrl });
+      editorLoggedRef.current = true;
+    }
+  }, [funeralData, invitation, language, pageUrl]);
 
   const initialState = useMemo(() => (invitation ? createWeddingEditorState(invitation) : null), [invitation]);
   const funeralInitialState = useMemo(
@@ -188,6 +210,7 @@ export default function EditorPage() {
     <WeddingEditor
       key={invitation.id}
       initialState={initialState}
+      pageUrl={pageUrl}
       onSave={handleSave}
       saving={saving}
       isDemo={isDemo}

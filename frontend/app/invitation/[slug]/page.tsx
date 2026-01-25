@@ -7,6 +7,10 @@ import type { Invitation } from '@/src/lib/api';
 import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS, type I18nKey } from '@/src/i18n';
+import { formatDateTime } from '@/src/lib/i18n/format';
+import { logEvent } from '@/src/lib/events';
+import { buildShareUrl, getShareContent, shareLink, type ShareTemplateType } from '@/src/lib/share';
+import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
 import {
   buildWeddingClassicData,
@@ -21,6 +25,7 @@ import {
   isFuneralClassicTemplate,
 } from '@/src/templates/funeralClassic/data';
 import EditorBackButton from '@/app/_components/EditorBackButton';
+import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 
 export default function InvitationPage() {
   const params = useParams();
@@ -33,15 +38,23 @@ export default function InvitationPage() {
   const [error, setError] = useState<I18nKey | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [funeralData, setFuneralData] = useState<ReturnType<typeof getFuneralClassicDemoData> | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
   const [showPlayButton, setShowPlayButton] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const viewLoggedRef = useRef(false);
+  const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
 
   useEffect(() => {
     if (!slug) {
       router.replace('/create');
       return;
     }
+
+    setShared(false);
+    setShareFallbackUrl(null);
+    setIsSharing(false);
 
     if (isFuneralClassicDemoSlug(slug)) {
       setFuneralData(getFuneralClassicDemoData());
@@ -103,6 +116,72 @@ export default function InvitationPage() {
     };
   }, [invitation?.musicKey]);
 
+  const markShared = () => {
+    setShared(true);
+    setTimeout(() => setShared(false), 2000);
+  };
+
+  const resolveTemplateType = (templateKey?: string | null): ShareTemplateType => {
+    if (!templateKey) return 'wedding';
+    if (isFuneralClassicTemplate(templateKey)) return 'funeral';
+    if (isWeddingClassicTemplate(templateKey)) return 'wedding';
+    return 'message';
+  };
+
+  useEffect(() => {
+    if (viewLoggedRef.current || loading) return;
+
+    if (funeralData) {
+      logEvent({ eventType: 'invitation_view', templateType: 'funeral', language, pageUrl });
+      viewLoggedRef.current = true;
+      return;
+    }
+
+    if (invitation) {
+      logEvent({
+        eventType: 'invitation_view',
+        templateType: resolveTemplateType(invitation.templateKey),
+        language,
+        pageUrl,
+      });
+      viewLoggedRef.current = true;
+    }
+  }, [funeralData, invitation, loading, language, pageUrl]);
+
+  const handleShareAction = async (templateType: ShareTemplateType, path: string) => {
+    if (isSharing) return;
+    if (invitation && !invitation.canShare) {
+      alert(t(I18N_KEYS.notice.paymentRequired));
+      return;
+    }
+
+    setShareFallbackUrl(null);
+    setIsSharing(true);
+    try {
+      logEvent({ eventType: 'share_click', templateType, language, pageUrl });
+
+      const { title, description } = getShareContent(templateType, t);
+      const url = buildShareUrl(path);
+      const result = await shareLink({ url, title, text: description });
+
+      if (result === 'shared' || result === 'copied') {
+        markShared();
+        return;
+      }
+
+      if (result === 'manual') {
+        setShareFallbackUrl(url);
+        return;
+      }
+
+      if (result === 'failed') {
+        alert(t(I18N_KEYS.notice.copyFailed));
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const handlePlayMusic = () => {
     if (audioRef.current) {
       audioRef.current.play().catch(() => {
@@ -130,19 +209,9 @@ export default function InvitationPage() {
   }
 
   if (funeralData) {
-    const handleCopyLink = async () => {
-      const invitationUrl = `${window.location.origin}/invitation/${slug}`;
-      try {
-        await navigator.clipboard.writeText(invitationUrl);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch {
-        alert(t('copyFailed'));
-      }
-    };
-
     const handleKakaoShare = () => {
-      alert('카카오 공유는 준비 중입니다.');
+      logEvent({ eventType: 'share_click', templateType: 'funeral', language, pageUrl });
+      alert(t(I18N_KEYS.notice.kakaoShareUnavailable));
     };
 
     return (
@@ -150,9 +219,13 @@ export default function InvitationPage() {
         <EditorBackButton fallbackUrl={`/editor/${slug}`} />
         <FuneralClassicInvitation
           data={funeralData}
-          onCopyLink={handleCopyLink}
+          onShare={() => handleShareAction('funeral', `/invitation/${slug}`)}
+          isShared={shared}
           onKakaoShare={handleKakaoShare}
         />
+        {shareFallbackUrl && (
+          <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
+        )}
       </>
     );
   }
@@ -162,7 +235,7 @@ export default function InvitationPage() {
   }
 
   if (isWeddingClassicTemplate(invitation.templateKey)) {
-    const weddingClassicData = buildWeddingClassicData(invitation);
+    const weddingClassicData = buildWeddingClassicData(invitation, language);
     return (
       <>
         <EditorBackButton fallbackUrl={`/editor/${slug}`} />
@@ -170,7 +243,12 @@ export default function InvitationPage() {
           data={weddingClassicData}
           showPlayButton={showPlayButton}
           onPlayMusic={handlePlayMusic}
+          onShare={() => handleShareAction('wedding', `/invitation/${slug}`)}
+          isShared={shared}
         />
+        {shareFallbackUrl && (
+          <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
+        )}
       </>
     );
   }
@@ -184,57 +262,19 @@ export default function InvitationPage() {
     );
   }
 
-  const formatDate = (dateString: string | null | undefined) => {
+  const formatDateValue = (dateString: string | null | undefined) => {
     if (!dateString) return null;
     try {
       const date = new Date(dateString);
-      const locale = language === 'ko' ? 'ko-KR' : language === 'mn' ? 'mn-MN' : 'en-US';
-      return date.toLocaleString(locale, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
+      return Number.isNaN(date.getTime()) ? dateString : formatDateTime(language, date);
     } catch {
       return dateString;
     }
   };
 
   const hasContent = invitation.title || invitation.message || invitation.eventDate || invitation.locationText;
-
-  const handleShare = async () => {
-    if (!invitation) return;
-
-    if (!invitation.canShare) {
-      alert(t('paymentRequired'));
-      return;
-    }
-
-    // can_share === true 인 경우 URL 복사
-    const invitationUrl = `${window.location.origin}/invitation/${invitation.slug}`;
-    
-    try {
-      await navigator.clipboard.writeText(invitationUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      // Clipboard API가 지원되지 않는 경우 fallback
-      const textArea = document.createElement('textarea');
-      textArea.value = invitationUrl;
-      textArea.style.position = 'fixed';
-      textArea.style.opacity = '0';
-      document.body.appendChild(textArea);
-      textArea.select();
-      try {
-        document.execCommand('copy');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch {
-        alert(t('copyFailed'));
-      }
-      document.body.removeChild(textArea);
-    }
+  const handleShare = () => {
+    handleShareAction(resolveTemplateType(invitation.templateKey), `/invitation/${invitation.slug}`);
   };
 
   return (
@@ -269,7 +309,7 @@ export default function InvitationPage() {
             {invitation.eventDate && (
               <div style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>
                 <strong style={{ color: '#666', display: 'block', marginBottom: '0.25rem' }}>{t('eventDate')}</strong>
-                <span style={{ color: '#333' }}>{formatDate(invitation.eventDate)}</span>
+                <span style={{ color: '#333' }}>{formatDateValue(invitation.eventDate)}</span>
               </div>
             )}
 
@@ -315,14 +355,17 @@ export default function InvitationPage() {
               cursor: 'pointer',
             }}
           >
-            {copied ? t('shared') : t('share')}
+            {shared ? t(I18N_KEYS.common.shared) : t(I18N_KEYS.common.share)}
           </button>
         </div>
+        {shareFallbackUrl && (
+          <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
+        )}
 
         <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #eee', fontSize: '0.75rem', color: '#999', textAlign: 'center' }}>
           <p style={{ margin: '0.25rem 0' }}>{t('invitationIdLabel')} {invitation.id}</p>
           <p style={{ margin: '0.25rem 0' }}>{t('slugLabel')} {invitation.slug}</p>
-          <p style={{ margin: '0.25rem 0' }}>{t('createdLabel')} {formatDate(invitation.createdAt)}</p>
+          <p style={{ margin: '0.25rem 0' }}>{t('createdLabel')} {formatDateValue(invitation.createdAt)}</p>
         </div>
       </div>
     </div>

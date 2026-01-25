@@ -12,6 +12,8 @@ type WeddingClassicInvitationProps = {
   onPlayMusic?: () => void;
   showRsvp?: boolean;
   showGuestbook?: boolean;
+  onShare?: () => void;
+  isShared?: boolean;
 };
 
 function buildCalendarCells(targetDate: Date): (number | null)[] {
@@ -33,6 +35,8 @@ export default function WeddingClassicInvitation({
   onPlayMusic,
   showRsvp = true,
   showGuestbook = true,
+  onShare,
+  isShared = false,
 }: WeddingClassicInvitationProps) {
   const { t } = useI18n();
   const weekdays = [
@@ -184,6 +188,13 @@ export default function WeddingClassicInvitation({
               </div>
             ))}
           </div>
+        </section>
+      )}
+      {onShare && (
+        <section className={styles.section}>
+          <button className={styles.shareButton} type="button" onClick={onShare}>
+            {isShared ? t(I18N_KEYS.common.shared) : t(I18N_KEYS.common.share)}
+          </button>
         </section>
       )}
     </div>

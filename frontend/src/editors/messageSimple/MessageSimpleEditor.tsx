@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import styles from './messageSimpleEditor.module.css';
 import Step0MainImage from './steps/Step0MainImage';
 import Step1Content from './steps/Step1Content';
@@ -8,6 +8,8 @@ import Step2Schedule from './steps/Step2Schedule';
 import Step3Preview from './steps/Step3Preview';
 import MessageSimpleCard from '@/src/templates/messageSimple/MessageSimpleCard';
 import type { MessageCardSimple } from '@/src/models/messageSimple';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { logEvent } from '@/src/lib/events';
 
 type StepItem = {
   id: number;
@@ -23,6 +25,7 @@ const STEP_ITEMS: StepItem[] = [
 
 type MessageSimpleEditorProps = {
   initialState: MessageCardSimple;
+  pageUrl: string;
   onSave?: (state: MessageCardSimple) => Promise<void> | void;
   saveNotice?: string | null;
 };
@@ -42,12 +45,22 @@ function editorReducer(state: MessageCardSimple, action: EditorAction): MessageC
   }
 }
 
-export default function MessageSimpleEditor({ initialState, onSave, saveNotice }: MessageSimpleEditorProps) {
+export default function MessageSimpleEditor({ initialState, pageUrl, onSave, saveNotice }: MessageSimpleEditorProps) {
   const [state, dispatch] = useReducer(editorReducer, initialState);
   const [currentStep, setCurrentStep] = useState(0);
+  const previewLoggedRef = useRef(false);
+  const { language } = useI18n();
 
   const canGoPrev = currentStep > 0;
   const canGoNext = currentStep < STEP_ITEMS.length - 1;
+
+  useEffect(() => {
+    if (previewLoggedRef.current) return;
+    if (currentStep === 3) {
+      logEvent({ eventType: 'preview_open', templateType: 'message', language, pageUrl });
+      previewLoggedRef.current = true;
+    }
+  }, [currentStep, language, pageUrl]);
 
   const handleSave = async () => {
     if (!onSave) return;

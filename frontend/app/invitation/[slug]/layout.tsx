@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import {
   buildWeddingClassicMetadata,
   getWeddingClassicDemoInvitation,
   isWeddingClassicDemoSlug,
   isWeddingClassicTemplate,
 } from '@/src/templates/weddingClassic/data';
+import { isFuneralClassicTemplate } from '@/src/templates/funeralClassic/data';
 import type { Invitation } from '@/src/lib/api';
+import { I18N_KEYS, SUPPORTED_LANGUAGES, translate, type Language } from '@/src/i18n';
+import { buildCanonicalUrl, getMetadataBase } from '@/src/lib/siteUrl';
 
 async function fetchInvitation(slug: string): Promise<Invitation | null> {
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -17,12 +19,31 @@ async function fetchInvitation(slug: string): Promise<Invitation | null> {
   return response.json();
 }
 
-function getBaseUrl(): URL | undefined {
-  const headerList = headers();
-  const host = headerList.get('x-forwarded-host') ?? headerList.get('host');
-  if (!host) return undefined;
-  const protocol = headerList.get('x-forwarded-proto') ?? 'https';
-  return new URL(`${protocol}://${host}`);
+function resolveLanguage(value?: string | null): Language {
+  if (!value) return 'en';
+  const normalized = value.toLowerCase();
+  return SUPPORTED_LANGUAGES.includes(normalized as Language) ? (normalized as Language) : 'en';
+}
+
+function buildShareMeta(language: Language, templateKey?: string | null) {
+  if (templateKey && isFuneralClassicTemplate(templateKey)) {
+    return {
+      title: translate(language, I18N_KEYS.share.titleFuneral),
+      description: translate(language, I18N_KEYS.share.descriptionFuneral),
+    };
+  }
+
+  if (templateKey && isWeddingClassicTemplate(templateKey)) {
+    return {
+      title: translate(language, I18N_KEYS.share.titleWedding),
+      description: translate(language, I18N_KEYS.share.descriptionWedding),
+    };
+  }
+
+  return {
+    title: translate(language, I18N_KEYS.share.titleMessage),
+    description: translate(language, I18N_KEYS.share.descriptionMessage),
+  };
 }
 
 export async function generateMetadata(
@@ -30,15 +51,16 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   if (isWeddingClassicDemoSlug(params.slug)) {
     const demoInvitation = getWeddingClassicDemoInvitation();
-    const baseUrl = getBaseUrl();
+    const metadataBase = getMetadataBase();
     const meta = buildWeddingClassicMetadata(demoInvitation);
-    const imageUrl = baseUrl ? new URL(meta.heroImage, baseUrl).toString() : meta.heroImage;
-    const pageUrl = baseUrl ? new URL(`/invitation/${demoInvitation.slug}`, baseUrl).toString() : undefined;
+    const imageUrl = buildCanonicalUrl(meta.heroImage);
+    const pageUrl = buildCanonicalUrl(`/invitation/${demoInvitation.slug}`);
 
     return {
-      metadataBase: baseUrl,
+      metadataBase,
       title: meta.title,
       description: meta.description,
+      alternates: { canonical: pageUrl },
       openGraph: {
         title: meta.title,
         description: meta.description,
@@ -58,22 +80,23 @@ export async function generateMetadata(
   const invitation = await fetchInvitation(params.slug);
   if (!invitation) return {};
 
-  const baseUrl = getBaseUrl();
-  const fallbackTitle = invitation.title || '초대장';
-  const fallbackDescription = invitation.locationText || '모바일 초대장';
+  const metadataBase = getMetadataBase();
   const fallbackImage = '/templates/basic.jpg';
+  const language = resolveLanguage(invitation.language);
+  const shareMeta = buildShareMeta(language, invitation.templateKey);
 
   const meta = isWeddingClassicTemplate(invitation.templateKey)
     ? buildWeddingClassicMetadata(invitation)
-    : { title: fallbackTitle, description: fallbackDescription, heroImage: fallbackImage };
+    : { title: shareMeta.title, description: shareMeta.description, heroImage: fallbackImage };
 
-  const imageUrl = baseUrl ? new URL(meta.heroImage, baseUrl).toString() : meta.heroImage;
-  const pageUrl = baseUrl ? new URL(`/invitation/${invitation.slug}`, baseUrl).toString() : undefined;
+  const imageUrl = buildCanonicalUrl(meta.heroImage);
+  const pageUrl = buildCanonicalUrl(`/invitation/${invitation.slug}`);
 
   return {
-    metadataBase: baseUrl,
+    metadataBase,
     title: meta.title,
     description: meta.description,
+    alternates: { canonical: pageUrl },
     openGraph: {
       title: meta.title,
       description: meta.description,

@@ -56,6 +56,22 @@
 - `is_paid`, `can_share`는 기본값 false (결제 로직은 추후 구현)
 - 결제 관련 필드는 상태만 저장, 실제 결제 로직은 구현하지 않음
 
+### event_logs
+
+**Purpose:** 공유/뷰/에디터/미리보기 이벤트 로그 기록
+
+**Columns:**
+- `id` (uuid, PK) - 이벤트 로그 고유 식별자
+- `event_type` (varchar) - 이벤트 타입 (예: invitation_view)
+- `template_type` (varchar) - 템플릿 타입 (wedding/funeral/message/branded)
+- `language` (varchar) - 언어 코드
+- `page_url` (varchar) - canonical URL
+- `metadata` (jsonb, nullable) - 확장 메타데이터
+- `created_at` (timestamp) - 생성 시각
+
+**Notes:**
+- 운영 로깅 최소 목적이며, 비즈니스 로직과 분리
+
 ## Migration Commands
 
 ```bash

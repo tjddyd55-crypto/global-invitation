@@ -58,6 +58,19 @@ async function verifyTables() {
       where: { id: testInvitation.id },
     });
 
+    // Check event_logs table
+    const eventLog = await prisma.eventLog.create({
+      data: {
+        eventType: 'invitation_view',
+        templateType: 'wedding',
+        language: 'en',
+        pageUrl: 'http://localhost:3000/invitation/demo',
+        metadata: { sample: true },
+      },
+    });
+    await prisma.eventLog.delete({ where: { id: eventLog.id } });
+    console.log('✅ event_logs table exists');
+
     console.log('\n✅ All checks passed!');
   } catch (error) {
     console.error('❌ Verification failed:', error);

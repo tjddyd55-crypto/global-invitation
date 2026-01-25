@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import MessageCardEditor from '@/src/editors/messageCard/MessageCardEditor';
 import { createMessageCardEditorState } from '@/src/editors/messageCard/state/messageCardEditor.initial';
@@ -13,6 +13,9 @@ import type { MessageCardData } from '@/src/models/messageCard';
 import MessageSimpleEditor from '@/src/editors/messageSimple/MessageSimpleEditor';
 import { getMessageSimpleDemoData, isMessageSimpleDemoSlug } from '@/src/templates/messageSimple/data';
 import type { MessageCardSimple } from '@/src/models/messageSimple';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { logEvent } from '@/src/lib/events';
+import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 
 type EditorError = {
   title: string;
@@ -24,6 +27,9 @@ export default function MessageCardEditorPage() {
   const router = useRouter();
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
+  const { language } = useI18n();
+  const editorLoggedRef = useRef(false);
+  const pageUrl = buildCanonicalUrl(`/message/${slug}`);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<EditorError | null>(null);
@@ -62,6 +68,14 @@ export default function MessageCardEditorPage() {
     setLoading(false);
   }, [slug, router, isDemo, isSimpleDemo]);
 
+  useEffect(() => {
+    if (editorLoggedRef.current) return;
+    if (data || simpleData) {
+      logEvent({ eventType: 'editor_open', templateType: 'message', language, pageUrl });
+      editorLoggedRef.current = true;
+    }
+  }, [data, simpleData, language, pageUrl]);
+
   const initialState = useMemo(() => (data ? createMessageCardEditorState(data) : null), [data]);
   const simpleInitialState = useMemo(() => (simpleData ? simpleData : null), [simpleData]);
 
@@ -96,6 +110,7 @@ export default function MessageCardEditorPage() {
     return (
       <MessageSimpleEditor
         initialState={simpleInitialState}
+        pageUrl={pageUrl}
         onSave={handleSimpleSave}
         saveNotice={saveNotice}
       />
@@ -109,6 +124,7 @@ export default function MessageCardEditorPage() {
   return (
     <MessageCardEditor
       initialState={initialState}
+      pageUrl={pageUrl}
       onSave={handleSave}
       saveNotice={saveNotice}
     />

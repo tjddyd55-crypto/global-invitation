@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import styles from './messageCardEditor.module.css';
 import StepperNav, { type MessageCardStep } from './components/StepperNav';
 import PreviewPanel from './components/PreviewPanel';
@@ -10,6 +10,8 @@ import Step3Actions from './steps/Step3Actions';
 import Step4SharePreview from './steps/Step4SharePreview';
 import { messageCardEditorReducer } from './state/messageCardEditor.reducer';
 import type { MessageCardEditorState } from './state/messageCardEditor.types';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { logEvent } from '@/src/lib/events';
 
 const STEP_ITEMS: MessageCardStep[] = [
   { id: 1, title: '커버 이미지' },
@@ -20,6 +22,7 @@ const STEP_ITEMS: MessageCardStep[] = [
 
 type MessageCardEditorProps = {
   initialState: MessageCardEditorState;
+  pageUrl: string;
   onSave?: (state: MessageCardEditorState) => Promise<void> | void;
   saving?: boolean;
   saveError?: string | null;
@@ -28,6 +31,7 @@ type MessageCardEditorProps = {
 
 export default function MessageCardEditor({
   initialState,
+  pageUrl,
   onSave,
   saving,
   saveError,
@@ -36,6 +40,8 @@ export default function MessageCardEditor({
   const [state, dispatch] = useReducer(messageCardEditorReducer, initialState);
   const [currentStep, setCurrentStep] = useState(1);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const previewLoggedRef = useRef(false);
+  const { language } = useI18n();
 
   const ogTitle = useMemo(() => state.title, [state.title]);
   const ogDescription = useMemo(() => state.subtitle || state.description || '', [
@@ -46,6 +52,14 @@ export default function MessageCardEditor({
 
   const canGoPrev = currentStep > 1;
   const canGoNext = currentStep < STEP_ITEMS.length;
+
+  useEffect(() => {
+    if (previewLoggedRef.current) return;
+    if (currentStep === 4 || mobilePreviewOpen) {
+      logEvent({ eventType: 'preview_open', templateType: 'message', language, pageUrl });
+      previewLoggedRef.current = true;
+    }
+  }, [currentStep, mobilePreviewOpen, language, pageUrl]);
 
   const handleSave = async () => {
     if (!onSave) return;
