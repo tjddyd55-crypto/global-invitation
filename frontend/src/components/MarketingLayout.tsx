@@ -16,7 +16,7 @@ export default function MarketingLayout({ children }: MarketingLayoutProps) {
     <div className={styles.page}>
       <header className={styles.header}>
         <Link className={styles.logo} href="/">
-          Global Invitation
+          {t(I18N_KEYS.marketing.brandName)}
         </Link>
         <nav className={styles.nav}>
           <Link href="/pricing">{t(I18N_KEYS.marketing.navPricing)}</Link>

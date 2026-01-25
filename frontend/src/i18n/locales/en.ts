@@ -87,6 +87,7 @@ const en: LocaleDictionary = {
   'messageTemplates.brandedJciDescription': 'Branded message template (JCI demo)',
   'messageTemplates.actionEdit': 'Edit',
   'messageTemplates.actionPreview': 'Preview',
+  'marketing.brandName': 'Global Invitation',
   'marketing.nav.pricing': 'Pricing',
   'marketing.nav.about': 'About',
   'marketing.nav.contact': 'Contact',

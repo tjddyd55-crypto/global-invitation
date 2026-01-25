@@ -87,6 +87,7 @@ const ko: LocaleDictionary = {
   'messageTemplates.brandedJciDescription': '브랜드 메시지 전용 템플릿 (JCI demo)',
   'messageTemplates.actionEdit': '편집하기',
   'messageTemplates.actionPreview': '미리보기',
+  'marketing.brandName': 'Global Invitation',
   'marketing.nav.pricing': '가격표',
   'marketing.nav.about': '서비스 소개',
   'marketing.nav.contact': '문의',

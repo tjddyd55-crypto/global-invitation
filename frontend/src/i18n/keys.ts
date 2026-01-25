@@ -138,6 +138,7 @@ export const I18N_KEYS = {
     actionPreview: 'messageTemplates.actionPreview',
   },
   marketing: {
+    brandName: 'marketing.brandName',
     navPricing: 'marketing.nav.pricing',
     navAbout: 'marketing.nav.about',
     navContact: 'marketing.nav.contact',

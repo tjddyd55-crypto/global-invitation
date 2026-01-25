@@ -87,6 +87,7 @@ const mn: LocaleDictionary = {
   'messageTemplates.brandedJciDescription': 'Брэнд мессежийн загвар (JCI demo)',
   'messageTemplates.actionEdit': 'Засварлах',
   'messageTemplates.actionPreview': 'Урьдчилан харах',
+  'marketing.brandName': 'Global Invitation',
   'marketing.nav.pricing': 'Үнийн хүснэгт',
   'marketing.nav.about': 'Үйлчилгээний танилцуулга',
   'marketing.nav.contact': 'Холбоо барих',
