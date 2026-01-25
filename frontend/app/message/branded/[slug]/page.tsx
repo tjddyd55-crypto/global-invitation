@@ -16,6 +16,8 @@ import { logEvent } from '@/src/lib/events';
 import { buildShareUrl, getShareContent, shareLink } from '@/src/lib/share';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
+import PaymentButton from '@/src/components/PaymentButton';
+import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
 
 export default function MessageBrandedPage() {
   const params = useParams();
@@ -55,6 +57,10 @@ export default function MessageBrandedPage() {
 
   const handleShare = async () => {
     if (isSharing) return;
+    if (!canAccessPaidAction({ product: 'simple_message' })) {
+      notifyPaymentRequired(t);
+      return;
+    }
     setShareFallbackUrl(null);
     setIsSharing(true);
     try {
@@ -91,6 +97,9 @@ export default function MessageBrandedPage() {
     <>
       <EditorBackButton fallbackUrl={`/message/branded/editor/${slug}`} />
       <MessageBrandedJCI data={data} onShare={handleShare} isShared={shared} />
+      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+        <PaymentButton product="simple_message" />
+      </div>
       {shareFallbackUrl && (
         <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
       )}

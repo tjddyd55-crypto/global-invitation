@@ -59,6 +59,7 @@ export const I18N_KEYS = {
   },
   notice: {
     paymentRequired: 'paymentRequired',
+    paymentPreparing: 'paymentPreparing',
     copyFailed: 'copyFailed',
     createFailed: 'createFailed',
     backendUnavailable: 'backendUnavailable',
@@ -201,6 +202,14 @@ export const I18N_KEYS = {
     privacySectionUseBody: 'marketing.privacy.sectionUse.body',
     privacySectionContactTitle: 'marketing.privacy.sectionContact.title',
     privacySectionContactBody: 'marketing.privacy.sectionContact.body',
+  },
+  payment: {
+    payButton: 'payment.payButton',
+    successTitle: 'payment.success.title',
+    successDescription: 'payment.success.description',
+    cancelTitle: 'payment.cancel.title',
+    cancelDescription: 'payment.cancel.description',
+    backHome: 'payment.backHome',
   },
   weddingClassic: {
     contactButton: 'weddingClassic.contactButton',

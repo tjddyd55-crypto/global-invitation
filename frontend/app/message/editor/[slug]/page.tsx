@@ -14,8 +14,10 @@ import MessageSimpleEditor from '@/src/editors/messageSimple/MessageSimpleEditor
 import { getMessageSimpleDemoData, isMessageSimpleDemoSlug } from '@/src/templates/messageSimple/data';
 import type { MessageCardSimple } from '@/src/models/messageSimple';
 import { useI18n } from '@/src/contexts/I18nContext';
+import { I18N_KEYS } from '@/src/i18n';
 import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
+import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
 
 type EditorError = {
   title: string;
@@ -27,7 +29,7 @@ export default function MessageCardEditorPage() {
   const router = useRouter();
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
-  const { language } = useI18n();
+  const { language, t } = useI18n();
   const editorLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/message/${slug}`);
 
@@ -80,11 +82,19 @@ export default function MessageCardEditorPage() {
   const simpleInitialState = useMemo(() => (simpleData ? simpleData : null), [simpleData]);
 
   const handleSave = async (_state: MessageCardEditorState) => {
+    if (!canAccessPaidAction({ product: 'simple_message' })) {
+      notifyPaymentRequired(t);
+      return;
+    }
     setSaveNotice('로컬 상태에 저장되었습니다. (v1은 서버 저장 없음)');
     setTimeout(() => setSaveNotice(null), 2000);
   };
 
   const handleSimpleSave = async (_state: MessageCardSimple) => {
+    if (!canAccessPaidAction({ product: 'simple_message' })) {
+      notifyPaymentRequired(t);
+      return;
+    }
     setSaveNotice('로컬 상태에 저장되었습니다. (v1은 서버 저장 없음)');
     setTimeout(() => setSaveNotice(null), 2000);
   };

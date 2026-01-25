@@ -21,8 +21,10 @@ import {
   isFuneralClassicTemplate,
 } from '@/src/templates/funeralClassic/data';
 import { useI18n } from '@/src/contexts/I18nContext';
+import { I18N_KEYS } from '@/src/i18n';
 import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
+import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
 
 type EditorError = {
   title: string;
@@ -48,7 +50,7 @@ export default function EditorPage() {
   const router = useRouter();
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
-  const { language } = useI18n();
+  const { language, t } = useI18n();
   const editorLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
 
@@ -123,6 +125,10 @@ export default function EditorPage() {
   const handleSave = async (state: WeddingEditorState) => {
     if (!slug || isDemo) {
       alert('데모에서는 저장되지 않습니다.');
+      return;
+    }
+    if (!canAccessPaidAction({ product: 'invitation', isPaid: invitation?.isPaid, canShare: invitation?.canShare })) {
+      notifyPaymentRequired(t);
       return;
     }
 

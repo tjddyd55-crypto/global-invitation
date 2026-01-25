@@ -26,6 +26,8 @@ import {
 } from '@/src/templates/funeralClassic/data';
 import EditorBackButton from '@/app/_components/EditorBackButton';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
+import PaymentButton from '@/src/components/PaymentButton';
+import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
 
 export default function InvitationPage() {
   const params = useParams();
@@ -150,8 +152,8 @@ export default function InvitationPage() {
 
   const handleShareAction = async (templateType: ShareTemplateType, path: string) => {
     if (isSharing) return;
-    if (invitation && !invitation.canShare) {
-      alert(t(I18N_KEYS.notice.paymentRequired));
+    if (invitation && !canAccessPaidAction({ product: 'invitation', isPaid: invitation.isPaid, canShare: invitation.canShare })) {
+      notifyPaymentRequired(t);
       return;
     }
 
@@ -357,6 +359,11 @@ export default function InvitationPage() {
           >
             {shared ? t(I18N_KEYS.common.shared) : t(I18N_KEYS.common.share)}
           </button>
+          {!invitation.canShare && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <PaymentButton product="invitation" />
+            </div>
+          )}
         </div>
         {shareFallbackUrl && (
           <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />

@@ -18,6 +18,8 @@ import { logEvent } from '@/src/lib/events';
 import { buildShareUrl, getShareContent, shareLink } from '@/src/lib/share';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
+import PaymentButton from '@/src/components/PaymentButton';
+import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
 
 function formatIcsDate(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -102,6 +104,10 @@ export default function MessageCardPage() {
     return {
       onShare: async () => {
         if (isSharing) return;
+        if (!canAccessPaidAction({ product: 'simple_message' })) {
+          notifyPaymentRequired(t);
+          return;
+        }
         setShareFallbackUrl(null);
         setIsSharing(true);
         try {
@@ -163,6 +169,10 @@ export default function MessageCardPage() {
     return {
       onShare: async () => {
         if (isSharing) return;
+        if (!canAccessPaidAction({ product: 'simple_message' })) {
+          notifyPaymentRequired(t);
+          return;
+        }
         setShareFallbackUrl(null);
         setIsSharing(true);
         try {
@@ -232,6 +242,9 @@ export default function MessageCardPage() {
           onKakaoShare={simpleActionHandlers?.onKakaoShare}
           onCalendarSave={simpleActionHandlers?.onCalendarSave}
         />
+        <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+          <PaymentButton product="simple_message" />
+        </div>
         {shareFallbackUrl && (
           <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
         )}
@@ -257,6 +270,9 @@ export default function MessageCardPage() {
         isShared={shared}
         onKakaoShare={actionHandlers?.onKakaoShare}
       />
+      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+        <PaymentButton product="simple_message" />
+      </div>
       {shareFallbackUrl && (
         <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
       )}
