@@ -1,46 +1,18 @@
-import nodemailer from 'nodemailer';
+/**
+ * Mailer – 이메일 발송 (추후 확장용)
+ * 현재는 서버 안정성 우선으로 비활성화. nodemailer 의존성 없음.
+ */
 
 type MagicLinkEmailParams = {
   to: string;
   link: string;
 };
 
-function getSmtpConfig() {
-  const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.EMAIL_FROM;
-
-  if (!host || !port || !user || !pass || !from) {
-    return null;
-  }
-
-  return { host, port, user, pass, from };
-}
-
+/**
+ * 매직 링크 이메일 발송.
+ * MVP: 실제 발송 없이 스텁. 추후 EMAIL_ENABLED + nodemailer 연동 시 구현.
+ */
 export async function sendMagicLinkEmail({ to, link }: MagicLinkEmailParams): Promise<boolean> {
-  const config = getSmtpConfig();
-  if (!config) {
-    return false;
-  }
-
-  const transporter = nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: config.port === 465,
-    auth: {
-      user: config.user,
-      pass: config.pass,
-    },
-  });
-
-  await transporter.sendMail({
-    from: config.from,
-    to,
-    subject: 'Global Invitation 로그인 링크',
-    text: `아래 링크를 클릭해 로그인하세요.\n\n${link}\n\n이 링크는 30분 동안 유효합니다.`,
-  });
-
-  return true;
+  console.warn('Email feature disabled (MVP). Magic link not sent.', { to, linkLength: link?.length ?? 0 });
+  return Promise.resolve(false);
 }
