@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import type { Request } from 'express';
-import { Invitation, OwnerType } from '@prisma/client';
+import type { Invitation } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import prisma from './prisma';
 
 const MAGIC_LINK_TTL_MINUTES = 30;
@@ -65,12 +66,12 @@ export async function getAuthUser(req: Request) {
 }
 
 export type GuestActor = {
-  type: OwnerType.GUEST;
+  type: 'GUEST';
   guestToken: string;
 };
 
 export type UserActor = {
-  type: OwnerType.USER;
+  type: 'USER';
   userId: string;
 };
 
@@ -81,14 +82,14 @@ export async function transferGuestData(guestToken: string, userId: string) {
     return 0;
   }
 
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const result = await tx.invitation.updateMany({
       where: {
-        ownerType: OwnerType.GUEST,
+        ownerType: 'GUEST',
         ownerId: guestToken,
       },
       data: {
-        ownerType: OwnerType.USER,
+        ownerType: 'USER',
         ownerId: userId,
         userId,
         guestToken: null,
@@ -99,12 +100,12 @@ export async function transferGuestData(guestToken: string, userId: string) {
 }
 
 export function canEdit(invitation: Invitation, actor: ActorIdentity) {
-  if (actor.type === OwnerType.USER) {
-    return invitation.ownerType === OwnerType.USER && invitation.ownerId === actor.userId;
+  if (actor.type === 'USER') {
+    return invitation.ownerType === 'USER' && invitation.ownerId === actor.userId;
   }
 
-  if (actor.type === OwnerType.GUEST) {
-    return invitation.ownerType === OwnerType.GUEST && invitation.ownerId === actor.guestToken;
+  if (actor.type === 'GUEST') {
+    return invitation.ownerType === 'GUEST' && invitation.ownerId === actor.guestToken;
   }
 
   return false;

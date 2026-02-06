@@ -1,7 +1,8 @@
 import { Router } from 'express';
+import { InvitationStatus } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { generateSlug } from '../utils/slug';
-import { getAuthUser, getGuestToken } from '../lib/auth';
+import { createToken, getAuthUser, getGuestToken } from '../lib/auth';
 
 const router = Router();
 
@@ -15,6 +16,14 @@ type InvitationSummary = {
   updatedAt: Date;
 };
 
+const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
+
+function parseInvitationStatus(value: string | null | undefined): InvitationStatus | undefined {
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  const upper = value.trim().toUpperCase();
+  return INVITATION_STATUS_VALUES.has(upper) ? (upper as InvitationStatus) : undefined;
+}
+
 function resolveGuestTokenFromBody(value: unknown): string | null {
   if (typeof value === 'string' && value.trim()) {
     return value.trim();
@@ -27,7 +36,8 @@ router.get('/', async (req, res) => {
   try {
     const owner = typeof req.query.owner === 'string' ? req.query.owner : null;
     const guestToken = typeof req.query.guestToken === 'string' ? req.query.guestToken : null;
-    const status = typeof req.query.status === 'string' ? req.query.status : null;
+    const statusParam = typeof req.query.status === 'string' ? req.query.status : null;
+    const status = parseInvitationStatus(statusParam);
     const limit = typeof req.query.limit === 'string' ? Number(req.query.limit) : null;
 
     if (owner === 'me') {
@@ -39,7 +49,7 @@ router.get('/', async (req, res) => {
       const invitations = await prisma.invitation.findMany({
         where: {
           userId: user.id,
-          status: status || undefined,
+          status,
         },
         orderBy: { updatedAt: 'desc' },
         take: limit && !Number.isNaN(limit) ? limit : undefined,
@@ -61,7 +71,7 @@ router.get('/', async (req, res) => {
       const invitations = await prisma.invitation.findMany({
         where: {
           guestToken,
-          status: status || undefined,
+          status,
         },
         orderBy: { updatedAt: 'desc' },
         take: limit && !Number.isNaN(limit) ? limit : undefined,
@@ -116,17 +126,21 @@ router.post('/', async (req, res) => {
     } while (true);
 
     // Create invitation with default values
+    const ownerType = user ? 'USER' : 'GUEST';
+    const ownerId = user ? user.id : (guestToken || createToken());
     const invitation = await prisma.invitation.create({
       data: {
         slug,
-        status: 'draft',
+        ownerType,
+        ownerId,
+        status: InvitationStatus.DRAFT,
         isPaid: false,
         canShare: false,
         templateKey: req.body.templateKey || 'basic',
         countryCode: req.body.countryCode || 'GLOBAL',
         language: req.body.language || 'en',
         userId: user?.id ?? null,
-        guestToken: user ? null : guestToken,
+        guestToken: user ? null : ownerId,
       },
       select: {
         id: true,
@@ -220,11 +234,12 @@ router.put('/:slug', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const allowedStatuses = new Set(['draft', 'published']);
-    if (status !== undefined && !allowedStatuses.has(status)) {
+    const allowedStatuses = new Set<InvitationStatus>(['DRAFT', 'PUBLISHED']);
+    const normalizedStatus = parseInvitationStatus(status);
+    if (typeof status === 'string' && status.trim() !== '' && normalizedStatus === undefined) {
       return res.status(400).json({ error: 'Invalid status' });
     }
-    if (status === 'published' && !user) {
+    if (normalizedStatus === 'PUBLISHED' && !user) {
       return res.status(403).json({ error: 'Login required to publish' });
     }
 
@@ -236,7 +251,7 @@ router.put('/:slug', async (req, res) => {
       message?: string | null;
       templateKey?: string;
       musicKey?: string | null;
-      status?: string;
+      status?: InvitationStatus;
     } = {};
 
     if (title !== undefined) updateData.title = title;
@@ -245,7 +260,9 @@ router.put('/:slug', async (req, res) => {
     if (message !== undefined) updateData.message = message;
     if (templateKey !== undefined) updateData.templateKey = templateKey;
     if (musicKey !== undefined) updateData.musicKey = musicKey || null;
-    if (status !== undefined) updateData.status = status;
+    if (normalizedStatus !== undefined && allowedStatuses.has(normalizedStatus)) {
+      updateData.status = normalizedStatus;
+    }
 
     const invitation = await prisma.invitation.update({
       where: { slug },

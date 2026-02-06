@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setStoredSession, verifyMagicLink } from '@/src/lib/auth';
 
-export default function MagicLinkVerifyPage() {
+function VerifyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -36,5 +36,13 @@ export default function MagicLinkVerifyPage() {
     <div style={{ padding: '2rem', textAlign: 'center' }}>
       <p>{message}</p>
     </div>
+  );
+}
+
+export default function MagicLinkVerifyPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}><p>로그인 처리 중...</p></div>}>
+      <VerifyContent />
+    </Suspense>
   );
 }

@@ -136,14 +136,14 @@ export default function EditorPage() {
     [funeralData]
   );
 
-  const handleSave = async (state: WeddingEditorState) => {
+  const handleSave = async (state: WeddingEditorState): Promise<void> => {
     if (!slug || isDemo) {
       alert('데모에서는 저장되지 않습니다.');
-      return false;
+      return;
     }
     if (!invitation?.isOwner) {
       alert('소유자만 저장할 수 있습니다.');
-      return false;
+      return;
     }
 
     setSaving(true);
@@ -158,18 +158,20 @@ export default function EditorPage() {
         message: buildMessageText(state),
       });
       setInvitation(updated);
-      return true;
     } catch (err) {
       setSaveError('저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
-      return false;
+      throw err;
     } finally {
       setSaving(false);
     }
   };
 
   const handleSaveAndExit = async (state: WeddingEditorState) => {
-    const saved = await handleSave(state);
-    if (!saved) return;
+    try {
+      await handleSave(state);
+    } catch {
+      return;
+    }
 
     if (!hasSession) {
       const email = window.prompt('저장했습니다. 이어서 편집하려면 이메일을 입력해 주세요.');
