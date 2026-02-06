@@ -1,5 +1,15 @@
 'use client';
 
+/**
+ * ❗ CHANGE BOUNDARY
+ * - SIMPLE MVP 수정 금지
+ * - Runtime Contract 없는 변경 = BUG
+ * - API/Email/Payment 연결 금지
+ * - 문서 → 코드 → QA 순서 필수
+ * @see docs/INVITATION_RUNTIME_CONTRACT.md
+ * @see docs/CHANGE_GOVERNANCE.md
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import styles from './WeddingClassicInvitation.module.css';
 import type { WeddingClassicData } from './data';
@@ -9,6 +19,15 @@ import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import DisabledPlaceholder from './DisabledPlaceholder';
 
 const RSVP_STORAGE_PREFIX = 'invitation_rsvp_';
+
+/** RSVP UI 상태. Contract §3. 문자열 리터럴 직접 비교 금지. */
+export const RSVP_UI_STATE = {
+  NONE: 'NONE',
+  FORM: 'FORM',
+  SUBMITTED: 'SUBMITTED',
+  READ_ONLY: 'READ_ONLY',
+} as const;
+export type RsvpUiState = (typeof RSVP_UI_STATE)[keyof typeof RSVP_UI_STATE];
 
 type RsvpStored = { submitted: true; attending: boolean; name?: string };
 
@@ -46,11 +65,21 @@ function getStoredRsvp(slug: string): RsvpStored | null {
   try {
     const raw = localStorage.getItem(`${RSVP_STORAGE_PREFIX}${slug}`);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as RsvpStored;
-    return parsed?.submitted === true ? parsed : null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === 'object' && (parsed as RsvpStored).submitted === true) {
+      const p = parsed as RsvpStored;
+      return typeof p.attending === 'boolean' ? p : null;
+    }
+    return null;
   } catch {
     return null;
   }
+}
+
+/** localStorage 값 → UI 상태. 잘못된 값은 NONE으로 fallback. Contract §3. */
+function getRsvpUiState(stored: RsvpStored | null): RsvpUiState {
+  if (!stored) return RSVP_UI_STATE.NONE;
+  return RSVP_UI_STATE.SUBMITTED;
 }
 
 function setStoredRsvp(slug: string, value: RsvpStored): void {
@@ -72,7 +101,7 @@ export default function WeddingClassicInvitation({
   isShared = false,
 }: WeddingClassicInvitationProps) {
   const { t } = useI18n();
-  const [rsvpSubmitted, setRsvpSubmitted] = useState(false);
+  const [rsvpUiState, setRsvpUiState] = useState<RsvpUiState>(RSVP_UI_STATE.NONE);
   const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
   const [rsvpName, setRsvpName] = useState('');
   const [attendingChoice, setAttendingChoice] = useState<'yes' | 'no'>('yes');
@@ -102,10 +131,14 @@ export default function WeddingClassicInvitation({
 
   const loadRsvpState = useCallback(() => {
     const stored = getStoredRsvp(invitationSlug);
+    const state = getRsvpUiState(stored);
+    setRsvpUiState(state);
     if (stored) {
-      setRsvpSubmitted(true);
       setRsvpAttending(stored.attending);
       setRsvpName(stored.name ?? '');
+    } else {
+      setRsvpAttending(null);
+      setRsvpName('');
     }
   }, [invitationSlug]);
 
@@ -115,7 +148,7 @@ export default function WeddingClassicInvitation({
 
   const handleRsvpSubmit = () => {
     const attending = attendingChoice === 'yes';
-    setRsvpSubmitted(true);
+    setRsvpUiState(RSVP_UI_STATE.SUBMITTED);
     setRsvpAttending(attending);
     setStoredRsvp(invitationSlug, { submitted: true, attending, name: rsvpName || undefined });
   };
@@ -228,7 +261,13 @@ export default function WeddingClassicInvitation({
 
       {hasSpecialNotes ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
-      {/* Future Extension (inactive) – 위치만 예약 */}
+      {/*
+       * FUTURE EXTENSION (INACTIVE)
+       * - Position reserved
+       * - Do not enable without Contract update
+       * @see docs/INVITATION_RUNTIME_CONTRACT.md §6
+       * @see docs/CHANGE_GOVERNANCE.md
+       */}
       <DisabledPlaceholder label="AccommodationInfo" className={styles.extensionPlaceholder} />
       <DisabledPlaceholder label="TransportationDetail" className={styles.extensionPlaceholder} />
       <DisabledPlaceholder label="ContactHelpDesk" className={styles.extensionPlaceholder} />
@@ -241,7 +280,7 @@ export default function WeddingClassicInvitation({
           <h2>{r.rsvpTitle ?? ''}</h2>
           <p>{r.rsvpDescription ?? ''}</p>
 
-          {rsvpSubmitted ? (
+          {(rsvpUiState === RSVP_UI_STATE.SUBMITTED || rsvpUiState === RSVP_UI_STATE.READ_ONLY) ? (
             <>
               <div className={styles.rsvpAlreadyResponded} role="status">
                 <span aria-hidden>🔒</span>

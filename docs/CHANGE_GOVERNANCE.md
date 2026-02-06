@@ -1,6 +1,10 @@
 # Change Governance
 
+**Status: ACTIVE**
+
 앞으로 실수로 깨지는 것을 방지하기 위한 **변경 가능/불가/절차** 단일 기준.
+
+**참조 문서**: [INVITATION_RUNTIME_CONTRACT.md](INVITATION_RUNTIME_CONTRACT.md) · [INVITATION_QA_SNAPSHOT.md](INVITATION_QA_SNAPSHOT.md) · [05_UX_TRUST_GUIDE.md](05_UX_TRUST_GUIDE.md) · [INVITATION_BACKEND_STUB.md](INVITATION_BACKEND_STUB.md)
 
 ---
 

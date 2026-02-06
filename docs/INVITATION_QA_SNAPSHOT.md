@@ -1,6 +1,10 @@
 # Invitation FULL Template – QA Snapshot 기준
 
-“이 상태가 정상이다”라는 **시각적·동작 기준선**을 고정한다.  
+**Status: ACTIVE**
+
+“이 상태가 정상이다”라는 **시각적·동작 기준선**을 고정한다.
+
+**참조 문서**: [INVITATION_RUNTIME_CONTRACT.md](INVITATION_RUNTIME_CONTRACT.md) (§6 Future Extension, §3 RSVP State Rule) · [05_UX_TRUST_GUIDE.md](05_UX_TRUST_GUIDE.md) · [INVITATION_BACKEND_STUB.md](INVITATION_BACKEND_STUB.md) · [CHANGE_GOVERNANCE.md](CHANGE_GOVERNANCE.md)  
 디자이너/개발자가 문서만 보고도 판단할 수 있도록 체크리스트와 테스트 케이스를 정리한다.
 
 ---

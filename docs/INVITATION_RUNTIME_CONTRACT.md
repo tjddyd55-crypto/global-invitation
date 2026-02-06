@@ -1,7 +1,11 @@
 # Invitation Runtime Contract (Frontend SSOT)
 
+**Status: ACTIVE**
+
 초대장 FULL 템플릿의 **Runtime Data Contract** 단일 기준.  
 프론트엔드가 읽는 데이터 구조·누락 시 동작·RSVP 규칙을 정의한다.
+
+**참조 문서**: [CHANGE_GOVERNANCE.md](CHANGE_GOVERNANCE.md) · [INVITATION_QA_SNAPSHOT.md](INVITATION_QA_SNAPSHOT.md) · [05_UX_TRUST_GUIDE.md](05_UX_TRUST_GUIDE.md) · [INVITATION_BACKEND_STUB.md](INVITATION_BACKEND_STUB.md)
 
 ---
 
@@ -50,6 +54,27 @@ interface InvitationRuntimeData {
 - **specialNotes**: 선택. 안내 문구 배열.
 - **rsvp.enabled**: RSVP 섹션 노출 여부. **rsvp.deadline**은 선택.
 
+**Contract에 있으나 FULL v1.x 미사용**: `program[]`(일정 배열). FULL에서는 캘린더 블록용 `weddingDate`/`calendarTitle`만 사용. `program` 배열은 Future Extension 또는 다른 템플릿용.
+
+---
+
+## 1b. FULL Wedding Classic 사용 필드 (코드·문서 1:1)
+
+WeddingClassicInvitation.tsx는 **아래 필드만** 접근한다. 이 외 접근 금지.
+
+| 구간 | 필드 | Fallback |
+|------|------|---------|
+| Hero | heroImage, heroTitle, heroOverlayText | 빈 문자열 / 생략 |
+| eventSummary | weddingDateTime, venueName | 없으면 섹션 숨김 |
+| location | address, venueName, mapImage, transportInfo[], parkingInfo[] | 없으면 섹션/항목 생략 |
+| program(캘린더) | weddingDate, calendarTitle | 없으면 섹션 미노출 |
+| gallery | galleryImages[] | 빈 배열 → EmptyState |
+| specialNotes | introText[], introQuote | 빈 배열/없음 → 섹션 제거 |
+| rsvp | rsvp.enabled, rsvpTitle, rsvpDescription, rsvpButton | enabled false → RSVP 비노출 |
+| 연락처 | coupleNames, groom{}, bride{} (image, name, phone, parentsText) | 없으면 섹션 생략 |
+| 계좌 | accountsTitle, accounts[] (role, bank, number, holder) | 빈 배열 → 섹션 생략 |
+| 방명록 | messagesTitle, messages[] (name, content, createdAt) | 빈 배열 → 섹션 생략 |
+
 ---
 
 ## 2. 데이터 누락 시 Graceful Fallback
@@ -73,9 +98,12 @@ interface InvitationRuntimeData {
 
 - **저장 위치**: `localStorage` only.  
   **키**: `invitation_rsvp_${slug}`
-- **상태**:
-  - **NONE** → 폼 표시(사용자 입력 가능)
-  - **SUBMITTED** → 읽기 전용(이미 응답함 문구 + Thank You)
+- **UI 상태 (enum-like, 문자열 리터럴 직접 비교 금지)**:
+  - **NONE** → 저장값 없음/잘못됨. 폼 표시.
+  - **FORM** → NONE과 동일하게 폼 표시(입력 가능).
+  - **SUBMITTED** → 읽기 전용(이미 응답함 문구 + Thank You).
+  - **READ_ONLY** → SUBMITTED와 동일하게 읽기 전용 UI.
+- **로컬 데이터 보호**: localStorage에 잘못된 값(파싱 실패·형식 불일치)이 들어와도 **자동으로 NONE으로 fallback**. 조건 분기에서는 위 상태 상수만 사용한다.
 - **서버 저장**: 없음. **임시 UI 전용 로직**이다.
 - API 연동 전까지 프론트 상태만 유지하며, 추후 POST /api/rsvp/{slug} 등으로 대체 가능하다.
 

@@ -1,6 +1,10 @@
 # Invitation Backend Stub Contract
 
-초대장 관련 **백엔드 API 계약(Stub)** 정의.  
+**Status: STUB**
+
+초대장 관련 **백엔드 API 계약(Stub)** 정의.
+
+**참조 문서**: [INVITATION_RUNTIME_CONTRACT.md](INVITATION_RUNTIME_CONTRACT.md) · [CHANGE_GOVERNANCE.md](CHANGE_GOVERNANCE.md) · [05_UX_TRUST_GUIDE.md](05_UX_TRUST_GUIDE.md) · [INVITATION_QA_SNAPSHOT.md](INVITATION_QA_SNAPSHOT.md)  
 현재 MVP 단계에서는 **실제 구현 없이 계약만 명시**하며, 호출은 금지한다.
 
 ---

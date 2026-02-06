@@ -1,6 +1,10 @@
 # Global Invitation – UX, Trust & Operation Guide (SSOT)
 
-**단일 기준 문서(Single Source of Truth).**  
+**Status: ACTIVE**
+
+**단일 기준 문서(Single Source of Truth).**
+
+**참조 문서**: [INVITATION_RUNTIME_CONTRACT.md](INVITATION_RUNTIME_CONTRACT.md) · [INVITATION_QA_SNAPSHOT.md](INVITATION_QA_SNAPSHOT.md) · [INVITATION_BACKEND_STUB.md](INVITATION_BACKEND_STUB.md) · [CHANGE_GOVERNANCE.md](CHANGE_GOVERNANCE.md)  
 FULL Wedding Classic 초대장(v1.x) 기준 사용자 흐름, i18n 규칙, 템플릿 확장 설계, 운영 규칙을 정의한다.  
 기능 확장·결제·백엔드 연동은 하지 않으며, 기존 블록 구조를 유지한다.
 

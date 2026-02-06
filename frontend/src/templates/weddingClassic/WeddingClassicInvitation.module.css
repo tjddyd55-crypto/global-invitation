@@ -366,7 +366,10 @@
   cursor: pointer;
 }
 
-/* Future Extension (inactive) – 위치만 예약, 현재 동작 영향 0 */
+/*
+ * Future Extension (inactive) – 위치만 예약, 현재 동작 영향 0.
+ * visibility/display 변경 시 Contract §6 & CHANGE_GOVERNANCE.md 선행 필요.
+ */
 .extensionPlaceholder {
   display: none;
   margin: 0;
