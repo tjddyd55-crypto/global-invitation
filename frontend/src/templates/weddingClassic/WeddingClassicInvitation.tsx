@@ -6,11 +6,13 @@ import type { WeddingClassicData } from './data';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
+import DisabledPlaceholder from './DisabledPlaceholder';
 
 const RSVP_STORAGE_PREFIX = 'invitation_rsvp_';
 
 type RsvpStored = { submitted: true; attending: boolean; name?: string };
 
+/** Runtime Contract: 단일 진입점. FULL 템플릿은 이 데이터만 읽고, 누락 시 가드로 섹션 생략. */
 type WeddingClassicInvitationProps = {
   data: WeddingClassicData;
   invitationSlug?: string;
@@ -21,6 +23,10 @@ type WeddingClassicInvitationProps = {
   onShare?: () => void;
   isShared?: boolean;
 };
+
+function safeArray<T>(v: T[] | undefined | null): T[] {
+  return Array.isArray(v) ? v : [];
+}
 
 function buildCalendarCells(targetDate: Date): (number | null)[] {
   const year = targetDate.getFullYear();
@@ -71,6 +77,16 @@ export default function WeddingClassicInvitation({
   const [rsvpName, setRsvpName] = useState('');
   const [attendingChoice, setAttendingChoice] = useState<'yes' | 'no'>('yes');
 
+  const r = data;
+  const hasEventSummary = Boolean(r.weddingDateTime ?? r.venueName);
+  const hasLocation = Boolean(r.address ?? r.venueName);
+  const hasProgram = Boolean(r.weddingDate);
+  const galleryImages = safeArray(r.galleryImages);
+  const introText = safeArray(r.introText);
+  const hasSpecialNotes = introText.length > 0 || Boolean(r.introQuote);
+  const rsvpEnabled = showRsvp && (r.rsvp?.enabled !== false);
+  const accounts = safeArray(r.accounts);
+  const messages = safeArray(r.messages);
   const weekdays = [
     t(I18N_KEYS.weddingClassic.weekdaySun),
     t(I18N_KEYS.weddingClassic.weekdayMon),
@@ -80,8 +96,9 @@ export default function WeddingClassicInvitation({
     t(I18N_KEYS.weddingClassic.weekdayFri),
     t(I18N_KEYS.weddingClassic.weekdaySat),
   ];
-  const calendarCells = buildCalendarCells(data.weddingDate);
-  const highlightDay = data.weddingDate.getDate();
+  const weddingDate = r.weddingDate ?? new Date(0);
+  const calendarCells = buildCalendarCells(weddingDate);
+  const highlightDay = weddingDate.getDate();
 
   const loadRsvpState = useCallback(() => {
     const stored = getStoredRsvp(invitationSlug);
@@ -115,94 +132,114 @@ export default function WeddingClassicInvitation({
         </button>
       )}
 
-      {/* 1. Invitation Hero – 날짜 중복 제거, 타이틀·오버레이만 */}
+      {/* 1. Hero – Contract: title fallback, 누락 시 빈 문자열 허용 */}
       <section className={styles.hero}>
-        <img className={styles.heroImage} src={data.heroImage} alt={t(I18N_KEYS.weddingClassic.heroImageAlt)} />
+        <img className={styles.heroImage} src={r.heroImage ?? ''} alt={t(I18N_KEYS.weddingClassic.heroImageAlt)} />
         <div className={styles.heroOverlay}>
-          <div className={styles.heroTitle}>{data.heroTitle}</div>
-          {data.heroOverlayText && <div className={styles.heroOverlayText}>{data.heroOverlayText}</div>}
+          <div className={styles.heroTitle}>{r.heroTitle ?? ''}</div>
+          {r.heroOverlayText ? <div className={styles.heroOverlayText}>{r.heroOverlayText}</div> : null}
         </div>
       </section>
 
-      {/* 2. 핵심 일정 요약 (Single Source: Date / Time / Venue) */}
-      <section className={`${styles.section} ${styles.scheduleHighlight}`}>
-        <h2 className={styles.calendarTitle}>{t(I18N_KEYS.weddingClassic.scheduleSummaryTitle)}</h2>
-        <div className={styles.scheduleDateTime}>{data.weddingDateTime}</div>
-        <div className={styles.scheduleVenue}>{data.venueName}</div>
-      </section>
+      {/* 2. eventSummary – 없으면 섹션 전체 숨김 */}
+      {hasEventSummary ? (
+        <section className={`${styles.section} ${styles.scheduleHighlight}`}>
+          <h2 className={styles.calendarTitle}>{t(I18N_KEYS.weddingClassic.scheduleSummaryTitle)}</h2>
+          <div className={styles.scheduleDateTime}>{r.weddingDateTime ?? ''}</div>
+          <div className={styles.scheduleVenue}>{r.venueName ?? ''}</div>
+        </section>
+      ) : null}
 
-      <hr className={styles.sectionBreak} aria-hidden />
+      {hasEventSummary ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
-      {/* 3. Location 요약 */}
-      <section className={styles.section}>
-        <LocationMapSection
-          title={data.venueName}
-          address={data.address}
-          mapImage={data.mapImage}
-          mapImageAlt={t(I18N_KEYS.weddingClassic.mapAlt)}
-          navLabels={{
-            tmap: t(I18N_KEYS.weddingClassic.navTmap),
-            kakao: t(I18N_KEYS.weddingClassic.navKakao),
-            naver: t(I18N_KEYS.weddingClassic.navNaver),
-          }}
-          transportTitle={t(I18N_KEYS.weddingClassic.transportTitle)}
-          transportInfo={data.transportInfo}
-          parkingTitle={t(I18N_KEYS.weddingClassic.parkingTitle)}
-          parkingInfo={data.parkingInfo}
-        />
-      </section>
+      {/* 3. Location – address/venue 없으면 섹션 생략 */}
+      {hasLocation ? (
+        <section className={styles.section}>
+          <LocationMapSection
+            title={r.venueName ?? ''}
+            address={r.address ?? ''}
+            mapImage={r.mapImage}
+            mapImageAlt={t(I18N_KEYS.weddingClassic.mapAlt)}
+            navLabels={{
+              tmap: t(I18N_KEYS.weddingClassic.navTmap),
+              kakao: t(I18N_KEYS.weddingClassic.navKakao),
+              naver: t(I18N_KEYS.weddingClassic.navNaver),
+            }}
+            transportTitle={t(I18N_KEYS.weddingClassic.transportTitle)}
+            transportInfo={safeArray(r.transportInfo)}
+            parkingTitle={t(I18N_KEYS.weddingClassic.parkingTitle)}
+            parkingInfo={safeArray(r.parkingInfo)}
+          />
+        </section>
+      ) : null}
 
-      {/* 4. Program / Schedule (캘린더) */}
-      <section className={styles.section}>
-        <div className={styles.calendarTitle}>{data.calendarTitle}</div>
-        <div className={styles.calendarGrid}>
-          {weekdays.map((day) => (
-            <div key={day} className={`${styles.calendarCell} ${styles.calendarHeader}`}>
-              {day}
-            </div>
-          ))}
-          {calendarCells.map((day, index) => (
-            <div
-              key={`${day ?? 'empty'}-${index}`}
-              className={`${styles.calendarCell} ${day === highlightDay ? styles.calendarHighlight : ''}`}
-            >
-              {day ?? ''}
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* 4. Program – 없으면 섹션 미노출 */}
+      {hasProgram ? (
+        <section className={styles.section}>
+          <div className={styles.calendarTitle}>{r.calendarTitle ?? ''}</div>
+          <div className={styles.calendarGrid}>
+            {weekdays.map((day) => (
+              <div key={day} className={`${styles.calendarCell} ${styles.calendarHeader}`}>
+                {day}
+              </div>
+            ))}
+            {calendarCells.map((day, index) => (
+              <div
+                key={`${day ?? 'empty'}-${index}`}
+                className={`${styles.calendarCell} ${day === highlightDay ? styles.calendarHighlight : ''}`}
+              >
+                {day ?? ''}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-      <hr className={styles.sectionBreak} aria-hidden />
+      {hasProgram ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
-      {/* 5. Gallery (optional) */}
+      {/* 5. Gallery – empty면 EmptyState만 노출 */}
       <section className={styles.section}>
         <h2>{t(I18N_KEYS.weddingClassic.galleryTitle)}</h2>
-        <div className={styles.galleryGrid}>
-          {data.galleryImages.map((image) => (
-            <img key={image} className={styles.galleryImage} src={image} alt={t(I18N_KEYS.weddingClassic.galleryImageAlt)} />
-          ))}
-        </div>
+        {galleryImages.length > 0 ? (
+          <div className={styles.galleryGrid}>
+            {galleryImages.map((image) => (
+              <img key={image} className={styles.galleryImage} src={image} alt={t(I18N_KEYS.weddingClassic.galleryImageAlt)} />
+            ))}
+          </div>
+        ) : (
+          <div className={styles.galleryEmpty} aria-label="No images">
+            {t(I18N_KEYS.weddingClassic.galleryImageAlt)}
+          </div>
+        )}
       </section>
 
-      {/* 6. Special Notes (인사말·부가 안내) */}
-      <section className={styles.section}>
-        <h2>{t(I18N_KEYS.weddingClassic.specialNotesTitle)}</h2>
-        {data.introQuote && <p className={styles.introQuote}>{data.introQuote}</p>}
-        {data.introText.length > 0 &&
-          data.introText.map((text, index) => (
+      {/* 6. Special Notes – undefined/빈 배열이면 섹션 제거 */}
+      {hasSpecialNotes ? (
+        <section className={styles.section}>
+          <h2>{t(I18N_KEYS.weddingClassic.specialNotesTitle)}</h2>
+          {r.introQuote ? <p className={styles.introQuote}>{r.introQuote}</p> : null}
+          {introText.map((text, index) => (
             <p key={`${text}-${index}`} className={styles.introText}>
               {text}
             </p>
           ))}
-      </section>
+        </section>
+      ) : null}
 
-      <hr className={styles.sectionBreak} aria-hidden />
+      {hasSpecialNotes ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
-      {/* 7. RSVP – 상태에 따라 폼 / Thank You / 읽기 전용 */}
-      {showRsvp && (
+      {/* Future Extension (inactive) – 위치만 예약 */}
+      <DisabledPlaceholder label="AccommodationInfo" className={styles.extensionPlaceholder} />
+      <DisabledPlaceholder label="TransportationDetail" className={styles.extensionPlaceholder} />
+      <DisabledPlaceholder label="ContactHelpDesk" className={styles.extensionPlaceholder} />
+      <DisabledPlaceholder label="HostMessage" className={styles.extensionPlaceholder} />
+      <DisabledPlaceholder label="ThankYouAfterRSVP" className={styles.extensionPlaceholder} />
+
+      {/* 7. RSVP – rsvp.enabled === false면 완전 비활성 */}
+      {rsvpEnabled ? (
         <section className={styles.section}>
-          <h2>{data.rsvpTitle}</h2>
-          <p>{data.rsvpDescription}</p>
+          <h2>{r.rsvpTitle ?? ''}</h2>
+          <p>{r.rsvpDescription ?? ''}</p>
 
           {rsvpSubmitted ? (
             <>
@@ -262,58 +299,66 @@ export default function WeddingClassicInvitation({
                 </div>
               </div>
               <button type="button" className={styles.rsvpButton} onClick={handleRsvpSubmit}>
-                {data.rsvpButton}
+                {r.rsvpButton ?? ''}
               </button>
             </>
           )}
         </section>
-      )}
+      ) : null}
 
-      {/* 연락처·Details (하단 고정) */}
-      <section className={styles.section}>
-        <h1 className={styles.headerTitle}>{data.coupleNames}</h1>
-        <div className={styles.coupleGrid}>
-          <div className={styles.coupleCard}>
-            <img className={styles.coupleImage} src={data.groom.image} alt={data.groom.name} />
-            <div className={styles.coupleName}>{data.groom.name}</div>
-            <div className={styles.contactLine}>📞 {data.groom.phone}</div>
-            <div className={styles.coupleParents}>{data.groom.parentsText}</div>
-          </div>
-          <div className={styles.coupleCard}>
-            <img className={styles.coupleImage} src={data.bride.image} alt={data.bride.name} />
-            <div className={styles.coupleName}>{data.bride.name}</div>
-            <div className={styles.contactLine}>📞 {data.bride.phone}</div>
-            <div className={styles.coupleParents}>{data.bride.parentsText}</div>
-          </div>
-        </div>
-        <button type="button" className={styles.contactButton}>
-          {t(I18N_KEYS.weddingClassic.contactButton)}
-        </button>
-      </section>
-
-      <section className={styles.section}>
-        <h2>{data.accountsTitle}</h2>
-        <div className={styles.accountList}>
-          {data.accounts.map((account) => (
-            <div key={`${account.role}-${account.number}`} className={styles.accountCard}>
-              <div className={styles.accountHeader}>
-                <strong>{account.role}</strong>
-                <button className={styles.copyButton} type="button">
-                  {t(I18N_KEYS.weddingClassic.copyButton)}
-                </button>
-              </div>
-              <div>{account.bank} {account.number}</div>
-              <div>{account.holder}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {showGuestbook && (
+      {/* 연락처·Details (하단) – groom/bride optional */}
+      {(r.coupleNames ?? r.groom ?? r.bride) ? (
         <section className={styles.section}>
-          <h2>{data.messagesTitle}</h2>
+          <h1 className={styles.headerTitle}>{r.coupleNames ?? ''}</h1>
+          <div className={styles.coupleGrid}>
+            {r.groom ? (
+              <div className={styles.coupleCard}>
+                <img className={styles.coupleImage} src={r.groom.image} alt={r.groom.name} />
+                <div className={styles.coupleName}>{r.groom.name}</div>
+                <div className={styles.contactLine}>📞 {r.groom.phone}</div>
+                <div className={styles.coupleParents}>{r.groom.parentsText}</div>
+              </div>
+            ) : null}
+            {r.bride ? (
+              <div className={styles.coupleCard}>
+                <img className={styles.coupleImage} src={r.bride.image} alt={r.bride.name} />
+                <div className={styles.coupleName}>{r.bride.name}</div>
+                <div className={styles.contactLine}>📞 {r.bride.phone}</div>
+                <div className={styles.coupleParents}>{r.bride.parentsText}</div>
+              </div>
+            ) : null}
+          </div>
+          <button type="button" className={styles.contactButton}>
+            {t(I18N_KEYS.weddingClassic.contactButton)}
+          </button>
+        </section>
+      ) : null}
+
+      {accounts.length > 0 ? (
+        <section className={styles.section}>
+          <h2>{r.accountsTitle ?? ''}</h2>
+          <div className={styles.accountList}>
+            {accounts.map((account) => (
+              <div key={`${account.role}-${account.number}`} className={styles.accountCard}>
+                <div className={styles.accountHeader}>
+                  <strong>{account.role}</strong>
+                  <button className={styles.copyButton} type="button">
+                    {t(I18N_KEYS.weddingClassic.copyButton)}
+                  </button>
+                </div>
+                <div>{account.bank} {account.number}</div>
+                <div>{account.holder}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {showGuestbook && messages.length > 0 ? (
+        <section className={styles.section}>
+          <h2>{r.messagesTitle ?? ''}</h2>
           <div className={styles.messageList}>
-            {data.messages.map((message) => (
+            {messages.map((message) => (
               <div key={`${message.name}-${message.createdAt}`} className={styles.messageCard}>
                 <div className={styles.messageMeta}>
                   {message.name} · {message.createdAt}
@@ -323,7 +368,7 @@ export default function WeddingClassicInvitation({
             ))}
           </div>
         </section>
-      )}
+      ) : null}
 
       {onShare && (
         <section className={styles.section}>

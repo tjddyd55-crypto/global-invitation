@@ -177,6 +177,13 @@
   border-radius: 8px;
 }
 
+.galleryEmpty {
+  padding: 2rem;
+  text-align: center;
+  color: #888;
+  font-size: 0.95rem;
+}
+
 .locationBlock {
   margin-bottom: 1.5rem;
 }
@@ -357,4 +364,11 @@
   color: #fff;
   font-size: 1rem;
   cursor: pointer;
+}
+
+/* Future Extension (inactive) – 위치만 예약, 현재 동작 영향 0 */
+.extensionPlaceholder {
+  display: none;
+  margin: 0;
+  padding: 0;
 }

@@ -41,6 +41,7 @@ export type WeddingClassicData = {
   mapImage: string;
   transportInfo: string[];
   parkingInfo: string[];
+  rsvp?: { enabled?: boolean };
   rsvpTitle: string;
   rsvpDescription: string;
   rsvpButton: string;
@@ -195,6 +196,7 @@ export function buildWeddingClassicData(
     mapImage: MAP_IMAGE,
     transportInfo: ['신도림역 1번 출구 앞'],
     parkingInfo: ['웨딩고객 주차 1시간 30분 무료'],
+    rsvp: { enabled: true },
     rsvpTitle: defaultLabels.rsvpTitle,
     rsvpDescription: defaultLabels.rsvpDescription,
     rsvpButton: defaultLabels.rsvpButton,
