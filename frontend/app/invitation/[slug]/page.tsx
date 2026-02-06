@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getInvitation } from '@/src/lib/api';
+import { getInvitation, updateInvitation } from '@/src/lib/api';
 import type { Invitation } from '@/src/lib/api';
 import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
@@ -28,6 +28,7 @@ import EditorBackButton from '@/app/_components/EditorBackButton';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import PaymentButton from '@/src/components/PaymentButton';
 import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
+import { ensureGuestToken, getStoredSession } from '@/src/lib/auth';
 
 export default function InvitationPage() {
   const params = useParams();
@@ -44,9 +45,17 @@ export default function InvitationPage() {
   const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [showPlayButton, setShowPlayButton] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const viewLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
+  const isDemo = isWeddingClassicDemoSlug(slug) || isFuneralClassicDemoSlug(slug);
+
+  useEffect(() => {
+    ensureGuestToken();
+    setHasSession(Boolean(getStoredSession()));
+  }, []);
 
   useEffect(() => {
     if (!slug) {
@@ -152,9 +161,19 @@ export default function InvitationPage() {
 
   const handleShareAction = async (templateType: ShareTemplateType, path: string) => {
     if (isSharing) return;
-    if (invitation && !canAccessPaidAction({ product: 'invitation', isPaid: invitation.isPaid, canShare: invitation.canShare })) {
-      notifyPaymentRequired(t);
-      return;
+    if (invitation && !isDemo) {
+      if (!invitation.isOwner) {
+        alert('소유자만 공유할 수 있습니다.');
+        return;
+      }
+      if (!hasSession) {
+        alert('공유하려면 로그인이 필요합니다.');
+        return;
+      }
+      if (!canAccessPaidAction({ product: 'invitation', isPaid: invitation.isPaid, canShare: invitation.canShare })) {
+        notifyPaymentRequired(t);
+        return;
+      }
     }
 
     setShareFallbackUrl(null);
@@ -190,6 +209,28 @@ export default function InvitationPage() {
         alert(t(I18N_KEYS.notice.audioPlayFailed));
       });
       setShowPlayButton(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!invitation) return;
+    if (!invitation.isOwner) {
+      alert('소유자만 배포할 수 있습니다.');
+      return;
+    }
+    if (!hasSession) {
+      alert('배포하려면 로그인이 필요합니다.');
+      return;
+    }
+    setPublishing(true);
+    try {
+      const updated = await updateInvitation(invitation.slug, { status: 'published' });
+      setInvitation(updated);
+      alert('배포가 완료되었습니다.');
+    } catch {
+      alert('배포에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -243,6 +284,7 @@ export default function InvitationPage() {
         <EditorBackButton fallbackUrl={`/editor/${slug}`} />
         <WeddingClassicInvitation
           data={weddingClassicData}
+          invitationSlug={slug}
           showPlayButton={showPlayButton}
           onPlayMusic={handlePlayMusic}
           onShare={() => handleShareAction('wedding', `/invitation/${slug}`)}
@@ -359,7 +401,27 @@ export default function InvitationPage() {
           >
             {shared ? t(I18N_KEYS.common.shared) : t(I18N_KEYS.common.share)}
           </button>
-          {!invitation.canShare && (
+          {invitation.isOwner && hasSession && invitation.status !== 'published' && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={publishing}
+                style={{
+                  padding: '0.6rem 1.2rem',
+                  fontSize: '0.95rem',
+                  backgroundColor: '#2f6fed',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                }}
+              >
+                {publishing ? '배포 중...' : '배포하기'}
+              </button>
+            </div>
+          )}
+          {!invitation.canShare && invitation.isOwner && (
             <div style={{ marginTop: '0.75rem' }}>
               <PaymentButton product="invitation" />
             </div>

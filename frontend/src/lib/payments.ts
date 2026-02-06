@@ -1,6 +1,7 @@
 'use client';
 
 import { I18N_KEYS } from '@/src/i18n';
+import { getSessionToken } from '@/src/lib/auth';
 
 export type PaymentProduct = 'invitation' | 'simple_message';
 
@@ -39,5 +40,9 @@ export function startCheckout(product: PaymentProduct, t: (key: string) => strin
   // - POST /api/webhooks/lemonsqueezy
   // - 서명 검증 → 주문/상품 매핑 → isPaid/canShare 갱신
   void PRODUCT_PRICE_MAP[product];
+  if (!getSessionToken()) {
+    alert('결제를 진행하려면 로그인이 필요합니다.');
+    return;
+  }
   notifyPaymentPreparing(t);
 }

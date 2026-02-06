@@ -20,6 +20,7 @@ import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import PaymentButton from '@/src/components/PaymentButton';
 import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
+import { getStoredSession } from '@/src/lib/auth';
 
 function formatIcsDate(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -60,8 +61,14 @@ export default function MessageCardPage() {
   const [shared, setShared] = useState(false);
   const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
   const viewLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/message/${slug}`);
+  const isDemo = isMessageSimpleDemoSlug(slug) || isMessageCardDemoSlug(slug);
+
+  useEffect(() => {
+    setHasSession(Boolean(getStoredSession()));
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -104,6 +111,10 @@ export default function MessageCardPage() {
     return {
       onShare: async () => {
         if (isSharing) return;
+        if (!isDemo && !hasSession) {
+          alert('공유하려면 로그인이 필요합니다.');
+          return;
+        }
         if (!canAccessPaidAction({ product: 'simple_message' })) {
           notifyPaymentRequired(t);
           return;
@@ -155,7 +166,7 @@ export default function MessageCardPage() {
         alert(t(I18N_KEYS.notice.kakaoShareUnavailable));
       },
     };
-  }, [data, isSharing, language, markShared, pageUrl, slug, t]);
+  }, [data, hasSession, isDemo, isSharing, language, markShared, pageUrl, slug, t]);
 
   const simpleActionHandlers = useMemo(() => {
     if (!simpleData) return null;
@@ -169,6 +180,10 @@ export default function MessageCardPage() {
     return {
       onShare: async () => {
         if (isSharing) return;
+        if (!isDemo && !hasSession) {
+          alert('공유하려면 로그인이 필요합니다.');
+          return;
+        }
         if (!canAccessPaidAction({ product: 'simple_message' })) {
           notifyPaymentRequired(t);
           return;
@@ -221,7 +236,7 @@ export default function MessageCardPage() {
         URL.revokeObjectURL(url);
       },
     };
-  }, [isSharing, language, markShared, pageUrl, simpleData, slug, t]);
+  }, [hasSession, isDemo, isSharing, language, markShared, pageUrl, simpleData, slug, t]);
 
   if (!data && !simpleData) {
     return (

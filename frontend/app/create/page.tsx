@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createInvitation } from '@/src/lib/api';
+import { createInvitation, listGuestInvitations } from '@/src/lib/api';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { TEMPLATES, type Template } from '@/src/constants/templates';
 import TemplatePreviewModal from '@/src/components/TemplatePreviewModal';
 import { getTemplateName, getTemplateDescription, getTagName } from '@/src/utils/templateI18n';
 import { I18N_KEYS, type I18nKey } from '@/src/i18n';
+import { ensureGuestToken, getLastDraftSlug } from '@/src/lib/auth';
 
 type SortOption = 'recommended' | 'newest' | 'price_low';
 
@@ -20,6 +21,24 @@ export default function CreatePage() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<I18nKey | null>(null);
+  const [resumeSlug, setResumeSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    const guestToken = ensureGuestToken();
+    const storedSlug = getLastDraftSlug();
+    if (storedSlug) {
+      setResumeSlug(storedSlug);
+      return;
+    }
+    listGuestInvitations(guestToken)
+      .then((invitations) => {
+        const latest = invitations[0]?.slug;
+        if (latest) setResumeSlug(latest);
+      })
+      .catch(() => {
+        // ignore resume failures
+      });
+  }, []);
 
   // 모든 태그 수집
   const allTags = useMemo(() => {
@@ -134,7 +153,8 @@ export default function CreatePage() {
     setError(null);
 
     try {
-      const response = await createInvitation(selectedTemplate.key);
+      const guestToken = ensureGuestToken();
+      const response = await createInvitation(selectedTemplate.key, guestToken);
       const slug = typeof response?.slug === 'string' ? response.slug.trim() : '';
       if (!slug) {
         setError(I18N_KEYS.notice.createFailed);
@@ -158,6 +178,44 @@ export default function CreatePage() {
   return (
     <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
       <h1 style={{ marginBottom: '2rem', fontSize: '2rem' }}>{t('create')}</h1>
+
+      {resumeSlug && (
+        <div
+          style={{
+            marginBottom: '1.5rem',
+            padding: '1rem',
+            border: '1px solid #e3e3e3',
+            borderRadius: '8px',
+            backgroundColor: '#f8f9fa',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+          }}
+        >
+          <div>
+            <strong style={{ display: 'block', marginBottom: '0.25rem' }}>이어서 제작하기</strong>
+            <span style={{ fontSize: '0.9rem', color: '#666' }}>
+              최근 저장된 초대장을 이어서 편집할 수 있습니다.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push(`/editor/${resumeSlug}`)}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#2f6fed',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            이어서 편집
+          </button>
+        </div>
+      )}
 
       {error && (
         <div style={{ color: 'red', marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#fee' }}>

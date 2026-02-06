@@ -33,6 +33,14 @@
 - `message.*`
 - `relationship.*`
 
+## Postgres UUID 확장 확인
+- Prisma schema에서 `gen_random_uuid()`를 기본키 생성 함수로 사용하므로, 운영 DB에 `pgcrypto` 확장이 설치되어 있어야 한다.
+- 배포 전에 다음 SQL을 실행해 기능을 검증한다:
+  ```
+  SELECT gen_random_uuid();
+  ```
+- 실행 시 `function gen_random_uuid() does not exist` 에러가 발생하면, `pgcrypto` 확장을 설치하거나 DBA에 요청해야 한다.
+
 ## 새 템플릿 추가 체크리스트
 - 템플릿 데이터/프리뷰 구성 추가
 - 공유 문구용 `share.*` i18n 키 추가

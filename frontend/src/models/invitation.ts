@@ -13,6 +13,7 @@ export interface Invitation {
   isPaid: boolean;
   canShare: boolean;
   paidAt?: string | null;
+  isOwner?: boolean;
   createdAt: string;
   updatedAt: string;
 }

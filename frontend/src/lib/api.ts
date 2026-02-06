@@ -1,4 +1,5 @@
 import type { Invitation } from '@/src/models/invitation';
+import { buildAuthHeaders, getGuestToken } from '@/src/lib/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -19,15 +20,28 @@ export interface CreateInvitationResponse {
   createdAt: string;
 }
 
+export interface InvitationSummary {
+  id: string;
+  slug: string;
+  title: string | null;
+  templateKey: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Create invitation
-export async function createInvitation(templateKey?: string): Promise<CreateInvitationResponse> {
+export async function createInvitation(templateKey?: string, guestToken?: string): Promise<CreateInvitationResponse> {
   try {
     const response = await fetch(`${getApiBaseUrl()}/api/invitations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...buildAuthHeaders(),
       },
-      body: templateKey ? JSON.stringify({ templateKey }) : undefined,
+      body: templateKey
+        ? JSON.stringify({ templateKey, guestToken: guestToken || getGuestToken() })
+        : JSON.stringify({ guestToken: guestToken || getGuestToken() }),
     });
 
     if (!response.ok) {
@@ -46,7 +60,9 @@ export async function createInvitation(templateKey?: string): Promise<CreateInvi
 
 // Get invitation by slug
 export async function getInvitation(slug: string): Promise<Invitation> {
-  const response = await fetch(`${getApiBaseUrl()}/api/invitations/${slug}`);
+  const response = await fetch(`${getApiBaseUrl()}/api/invitations/${slug}`, {
+    headers: buildAuthHeaders(),
+  });
 
   if (response.status === 404) {
     throw new Error('Invitation not found');
@@ -69,12 +85,14 @@ export async function updateInvitation(
     message?: string;
     templateKey?: string;
     musicKey?: string | null;
+    status?: string;
   }
 ): Promise<Invitation> {
   const response = await fetch(`${getApiBaseUrl()}/api/invitations/${slug}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
+      ...buildAuthHeaders(),
     },
     body: JSON.stringify(data),
   });
@@ -87,5 +105,30 @@ export async function updateInvitation(
     throw new Error('Failed to update invitation');
   }
 
+  return response.json();
+}
+
+export async function listMyInvitations(): Promise<InvitationSummary[]> {
+  const response = await fetch(`${getApiBaseUrl()}/api/invitations?owner=me`, {
+    headers: buildAuthHeaders(),
+  });
+
+  if (response.status === 401) {
+    throw new Error('Unauthorized');
+  }
+  if (!response.ok) {
+    throw new Error('Failed to fetch invitations');
+  }
+  return response.json();
+}
+
+export async function listGuestInvitations(guestToken: string): Promise<InvitationSummary[]> {
+  const response = await fetch(
+    `${getApiBaseUrl()}/api/invitations?guestToken=${encodeURIComponent(guestToken)}&status=draft&limit=5`
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch guest invitations');
+  }
   return response.json();
 }

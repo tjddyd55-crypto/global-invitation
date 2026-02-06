@@ -10,42 +10,89 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum OwnerType {
+  GUEST
+  USER
+}
+
+enum InvitationStatus {
+  DRAFT
+  SHARED
+  PUBLISHED
+}
+
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email     String?  @unique
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  invitations Invitation[]
+  invitations    Invitation[]
+  magicLinkTokens MagicLinkToken[]
+  authSessions    AuthSession[]
 
   @@map("users")
 }
 
 model Invitation {
-  id          String    @id @default(uuid()) @db.Uuid
-  userId      String?   @map("user_id") @db.Uuid
-  slug        String    @unique
-  title       String?   // 행사명 또는 제목
-  eventDate   DateTime? @map("event_date") @db.Timestamptz(6)
-  locationText String?  @map("location_text") // 장소 정보
-  message     String?   // 초대장 메시지
-  templateKey String    @default("basic") @map("template_key")
-  musicKey    String?   @map("music_key")
-  countryCode String    @default("GLOBAL") @map("country_code")
-  language    String    @default("en")
-  status      String    @default("draft") // draft | published
-  isPaid      Boolean   @default(false) @map("is_paid")
-  canShare    Boolean   @default(false) @map("can_share")
-  paidAt      DateTime? @map("paid_at") @db.Timestamptz(6)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerType   OwnerType        @default(GUEST) @map("owner_type")
+  ownerId     String           @map("owner_id") // userId(UUID) 또는 guestToken(String)
+  userId      String?          @map("user_id") @db.Uuid
+  guestToken  String?          @map("guest_token")
+  slug        String           @unique
+  title       String?          // 행사명 또는 제목
+  eventDate   DateTime?        @map("event_date") @db.Timestamptz(6)
+  locationText String?         @map("location_text") // 장소 정보
+  message     String?          // 초대장 메시지
+  templateKey String           @default("basic") @map("template_key")
+  musicKey    String?          @map("music_key")
+  countryCode String           @default("GLOBAL") @map("country_code")
+  language    String           @default("en")
+  status      InvitationStatus @default(DRAFT)
+  isPaid      Boolean          @default(false) @map("is_paid")
+  canShare    Boolean          @default(false) @map("can_share")
+  paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  @@index([ownerId])
+  @@index([guestToken])
   @@map("invitations")
 }
 
+model MagicLinkToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token     String   @unique
+  email     String
+  userId    String   @map("user_id") @db.Uuid
+  guestToken String? @map("guest_token")
+  draftSlug String?  @map("draft_slug")
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("magic_link_tokens")
+}
+
+model AuthSession {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token     String   @unique
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_sessions")
+}
+
 model EventLog {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   eventType    String   @map("event_type")
   templateType String   @map("template_type")
   language     String   @map("language")

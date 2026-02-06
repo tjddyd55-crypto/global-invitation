@@ -21,10 +21,9 @@ import {
   isFuneralClassicTemplate,
 } from '@/src/templates/funeralClassic/data';
 import { useI18n } from '@/src/contexts/I18nContext';
-import { I18N_KEYS } from '@/src/i18n';
 import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
-import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
+import { ensureGuestToken, getStoredSession, requestMagicLink, setLastDraftSlug } from '@/src/lib/auth';
 
 type EditorError = {
   title: string;
@@ -50,7 +49,7 @@ export default function EditorPage() {
   const router = useRouter();
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
-  const { language, t } = useI18n();
+  const { language } = useI18n();
   const editorLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
 
@@ -60,9 +59,16 @@ export default function EditorPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [funeralData, setFuneralData] = useState<ReturnType<typeof getFuneralClassicDemoData> | null>(null);
+  const [hasSession, setHasSession] = useState(false);
 
   const isDemo = isWeddingClassicDemoSlug(slug);
   const isFuneralDemo = isFuneralClassicDemoSlug(slug);
+
+  useEffect(() => {
+    ensureGuestToken();
+    const session = getStoredSession();
+    setHasSession(Boolean(session));
+  }, []);
 
   useEffect(() => {
     if (!slug) {
@@ -84,6 +90,7 @@ export default function EditorPage() {
 
     async function loadInvitation() {
       try {
+        ensureGuestToken();
         const data = await getInvitation(slug);
         setInvitation(data);
       } catch (err) {
@@ -99,6 +106,13 @@ export default function EditorPage() {
 
     loadInvitation();
   }, [slug, router, isDemo, isFuneralDemo]);
+
+  useEffect(() => {
+    if (!invitation || hasSession) return;
+    if (invitation.isOwner) {
+      setLastDraftSlug(invitation.slug);
+    }
+  }, [invitation, hasSession]);
 
   useEffect(() => {
     if (editorLoggedRef.current) return;
@@ -125,11 +139,11 @@ export default function EditorPage() {
   const handleSave = async (state: WeddingEditorState) => {
     if (!slug || isDemo) {
       alert('데모에서는 저장되지 않습니다.');
-      return;
+      return false;
     }
-    if (!canAccessPaidAction({ product: 'invitation', isPaid: invitation?.isPaid, canShare: invitation?.canShare })) {
-      notifyPaymentRequired(t);
-      return;
+    if (!invitation?.isOwner) {
+      alert('소유자만 저장할 수 있습니다.');
+      return false;
     }
 
     setSaving(true);
@@ -144,11 +158,37 @@ export default function EditorPage() {
         message: buildMessageText(state),
       });
       setInvitation(updated);
+      return true;
     } catch (err) {
       setSaveError('저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      return false;
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSaveAndExit = async (state: WeddingEditorState) => {
+    const saved = await handleSave(state);
+    if (!saved) return;
+
+    if (!hasSession) {
+      const email = window.prompt('저장했습니다. 이어서 편집하려면 이메일을 입력해 주세요.');
+      const normalized = email?.trim();
+      if (normalized) {
+        try {
+          const response = await requestMagicLink(normalized, slug);
+          if (response.previewLink) {
+            alert(`매직 링크가 발급되었습니다.\n${response.previewLink}`);
+          } else {
+            alert('매직 링크를 이메일로 전송했습니다.');
+          }
+        } catch (err) {
+          alert('매직 링크 전송에 실패했습니다.');
+        }
+      }
+    }
+
+    router.push('/');
   };
 
   const handleFuneralSave = async (_state: FuneralEditorState) => {
@@ -195,6 +235,15 @@ export default function EditorPage() {
     return null;
   }
 
+  if (!isDemo && !isFuneralDemo && !invitation.isOwner) {
+    return (
+      <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
+        <h1>소유자만 편집할 수 있습니다.</h1>
+        <p>이 초대장은 다른 계정의 초대장입니다.</p>
+      </div>
+    );
+  }
+
   if (!isWeddingClassicTemplate(invitation.templateKey)) {
     if (isFuneralClassicTemplate(invitation.templateKey)) {
       return (
@@ -218,6 +267,7 @@ export default function EditorPage() {
       initialState={initialState}
       pageUrl={pageUrl}
       onSave={handleSave}
+      onSaveAndExit={handleSaveAndExit}
       saving={saving}
       isDemo={isDemo}
       saveError={saveError}

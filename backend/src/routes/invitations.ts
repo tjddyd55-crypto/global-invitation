@@ -1,12 +1,97 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma';
 import { generateSlug } from '../utils/slug';
+import { getAuthUser, getGuestToken } from '../lib/auth';
 
 const router = Router();
+
+type InvitationSummary = {
+  id: string;
+  slug: string;
+  title: string | null;
+  templateKey: string;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function resolveGuestTokenFromBody(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim();
+  }
+  return null;
+}
+
+// GET /api/invitations - List invitations (owner or guest)
+router.get('/', async (req, res) => {
+  try {
+    const owner = typeof req.query.owner === 'string' ? req.query.owner : null;
+    const guestToken = typeof req.query.guestToken === 'string' ? req.query.guestToken : null;
+    const status = typeof req.query.status === 'string' ? req.query.status : null;
+    const limit = typeof req.query.limit === 'string' ? Number(req.query.limit) : null;
+
+    if (owner === 'me') {
+      const user = await getAuthUser(req);
+      if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const invitations = await prisma.invitation.findMany({
+        where: {
+          userId: user.id,
+          status: status || undefined,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: limit && !Number.isNaN(limit) ? limit : undefined,
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          templateKey: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return res.status(200).json(invitations as InvitationSummary[]);
+    }
+
+    if (guestToken) {
+      const invitations = await prisma.invitation.findMany({
+        where: {
+          guestToken,
+          status: status || undefined,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: limit && !Number.isNaN(limit) ? limit : undefined,
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          templateKey: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      return res.status(200).json(invitations as InvitationSummary[]);
+    }
+
+    return res.status(400).json({ error: 'Invalid list request' });
+  } catch (error) {
+    console.error('Error listing invitations:', error);
+    res.status(500).json({ error: 'Failed to list invitations' });
+  }
+});
 
 // POST /api/invitations - Create a new invitation
 router.post('/', async (req, res) => {
   try {
+    const user = await getAuthUser(req);
+    const guestToken = resolveGuestTokenFromBody(req.body?.guestToken) || getGuestToken(req);
+
     // Generate unique slug with retry logic
     let slug: string;
     let attempts = 0;
@@ -40,6 +125,8 @@ router.post('/', async (req, res) => {
         templateKey: req.body.templateKey || 'basic',
         countryCode: req.body.countryCode || 'GLOBAL',
         language: req.body.language || 'en',
+        userId: user?.id ?? null,
+        guestToken: user ? null : guestToken,
       },
       select: {
         id: true,
@@ -61,11 +148,15 @@ router.post('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
+    const user = await getAuthUser(req);
+    const guestToken = getGuestToken(req);
 
     const invitation = await prisma.invitation.findUnique({
       where: { slug },
       select: {
         id: true,
+        userId: true,
+        guestToken: true,
         slug: true,
         title: true,
         eventDate: true,
@@ -88,7 +179,16 @@ router.get('/:slug', async (req, res) => {
       return res.status(404).json({ error: 'Invitation not found' });
     }
 
-    res.status(200).json(invitation);
+    const isOwner = invitation.userId
+      ? Boolean(user && user.id === invitation.userId)
+      : Boolean(invitation.guestToken && guestToken && invitation.guestToken === guestToken);
+
+    const { userId, guestToken: storedGuestToken, ...publicFields } = invitation;
+
+    res.status(200).json({
+      ...publicFields,
+      isOwner,
+    });
   } catch (error) {
     console.error('Error fetching invitation:', error);
     res.status(500).json({ error: 'Failed to fetch invitation' });
@@ -99,7 +199,9 @@ router.get('/:slug', async (req, res) => {
 router.put('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    const { title, eventDate, locationText, message, templateKey, musicKey } = req.body;
+    const { title, eventDate, locationText, message, templateKey, musicKey, status } = req.body;
+    const user = await getAuthUser(req);
+    const guestToken = resolveGuestTokenFromBody(req.body?.guestToken) || getGuestToken(req);
 
     // Check if invitation exists
     const existing = await prisma.invitation.findUnique({
@@ -110,6 +212,22 @@ router.put('/:slug', async (req, res) => {
       return res.status(404).json({ error: 'Invitation not found' });
     }
 
+    const isOwner = existing.userId
+      ? Boolean(user && user.id === existing.userId)
+      : Boolean(existing.guestToken && guestToken && existing.guestToken === guestToken);
+
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const allowedStatuses = new Set(['draft', 'published']);
+    if (status !== undefined && !allowedStatuses.has(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    if (status === 'published' && !user) {
+      return res.status(403).json({ error: 'Login required to publish' });
+    }
+
     // Update only allowed fields
     const updateData: {
       title?: string;
@@ -118,6 +236,7 @@ router.put('/:slug', async (req, res) => {
       message?: string | null;
       templateKey?: string;
       musicKey?: string | null;
+      status?: string;
     } = {};
 
     if (title !== undefined) updateData.title = title;
@@ -126,12 +245,15 @@ router.put('/:slug', async (req, res) => {
     if (message !== undefined) updateData.message = message;
     if (templateKey !== undefined) updateData.templateKey = templateKey;
     if (musicKey !== undefined) updateData.musicKey = musicKey || null;
+    if (status !== undefined) updateData.status = status;
 
     const invitation = await prisma.invitation.update({
       where: { slug },
       data: updateData,
       select: {
         id: true,
+        userId: true,
+        guestToken: true,
         slug: true,
         title: true,
         eventDate: true,
@@ -150,7 +272,16 @@ router.put('/:slug', async (req, res) => {
       },
     });
 
-    res.status(200).json(invitation);
+    const updatedIsOwner = invitation.userId
+      ? Boolean(user && user.id === invitation.userId)
+      : Boolean(invitation.guestToken && guestToken && invitation.guestToken === guestToken);
+
+    const { userId, guestToken: storedGuestToken, ...publicFields } = invitation;
+
+    res.status(200).json({
+      ...publicFields,
+      isOwner: updatedIsOwner,
+    });
   } catch (error) {
     console.error('Error updating invitation:', error);
     res.status(500).json({ error: 'Failed to update invitation' });

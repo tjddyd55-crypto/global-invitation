@@ -36,12 +36,21 @@ type WeddingEditorProps = {
   initialState: WeddingEditorState;
   pageUrl: string;
   onSave?: (state: WeddingEditorState) => Promise<void> | void;
+  onSaveAndExit?: (state: WeddingEditorState) => Promise<void> | void;
   saving?: boolean;
   isDemo?: boolean;
   saveError?: string | null;
 };
 
-export default function WeddingEditor({ initialState, pageUrl, onSave, saving, isDemo, saveError }: WeddingEditorProps) {
+export default function WeddingEditor({
+  initialState,
+  pageUrl,
+  onSave,
+  onSaveAndExit,
+  saving,
+  isDemo,
+  saveError,
+}: WeddingEditorProps) {
   const [state, dispatch] = useReducer(weddingEditorReducer, initialState);
   const [currentStep, setCurrentStep] = useState(0);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
@@ -66,6 +75,11 @@ export default function WeddingEditor({ initialState, pageUrl, onSave, saving, i
     await onSave(state);
   };
 
+  const handleSaveAndExit = async () => {
+    if (!onSaveAndExit) return;
+    await onSaveAndExit(state);
+  };
+
   return (
     <div className={styles.editorPage}>
       <header className={styles.editorHeader}>
@@ -83,6 +97,11 @@ export default function WeddingEditor({ initialState, pageUrl, onSave, saving, i
           >
             {saving ? '저장 중...' : isDemo ? '저장(데모)' : '저장'}
           </button>
+          {onSaveAndExit && (
+            <button type="button" className={styles.buttonGhost} onClick={handleSaveAndExit} disabled={saving}>
+              저장/나가기
+            </button>
+          )}
           <button
             type="button"
             className={`${styles.buttonGhost} ${styles.mobileOnly}`}
