@@ -93,6 +93,8 @@ const ko: LocaleDictionary = {
   'marketing.nav.pricing': '가격표',
   'marketing.nav.about': '서비스 소개',
   'marketing.nav.contact': '문의',
+  'marketing.nav.integrity': '무결성 체크',
+  'marketing.nav.internal': 'Internal',
   'marketing.footer.terms': '이용약관',
   'marketing.footer.privacy': '개인정보 처리방침',
   'marketing.footer.contact': '문의',

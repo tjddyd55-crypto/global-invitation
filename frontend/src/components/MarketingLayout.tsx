@@ -23,10 +23,10 @@ export default function MarketingLayout({ children }: MarketingLayoutProps) {
           <Link href="/pricing">{t(I18N_KEYS.marketing.navPricing)}</Link>
           <Link href="/about">{t(I18N_KEYS.marketing.navAbout)}</Link>
           <Link href="/contact">{t(I18N_KEYS.marketing.navContact)}</Link>
-          <Link href="/integrity">무결성 체크</Link>
+          <Link href="/integrity">{t(I18N_KEYS.marketing.navIntegrity)}</Link>
           {isInternalMode && (
             <Link href="/internal/integrity" className={styles.navInternal}>
-              Internal
+              {t(I18N_KEYS.marketing.navInternal)}
             </Link>
           )}
         </nav>

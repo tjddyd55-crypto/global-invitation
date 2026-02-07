@@ -144,6 +144,8 @@ export const I18N_KEYS = {
     navPricing: 'marketing.nav.pricing',
     navAbout: 'marketing.nav.about',
     navContact: 'marketing.nav.contact',
+    navIntegrity: 'marketing.nav.integrity',
+    navInternal: 'marketing.nav.internal',
     footerTerms: 'marketing.footer.terms',
     footerPrivacy: 'marketing.footer.privacy',
     footerContact: 'marketing.footer.contact',

@@ -93,6 +93,8 @@ const en: LocaleDictionary = {
   'marketing.nav.pricing': 'Pricing',
   'marketing.nav.about': 'About',
   'marketing.nav.contact': 'Contact',
+  'marketing.nav.integrity': 'Integrity',
+  'marketing.nav.internal': 'Internal',
   'marketing.footer.terms': 'Terms',
   'marketing.footer.privacy': 'Privacy',
   'marketing.footer.contact': 'Contact',

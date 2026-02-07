@@ -93,6 +93,8 @@ const mn: LocaleDictionary = {
   'marketing.nav.pricing': 'Үнийн хүснэгт',
   'marketing.nav.about': 'Үйлчилгээний танилцуулга',
   'marketing.nav.contact': 'Холбоо барих',
+  'marketing.nav.integrity': 'Integrity',
+  'marketing.nav.internal': 'Internal',
   'marketing.footer.terms': 'Үйлчилгээний нөхцөл',
   'marketing.footer.privacy': 'Нууцлалын бодлого',
   'marketing.footer.contact': 'Холбоо барих',
