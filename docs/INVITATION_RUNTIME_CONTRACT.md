@@ -65,10 +65,10 @@ WeddingClassicInvitation.tsx는 **아래 필드만** 접근한다. 이 외 접�
 | 구간 | 필드 | Fallback |
 |------|------|---------|
 | Hero | heroImage, heroTitle, heroOverlayText | 빈 문자열 / 생략 |
-| eventSummary | weddingDateTime, venueName | 없으면 섹션 숨김 |
-| location | address, venueName, mapImage, transportInfo[], parkingInfo[] | 없으면 섹션/항목 생략 |
+| eventSummary | weddingDateTime, venueName | 없으면 섹션 숨김. **날짜/시간/장소 단일 정본.** |
+| location | address, mapImage, transportInfo[], parkingInfo[] | 없으면 섹션/항목 생략. date/time/venueName 사용 금지(eventSummary만) |
 | program(캘린더) | weddingDate, calendarTitle | 없으면 섹션 미노출 |
-| gallery | galleryImages[] | 빈 배열 → EmptyState |
+| gallery | galleryImages[] | 빈 배열 → 섹션 미표시 |
 | specialNotes | introText[], introQuote | 빈 배열/없음 → 섹션 제거 |
 | rsvp | rsvp.enabled, rsvpTitle, rsvpDescription, rsvpButton | enabled false → RSVP 비노출 |
 | 연락처 | coupleNames, groom{}, bride{} (image, name, phone, parentsText) | 없으면 섹션 생략 |
@@ -98,12 +98,12 @@ WeddingClassicInvitation.tsx는 **아래 필드만** 접근한다. 이 외 접�
 
 - **저장 위치**: `localStorage` only.  
   **키**: `invitation_rsvp_${slug}`
-- **UI 상태 (enum-like, 문자열 리터럴 직접 비교 금지)**:
-  - **NONE** → 저장값 없음/잘못됨. 폼 표시.
-  - **FORM** → NONE과 동일하게 폼 표시(입력 가능).
-  - **SUBMITTED** → 읽기 전용(이미 응답함 문구 + Thank You).
-  - **READ_ONLY** → SUBMITTED와 동일하게 읽기 전용 UI.
-- **로컬 데이터 보호**: localStorage에 잘못된 값(파싱 실패·형식 불일치)이 들어와도 **자동으로 NONE으로 fallback**. 조건 분기에서는 위 상태 상수만 사용한다.
+- **UI 상태 머신 (enum: FORM | SUBMITTED | READ_ONLY. 문자열 리터럴 직접 비교 금지. 다른 상태값 생성 금지)**:
+  - **FORM** → localStorage 키 없음/잘못됨(NONE). 폼 표시(입력·제출 가능).
+  - **SUBMITTED** → 제출 직후. 읽기 전용 + Thank You 즉시 표시.
+  - **READ_ONLY** → 재접속 시 저장값 복원(SUBMITTED와 동일 UX). 폼 비활성 + "이미 응답하셨습니다" + Thank You.
+- **초기 로딩**: 키 존재 → READ_ONLY, 없음 → FORM. 제출 시 localStorage 저장 후 즉시 SUBMITTED.
+- **로컬 데이터 보호**: 파싱 실패·형식 불일치 시 **FORM으로 fallback**. 서버/API 호출 없음.
 - **서버 저장**: 없음. **임시 UI 전용 로직**이다.
 - API 연동 전까지 프론트 상태만 유지하며, 추후 POST /api/rsvp/{slug} 등으로 대체 가능하다.
 

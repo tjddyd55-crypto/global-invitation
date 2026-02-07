@@ -14,7 +14,7 @@
 | 케이스 | 파일 | 설명 |
 |--------|------|------|
 | **FULL_ALL_FIELDS** | `docs/qa-snapshots/FULL_ALL_FIELDS.json` | 모든 필드 채움. 데스크톱/모바일 기준선. |
-| **NO_GALLERY** | `docs/qa-snapshots/NO_GALLERY.json` | `gallery[]` 빈 배열. Gallery 섹션은 EmptyState만 노출. |
+| **NO_GALLERY** | `docs/qa-snapshots/NO_GALLERY.json` | `gallery[]` 빈 배열. Gallery 섹션 미노출. |
 | **NO_PROGRAM** | `docs/qa-snapshots/NO_PROGRAM.json` | Program/캘린더용 데이터 없음. Program 섹션 미노출. |
 | **RSVP_DISABLED** | `docs/qa-snapshots/RSVP_DISABLED.json` | `rsvp.enabled: false`. RSVP 섹션 완전 비활성. |
 | **MINIMAL_FULL** | `docs/qa-snapshots/MINIMAL_FULL.json` | title + eventSummary 위주. 나머지 섹션 숨김 또는 Empty. |
@@ -34,7 +34,7 @@
 
 ### NO_GALLERY
 
-- [ ] Gallery 섹션 제목은 있고, 이미지 그리드 대신 **EmptyState**(빈 상태 문구/플레이스홀더)만 노출된다.
+- [ ] **Gallery 섹션 전체 미노출**(빈 배열/undefined 시 섹션 미표시, E-1). Gallery DOM 없음.
 - [ ] 크래시·console.error 없음.
 
 ### NO_PROGRAM
@@ -59,7 +59,7 @@
 
 - [ ] **섹션 순서**: Hero → eventSummary → Location → Program → Gallery → Special Notes → RSVP → 연락처 → 계좌 → 방명록 → 공유. (데이터 없으면 해당 섹션 생략.)
 - [ ] **중복 정보**: 날짜·시간·장소는 eventSummary 한 곳만 “정본”으로 노출. 다른 블록에서는 반복하지 않거나 톤 다운.
-- [ ] **RSVP**: NONE → 폼, SUBMITTED → 읽기 전용 + Thank You. localStorage 키 `invitation_rsvp_${slug}` 외 상태 참조 없음.
+- [ ] **RSVP**: FORM → 폼, SUBMITTED/READ_ONLY → 폼 비활성 + "이미 응답하셨습니다" + Thank You. localStorage 키 `invitation_rsvp_${slug}` 외 상태 참조·API 호출 없음.
 - [ ] **데스크톱/모바일**: 스크롤·브레이크·CTA가 가이드(05_UX_TRUST_GUIDE.md)와 일치.
 - [ ] **에러 없음**: 빈/부분 데이터에서도 크래시 없고, console.error/warning 없음.
 
@@ -68,7 +68,18 @@
 ## 4. 스크린샷·결과 문서화
 
 - 각 케이스에 대해 **데스크톱 / 모바일** 렌더링 스크린샷을 찍어 팀 내 공유 권장.
+- **권장 스크린샷 3장**: (1) Hero, (2) RSVP ReadOnly(이미 응답함 + 잠금), (3) ThankYou 블록. QA 문서만 보고 검증 가능하도록 유지.
 - “이 상태가 정상” 체크리스트를 채운 뒤, 변경 시 같은 케이스로 회귀 확인.
+
+---
+
+## 4b. 추가 테스트 케이스 (E-5)
+
+| 케이스 | 검증 포인트 | 완료 기준 |
+|--------|-------------|-----------|
+| **필드 누락** | 필수 필드 일부 누락 시 해당 섹션만 숨김, 크래시/console 0 | 빈/부분 데이터에서 에러 없음 |
+| **RSVP 재접속** | localStorage에 응답 저장 후 새로고침·재접속 시 폼 비활성, “이미 응답하셨습니다” + Thank You 유지 | 서버/API 호출 없이 상태 유지 |
+| **모바일 스크롤/섹션 순서** | 모바일 뷰에서 Hero → eventSummary → … → RSVP → 연락처 순서, 스크롤·브레이크 자연스러움 | 05_UX_TRUST_GUIDE §2와 불일치 없음 |
 
 ---
 
@@ -83,4 +94,4 @@
 ## 6. Future Extension (inactive)
 
 FULL 템플릿에는 **위치만 예약된** 블록 5개(AccommodationInfo, TransportationDetail, ContactHelpDesk, HostMessage, ThankYouAfterRSVP)가 있다.  
-실제 구현 없음, **현재 동작·QA에는 영향 0**. 상세는 `INVITATION_RUNTIME_CONTRACT.md` §6 참고.
+**의도적 비활성 상태**: 확장 블록은 **존재하지만 display:none인 Extension 블록**으로 DOM에만 있으며, UX/레이아웃에 영향을 주지 않는다. 조건부 렌더 금지·위치만 예약. 상세는 `INVITATION_RUNTIME_CONTRACT.md` §6 참고.

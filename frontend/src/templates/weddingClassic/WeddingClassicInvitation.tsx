@@ -10,7 +10,7 @@
  * @see docs/CHANGE_GOVERNANCE.md
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './WeddingClassicInvitation.module.css';
 import type { WeddingClassicData } from './data';
 import { useI18n } from '@/src/contexts/I18nContext';
@@ -18,11 +18,14 @@ import { I18N_KEYS } from '@/src/i18n';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import DisabledPlaceholder from './DisabledPlaceholder';
 
+/** localStorage 키: invitation_rsvp_${slug}. 서버/API 호출 없음. */
 const RSVP_STORAGE_PREFIX = 'invitation_rsvp_';
+function getRsvpStorageKey(slug: string): string {
+  return `${RSVP_STORAGE_PREFIX}${slug}`;
+}
 
-/** RSVP UI 상태. Contract §3. 문자열 리터럴 직접 비교 금지. */
+/** RSVP UI 상태 머신. Contract §3 + STEP 2. 문자열 리터럴 직접 비교 금지. */
 export const RSVP_UI_STATE = {
-  NONE: 'NONE',
   FORM: 'FORM',
   SUBMITTED: 'SUBMITTED',
   READ_ONLY: 'READ_ONLY',
@@ -63,7 +66,7 @@ function buildCalendarCells(targetDate: Date): (number | null)[] {
 function getStoredRsvp(slug: string): RsvpStored | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(`${RSVP_STORAGE_PREFIX}${slug}`);
+    const raw = localStorage.getItem(getRsvpStorageKey(slug));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (parsed && typeof parsed === 'object' && (parsed as RsvpStored).submitted === true) {
@@ -76,15 +79,14 @@ function getStoredRsvp(slug: string): RsvpStored | null {
   }
 }
 
-/** localStorage 값 → UI 상태. 잘못된 값은 NONE으로 fallback. Contract §3. */
+/** localStorage 존재 → READ_ONLY, 없음 → FORM. Contract §3 + STEP 2. */
 function getRsvpUiState(stored: RsvpStored | null): RsvpUiState {
-  if (!stored) return RSVP_UI_STATE.NONE;
-  return RSVP_UI_STATE.SUBMITTED;
+  return stored ? RSVP_UI_STATE.READ_ONLY : RSVP_UI_STATE.FORM;
 }
 
 function setStoredRsvp(slug: string, value: RsvpStored): void {
   try {
-    localStorage.setItem(`${RSVP_STORAGE_PREFIX}${slug}`, JSON.stringify(value));
+    localStorage.setItem(getRsvpStorageKey(slug), JSON.stringify(value));
   } catch {
     // ignore
   }
@@ -101,38 +103,14 @@ export default function WeddingClassicInvitation({
   isShared = false,
 }: WeddingClassicInvitationProps) {
   const { t } = useI18n();
-  const [rsvpUiState, setRsvpUiState] = useState<RsvpUiState>(RSVP_UI_STATE.NONE);
+  const [rsvpUiState, setRsvpUiState] = useState<RsvpUiState>(RSVP_UI_STATE.FORM);
   const [rsvpAttending, setRsvpAttending] = useState<boolean | null>(null);
   const [rsvpName, setRsvpName] = useState('');
   const [attendingChoice, setAttendingChoice] = useState<'yes' | 'no'>('yes');
 
-  const r = data;
-  const hasEventSummary = Boolean(r.weddingDateTime ?? r.venueName);
-  const hasLocation = Boolean(r.address ?? r.venueName);
-  const hasProgram = Boolean(r.weddingDate);
-  const galleryImages = safeArray(r.galleryImages);
-  const introText = safeArray(r.introText);
-  const hasSpecialNotes = introText.length > 0 || Boolean(r.introQuote);
-  const rsvpEnabled = showRsvp && (r.rsvp?.enabled !== false);
-  const accounts = safeArray(r.accounts);
-  const messages = safeArray(r.messages);
-  const weekdays = [
-    t(I18N_KEYS.weddingClassic.weekdaySun),
-    t(I18N_KEYS.weddingClassic.weekdayMon),
-    t(I18N_KEYS.weddingClassic.weekdayTue),
-    t(I18N_KEYS.weddingClassic.weekdayWed),
-    t(I18N_KEYS.weddingClassic.weekdayThu),
-    t(I18N_KEYS.weddingClassic.weekdayFri),
-    t(I18N_KEYS.weddingClassic.weekdaySat),
-  ];
-  const weddingDate = r.weddingDate ?? new Date(0);
-  const calendarCells = buildCalendarCells(weddingDate);
-  const highlightDay = weddingDate.getDate();
-
-  const loadRsvpState = useCallback(() => {
+  useEffect(() => {
     const stored = getStoredRsvp(invitationSlug);
-    const state = getRsvpUiState(stored);
-    setRsvpUiState(state);
+    setRsvpUiState(getRsvpUiState(stored));
     if (stored) {
       setRsvpAttending(stored.attending);
       setRsvpName(stored.name ?? '');
@@ -142,16 +120,38 @@ export default function WeddingClassicInvitation({
     }
   }, [invitationSlug]);
 
-  useEffect(() => {
-    loadRsvpState();
-  }, [loadRsvpState]);
-
   const handleRsvpSubmit = () => {
     const attending = attendingChoice === 'yes';
     setRsvpUiState(RSVP_UI_STATE.SUBMITTED);
     setRsvpAttending(attending);
     setStoredRsvp(invitationSlug, { submitted: true, attending, name: rsvpName || undefined });
   };
+
+  if (!data) return null;
+
+  const r = data;
+  const hasEventSummary = Boolean(r?.weddingDateTime ?? r?.venueName);
+  const hasLocation = Boolean(r?.address);
+  const hasProgram = Boolean(r?.weddingDate);
+  const galleryImages = safeArray(r?.galleryImages);
+  const hasGallery = Array.isArray(galleryImages) && galleryImages.length > 0;
+  const introText = safeArray(r?.introText);
+  const hasSpecialNotes = introText.length > 0 || Boolean(r?.introQuote);
+  const rsvpEnabled = showRsvp && (r?.rsvp?.enabled !== false);
+  const accounts = safeArray(r?.accounts);
+  const messages = safeArray(r?.messages);
+  const weekdays = [
+    t(I18N_KEYS.weddingClassic.weekdaySun),
+    t(I18N_KEYS.weddingClassic.weekdayMon),
+    t(I18N_KEYS.weddingClassic.weekdayTue),
+    t(I18N_KEYS.weddingClassic.weekdayWed),
+    t(I18N_KEYS.weddingClassic.weekdayThu),
+    t(I18N_KEYS.weddingClassic.weekdayFri),
+    t(I18N_KEYS.weddingClassic.weekdaySat),
+  ];
+  const weddingDate = r?.weddingDate ?? new Date(0);
+  const calendarCells = buildCalendarCells(weddingDate);
+  const highlightDay = weddingDate.getDate();
 
   return (
     <div className={styles.page}>
@@ -185,11 +185,11 @@ export default function WeddingClassicInvitation({
 
       {hasEventSummary ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
-      {/* 3. Location – address/venue 없으면 섹션 생략 */}
+      {/* 3. Location – address만 사용. date/time/venue는 eventSummary 단일 소스만 (E-1) */}
       {hasLocation ? (
         <section className={styles.section}>
           <LocationMapSection
-            title={r.venueName ?? ''}
+            title=""
             address={r.address ?? ''}
             mapImage={r.mapImage}
             mapImageAlt={t(I18N_KEYS.weddingClassic.mapAlt)}
@@ -230,21 +230,17 @@ export default function WeddingClassicInvitation({
 
       {hasProgram ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
-      {/* 5. Gallery – empty면 EmptyState만 노출 */}
-      <section className={styles.section}>
-        <h2>{t(I18N_KEYS.weddingClassic.galleryTitle)}</h2>
-        {galleryImages.length > 0 ? (
+      {/* 5. Gallery – hasGallery === false면 섹션 전체 미렌더, placeholder/empty UI 없음 (STEP 1-2) */}
+      {hasGallery ? (
+        <section className={styles.section}>
+          <h2>{t(I18N_KEYS.weddingClassic.galleryTitle)}</h2>
           <div className={styles.galleryGrid}>
             {galleryImages.map((image) => (
               <img key={image} className={styles.galleryImage} src={image} alt={t(I18N_KEYS.weddingClassic.galleryImageAlt)} />
             ))}
           </div>
-        ) : (
-          <div className={styles.galleryEmpty} aria-label="No images">
-            {t(I18N_KEYS.weddingClassic.galleryImageAlt)}
-          </div>
-        )}
-      </section>
+        </section>
+      ) : null}
 
       {/* 6. Special Notes – undefined/빈 배열이면 섹션 제거 */}
       {hasSpecialNotes ? (
@@ -282,11 +278,11 @@ export default function WeddingClassicInvitation({
 
           {(rsvpUiState === RSVP_UI_STATE.SUBMITTED || rsvpUiState === RSVP_UI_STATE.READ_ONLY) ? (
             <>
-              <div className={styles.rsvpAlreadyResponded} role="status">
+              <div className={styles.rsvpAlreadyResponded} role="status" aria-live="polite">
                 <span aria-hidden>🔒</span>
                 {t(I18N_KEYS.weddingClassic.rsvpAlreadyResponded)}
               </div>
-              <div className={`${styles.rsvpForm} ${styles.rsvpReadOnly}`}>
+              <fieldset className={`${styles.rsvpForm} ${styles.rsvpReadOnly}`} disabled aria-disabled="true">
                 <div className={styles.rsvpFormRow}>
                   <label>{t(I18N_KEYS.weddingClassic.rsvpNameLabel)}</label>
                   <input type="text" value={rsvpName || '–'} readOnly disabled />
@@ -304,7 +300,7 @@ export default function WeddingClassicInvitation({
                     disabled
                   />
                 </div>
-              </div>
+              </fieldset>
               <p className={styles.rsvpReadOnlyNotice}>{t(I18N_KEYS.weddingClassic.rsvpReadOnlyNotice)}</p>
               <div className={styles.rsvpThankYouBlock}>
                 {rsvpAttending === true
@@ -345,25 +341,25 @@ export default function WeddingClassicInvitation({
         </section>
       ) : null}
 
-      {/* 연락처·Details (하단) – groom/bride optional */}
-      {(r.coupleNames ?? r.groom ?? r.bride) ? (
+      {/* 연락처·Details (하단) – 단일 객체 섹션, 필수 필드 없으면 미렌더 (STEP F) */}
+      {(r?.coupleNames ?? r?.groom ?? r?.bride) ? (
         <section className={styles.section}>
-          <h1 className={styles.headerTitle}>{r.coupleNames ?? ''}</h1>
+          <h1 className={styles.headerTitle}>{r?.coupleNames ?? ''}</h1>
           <div className={styles.coupleGrid}>
-            {r.groom ? (
+            {r?.groom ? (
               <div className={styles.coupleCard}>
-                <img className={styles.coupleImage} src={r.groom.image} alt={r.groom.name} />
-                <div className={styles.coupleName}>{r.groom.name}</div>
-                <div className={styles.contactLine}>📞 {r.groom.phone}</div>
-                <div className={styles.coupleParents}>{r.groom.parentsText}</div>
+                <img className={styles.coupleImage} src={r.groom?.image ?? ''} alt={r.groom?.name ?? ''} />
+                <div className={styles.coupleName}>{r.groom?.name ?? ''}</div>
+                <div className={styles.contactLine}>📞 {r.groom?.phone ?? ''}</div>
+                <div className={styles.coupleParents}>{r.groom?.parentsText ?? ''}</div>
               </div>
             ) : null}
-            {r.bride ? (
+            {r?.bride ? (
               <div className={styles.coupleCard}>
-                <img className={styles.coupleImage} src={r.bride.image} alt={r.bride.name} />
-                <div className={styles.coupleName}>{r.bride.name}</div>
-                <div className={styles.contactLine}>📞 {r.bride.phone}</div>
-                <div className={styles.coupleParents}>{r.bride.parentsText}</div>
+                <img className={styles.coupleImage} src={r.bride?.image ?? ''} alt={r.bride?.name ?? ''} />
+                <div className={styles.coupleName}>{r.bride?.name ?? ''}</div>
+                <div className={styles.contactLine}>📞 {r.bride?.phone ?? ''}</div>
+                <div className={styles.coupleParents}>{r.bride?.parentsText ?? ''}</div>
               </div>
             ) : null}
           </div>
@@ -373,9 +369,9 @@ export default function WeddingClassicInvitation({
         </section>
       ) : null}
 
-      {accounts.length > 0 ? (
+      {Array.isArray(accounts) && accounts.length > 0 ? (
         <section className={styles.section}>
-          <h2>{r.accountsTitle ?? ''}</h2>
+          <h2>{r?.accountsTitle ?? ''}</h2>
           <div className={styles.accountList}>
             {accounts.map((account) => (
               <div key={`${account.role}-${account.number}`} className={styles.accountCard}>
@@ -393,9 +389,9 @@ export default function WeddingClassicInvitation({
         </section>
       ) : null}
 
-      {showGuestbook && messages.length > 0 ? (
+      {showGuestbook && Array.isArray(messages) && messages.length > 0 ? (
         <section className={styles.section}>
-          <h2>{r.messagesTitle ?? ''}</h2>
+          <h2>{r?.messagesTitle ?? ''}</h2>
           <div className={styles.messageList}>
             {messages.map((message) => (
               <div key={`${message.name}-${message.createdAt}`} className={styles.messageCard}>

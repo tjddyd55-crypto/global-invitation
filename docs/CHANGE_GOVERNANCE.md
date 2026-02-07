@@ -56,3 +56,6 @@
   - `docs/05_UX_TRUST_GUIDE.md`
   - `docs/INVITATION_QA_SNAPSHOT.md`
   - `docs/CHANGE_GOVERNANCE.md` (본 문서)
+  - `docs/INVITATION_FREEZE_STATUS.md` — Freeze 범위·허용/금지
+  - `docs/INVITATION_OPERATION_CHECKLIST.md` — 비개발자용 검증
+- **Cursor/AI 사용 시**: 프로젝트 루트의 `CURSOR_TASK_FINAL.md`를 반드시 참고. 구조 변경 금지·허용 작업만 수행.
