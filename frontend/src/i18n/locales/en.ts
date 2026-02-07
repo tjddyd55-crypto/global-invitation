@@ -24,6 +24,7 @@ const en: LocaleDictionary = {
   createFailed: 'Failed to create invitation.',
   backendUnavailable: 'Cannot reach backend server. Please check if it is running.',
   loadFailed: 'Failed to load invitation.',
+  temporaryError: 'Temporary error. Please try again.',
   saveFailed: 'Failed to save invitation.',
   templateChanged: 'Template has been updated.',
   audioPlayFailed: 'Failed to play music.',

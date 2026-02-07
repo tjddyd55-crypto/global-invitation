@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getInvitation, updateInvitation } from '@/src/lib/api';
 import type { Invitation } from '@/src/lib/api';
 import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
-import { I18N_KEYS, type I18nKey } from '@/src/i18n';
+import { I18N_KEYS } from '@/src/i18n';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import { logEvent } from '@/src/lib/events';
 import { buildShareUrl, getShareContent, shareLink, type ShareTemplateType } from '@/src/lib/share';
@@ -16,6 +15,8 @@ import {
   buildWeddingClassicData,
   getWeddingClassicDemoInvitation,
   isWeddingClassicDemoSlug,
+  getSampleWeddingInvitation,
+  isSampleWeddingSlug,
   isWeddingClassicTemplate,
 } from '@/src/templates/weddingClassic/data';
 import FuneralClassicInvitation from '@/src/templates/funeralClassic/FuneralClassicInvitation';
@@ -30,6 +31,22 @@ import PaymentButton from '@/src/components/PaymentButton';
 import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
 import { ensureGuestToken, getStoredSession } from '@/src/lib/auth';
 
+type InvitationErrorState = 'not_found' | 'server_error';
+
+const EVENT_TRACKING_ENABLED = false;
+let didWarnEventTracking = false;
+
+function trackEvent(payload: Parameters<typeof logEvent>[0]) {
+  if (!EVENT_TRACKING_ENABLED) {
+    if (!didWarnEventTracking) {
+      console.warn('[invitation] Event tracking disabled. See docs/INVITATION_BACKEND_STUB.md');
+      didWarnEventTracking = true;
+    }
+    return;
+  }
+  void logEvent(payload);
+}
+
 export default function InvitationPage() {
   const params = useParams();
   const router = useRouter();
@@ -38,7 +55,7 @@ export default function InvitationPage() {
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<I18nKey | null>(null);
+  const [errorState, setErrorState] = useState<InvitationErrorState | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [funeralData, setFuneralData] = useState<ReturnType<typeof getFuneralClassicDemoData> | null>(null);
   const [shared, setShared] = useState(false);
@@ -46,11 +63,12 @@ export default function InvitationPage() {
   const [isSharing, setIsSharing] = useState(false);
   const [showPlayButton, setShowPlayButton] = useState(false);
   const [hasSession, setHasSession] = useState(false);
-  const [publishing, setPublishing] = useState(false);
+  const publishing = false;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const viewLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
-  const isDemo = isWeddingClassicDemoSlug(slug) || isFuneralClassicDemoSlug(slug);
+  const isSampleWedding = isSampleWeddingSlug(slug);
+  const isDemo = isWeddingClassicDemoSlug(slug) || isFuneralClassicDemoSlug(slug) || isSampleWedding;
 
   useEffect(() => {
     ensureGuestToken();
@@ -63,35 +81,35 @@ export default function InvitationPage() {
       return;
     }
 
+    setLoading(true);
+    setErrorState(null);
+    setInvitation(null);
+    setFuneralData(null);
     setShared(false);
     setShareFallbackUrl(null);
     setIsSharing(false);
 
-    if (isFuneralClassicDemoSlug(slug)) {
-      setFuneralData(getFuneralClassicDemoData());
-      setLoading(false);
-      return;
-    }
-
-    if (isWeddingClassicDemoSlug(slug)) {
-      setInvitation(getWeddingClassicDemoInvitation());
-      setLoading(false);
-      return;
-    }
-
-    async function loadInvitation() {
-      try {
-        const data = await getInvitation(slug);
-        setInvitation(data);
-      } catch (err) {
-        const isNotFound = err instanceof Error && err.message === 'Invitation not found';
-        setError(isNotFound ? I18N_KEYS.common.notFound : I18N_KEYS.notice.loadFailed);
-      } finally {
-        setLoading(false);
+    try {
+      if (isSampleWedding) {
+        setInvitation(getSampleWeddingInvitation());
+        return;
       }
-    }
+      if (isFuneralClassicDemoSlug(slug)) {
+        setFuneralData(getFuneralClassicDemoData());
+        return;
+      }
+      if (isWeddingClassicDemoSlug(slug)) {
+        setInvitation(getWeddingClassicDemoInvitation());
+        return;
+      }
 
-    loadInvitation();
+      console.warn('[invitation] Backend fetch disabled. See docs/INVITATION_BACKEND_STUB.md');
+      setErrorState('not_found');
+    } catch {
+      setErrorState('server_error');
+    } finally {
+      setLoading(false);
+    }
   }, [slug, router]);
 
   // 음악 자동 재생 시도
@@ -143,13 +161,13 @@ export default function InvitationPage() {
     if (viewLoggedRef.current || loading) return;
 
     if (funeralData) {
-      logEvent({ eventType: 'invitation_view', templateType: 'funeral', language, pageUrl });
+      trackEvent({ eventType: 'invitation_view', templateType: 'funeral', language, pageUrl });
       viewLoggedRef.current = true;
       return;
     }
 
     if (invitation) {
-      logEvent({
+      trackEvent({
         eventType: 'invitation_view',
         templateType: resolveTemplateType(invitation.templateKey),
         language,
@@ -179,7 +197,7 @@ export default function InvitationPage() {
     setShareFallbackUrl(null);
     setIsSharing(true);
     try {
-      logEvent({ eventType: 'share_click', templateType, language, pageUrl });
+      trackEvent({ eventType: 'share_click', templateType, language, pageUrl });
 
       const { title, description } = getShareContent(templateType, t);
       const url = buildShareUrl(path);
@@ -213,25 +231,7 @@ export default function InvitationPage() {
   };
 
   const handlePublish = async () => {
-    if (!invitation) return;
-    if (!invitation.isOwner) {
-      alert('소유자만 배포할 수 있습니다.');
-      return;
-    }
-    if (!hasSession) {
-      alert('배포하려면 로그인이 필요합니다.');
-      return;
-    }
-    setPublishing(true);
-    try {
-      const updated = await updateInvitation(invitation.slug, { status: 'published' });
-      setInvitation(updated);
-      alert('배포가 완료되었습니다.');
-    } catch {
-      alert('배포에 실패했습니다. 잠시 후 다시 시도해 주세요.');
-    } finally {
-      setPublishing(false);
-    }
+    alert('현재 단계에서는 배포 기능이 비활성화되어 있습니다.');
   };
 
   if (loading) {
@@ -242,18 +242,23 @@ export default function InvitationPage() {
     );
   }
 
-  if (error) {
+  if (errorState) {
+    const heading =
+      errorState === 'server_error' ? t(I18N_KEYS.common.error) : t(I18N_KEYS.common.notFound);
+    const message =
+      errorState === 'server_error' ? t(I18N_KEYS.notice.temporaryError) : t(I18N_KEYS.common.notFound);
+
     return (
       <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-        <h1>{t('notFound')}</h1>
-        <p style={{ color: 'red' }}>{t(error)}</p>
+        <h1>{heading}</h1>
+        <p style={{ color: 'red' }}>{message}</p>
       </div>
     );
   }
 
   if (funeralData) {
     const handleKakaoShare = () => {
-      logEvent({ eventType: 'share_click', templateType: 'funeral', language, pageUrl });
+      trackEvent({ eventType: 'share_click', templateType: 'funeral', language, pageUrl });
       alert(t(I18N_KEYS.notice.kakaoShareUnavailable));
     };
 

@@ -19,6 +19,7 @@
   - `200`: 초대장 공개 필드 (title, eventDate, locationText, message, templateKey, status 등)
   - `404`: 해당 slug 없음
 - **현재**: 실제 초대장 조회는 기존 구현된 라우트를 사용. 이 계약은 **추후 통합·확장 시** 기준으로만 사용.
+- **샘플 전용 안전 응답**: `sample-wedding` slug는 DB 없이 200 JSON을 반환(그 외 slug는 404 또는 503). PG/메일 호출 없음.
 
 ---
 

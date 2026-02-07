@@ -19,7 +19,7 @@
 - **Runtime Contract**  
   `docs/INVITATION_RUNTIME_CONTRACT.md`에 정의된 데이터 구조·Graceful Fallback 규칙·§1b FULL 사용 필드.
 - **RSVP UX 규칙**  
-  상태(NONE/FORM/SUBMITTED/READ_ONLY), localStorage 키 `invitation_rsvp_${slug}`, 폼 비활성·ReadOnly·Thank You 동작.
+  상태(FORM/SUBMITTED/READ_ONLY), localStorage 키 `invitation_rsvp_${slug}`, 키 존재 → READ_ONLY, 제출 직후 → SUBMITTED, 폼 비활성·ReadOnly·Thank You 동작.
 - **Future Extension (inactive)**  
   AccommodationInfo, TransportationDetail, ContactHelpDesk, HostMessage, ThankYouAfterRSVP — 위치만 예약, **활성화 금지** (Contract §6·Governance 선행 없이).
 

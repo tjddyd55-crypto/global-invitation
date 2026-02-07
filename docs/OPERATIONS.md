@@ -2,7 +2,8 @@
 
 ## 환경 변수 (운영 필수)
 - `NEXT_PUBLIC_SITE_URL`: canonical/OG/공유/이벤트 로그 `page_url`의 단일 기준 URL
-- `NEXT_PUBLIC_API_URL`: 백엔드 공개 URL
+- `NEXT_PUBLIC_API_BASE_URL` (권장) 또는 `NEXT_PUBLIC_BACKEND_URL`: 백엔드 공개 URL (프론트 API base)
+- `NEXT_PUBLIC_API_URL` (레거시): 사용 중이면 `NEXT_PUBLIC_API_BASE_URL`로 이동 권장
 - `DATABASE_URL`: 백엔드 DB 연결 문자열
 - `PORT`: 백엔드 포트 (기본 3001)
 

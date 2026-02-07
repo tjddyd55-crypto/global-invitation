@@ -1,14 +1,6 @@
 import type { Invitation } from '@/src/models/invitation';
 import { buildAuthHeaders, getGuestToken } from '@/src/lib/auth';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-function getApiBaseUrl(): string {
-  if (!API_BASE_URL) {
-    throw new Error('NEXT_PUBLIC_API_URL is not set.');
-  }
-  return API_BASE_URL;
-}
+import { buildApiUrl } from '@/src/lib/apiBase';
 
 export type { Invitation };
 
@@ -33,7 +25,7 @@ export interface InvitationSummary {
 // Create invitation
 export async function createInvitation(templateKey?: string, guestToken?: string): Promise<CreateInvitationResponse> {
   try {
-    const response = await fetch(`${getApiBaseUrl()}/api/invitations`, {
+    const response = await fetch(buildApiUrl('/api/invitations'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,7 +52,7 @@ export async function createInvitation(templateKey?: string, guestToken?: string
 
 // Get invitation by slug
 export async function getInvitation(slug: string): Promise<Invitation> {
-  const response = await fetch(`${getApiBaseUrl()}/api/invitations/${slug}`, {
+  const response = await fetch(buildApiUrl(`/api/invitations/${slug}`), {
     headers: buildAuthHeaders(),
   });
 
@@ -88,7 +80,7 @@ export async function updateInvitation(
     status?: string;
   }
 ): Promise<Invitation> {
-  const response = await fetch(`${getApiBaseUrl()}/api/invitations/${slug}`, {
+  const response = await fetch(buildApiUrl(`/api/invitations/${slug}`), {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -109,7 +101,7 @@ export async function updateInvitation(
 }
 
 export async function listMyInvitations(): Promise<InvitationSummary[]> {
-  const response = await fetch(`${getApiBaseUrl()}/api/invitations?owner=me`, {
+  const response = await fetch(buildApiUrl('/api/invitations?owner=me'), {
     headers: buildAuthHeaders(),
   });
 
@@ -124,7 +116,7 @@ export async function listMyInvitations(): Promise<InvitationSummary[]> {
 
 export async function listGuestInvitations(guestToken: string): Promise<InvitationSummary[]> {
   const response = await fetch(
-    `${getApiBaseUrl()}/api/invitations?guestToken=${encodeURIComponent(guestToken)}&status=draft&limit=5`
+    buildApiUrl(`/api/invitations?guestToken=${encodeURIComponent(guestToken)}&status=draft&limit=5`)
   );
 
   if (!response.ok) {

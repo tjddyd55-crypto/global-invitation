@@ -1,3 +1,5 @@
+import { buildApiUrl, getApiBaseUrl } from '@/src/lib/apiBase';
+
 export type EventType = 'invitation_view' | 'share_click' | 'editor_open' | 'preview_open';
 export type TemplateType = 'wedding' | 'funeral' | 'message' | 'branded';
 
@@ -11,13 +13,12 @@ type EventPayload = {
   metadata?: EventMetadata;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
 export async function logEvent(payload: EventPayload): Promise<boolean> {
-  if (!API_BASE_URL) return false;
+  const apiBaseUrl = getApiBaseUrl();
+  if (!apiBaseUrl) return false;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/events`, {
+    const response = await fetch(buildApiUrl('/api/events'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

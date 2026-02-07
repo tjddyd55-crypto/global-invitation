@@ -24,6 +24,7 @@ const ko: LocaleDictionary = {
   createFailed: '초대장 생성에 실패했습니다.',
   backendUnavailable: '백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.',
   loadFailed: '초대장을 불러오지 못했습니다.',
+  temporaryError: '일시적인 오류입니다.',
   saveFailed: '초대장 저장에 실패했습니다.',
   templateChanged: '템플릿이 변경되었습니다!',
   audioPlayFailed: '음악 재생에 실패했습니다.',

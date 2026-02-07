@@ -1,0 +1,56 @@
+.card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e6e6e6;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.iconOk {
+  color: #0a7b0e;
+}
+
+.iconWarning {
+  color: #b8860b;
+}
+
+.iconError {
+  color: #c00;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px 0;
+}
+
+.listItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 0.95rem;
+}
+
+.listItemIcon {
+  flex-shrink: 0;
+}
+
+.desc {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+}

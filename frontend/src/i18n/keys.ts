@@ -64,6 +64,7 @@ export const I18N_KEYS = {
     createFailed: 'createFailed',
     backendUnavailable: 'backendUnavailable',
     loadFailed: 'loadFailed',
+    temporaryError: 'temporaryError',
     saveFailed: 'saveFailed',
     templateChanged: 'templateChanged',
     audioPlayFailed: 'audioPlayFailed',

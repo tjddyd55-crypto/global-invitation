@@ -64,11 +64,12 @@ export default function WeddingEditor({
 
   useEffect(() => {
     if (previewLoggedRef.current) return;
+    if (isDemo) return;
     if (currentStep === 9 || mobilePreviewOpen) {
       logEvent({ eventType: 'preview_open', templateType: 'wedding', language: state.setup.language, pageUrl });
       previewLoggedRef.current = true;
     }
-  }, [currentStep, mobilePreviewOpen, pageUrl, state.setup.language]);
+  }, [currentStep, isDemo, mobilePreviewOpen, pageUrl, state.setup.language]);
 
   const handleSave = async () => {
     if (!onSave) return;

@@ -74,8 +74,9 @@ Access it at: [http://localhost:3000/payment-info](http://localhost:3000/payment
 ## Environment Variables
 
 ### Frontend
-- `NEXT_PUBLIC_API_URL`: Backend public base URL (required in production).
+- `NEXT_PUBLIC_API_BASE_URL` (권장) 또는 `NEXT_PUBLIC_BACKEND_URL`: Backend public base URL (required in production).
   - Example: `https://<backend-public-url>`
+- `NEXT_PUBLIC_API_URL` (legacy): 기존 설정이 있으면 유지 가능하지만 위 변수로 이동 권장.
 - `NEXT_PUBLIC_SITE_URL`: Canonical/OG base URL (required in production).
   - Example: `https://<frontend-public-url>`
 

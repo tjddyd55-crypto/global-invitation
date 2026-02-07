@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getInvitation, updateInvitation } from '@/src/lib/api';
+import { updateInvitation } from '@/src/lib/api';
 import type { Invitation } from '@/src/lib/api';
 import WeddingEditor from '@/src/editors/wedding/WeddingEditor';
 import { createWeddingEditorState } from '@/src/editors/wedding/state/weddingEditor.initial';
@@ -12,7 +12,9 @@ import { createFuneralEditorState } from '@/src/editors/funeral/state/funeralEdi
 import type { FuneralEditorState } from '@/src/editors/funeral/state/funeralEditor.types';
 import {
   getWeddingClassicDemoInvitation,
+  getSampleWeddingInvitation,
   isWeddingClassicDemoSlug,
+  isSampleWeddingSlug,
   isWeddingClassicTemplate,
 } from '@/src/templates/weddingClassic/data';
 import {
@@ -29,6 +31,20 @@ type EditorError = {
   title: string;
   message: string;
 };
+
+const EVENT_TRACKING_ENABLED = false;
+let didWarnEventTracking = false;
+
+function trackEvent(payload: Parameters<typeof logEvent>[0]) {
+  if (!EVENT_TRACKING_ENABLED) {
+    if (!didWarnEventTracking) {
+      console.warn('[editor] Event tracking disabled. See docs/INVITATION_BACKEND_STUB.md');
+      didWarnEventTracking = true;
+    }
+    return;
+  }
+  void logEvent(payload);
+}
 
 function buildLocationText(state: WeddingEditorState): string | undefined {
   const venueName = state.basic.venueName.trim();
@@ -61,7 +77,7 @@ export default function EditorPage() {
   const [funeralData, setFuneralData] = useState<ReturnType<typeof getFuneralClassicDemoData> | null>(null);
   const [hasSession, setHasSession] = useState(false);
 
-  const isDemo = isWeddingClassicDemoSlug(slug);
+  const isDemo = isWeddingClassicDemoSlug(slug) || isSampleWeddingSlug(slug);
   const isFuneralDemo = isFuneralClassicDemoSlug(slug);
 
   useEffect(() => {
@@ -76,35 +92,41 @@ export default function EditorPage() {
       return;
     }
 
-    if (isFuneralDemo) {
-      setFuneralData(getFuneralClassicDemoData());
-      setLoading(false);
-      return;
-    }
+    setLoading(true);
+    setError(null);
+    setInvitation(null);
+    setFuneralData(null);
 
-    if (isDemo) {
-      setInvitation(getWeddingClassicDemoInvitation());
-      setLoading(false);
-      return;
-    }
-
-    async function loadInvitation() {
-      try {
-        ensureGuestToken();
-        const data = await getInvitation(slug);
-        setInvitation(data);
-      } catch (err) {
-        const isNotFound = err instanceof Error && err.message === 'Invitation not found';
-        setError({
-          title: isNotFound ? '초대장을 찾을 수 없습니다.' : '초대장을 불러오지 못했습니다.',
-          message: isNotFound ? 'slug가 올바른지 확인해 주세요.' : '네트워크 상태를 확인해 주세요.',
-        });
-      } finally {
+    try {
+      if (isFuneralDemo) {
+        setFuneralData(getFuneralClassicDemoData());
         setLoading(false);
+        return;
       }
-    }
+      if (isSampleWeddingSlug(slug)) {
+        setInvitation(getSampleWeddingInvitation());
+        setLoading(false);
+        return;
+      }
+      if (isWeddingClassicDemoSlug(slug)) {
+        setInvitation(getWeddingClassicDemoInvitation());
+        setLoading(false);
+        return;
+      }
 
-    loadInvitation();
+      console.warn('[editor] Backend fetch disabled. See docs/INVITATION_BACKEND_STUB.md');
+      setError({
+        title: '서버 연동이 비활성화되어 있습니다.',
+        message: '현재 단계에서는 데모 초대장만 편집할 수 있습니다.',
+      });
+    } catch {
+      setError({
+        title: '일시적인 오류입니다.',
+        message: '다시 시도해 주세요.',
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [slug, router, isDemo, isFuneralDemo]);
 
   useEffect(() => {
@@ -118,14 +140,14 @@ export default function EditorPage() {
     if (editorLoggedRef.current) return;
 
     if (funeralData) {
-      logEvent({ eventType: 'editor_open', templateType: 'funeral', language, pageUrl });
+      trackEvent({ eventType: 'editor_open', templateType: 'funeral', language, pageUrl });
       editorLoggedRef.current = true;
       return;
     }
 
     if (invitation) {
       const templateType = isFuneralClassicTemplate(invitation.templateKey) ? 'funeral' : 'wedding';
-      logEvent({ eventType: 'editor_open', templateType, language, pageUrl });
+      trackEvent({ eventType: 'editor_open', templateType, language, pageUrl });
       editorLoggedRef.current = true;
     }
   }, [funeralData, invitation, language, pageUrl]);
@@ -167,6 +189,10 @@ export default function EditorPage() {
   };
 
   const handleSaveAndExit = async (state: WeddingEditorState) => {
+    if (isDemo) {
+      alert('데모에서는 저장/나가기 기능이 비활성화되어 있습니다.');
+      return;
+    }
     try {
       await handleSave(state);
     } catch {

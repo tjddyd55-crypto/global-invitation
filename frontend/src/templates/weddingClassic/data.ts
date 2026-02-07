@@ -115,6 +115,7 @@ export function buildWeddingClassicHeroTitle(groomName: string, brideName: strin
 
 export const WEDDING_CLASSIC_TEMPLATE_KEYS = new Set(['wedding_classic', 'classic']);
 export const DEMO_WEDDING_CLASSIC_SLUG = 'demo-wedding-classic';
+export const SAMPLE_WEDDING_SLUG = 'sample-wedding';
 
 export function isWeddingClassicTemplate(templateKey?: string | null): boolean {
   if (!templateKey) return false;
@@ -123,6 +124,10 @@ export function isWeddingClassicTemplate(templateKey?: string | null): boolean {
 
 export function isWeddingClassicDemoSlug(slug?: string | null): boolean {
   return slug === DEMO_WEDDING_CLASSIC_SLUG;
+}
+
+export function isSampleWeddingSlug(slug?: string | null): boolean {
+  return slug === SAMPLE_WEDDING_SLUG;
 }
 
 export function getWeddingClassicDemoInvitation(): Invitation {
@@ -143,6 +148,15 @@ export function getWeddingClassicDemoInvitation(): Invitation {
     paidAt: null,
     createdAt: '2025-03-01T00:00:00',
     updatedAt: '2025-03-01T00:00:00',
+  };
+}
+
+export function getSampleWeddingInvitation(): Invitation {
+  const demo = getWeddingClassicDemoInvitation();
+  return {
+    ...demo,
+    id: SAMPLE_WEDDING_SLUG,
+    slug: SAMPLE_WEDDING_SLUG,
   };
 }
 

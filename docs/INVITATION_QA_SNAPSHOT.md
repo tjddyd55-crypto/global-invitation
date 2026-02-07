@@ -88,6 +88,7 @@
 - **Runtime Contract**: `docs/INVITATION_RUNTIME_CONTRACT.md`
 - **UX/Trust**: `docs/05_UX_TRUST_GUIDE.md`
 - **Backend Stub**: `docs/INVITATION_BACKEND_STUB.md`
+- **Integration Smoke**: `docs/INVITATION_INTEGRATION_SMOKE.md`
 
 ---
 

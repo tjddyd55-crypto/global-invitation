@@ -1,8 +1,7 @@
 'use client';
 
 import type { Invitation } from '@/src/models/invitation';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+import { buildApiUrl } from '@/src/lib/apiBase';
 const SESSION_STORAGE_KEY = 'auth_session_v1';
 const GUEST_TOKEN_KEY = 'guest_token_v1';
 const LAST_DRAFT_KEY = 'last_draft_slug_v1';
@@ -27,13 +26,6 @@ type VerifyResponse = {
   user: AuthUser;
   redirectSlug?: string | null;
 };
-
-function getApiBaseUrl(): string {
-  if (!API_BASE_URL) {
-    throw new Error('NEXT_PUBLIC_API_URL is not set.');
-  }
-  return API_BASE_URL;
-}
 
 export function ensureGuestToken(): string {
   if (typeof window === 'undefined') return '';
@@ -105,7 +97,7 @@ export function buildAuthHeaders(): HeadersInit {
 
 export async function requestMagicLink(email: string, draftSlug?: string): Promise<MagicLinkResponse> {
   const guestToken = ensureGuestToken();
-  const response = await fetch(`${getApiBaseUrl()}/api/auth/magic-link`, {
+  const response = await fetch(buildApiUrl('/api/auth/magic-link'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -127,7 +119,7 @@ export async function requestMagicLink(email: string, draftSlug?: string): Promi
 
 export async function verifyMagicLink(token: string): Promise<VerifyResponse> {
   const guestToken = getGuestToken();
-  const response = await fetch(`${getApiBaseUrl()}/api/auth/verify`, {
+  const response = await fetch(buildApiUrl('/api/auth/verify'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

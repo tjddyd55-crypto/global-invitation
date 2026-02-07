@@ -12,11 +12,12 @@ export default function LanguageSelector() {
       top: '1rem', 
       right: '1rem', 
       zIndex: 1000,
-      padding: '0.5rem',
+      padding: '0.5rem 0.6rem',
       backgroundColor: '#fff',
       border: '1px solid #ddd',
       borderRadius: '4px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      minWidth: '6rem',
     }}>
       <select
         value={language}

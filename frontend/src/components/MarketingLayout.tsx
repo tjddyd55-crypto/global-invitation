@@ -4,6 +4,7 @@ import Link from 'next/link';
 import styles from './MarketingLayout.module.css';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
+import { isInternalMode } from '@/src/lib/internalMode';
 
 type MarketingLayoutProps = {
   children: React.ReactNode;
@@ -22,6 +23,12 @@ export default function MarketingLayout({ children }: MarketingLayoutProps) {
           <Link href="/pricing">{t(I18N_KEYS.marketing.navPricing)}</Link>
           <Link href="/about">{t(I18N_KEYS.marketing.navAbout)}</Link>
           <Link href="/contact">{t(I18N_KEYS.marketing.navContact)}</Link>
+          <Link href="/integrity">무결성 체크</Link>
+          {isInternalMode && (
+            <Link href="/internal/integrity" className={styles.navInternal}>
+              Internal
+            </Link>
+          )}
         </nav>
       </header>
 

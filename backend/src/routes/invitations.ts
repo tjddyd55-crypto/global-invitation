@@ -17,6 +17,25 @@ type InvitationSummary = {
 };
 
 const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
+const SAMPLE_WEDDING_SLUG = 'sample-wedding';
+const SAMPLE_WEDDING_INVITATION = {
+  id: 'sample-wedding',
+  slug: SAMPLE_WEDDING_SLUG,
+  title: '샘플 웨딩 초대장',
+  eventDate: '2025-04-13T17:20:00',
+  locationText: '더링크호텔 서울 3층 베일리홀',
+  message: '샘플 초대장입니다. 정상 렌더링/공유/메타 검증용.',
+  templateKey: 'wedding_classic',
+  musicKey: 'piano_wedding',
+  countryCode: 'GLOBAL',
+  language: 'ko',
+  status: 'published',
+  isPaid: false,
+  canShare: false,
+  paidAt: null,
+  createdAt: '2025-03-01T00:00:00',
+  updatedAt: '2025-03-01T00:00:00',
+};
 
 function parseInvitationStatus(value: string | null | undefined): InvitationStatus | undefined {
   if (typeof value !== 'string' || !value.trim()) return undefined;
@@ -162,6 +181,12 @@ router.post('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
+
+    // Sample-only safe response (no DB dependency)
+    if (slug === SAMPLE_WEDDING_SLUG) {
+      return res.status(200).json({ ...SAMPLE_WEDDING_INVITATION, isOwner: false });
+    }
+
     const user = await getAuthUser(req);
     const guestToken = getGuestToken(req);
 
@@ -190,7 +215,7 @@ router.get('/:slug', async (req, res) => {
     });
 
     if (!invitation) {
-      return res.status(404).json({ error: 'Invitation not found' });
+      return res.status(404).json({ error: 'NOT_FOUND' });
     }
 
     const isOwner = invitation.userId
@@ -205,7 +230,7 @@ router.get('/:slug', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching invitation:', error);
-    res.status(500).json({ error: 'Failed to fetch invitation' });
+    res.status(503).json({ error: 'TEMP_UNAVAILABLE' });
   }
 });
 

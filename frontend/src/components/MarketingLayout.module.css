@@ -11,6 +11,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
+  padding-right: 140px; /* 언어 선택기(fixed)와 겹치지 않도록 여백 */
   background: #fff;
   border-bottom: 1px solid #e6e6e6;
 }
@@ -31,6 +32,11 @@
 .nav a {
   color: inherit;
   text-decoration: none;
+}
+
+.navInternal {
+  font-size: 0.85rem;
+  color: #666;
 }
 
 .main {
