@@ -137,7 +137,7 @@ export default function WeddingClassicInvitation({
   const hasGallery = Array.isArray(galleryImages) && galleryImages.length > 0;
   const introText = safeArray(r?.introText);
   const hasSpecialNotes = introText.length > 0 || Boolean(r?.introQuote);
-  const rsvpEnabled = showRsvp && (r?.rsvp?.enabled !== false);
+  const rsvpEnabled = showRsvp && r?.rsvp?.enabled === true;
   const accounts = safeArray(r?.accounts);
   const messages = safeArray(r?.messages);
   const weekdays = [

@@ -25,6 +25,34 @@
   font-size: 0.95rem;
 }
 
+.statusLine {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.statusBadge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #d9d2c5;
+  background: #f7f4ee;
+  color: #6a665f;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.statusPublished {
+  background: #eef7e8;
+  border-color: #a9ba7a;
+  color: #5a7340;
+}
+
+.statusMeta {
+  font-size: 0.82rem;
+  color: #7a756c;
+}
+
 .errorText {
   margin: 0.5rem 0 0;
   color: #b84a2d;

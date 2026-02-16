@@ -2,19 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { updateInvitation } from '@/src/lib/api';
 import type { Invitation } from '@/src/lib/api';
 import WeddingEditor from '@/src/editors/wedding/WeddingEditor';
 import { createWeddingEditorState } from '@/src/editors/wedding/state/weddingEditor.initial';
+import {
+  buildWeddingClassicPreviewData,
+  weddingEditorStateToInvitation,
+} from '@/src/editors/wedding/state/weddingEditor.mapper';
 import type { WeddingEditorState } from '@/src/editors/wedding/state/weddingEditor.types';
 import FuneralEditor from '@/src/editors/funeral/FuneralEditor';
 import { createFuneralEditorState } from '@/src/editors/funeral/state/funeralEditor.initial';
 import type { FuneralEditorState } from '@/src/editors/funeral/state/funeralEditor.types';
 import {
-  getWeddingClassicDemoInvitation,
-  getSampleWeddingInvitation,
-  isWeddingClassicDemoSlug,
-  isSampleWeddingSlug,
   isWeddingClassicTemplate,
 } from '@/src/templates/weddingClassic/data';
 import {
@@ -25,7 +24,8 @@ import {
 import { useI18n } from '@/src/contexts/I18nContext';
 import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
-import { ensureGuestToken, getStoredSession, requestMagicLink, setLastDraftSlug } from '@/src/lib/auth';
+import { ensureGuestToken, getStoredSession, setLastDraftSlug } from '@/src/lib/auth';
+import { getInvitationDraft, saveInvitationDraft } from '@/src/lib/invitationStorage';
 
 type EditorError = {
   title: string;
@@ -46,20 +46,6 @@ function trackEvent(payload: Parameters<typeof logEvent>[0]) {
   void logEvent(payload);
 }
 
-function buildLocationText(state: WeddingEditorState): string | undefined {
-  const venueName = state.basic.venueName.trim();
-  const venueDetail = state.basic.venueDetail?.trim();
-  if (!venueName && !venueDetail) return undefined;
-  if (!venueName) return venueDetail;
-  return venueDetail ? `${venueName} ${venueDetail}` : venueName;
-}
-
-function buildMessageText(state: WeddingEditorState): string | undefined {
-  const body = state.invitationMessage.body.filter(Boolean);
-  if (body.length === 0) return undefined;
-  return body.join('\n');
-}
-
 export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
@@ -71,13 +57,15 @@ export default function EditorPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<EditorError | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [draftStatus, setDraftStatus] = useState<'draft' | 'published'>('draft');
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [funeralData, setFuneralData] = useState<ReturnType<typeof getFuneralClassicDemoData> | null>(null);
   const [hasSession, setHasSession] = useState(false);
 
-  const isDemo = isWeddingClassicDemoSlug(slug) || isSampleWeddingSlug(slug);
   const isFuneralDemo = isFuneralClassicDemoSlug(slug);
 
   useEffect(() => {
@@ -96,6 +84,8 @@ export default function EditorPage() {
     setError(null);
     setInvitation(null);
     setFuneralData(null);
+    setDraftStatus('draft');
+    setLastSavedAt(null);
 
     try {
       if (isFuneralDemo) {
@@ -103,22 +93,37 @@ export default function EditorPage() {
         setLoading(false);
         return;
       }
-      if (isSampleWeddingSlug(slug)) {
-        setInvitation(getSampleWeddingInvitation());
-        setLoading(false);
-        return;
-      }
-      if (isWeddingClassicDemoSlug(slug)) {
-        setInvitation(getWeddingClassicDemoInvitation());
+
+      const draft = getInvitationDraft(slug);
+      if (draft) {
+        setInvitation(draft.invitation);
+        setDraftStatus(draft.status);
+        setLastSavedAt(draft.savedAt);
         setLoading(false);
         return;
       }
 
-      console.warn('[editor] Backend fetch disabled. See docs/INVITATION_BACKEND_STUB.md');
-      setError({
-        title: '서버 연동이 비활성화되어 있습니다.',
-        message: '현재 단계에서는 데모 초대장만 편집할 수 있습니다.',
-      });
+      const now = new Date().toISOString();
+      const newDraft: Invitation = {
+        id: slug,
+        slug,
+        title: null,
+        eventDate: null,
+        locationText: null,
+        message: null,
+        templateKey: 'wedding_classic',
+        musicKey: 'piano_wedding',
+        countryCode: 'GLOBAL',
+        language: 'ko',
+        status: 'draft',
+        isPaid: false,
+        canShare: true,
+        paidAt: null,
+        isOwner: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      setInvitation(newDraft);
     } catch {
       setError({
         title: '일시적인 오류입니다.',
@@ -127,7 +132,7 @@ export default function EditorPage() {
     } finally {
       setLoading(false);
     }
-  }, [slug, router, isDemo, isFuneralDemo]);
+  }, [slug, router, isFuneralDemo]);
 
   useEffect(() => {
     if (!invitation || hasSession) return;
@@ -159,27 +164,20 @@ export default function EditorPage() {
   );
 
   const handleSave = async (state: WeddingEditorState): Promise<void> => {
-    if (!slug || isDemo) {
-      alert('데모에서는 저장되지 않습니다.');
-      return;
-    }
-    if (!invitation?.isOwner) {
-      alert('소유자만 저장할 수 있습니다.');
-      return;
-    }
+    if (!slug) return;
 
     setSaving(true);
     setError(null);
     setSaveError(null);
 
     try {
-      const updated = await updateInvitation(slug, {
-        title: state.basic.title || undefined,
-        eventDate: state.basic.eventDateTime || undefined,
-        locationText: buildLocationText(state),
-        message: buildMessageText(state),
-      });
-      setInvitation(updated);
+      const invitationPayload = weddingEditorStateToInvitation(state, slug);
+      const runtimeData = buildWeddingClassicPreviewData(state);
+      saveInvitationDraft(slug, invitationPayload, runtimeData, 'draft');
+      setLastDraftSlug(slug);
+      setInvitation({ ...invitationPayload, status: 'draft' });
+      setDraftStatus('draft');
+      setLastSavedAt(new Date().toISOString());
     } catch (err) {
       setSaveError('저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       throw err;
@@ -189,34 +187,32 @@ export default function EditorPage() {
   };
 
   const handleSaveAndExit = async (state: WeddingEditorState) => {
-    if (isDemo) {
-      alert('데모에서는 저장/나가기 기능이 비활성화되어 있습니다.');
-      return;
-    }
     try {
       await handleSave(state);
     } catch {
       return;
     }
+    router.push(`/preview/${slug}`);
+  };
 
-    if (!hasSession) {
-      const email = window.prompt('저장했습니다. 이어서 편집하려면 이메일을 입력해 주세요.');
-      const normalized = email?.trim();
-      if (normalized) {
-        try {
-          const response = await requestMagicLink(normalized, slug);
-          if (response.previewLink) {
-            alert(`매직 링크가 발급되었습니다.\n${response.previewLink}`);
-          } else {
-            alert('매직 링크를 이메일로 전송했습니다.');
-          }
-        } catch (err) {
-          alert('매직 링크 전송에 실패했습니다.');
-        }
-      }
+  const handlePublish = async (state: WeddingEditorState) => {
+    if (!slug) return;
+    setPublishing(true);
+    setSaveError(null);
+    try {
+      const invitationPayload = weddingEditorStateToInvitation(state, slug);
+      const runtimeData = buildWeddingClassicPreviewData(state);
+      saveInvitationDraft(slug, invitationPayload, runtimeData, 'published');
+      setLastDraftSlug(slug);
+      setInvitation({ ...invitationPayload, status: 'published' });
+      setDraftStatus('published');
+      setLastSavedAt(new Date().toISOString());
+      router.push(`/invitation/${slug}`);
+    } catch {
+      setSaveError('공개에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setPublishing(false);
     }
-
-    router.push('/');
   };
 
   const handleFuneralSave = async (_state: FuneralEditorState) => {
@@ -263,7 +259,7 @@ export default function EditorPage() {
     return null;
   }
 
-  if (!isDemo && !isFuneralDemo && !invitation.isOwner) {
+  if (!isFuneralDemo && !invitation.isOwner) {
     return (
       <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
         <h1>소유자만 편집할 수 있습니다.</h1>
@@ -296,9 +292,13 @@ export default function EditorPage() {
       pageUrl={pageUrl}
       onSave={handleSave}
       onSaveAndExit={handleSaveAndExit}
+      onPublish={handlePublish}
       saving={saving}
-      isDemo={isDemo}
+      publishing={publishing}
+      isDemo={false}
       saveError={saveError}
+      draftStatus={draftStatus}
+      lastSavedAt={lastSavedAt}
     />
   );
 }

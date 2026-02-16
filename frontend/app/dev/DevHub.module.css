@@ -1,0 +1,171 @@
+.root {
+  min-height: 100vh;
+  font-family: system-ui, sans-serif;
+  background: #f8f9fa;
+}
+
+.header {
+  padding: 12px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e4e4e4;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.homeLink,
+.devLink {
+  color: #2f6fed;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.title {
+  font-size: 1.5rem;
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  color: #666;
+  margin: 0 0 24px;
+  font-size: 0.95rem;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e4e4e4;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.cardDescription {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  flex: 1;
+}
+
+.cardLink {
+  color: #2f6fed;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.cardLink:hover {
+  text-decoration: underline;
+}
+
+/* Integrity dashboard */
+.section {
+  background: #fff;
+  border: 1px solid #e4e4e4;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  font-size: 1.2rem;
+}
+
+.sectionDesc {
+  color: #666;
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.th {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 2px solid #e4e4e4;
+}
+
+.td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.statusPass {
+  color: #0a0;
+}
+
+.statusDisabled {
+  color: #b8860b;
+}
+
+.statusBlocked {
+  color: #c00;
+}
+
+.docRef {
+  font-size: 12px;
+  color: #666;
+}
+
+.backBar {
+  margin-bottom: 20px;
+}
+
+.backLink {
+  color: #2f6fed;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.devFooter {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid #e4e4e4;
+  font-size: 12px;
+  color: #888;
+}
+
+.devFooterLink {
+  color: #2f6fed;
+  text-decoration: none;
+}
+
+.docList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.docListItem {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.docDesc {
+  margin-left: 8px;
+  color: #666;
+  font-size: 0.9rem;
+}

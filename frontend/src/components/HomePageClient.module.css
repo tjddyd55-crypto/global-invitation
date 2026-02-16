@@ -1,3 +1,43 @@
+.mainHeader {
+  position: sticky;
+  top: 0;
+  background: white;
+  border-bottom: 1px solid #eee;
+  z-index: 50;
+}
+
+.headerInner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  text-decoration: none;
+  color: #111;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.navMenu {
+  display: flex;
+  gap: 24px;
+  font-size: 14px;
+}
+
+.navMenu a {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+}
+
+.navMenu a:hover {
+  color: #0066ff;
+}
+
 .hero {
   padding: 72px 24px 56px;
   text-align: center;
@@ -132,4 +172,28 @@
   color: #2f6fed;
   text-decoration: none;
   font-weight: 600;
+}
+
+.devEntry {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.devEntryLink {
+  font-size: 12px;
+  color: #999;
+  text-decoration: none;
+}
+
+.devEntryLink:hover {
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .headerInner {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
 }

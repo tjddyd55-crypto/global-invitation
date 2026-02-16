@@ -37,9 +37,13 @@ type WeddingEditorProps = {
   pageUrl: string;
   onSave?: (state: WeddingEditorState) => Promise<void> | void;
   onSaveAndExit?: (state: WeddingEditorState) => Promise<void> | void;
+  onPublish?: (state: WeddingEditorState) => Promise<void> | void;
   saving?: boolean;
+  publishing?: boolean;
   isDemo?: boolean;
   saveError?: string | null;
+  draftStatus?: 'draft' | 'published';
+  lastSavedAt?: string | null;
 };
 
 export default function WeddingEditor({
@@ -47,9 +51,13 @@ export default function WeddingEditor({
   pageUrl,
   onSave,
   onSaveAndExit,
+  onPublish,
   saving,
+  publishing,
   isDemo,
   saveError,
+  draftStatus = 'draft',
+  lastSavedAt,
 }: WeddingEditorProps) {
   const [state, dispatch] = useReducer(weddingEditorReducer, initialState);
   const [currentStep, setCurrentStep] = useState(0);
@@ -81,12 +89,28 @@ export default function WeddingEditor({
     await onSaveAndExit(state);
   };
 
+  const handlePublish = async () => {
+    if (!onPublish) return;
+    await onPublish(state);
+  };
+
+  const statusLabel = draftStatus === 'published' ? '공개됨' : '초안';
+  const statusClassName =
+    draftStatus === 'published' ? `${styles.statusBadge} ${styles.statusPublished}` : styles.statusBadge;
+  const lastSavedLabel = lastSavedAt
+    ? `최근 저장: ${new Date(lastSavedAt).toLocaleString()}`
+    : '저장되지 않은 변경사항';
+
   return (
     <div className={styles.editorPage}>
       <header className={styles.editorHeader}>
         <div>
           <h1 className={styles.editorTitle}>결혼식 에디터</h1>
           <p className={styles.editorSubtitle}>입력 즉시 미리보기에 반영됩니다.</p>
+          <div className={styles.statusLine}>
+            <span className={statusClassName}>{statusLabel}</span>
+            <span className={styles.statusMeta}>{lastSavedLabel}</span>
+          </div>
           {saveError && <p className={styles.errorText}>{saveError}</p>}
         </div>
         <div className={styles.headerActions}>
@@ -101,6 +125,16 @@ export default function WeddingEditor({
           {onSaveAndExit && (
             <button type="button" className={styles.buttonGhost} onClick={handleSaveAndExit} disabled={saving}>
               저장/나가기
+            </button>
+          )}
+          {onPublish && (
+            <button
+              type="button"
+              className={styles.buttonPrimary}
+              onClick={handlePublish}
+              disabled={saving || publishing}
+            >
+              {publishing ? '공개 중...' : '공개하기'}
             </button>
           )}
           <button

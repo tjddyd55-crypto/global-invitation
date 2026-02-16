@@ -6,6 +6,7 @@ import {
 } from '@/src/templates/weddingClassic/data';
 import { I18N_KEYS, translate, type Language } from '@/src/i18n';
 import { formatDateTime } from '@/src/lib/i18n/format';
+import type { Invitation } from '@/src/models/invitation';
 import { WEDDING_EDITOR_ASSETS } from './weddingEditor.initial';
 import type { WeddingEditorShare, WeddingEditorState } from './weddingEditor.types';
 
@@ -85,6 +86,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     mapImage: WEDDING_EDITOR_ASSETS.DEFAULT_MAP_IMAGE,
     transportInfo: state.location.transportInfo ?? [],
     parkingInfo: state.location.parkingInfo ?? [],
+    rsvp: { enabled: state.extras.rsvpEnabled },
     rsvpTitle: defaultLabels.rsvpTitle,
     rsvpDescription: defaultLabels.rsvpDescription,
     rsvpButton: state.extras.rsvpButtonText || defaultLabels.rsvpButton,
@@ -102,4 +104,31 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
 
 export function buildSharePreview(state: WeddingEditorState): WeddingEditorShare {
   return resolveSharePreview(state);
+}
+
+/** Editor state → Invitation (localStorage 저장용). Backend 전송 금지. */
+export function weddingEditorStateToInvitation(state: WeddingEditorState, slug: string): Invitation {
+  const now = new Date().toISOString();
+  const locationText = resolveVenueName(state.basic.venueName, state.basic.venueDetail);
+  const message =
+    state.invitationMessage.body.length > 0 ? state.invitationMessage.body.join('\n') : undefined;
+  return {
+    id: slug,
+    slug,
+    title: state.basic.title || undefined,
+    eventDate: state.basic.eventDateTime || undefined,
+    locationText: locationText || undefined,
+    message: message || undefined,
+    templateKey: 'wedding_classic',
+    musicKey: 'piano_wedding',
+    countryCode: 'GLOBAL',
+    language: state.setup.language,
+    status: 'draft',
+    isPaid: false,
+    canShare: true,
+    paidAt: null,
+    isOwner: true,
+    createdAt: now,
+    updatedAt: now,
+  };
 }

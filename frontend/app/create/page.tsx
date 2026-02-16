@@ -2,13 +2,13 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createInvitation, listGuestInvitations } from '@/src/lib/api';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { TEMPLATES, type Template } from '@/src/constants/templates';
 import TemplatePreviewModal from '@/src/components/TemplatePreviewModal';
 import { getTemplateName, getTemplateDescription, getTagName } from '@/src/utils/templateI18n';
 import { I18N_KEYS, type I18nKey } from '@/src/i18n';
 import { ensureGuestToken, getLastDraftSlug } from '@/src/lib/auth';
+import { generateDraftSlug } from '@/src/lib/invitationStorage';
 
 type SortOption = 'recommended' | 'newest' | 'price_low';
 
@@ -24,20 +24,9 @@ export default function CreatePage() {
   const [resumeSlug, setResumeSlug] = useState<string | null>(null);
 
   useEffect(() => {
-    const guestToken = ensureGuestToken();
+    ensureGuestToken();
     const storedSlug = getLastDraftSlug();
-    if (storedSlug) {
-      setResumeSlug(storedSlug);
-      return;
-    }
-    listGuestInvitations(guestToken)
-      .then((invitations) => {
-        const latest = invitations[0]?.slug;
-        if (latest) setResumeSlug(latest);
-      })
-      .catch(() => {
-        // ignore resume failures
-      });
+    if (storedSlug) setResumeSlug(storedSlug);
   }, []);
 
   // 모든 태그 수집
@@ -146,33 +135,11 @@ export default function CreatePage() {
     return result;
   };
 
-  const handleSelectTemplate = async () => {
+  const handleSelectTemplate = () => {
     if (!selectedTemplate) return;
-
-    setLoading(true);
     setError(null);
-
-    try {
-      const guestToken = ensureGuestToken();
-      const response = await createInvitation(selectedTemplate.key, guestToken);
-      const slug = typeof response?.slug === 'string' ? response.slug.trim() : '';
-      if (!slug) {
-        setError(I18N_KEYS.notice.createFailed);
-        setLoading(false);
-        return;
-      }
-      router.push(`/editor/${slug}`);
-    } catch (err) {
-      console.error('Error creating invitation:', err);
-      const backendUnavailable =
-        err instanceof Error && err.message.includes('백엔드 서버');
-      setError(
-        backendUnavailable
-          ? I18N_KEYS.notice.backendUnavailable
-          : I18N_KEYS.notice.createFailed
-      );
-      setLoading(false);
-    }
+    const slug = generateDraftSlug();
+    router.push(`/editor/${slug}`);
   };
 
   return (
