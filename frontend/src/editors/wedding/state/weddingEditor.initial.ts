@@ -1,7 +1,7 @@
 import { I18N_KEYS, translate, type Language } from '@/src/i18n';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/lib/api';
-import { buildWeddingClassicHeroTitle } from '@/src/templates/weddingClassic/data';
+import { buildWeddingClassicHeroTitle, type WeddingClassicData } from '@/src/templates/weddingClassic/data';
 import type {
   WeddingEditorAccount,
   WeddingEditorImage,
@@ -103,6 +103,28 @@ function buildOgDescription(eventDateTime: string, venueName: string, language: 
   return `${formattedDate} · ${venueName}`;
 }
 
+function toDateTimeLocalFromDate(source: Date): string {
+  const year = source.getFullYear();
+  const month = String(source.getMonth() + 1).padStart(2, '0');
+  const day = String(source.getDate()).padStart(2, '0');
+  const hours = String(source.getHours()).padStart(2, '0');
+  const minutes = String(source.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function stripRolePrefix(value: string): string {
+  const normalized = value.trim();
+  if (!normalized) return '';
+  const separators = [' ', ':', '-', '·'];
+  for (const separator of separators) {
+    const index = normalized.indexOf(separator);
+    if (index > 0 && index < normalized.length - 1) {
+      return normalized.slice(index + 1).trim();
+    }
+  }
+  return normalized;
+}
+
 export function createWeddingEditorState(invitation?: Invitation | null): WeddingEditorState {
   const { groomName, brideName } = parseCoupleNames(invitation?.title ?? undefined);
   const eventDateTime = toDateTimeLocal(invitation?.eventDate ?? null);
@@ -162,6 +184,78 @@ export function createWeddingEditorState(invitation?: Invitation | null): Weddin
       ogTitle: buildOgTitle({ groomName, brideName, language }),
       ogDescription: buildOgDescription(eventDateTime, venueName, language),
       ogImage: undefined,
+    },
+  };
+}
+
+export function createWeddingEditorStateFromDraft(
+  invitation: Invitation,
+  runtimeData: WeddingClassicData | null
+): WeddingEditorState {
+  const base = createWeddingEditorState(invitation);
+  if (!runtimeData) {
+    return base;
+  }
+
+  return {
+    ...base,
+    basic: {
+      ...base.basic,
+      title: invitation.title || runtimeData.coupleNames || base.basic.title,
+      eventDateTime: toDateTimeLocalFromDate(runtimeData.weddingDate),
+      venueName: runtimeData.venueName || base.basic.venueName,
+      venueDetail: undefined,
+    },
+    hero: {
+      heroImage: runtimeData.heroImage || base.hero.heroImage,
+      overlayText: runtimeData.heroOverlayText || base.hero.overlayText,
+    },
+    invitationMessage: {
+      quote: runtimeData.introQuote || base.invitationMessage.quote,
+      body: runtimeData.introText.length > 0 ? runtimeData.introText : base.invitationMessage.body,
+    },
+    groom: {
+      name: stripRolePrefix(runtimeData.groom.name) || base.groom.name,
+      photo: runtimeData.groom.image || base.groom.photo,
+      phone: runtimeData.groom.phone || base.groom.phone,
+      parentsText: runtimeData.groom.parentsText || base.groom.parentsText,
+    },
+    bride: {
+      name: stripRolePrefix(runtimeData.bride.name) || base.bride.name,
+      photo: runtimeData.bride.image || base.bride.photo,
+      phone: runtimeData.bride.phone || base.bride.phone,
+      parentsText: runtimeData.bride.parentsText || base.bride.parentsText,
+    },
+    gallery: {
+      images:
+        runtimeData.galleryImages.length > 0
+          ? runtimeData.galleryImages.map((url, index) => ({ id: `gallery-${index + 1}`, url }))
+          : base.gallery.images,
+    },
+    location: {
+      ...base.location,
+      address: runtimeData.address || base.location.address,
+      transportInfo: runtimeData.transportInfo.length > 0 ? runtimeData.transportInfo : base.location.transportInfo,
+      parkingInfo: runtimeData.parkingInfo.length > 0 ? runtimeData.parkingInfo : base.location.parkingInfo,
+    },
+    accounts:
+      runtimeData.accounts.length > 0
+        ? runtimeData.accounts.map((account, index) => ({
+            id: `account-${index + 1}`,
+            role: account.role,
+            bank: account.bank,
+            number: account.number,
+            holder: account.holder,
+          }))
+        : base.accounts,
+    extras: {
+      ...base.extras,
+      rsvpEnabled: runtimeData.rsvp?.enabled ?? base.extras.rsvpEnabled,
+      rsvpButtonText: runtimeData.rsvpButton || base.extras.rsvpButtonText,
+    },
+    share: {
+      ...base.share,
+      ogImage: runtimeData.heroImage || base.share.ogImage,
     },
   };
 }

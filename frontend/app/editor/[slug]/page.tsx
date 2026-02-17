@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import type { Invitation } from '@/src/lib/api';
 import WeddingEditor from '@/src/editors/wedding/WeddingEditor';
-import { createWeddingEditorState } from '@/src/editors/wedding/state/weddingEditor.initial';
+import {
+  createWeddingEditorState,
+  createWeddingEditorStateFromDraft,
+} from '@/src/editors/wedding/state/weddingEditor.initial';
 import {
   buildWeddingClassicPreviewData,
   weddingEditorStateToInvitation,
@@ -25,7 +28,7 @@ import { useI18n } from '@/src/contexts/I18nContext';
 import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import { ensureGuestToken, getStoredSession, setLastDraftSlug } from '@/src/lib/auth';
-import { getInvitationDraft, saveInvitationDraft } from '@/src/lib/invitationStorage';
+import { getInvitationDraft, getRuntimeDataFromDraft, saveInvitationDraft } from '@/src/lib/invitationStorage';
 
 type EditorError = {
   title: string;
@@ -157,7 +160,14 @@ export default function EditorPage() {
     }
   }, [funeralData, invitation, language, pageUrl]);
 
-  const initialState = useMemo(() => (invitation ? createWeddingEditorState(invitation) : null), [invitation]);
+  const initialState = useMemo(() => {
+    if (!invitation) return null;
+    const runtimeData = getRuntimeDataFromDraft(slug);
+    if (runtimeData) {
+      return createWeddingEditorStateFromDraft(invitation, runtimeData);
+    }
+    return createWeddingEditorState(invitation);
+  }, [invitation, slug]);
   const funeralInitialState = useMemo(
     () => (funeralData ? createFuneralEditorState(funeralData) : null),
     [funeralData]
