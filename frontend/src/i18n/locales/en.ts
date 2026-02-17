@@ -107,7 +107,7 @@ const en: LocaleDictionary = {
   'marketing.footer.contact': 'Contact',
   'marketing.hero.title': 'Digital invitations and messages, all in one place',
   'marketing.hero.subtitle': 'Create event, message, and branded cards yourself and share them by link.',
-  'marketing.hero.primaryCta': 'View demo',
+  'marketing.hero.primaryCta': 'Create Invitation',
   'marketing.hero.secondaryCta': 'See pricing',
   'marketing.features.title': 'Service Overview',
   'marketing.features.itemOne': 'Choose a template → edit → share by link',

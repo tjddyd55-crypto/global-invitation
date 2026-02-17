@@ -107,7 +107,7 @@ const mn: LocaleDictionary = {
   'marketing.footer.contact': 'Холбоо барих',
   'marketing.hero.title': 'Дижитал урилга ба мессежийг нэг дор',
   'marketing.hero.subtitle': 'Арга хэмжээ, мессеж, брэнд картуудыг өөрөө бүтээж холбоосоор хуваалцаарай.',
-  'marketing.hero.primaryCta': 'Демо үзэх',
+  'marketing.hero.primaryCta': 'Урилга үүсгэх',
   'marketing.hero.secondaryCta': 'Үнийг харах',
   'marketing.features.title': 'Үйлчилгээний танилцуулга',
   'marketing.features.itemOne': 'Загвар сонгох → засварлах → холбоосоор хуваалцах',

@@ -107,7 +107,7 @@ const ko: LocaleDictionary = {
   'marketing.footer.contact': '문의',
   'marketing.hero.title': '디지털 초대장과 메시지를 한 곳에서',
   'marketing.hero.subtitle': '행사, 메시지, 브랜드 카드까지 셀프로 만들고 링크로 공유하세요.',
-  'marketing.hero.primaryCta': '데모 보기',
+  'marketing.hero.primaryCta': '초대장 만들기',
   'marketing.hero.secondaryCta': '가격 보기',
   'marketing.features.title': '서비스 소개',
   'marketing.features.itemOne': '템플릿 선택 → 편집 → 링크 공유',
