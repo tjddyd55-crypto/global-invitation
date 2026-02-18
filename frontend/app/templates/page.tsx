@@ -32,7 +32,7 @@ export default function TemplatesPage() {
 
   const handleCreate = (_card: TemplateCard) => {
     const slug = generateDraftSlug();
-    router.push(`/editor/${slug}`);
+    router.push(`/editor/${slug}?template=FULL`);
   };
 
   return (

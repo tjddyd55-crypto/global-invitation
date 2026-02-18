@@ -52,7 +52,7 @@ export default function InvitationPage() {
 
   useEffect(() => {
     if (!slug) {
-      router.replace('/create');
+      router.replace('/templates');
       return;
     }
 

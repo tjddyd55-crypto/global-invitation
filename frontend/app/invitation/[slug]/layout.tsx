@@ -5,19 +5,26 @@ import {
 import type { Invitation } from '@/src/lib/api';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 
-export async function generateMetadata(
-  { params }: { params: { slug: string } }
-): Promise<Metadata> {
-  try {
-    const slug = typeof params.slug === 'string' ? params.slug : Array.isArray(params.slug) ? params.slug[0] : '';
-    if (!slug) return {};
+function resolveSafeSlug(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return typeof value[0] === 'string' ? value[0] : '';
+  return '';
+}
 
+export async function generateMetadata(
+  { params }: { params: { slug?: string | string[] } }
+): Promise<Metadata> {
+  const slug = resolveSafeSlug(params?.slug);
+  const canonicalPath = buildCanonicalUrl(slug ? `/invitation/${slug}` : '/invitation');
+  const imagePath = '/default-og.png';
+  const fallbackTitle = 'Invitation';
+  const fallbackDescription = "You're invited";
+
+  try {
     const invitation = getSampleWeddingInvitation();
     const subtitle = (invitation as Invitation & { subtitle?: string | null }).subtitle ?? invitation.message;
-    const title = invitation.title || 'Invitation';
-    const description = subtitle || "You're invited";
-    const canonicalPath = buildCanonicalUrl(`/invitation/${slug}`);
-    const imagePath = '/default-og.png';
+    const title = invitation.title || fallbackTitle;
+    const description = subtitle || fallbackDescription;
 
     return {
       title,
@@ -38,22 +45,21 @@ export async function generateMetadata(
       },
     };
   } catch {
-    const canonicalPath = buildCanonicalUrl(`/invitation/${params.slug ?? ''}`);
     return {
-      title: 'Invitation',
-      description: "You're invited",
+      title: fallbackTitle,
+      description: fallbackDescription,
       alternates: { canonical: canonicalPath },
       openGraph: {
-        title: 'Invitation',
-        description: "You're invited",
+        title: fallbackTitle,
+        description: fallbackDescription,
         images: ['/default-og.png'],
         type: 'website',
         url: canonicalPath,
       },
       twitter: {
         card: 'summary_large_image',
-        title: 'Invitation',
-        description: "You're invited",
+        title: fallbackTitle,
+        description: fallbackDescription,
         images: ['/default-og.png'],
       },
     };

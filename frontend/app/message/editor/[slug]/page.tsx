@@ -42,7 +42,7 @@ export default function MessageCardEditorPage() {
 
   useEffect(() => {
     if (!slug) {
-      router.replace('/create');
+      router.replace('/templates');
       return;
     }
     setData(null);

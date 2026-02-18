@@ -29,7 +29,7 @@ const QUICK_LINKS_LIST: React.CSSProperties = { listStyle: 'none', padding: '0',
 const INTEGRITY_ROUTE_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/integrity', label: '무결성 체크' },
-  { href: '/create', label: '초대장 만들기' },
+  { href: '/templates', label: '초대장 만들기' },
   { href: '/invitation/sample-wedding', label: '/invitation/sample-wedding' },
   { href: '/invitation/demo-wedding-classic', label: '/invitation/demo-wedding-classic' },
   { href: '/editor/sample-wedding', label: '/editor/sample-wedding' },

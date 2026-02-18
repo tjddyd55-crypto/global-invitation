@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import type { Invitation } from '@/src/lib/api';
 import WeddingEditor from '@/src/editors/wedding/WeddingEditor';
 import {
@@ -38,6 +38,13 @@ type EditorError = {
 const EVENT_TRACKING_ENABLED = false;
 let didWarnEventTracking = false;
 
+function resolveTemplateKeyFromParam(template: string | null): Invitation['templateKey'] {
+  if (template === 'FULL') {
+    return 'wedding_classic';
+  }
+  return 'wedding_classic';
+}
+
 function trackEvent(payload: Parameters<typeof logEvent>[0]) {
   if (!EVENT_TRACKING_ENABLED) {
     if (!didWarnEventTracking) {
@@ -52,8 +59,10 @@ function trackEvent(payload: Parameters<typeof logEvent>[0]) {
 export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
+  const requestedTemplate = searchParams.get('template');
   const { language } = useI18n();
   const editorLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
@@ -79,7 +88,7 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (!slug) {
-      router.replace('/create');
+      router.replace('/templates');
       return;
     }
 
@@ -107,6 +116,7 @@ export default function EditorPage() {
       }
 
       const now = new Date().toISOString();
+      const templateKey = resolveTemplateKeyFromParam(requestedTemplate);
       const newDraft: Invitation = {
         id: slug,
         slug,
@@ -114,7 +124,7 @@ export default function EditorPage() {
         eventDate: null,
         locationText: null,
         message: null,
-        templateKey: 'wedding_classic',
+        templateKey,
         musicKey: 'piano_wedding',
         countryCode: 'GLOBAL',
         language: 'ko',
@@ -135,7 +145,7 @@ export default function EditorPage() {
     } finally {
       setLoading(false);
     }
-  }, [slug, router, isFuneralDemo]);
+  }, [slug, router, isFuneralDemo, requestedTemplate]);
 
   useEffect(() => {
     if (!invitation || hasSession) return;
@@ -244,7 +254,7 @@ export default function EditorPage() {
         <h1>{error.title}</h1>
         <p style={{ color: '#d0653b' }}>{error.message}</p>
         <button
-          onClick={() => router.push('/create')}
+          onClick={() => router.push('/templates')}
           style={{
             padding: '0.5rem 1rem',
             marginTop: '1rem',

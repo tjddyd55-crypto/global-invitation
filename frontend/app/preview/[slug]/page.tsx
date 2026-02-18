@@ -34,7 +34,7 @@ export default function PreviewPage() {
 
   useEffect(() => {
     if (!slug) {
-      router.replace('/create');
+      router.replace('/templates');
       return;
     }
     try {
