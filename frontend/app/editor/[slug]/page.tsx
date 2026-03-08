@@ -29,6 +29,7 @@ import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import { ensureGuestToken, getStoredSession, setLastDraftSlug } from '@/src/lib/auth';
 import { getInvitationDraft, getRuntimeDataFromDraft, saveInvitationDraft } from '@/src/lib/invitationStorage';
+import { resolveTemplateKeyByTemplateId } from '@/src/lib/templateCatalog';
 
 type EditorError = {
   title: string;
@@ -37,22 +38,6 @@ type EditorError = {
 
 const EVENT_TRACKING_ENABLED = false;
 let didWarnEventTracking = false;
-
-type EditorTemplateParam = 'FULL' | 'SIMPLE';
-
-function normalizeTemplateParam(template: string | null): EditorTemplateParam | null {
-  if (template === 'FULL' || template === 'SIMPLE') {
-    return template;
-  }
-  return null;
-}
-
-function resolveTemplateKeyFromParam(template: EditorTemplateParam): Invitation['templateKey'] {
-  if (template === 'FULL') {
-    return 'wedding_classic';
-  }
-  return 'classic';
-}
 
 function trackEvent(payload: Parameters<typeof logEvent>[0]) {
   if (!EVENT_TRACKING_ENABLED) {
@@ -72,7 +57,7 @@ export default function EditorPage() {
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
   const requestedTemplate = searchParams.get('template');
-  const normalizedTemplate = normalizeTemplateParam(requestedTemplate);
+  const resolvedTemplateKey = resolveTemplateKeyByTemplateId(requestedTemplate);
   const { language } = useI18n();
   const editorLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
@@ -125,14 +110,13 @@ export default function EditorPage() {
         return;
       }
 
-      if (!normalizedTemplate) {
+      if (!resolvedTemplateKey) {
         router.replace('/templates');
         setLoading(false);
         return;
       }
 
       const now = new Date().toISOString();
-      const templateKey = resolveTemplateKeyFromParam(normalizedTemplate);
       const newDraft: Invitation = {
         id: slug,
         slug,
@@ -140,7 +124,7 @@ export default function EditorPage() {
         eventDate: null,
         locationText: null,
         message: null,
-        templateKey,
+        templateKey: resolvedTemplateKey,
         musicKey: 'piano_wedding',
         countryCode: 'GLOBAL',
         language: 'ko',
@@ -161,7 +145,7 @@ export default function EditorPage() {
     } finally {
       setLoading(false);
     }
-  }, [slug, router, isFuneralDemo, normalizedTemplate]);
+  }, [slug, router, isFuneralDemo, resolvedTemplateKey]);
 
   useEffect(() => {
     if (!invitation || hasSession) return;

@@ -1,54 +1,68 @@
 'use client';
 
-/**
- * 템플릿 선택 진입. FULL / SIMPLE 카드 표시.
- * 선택 시 /editor/[templateSlug] 또는 새 draft로 이동. API 호출 없음.
- */
-
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { generateDraftSlug } from '@/src/lib/invitationStorage';
 import MarketingLayout from '@/src/components/MarketingLayout';
+import {
+  TEMPLATE_CATALOG,
+  type TemplateCategory,
+  type TemplateCatalogItem,
+  type TemplateStyle,
+} from '@/src/lib/templateCatalog';
 import styles from './templates.module.css';
 
-type TemplateCard = {
-  id: string;
-  name: string;
-  category: '웨딩' | '심플';
-  description: string;
-  template: 'FULL' | 'SIMPLE';
+type FilterOption<T extends string> = { value: T | 'all'; label: string };
+
+const CATEGORY_FILTERS: FilterOption<TemplateCategory>[] = [
+  { value: 'all', label: '전체' },
+  { value: 'wedding', label: '웨딩' },
+  { value: 'birthday', label: '돌잔치' },
+  { value: 'funeral', label: '장례식' },
+  { value: 'party', label: '파티' },
+];
+
+const STYLE_FILTERS: FilterOption<TemplateStyle>[] = [
+  { value: 'all', label: '전체' },
+  { value: 'korean', label: '한국식' },
+  { value: 'japanese', label: '일본식' },
+  { value: 'western', label: '서양식' },
+  { value: 'traditional', label: '전통' },
+  { value: 'modern', label: '모던' },
+];
+
+const CATEGORY_LABELS: Record<TemplateCategory, string> = {
+  wedding: '웨딩',
+  birthday: '돌잔치',
+  funeral: '장례식',
+  party: '파티',
 };
 
-const TEMPLATE_LIST: TemplateCard[] = [
-  {
-    id: 'wedding-classic',
-    name: '웨딩 클래식',
-    category: '웨딩',
-    description: '전통적이고 우아한 결혼식 초대장',
-    template: 'FULL',
-  },
-  {
-    id: 'simple-minimal',
-    name: '심플 미니멀',
-    category: '심플',
-    description: '간결하고 모던한 초대장',
-    template: 'SIMPLE',
-  },
-];
+const STYLE_LABELS: Record<TemplateStyle, string> = {
+  korean: '한국식',
+  japanese: '일본식',
+  western: '서양식',
+  traditional: '전통',
+  modern: '모던',
+};
 
 export default function TemplatesPage() {
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState<'전체' | '웨딩' | '심플'>('전체');
+  const [categoryFilter, setCategoryFilter] = useState<TemplateCategory | 'all'>('all');
+  const [styleFilter, setStyleFilter] = useState<TemplateStyle | 'all'>('all');
 
   const filteredTemplates = useMemo(() => {
-    if (selectedCategory === '전체') return TEMPLATE_LIST;
-    return TEMPLATE_LIST.filter((item) => item.category === selectedCategory);
-  }, [selectedCategory]);
+    return TEMPLATE_CATALOG.filter((item) => {
+      const isCategoryMatched = categoryFilter === 'all' || item.category === categoryFilter;
+      const isStyleMatched = styleFilter === 'all' || item.style === styleFilter;
+      return isCategoryMatched && isStyleMatched;
+    });
+  }, [categoryFilter, styleFilter]);
 
-  const handleCreate = (card: TemplateCard) => {
+  const handleCreate = (card: TemplateCatalogItem) => {
     const slug = generateDraftSlug();
-    router.push(`/editor/${slug}?template=${card.template}`);
+    router.push(`/editor/${slug}?template=${card.id}`);
   };
 
   return (
@@ -58,23 +72,54 @@ export default function TemplatesPage() {
         <p className={styles.subtitle}>
           운영용 생성 흐름: 템플릿 선택 → 편집/저장 → 공개 → 공유
         </p>
-        <div className={styles.filters}>
-          {(['전체', '웨딩', '심플'] as const).map((category) => (
-            <button
-              key={category}
-              type="button"
-              className={selectedCategory === category ? `${styles.filterButton} ${styles.filterButtonActive}` : styles.filterButton}
-              onClick={() => setSelectedCategory(category)}
-            >
-              {category}
-            </button>
-          ))}
+        <section className={styles.filterSection}>
+          <p className={styles.filterTitle}>카테고리</p>
+          <div className={styles.filters}>
+            {CATEGORY_FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                className={
+                  categoryFilter === filter.value
+                    ? `${styles.filterButton} ${styles.filterButtonActive}`
+                    : styles.filterButton
+                }
+                onClick={() => setCategoryFilter(filter.value)}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </section>
+        <section className={styles.filterSection}>
+          <p className={styles.filterTitle}>스타일</p>
+          <div className={styles.filters}>
+            {STYLE_FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                className={
+                  styleFilter === filter.value
+                    ? `${styles.filterButton} ${styles.filterButtonActive}`
+                    : styles.filterButton
+                }
+                onClick={() => setStyleFilter(filter.value)}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </section>
+        <div className={styles.resultCount}>
+          총 <strong>{filteredTemplates.length}</strong>개의 템플릿
         </div>
         <div className={styles.grid}>
           {filteredTemplates.map((card) => (
             <article key={card.id} className={styles.card}>
               <div className={styles.thumbnail}>
-                <span className={styles.thumbnailLabel}>{card.category}</span>
+                <span className={styles.thumbnailLabel}>
+                  {CATEGORY_LABELS[card.category]} · {STYLE_LABELS[card.style]}
+                </span>
               </div>
               <h2 className={styles.cardTitle}>{card.name}</h2>
               <p className={styles.cardDesc}>{card.description}</p>
@@ -90,6 +135,9 @@ export default function TemplatesPage() {
             </article>
           ))}
         </div>
+        {filteredTemplates.length === 0 && (
+          <p className={styles.emptyState}>조건에 맞는 템플릿이 없습니다. 필터를 변경해 보세요.</p>
+        )}
         <p className={styles.footer}>
           <Link href="/my-invitations" className={styles.link}>내 초대장 관리</Link>
         </p>

@@ -16,10 +16,21 @@
   font-size: 0.95rem;
 }
 
+.filterSection {
+  margin-bottom: 14px;
+}
+
+.filterTitle {
+  margin: 0 0 8px;
+  color: #4a4a4a;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .filters {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .filterButton {
@@ -43,6 +54,13 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
+  margin-top: 12px;
+}
+
+.resultCount {
+  margin-top: 4px;
+  color: #5b5b5b;
+  font-size: 0.9rem;
 }
 
 .card {
@@ -118,4 +136,10 @@
   margin-top: 24px;
   font-size: 0.9rem;
   color: #666;
+}
+
+.emptyState {
+  margin-top: 14px;
+  color: #666;
+  font-size: 0.9rem;
 }
