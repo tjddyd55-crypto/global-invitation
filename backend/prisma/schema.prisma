@@ -130,7 +130,7 @@ model Template {
   category        String
   style           String
   description     String
-  price           Float
+  price           Int
   creatorShare    Float    @map("creator_share")
   creatorId       String?  @map("creator_id")
   component       String

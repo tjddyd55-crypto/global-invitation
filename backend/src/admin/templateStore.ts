@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 
-export type TemplateCategory = 'wedding' | 'birthday' | 'funeral' | 'party';
+export type TemplateCategory = 'wedding' | 'birthday' | 'funeral' | 'party' | 'message';
 export type TemplateStyle = 'korean' | 'japanese' | 'western' | 'traditional' | 'modern';
 export type TemplateMarketplaceType = 'SYSTEM' | 'CREATOR';
 export type TemplateFieldType = 'text' | 'textarea' | 'date' | 'datetime' | 'number' | 'select';
@@ -57,6 +57,11 @@ export type TemplateUpdateInput = Partial<TemplateCreateInput> & {
 
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function normalizeInteger(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.trunc(value);
 }
 
 function normalizeText(value: string): string {
@@ -157,7 +162,7 @@ async function createUniqueSlug(baseName: string): Promise<string> {
 }
 
 export function calculateRevenue(price: number, creatorShare: number) {
-  const normalizedPrice = Number(price) || 0;
+  const normalizedPrice = normalizeInteger(Number(price) || 0);
   const normalizedShare = clampNumber(Number(creatorShare) || 0, 0, 100);
   const creatorEarnings = Number(((normalizedPrice * normalizedShare) / 100).toFixed(2));
   const platformEarnings = Number((normalizedPrice - creatorEarnings).toFixed(2));
@@ -246,7 +251,7 @@ export async function createTemplate(input: TemplateCreateInput): Promise<Templa
       category: input.category,
       style: input.style,
       description: normalizeText(input.description),
-      price: Number(input.price) || 0,
+      price: normalizeInteger(Number(input.price) || 0),
       creatorShare: clampNumber(Number(input.creatorShare) || 0, 0, 100),
       creatorId: creatorId || null,
       component: normalizeText(input.component),
@@ -288,7 +293,7 @@ export async function updateTemplate(
     payload.description = normalizeText(input.description);
   }
   if (input.price !== undefined) {
-    payload.price = Number(input.price) || 0;
+    payload.price = normalizeInteger(Number(input.price) || 0);
   }
   if (input.creatorShare !== undefined) {
     payload.creatorShare = clampNumber(Number(input.creatorShare) || 0, 0, 100);

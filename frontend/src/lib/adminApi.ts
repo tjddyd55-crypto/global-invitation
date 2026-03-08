@@ -1,5 +1,5 @@
 import { buildApiUrl } from '@/src/lib/apiBase';
-import type { TemplateDefinition } from '@/src/templates/registry';
+import type { SupportedTemplateKey, TemplateDefinition } from '@/src/templates/registry';
 
 export type AdminSession = {
   authenticated: true;
@@ -29,8 +29,8 @@ export type AdminTemplatePayload = {
   price: number;
   creatorShare: number;
   creatorId?: string;
-  component: string;
-  templateKey: string;
+  component?: string;
+  templateKey: SupportedTemplateKey;
 };
 
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {

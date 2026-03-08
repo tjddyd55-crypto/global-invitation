@@ -1,14 +1,14 @@
 'use client';
 
 import styles from './FuneralClassicInvitation.module.css';
-import type { FuneralInvitation } from './data';
+import type { FuneralInvitationData } from '@/src/invitation/schemas';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { formatDate, formatDateTime } from '@/src/lib/i18n/format';
 
 type FuneralClassicInvitationProps = {
-  data: FuneralInvitation;
+  data: FuneralInvitationData;
   onShare?: () => void;
   isShared?: boolean;
   onKakaoShare?: () => void;

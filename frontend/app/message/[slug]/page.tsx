@@ -2,13 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import MessageThankYouCard from '@/src/templates/messageThankYou/MessageThankYouCard';
 import {
   getMessageCardDemoData,
   isMessageCardDemoSlug,
 } from '@/src/templates/messageThankYou/data';
 import type { MessageCardData } from '@/src/models/messageCard';
-import MessageSimpleCard from '@/src/templates/messageSimple/MessageSimpleCard';
 import { getMessageSimpleDemoData, isMessageSimpleDemoSlug } from '@/src/templates/messageSimple/data';
 import type { MessageCardSimple } from '@/src/models/messageSimple';
 import EditorBackButton from '@/app/_components/EditorBackButton';
@@ -21,6 +19,7 @@ import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import PaymentButton from '@/src/components/PaymentButton';
 import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
 import { getStoredSession } from '@/src/lib/auth';
+import { getTemplateRenderer } from '@/src/templates/registry';
 
 function formatIcsDate(date: Date): string {
   return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
@@ -247,10 +246,15 @@ export default function MessageCardPage() {
   }
 
   if (simpleData && simpleData.templateKey === 'message_simple') {
+    const Template = getTemplateRenderer(simpleData.templateKey);
+    if (!Template) {
+      return null;
+    }
+
     return (
       <>
         <EditorBackButton fallbackUrl={`/message/editor/${slug}`} />
-        <MessageSimpleCard
+        <Template
           data={simpleData}
           onShare={simpleActionHandlers?.onShare}
           isShared={shared}
@@ -275,10 +279,15 @@ export default function MessageCardPage() {
     );
   }
 
+  const Template = getTemplateRenderer('message_thankyou');
+  if (!Template) {
+    return null;
+  }
+
   return (
     <>
       <EditorBackButton fallbackUrl={`/message/editor/${slug}`} />
-      <MessageThankYouCard
+      <Template
         data={data}
         onCalendar={actionHandlers?.onCalendar}
         onShare={actionHandlers?.onShare}

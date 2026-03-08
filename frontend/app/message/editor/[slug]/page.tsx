@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import MessageCardEditor from '@/src/editors/messageCard/MessageCardEditor';
 import { createMessageCardEditorState } from '@/src/editors/messageCard/state/messageCardEditor.initial';
 import type { MessageCardEditorState } from '@/src/editors/messageCard/state/messageCardEditor.types';
@@ -16,6 +16,7 @@ import type { MessageCardSimple } from '@/src/models/messageSimple';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
+import { fetchTemplateDefinitionById, getTemplateEditorType } from '@/src/templates/registry';
 
 type EditorError = {
   title: string;
@@ -25,8 +26,10 @@ type EditorError = {
 export default function MessageCardEditorPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
+  const requestedTemplate = searchParams.get('template');
   const { language } = useI18n();
   const editorLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/message/${slug}`);
@@ -45,9 +48,11 @@ export default function MessageCardEditorPage() {
       router.replace('/templates');
       return;
     }
+
     setData(null);
     setSimpleData(null);
     setError(null);
+    setLoading(true);
 
     if (isSimpleDemo) {
       setSimpleData(getMessageSimpleDemoData());
@@ -61,12 +66,60 @@ export default function MessageCardEditorPage() {
       return;
     }
 
-    setError({
-      title: '메시지카드를 찾을 수 없습니다.',
-      message: '현재는 demo-thank-you만 지원합니다.',
-    });
-    setLoading(false);
-  }, [slug, router, isDemo, isSimpleDemo]);
+    let isMounted = true;
+
+    async function initializeMessageEditor() {
+      if (!requestedTemplate) {
+        if (!isMounted) return;
+        setError({
+          title: '메시지카드를 찾을 수 없습니다.',
+          message: '현재는 demo-thank-you, demo-simple 또는 registry 기반 message 템플릿만 지원합니다.',
+        });
+        setLoading(false);
+        return;
+      }
+
+      const templateDefinition = await fetchTemplateDefinitionById(requestedTemplate);
+      if (!isMounted) return;
+
+      const editorType = getTemplateEditorType(templateDefinition?.templateKey ?? null);
+      if (!templateDefinition || editorType !== 'message') {
+        setError({
+          title: '메시지카드를 찾을 수 없습니다.',
+          message: 'Registry에 연결된 message 템플릿이 아닙니다.',
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (templateDefinition.templateKey === 'message_simple') {
+        setSimpleData(getMessageSimpleDemoData());
+        setLoading(false);
+        return;
+      }
+
+      if (templateDefinition.templateKey === 'message_thankyou') {
+        setData({
+          ...getMessageCardDemoData(),
+          slug,
+        });
+        setLoading(false);
+        return;
+      }
+
+      setError({
+        title: '메시지카드를 찾을 수 없습니다.',
+        message: '이 템플릿은 다른 전용 에디터 경로를 사용합니다.',
+      });
+      setLoading(false);
+    }
+
+    void initializeMessageEditor();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slug, router, isDemo, isSimpleDemo, requestedTemplate]);
 
   useEffect(() => {
     if (editorLoggedRef.current) return;

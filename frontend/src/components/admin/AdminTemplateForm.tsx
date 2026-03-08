@@ -4,7 +4,10 @@
 import { useMemo, useState } from 'react';
 import type { AdminTemplatePayload } from '@/src/lib/adminApi';
 import {
+  ADMIN_TEMPLATE_KEY_OPTIONS,
   calculateTemplateRevenue,
+  getTemplateComponentName,
+  type SupportedTemplateKey,
   type TemplateCategory,
   type TemplateDefinition,
   type TemplateStyle,
@@ -24,6 +27,7 @@ const CATEGORY_OPTIONS: Array<{ value: TemplateCategory; label: string }> = [
   { value: 'birthday', label: '돌잔치' },
   { value: 'funeral', label: '장례식' },
   { value: 'party', label: '파티' },
+  { value: 'message', label: '메시지' },
 ];
 
 const STYLE_OPTIONS: Array<{ value: TemplateStyle; label: string }> = [
@@ -42,7 +46,6 @@ const DEFAULT_FORM_STATE: AdminTemplatePayload = {
   price: 50,
   creatorShare: 20,
   creatorId: '',
-  component: 'WeddingClassicTemplate',
   templateKey: 'wedding_classic',
 };
 
@@ -64,6 +67,10 @@ export default function AdminTemplateForm({
     () => calculateTemplateRevenue(form.price, form.creatorShare),
     [form.price, form.creatorShare]
   );
+  const resolvedComponent = useMemo(
+    () => getTemplateComponentName(form.templateKey) ?? 'WeddingClassicTemplate',
+    [form.templateKey]
+  );
 
   const handleChange = <K extends keyof AdminTemplatePayload>(key: K, value: AdminTemplatePayload[K]) => {
     setForm((previous) => ({ ...previous, [key]: value }));
@@ -76,6 +83,7 @@ export default function AdminTemplateForm({
     try {
       await onSubmit({
         ...form,
+        component: resolvedComponent,
         creatorId: form.creatorId?.trim() ? form.creatorId.trim() : undefined,
       });
     } catch (submitError) {
@@ -138,9 +146,9 @@ export default function AdminTemplateForm({
               id="template-price"
               type="number"
               min={0}
-              step="0.01"
+              step="1"
               value={form.price}
-              onChange={(event) => handleChange('price', Number(event.target.value))}
+              onChange={(event) => handleChange('price', Math.trunc(Number(event.target.value)))}
               required
             />
           </div>
@@ -167,23 +175,22 @@ export default function AdminTemplateForm({
             <span className={styles.helperText}>입력하면 CREATOR TEMPLATE로 분류됩니다.</span>
           </div>
           <div className={styles.field}>
-            <label htmlFor="template-component">Template Component Name</label>
-            <input
-              id="template-component"
-              value={form.component}
-              onChange={(event) => handleChange('component', event.target.value)}
-              required
-            />
-          </div>
-          <div className={styles.field}>
             <label htmlFor="template-key">Template Key</label>
-            <input
+            <select
               id="template-key"
               value={form.templateKey}
-              onChange={(event) => handleChange('templateKey', event.target.value)}
+              onChange={(event) => handleChange('templateKey', event.target.value as SupportedTemplateKey)}
               required
-            />
-            <span className={styles.helperText}>현재 editor/preview에서 지원하는 key와 맞춰야 합니다.</span>
+            >
+              {ADMIN_TEMPLATE_KEY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.value} ({option.label})
+                </option>
+              ))}
+            </select>
+            <span className={styles.helperText}>
+              renderer/editor는 registry 기준으로 자동 연결되며 component 컬럼도 자동 관리됩니다.
+            </span>
           </div>
         </div>
 
@@ -199,10 +206,10 @@ export default function AdminTemplateForm({
 
         <div className={styles.card}>
           <div className={styles.metricLabel}>수익 구조 미리보기</div>
-          <p className={styles.metricValue}>${revenue.price.toFixed(2)}</p>
+          <p className={styles.metricValue}>${revenue.price.toFixed(0)}</p>
           <p className={styles.helperText}>
-            Creator Earnings: ${revenue.creatorEarnings.toFixed(2)} / Platform Earnings: $
-            {revenue.platformEarnings.toFixed(2)}
+            Creator Earnings: ${revenue.creatorEarnings.toFixed(0)} / Platform Earnings: $
+            {revenue.platformEarnings.toFixed(0)}
           </p>
         </div>
 

@@ -12,7 +12,7 @@
 
 import { useState, useEffect } from 'react';
 import styles from './WeddingClassicInvitation.module.css';
-import type { WeddingClassicData } from './data';
+import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
@@ -36,7 +36,7 @@ type RsvpStored = { submitted: true; attending: boolean; name?: string };
 
 /** Runtime Contract: 단일 진입점. FULL 템플릿은 이 데이터만 읽고, 누락 시 가드로 섹션 생략. */
 type WeddingClassicInvitationProps = {
-  data: WeddingClassicData;
+  data: WeddingInvitationData;
   invitationSlug?: string;
   showPlayButton?: boolean;
   onPlayMusic?: () => void;

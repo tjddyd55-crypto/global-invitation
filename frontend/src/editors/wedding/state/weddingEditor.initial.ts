@@ -1,7 +1,8 @@
 import { I18N_KEYS, translate, type Language } from '@/src/i18n';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/lib/api';
-import { buildWeddingClassicHeroTitle, type WeddingClassicData } from '@/src/templates/weddingClassic/data';
+import { buildWeddingClassicHeroTitle } from '@/src/templates/weddingClassic/data';
+import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import type {
   WeddingEditorAccount,
   WeddingEditorImage,
@@ -195,7 +196,7 @@ export function createWeddingEditorState(invitation?: Invitation | null): Weddin
 
 export function createWeddingEditorStateFromDraft(
   invitation: Invitation,
-  runtimeData: WeddingClassicData | null
+  runtimeData: WeddingInvitationData | null
 ): WeddingEditorState {
   const base = createWeddingEditorState(invitation);
   if (!runtimeData) {

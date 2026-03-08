@@ -22,6 +22,7 @@ const CATEGORY_FILTERS: FilterOption<TemplateCategory>[] = [
   { value: 'birthday', label: '돌잔치' },
   { value: 'funeral', label: '장례식' },
   { value: 'party', label: '파티' },
+  { value: 'message', label: '메시지' },
 ];
 
 const STYLE_FILTERS: FilterOption<TemplateStyle>[] = [
@@ -38,6 +39,7 @@ const CATEGORY_LABELS: Record<TemplateCategory, string> = {
   birthday: '돌잔치',
   funeral: '장례식',
   party: '파티',
+  message: '메시지',
 };
 
 const STYLE_LABELS: Record<TemplateStyle, string> = {

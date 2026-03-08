@@ -2,8 +2,8 @@ import {
   buildWeddingClassicCalendarTitle,
   buildWeddingClassicHeroTitle,
   getWeddingClassicDefaultLabels,
-  type WeddingClassicData,
 } from '@/src/templates/weddingClassic/data';
+import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { I18N_KEYS, translate, type Language } from '@/src/i18n';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/models/invitation';
@@ -44,7 +44,7 @@ function resolveSharePreview(state: WeddingEditorState): WeddingEditorShare {
   };
 }
 
-export function buildWeddingClassicPreviewData(state: WeddingEditorState): WeddingClassicData {
+export function buildWeddingClassicPreviewData(state: WeddingEditorState): WeddingInvitationData {
   const weddingDate = safeDate(state.basic.eventDateTime);
   const venueName = resolveVenueName(state.basic.venueName, state.basic.venueDetail);
   const coupleNames = buildCoupleNames(state.groom.name, state.bride.name, state.setup.language);

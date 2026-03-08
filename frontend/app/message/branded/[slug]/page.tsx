@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import styles from '../MessageBrandedPage.module.css';
-import MessageBrandedJCI from '@/src/templates/messageBranded/jci/MessageBrandedJCI';
 import {
   getMessageBrandedJciDemoData,
   isMessageBrandedJciDemoSlug,
@@ -19,6 +18,7 @@ import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import PaymentButton from '@/src/components/PaymentButton';
 import { canAccessPaidAction, notifyPaymentRequired } from '@/src/lib/payments';
 import { getStoredSession } from '@/src/lib/auth';
+import { getTemplateRenderer } from '@/src/templates/registry';
 
 export default function MessageBrandedPage() {
   const params = useParams();
@@ -104,10 +104,15 @@ export default function MessageBrandedPage() {
     );
   }
 
+  const Template = getTemplateRenderer(data.templateKey);
+  if (!Template) {
+    return null;
+  }
+
   return (
     <>
       <EditorBackButton fallbackUrl={`/message/branded/editor/${slug}`} />
-      <MessageBrandedJCI data={data} onShare={handleShare} isShared={shared} />
+      <Template data={data} onShare={handleShare} isShared={shared} />
       <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
         <PaymentButton product="simple_message" />
       </div>

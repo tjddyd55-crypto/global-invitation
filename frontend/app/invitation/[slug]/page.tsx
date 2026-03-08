@@ -8,15 +8,11 @@ import { I18N_KEYS } from '@/src/i18n';
 import { logEvent } from '@/src/lib/events';
 import { getShareContent } from '@/src/lib/share';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
-import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
-import {
-  type WeddingClassicData,
-} from '@/src/templates/weddingClassic/data';
 import { resolveInvitationBySlug } from '@/src/lib/resolveInvitationData';
 import EditorBackButton from '@/app/_components/EditorBackButton';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import type { Invitation } from '@/src/lib/api';
-import { resolveRendererByTemplateKey } from '@/src/templates/registry';
+import { getTemplateRenderer } from '@/src/templates/registry';
 
 const EVENT_TRACKING_ENABLED = false;
 let didWarnEventTracking = false;
@@ -41,7 +37,7 @@ export default function InvitationPage() {
 
   const [loading, setLoading] = useState(true);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
-  const [runtimeDataOverride, setRuntimeDataOverride] = useState<WeddingClassicData | null>(null);
+  const [runtimeDataOverride, setRuntimeDataOverride] = useState<unknown | null>(null);
   const [publishStatus, setPublishStatus] = useState<'draft' | 'published'>('draft');
   const [shared, setShared] = useState(false);
   const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
@@ -208,9 +204,8 @@ export default function InvitationPage() {
     );
   }
 
-  const weddingClassicData = runtimeDataOverride;
-  if (!weddingClassicData) return null;
-  if (resolveRendererByTemplateKey(invitation.templateKey) !== 'weddingClassic') {
+  const Template = getTemplateRenderer(invitation.templateKey);
+  if (!runtimeDataOverride || !Template) {
     return null;
   }
 
@@ -234,8 +229,8 @@ export default function InvitationPage() {
           </button>
         </div>
       )}
-      <WeddingClassicInvitation
-        data={weddingClassicData}
+      <Template
+        data={runtimeDataOverride}
         invitationSlug={slug}
         showPlayButton={false}
         onShare={handleShare}

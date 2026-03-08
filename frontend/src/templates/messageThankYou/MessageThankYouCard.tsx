@@ -1,13 +1,13 @@
 'use client';
 
 import styles from './MessageThankYouCard.module.css';
-import type { MessageCardData } from '@/src/models/messageCard';
+import type { MessageThankYouInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { formatDateTime } from '@/src/lib/i18n/format';
 
 type MessageThankYouCardProps = {
-  data: MessageCardData;
+  data: MessageThankYouInvitationData;
   onCalendar?: () => void;
   onShare?: () => void;
   isShared?: boolean;

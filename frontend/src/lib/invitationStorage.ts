@@ -4,7 +4,8 @@
  */
 
 import type { Invitation } from '@/src/models/invitation';
-import type { WeddingClassicData } from '@/src/templates/weddingClassic/data';
+import type { InvitationRuntimeData, StoredInvitationRuntimeData } from '@/src/invitation/schemas';
+import { isInvitationRuntimeData } from '@/src/invitation/schemas';
 
 const STORAGE_PREFIX = 'invitation_draft_';
 
@@ -19,10 +20,7 @@ export function generateDraftSlug(): string {
   throw new Error('Failed to generate unique draft slug after 5 attempts.');
 }
 
-/** WeddingClassicData는 weddingDate가 Date이므로 직렬화 시 ISO 문자열로 저장 */
-export type StoredRuntimeData = Omit<WeddingClassicData, 'weddingDate'> & {
-  weddingDate: string;
-};
+export type StoredRuntimeData = StoredInvitationRuntimeData;
 
 export type StoredDraft = {
   invitation: Invitation;
@@ -62,10 +60,54 @@ function removeDraft(slug: string): void {
   }
 }
 
+function serializeRuntimeData(runtimeData: InvitationRuntimeData): StoredRuntimeData {
+  if (!runtimeData || typeof runtimeData !== 'object') {
+    return runtimeData as StoredRuntimeData;
+  }
+
+  const candidate = runtimeData as { weddingDate?: unknown };
+  if (candidate.weddingDate instanceof Date) {
+    return {
+      ...candidate,
+      weddingDate: candidate.weddingDate.toISOString(),
+    } as StoredRuntimeData;
+  }
+
+  return runtimeData as StoredRuntimeData;
+}
+
+function deserializeRuntimeData(runtimeData: StoredRuntimeData): InvitationRuntimeData | null {
+  if (!runtimeData || typeof runtimeData !== 'object') {
+    return isInvitationRuntimeData(runtimeData) ? runtimeData : null;
+  }
+
+  const candidate = runtimeData as { weddingDate?: unknown };
+  const normalized =
+    typeof candidate.weddingDate === 'string'
+      ? (() => {
+          const weddingDate = new Date(candidate.weddingDate);
+          if (Number.isNaN(weddingDate.getTime())) {
+            return null;
+          }
+
+          return {
+            ...candidate,
+            weddingDate,
+          };
+        })()
+      : runtimeData;
+
+  if (normalized === null) {
+    return null;
+  }
+
+  return isInvitationRuntimeData(normalized) ? normalized : null;
+}
+
 export function saveInvitationDraft(
   slug: string,
   invitation: Invitation,
-  runtimeData: WeddingClassicData,
+  runtimeData: InvitationRuntimeData,
   status: 'draft' | 'published' = 'draft'
 ): void {
   if (typeof window === 'undefined') return;
@@ -75,10 +117,7 @@ export function saveInvitationDraft(
   };
   const stored: StoredDraft = {
     invitation: normalizedInvitation,
-    runtimeData: {
-      ...runtimeData,
-      weddingDate: runtimeData.weddingDate.toISOString(),
-    },
+    runtimeData: serializeRuntimeData(runtimeData),
     savedAt: new Date().toISOString(),
     status,
   };
@@ -116,21 +155,17 @@ export function getInvitationDraft(slug: string): StoredDraft | null {
   }
 }
 
-/** localStorage에 저장된 draft를 WeddingClassicData로 복원 (weddingDate만 Date로) */
-export function getRuntimeDataFromDraft(slug: string): WeddingClassicData | null {
+export function getRuntimeDataFromDraft(slug: string): InvitationRuntimeData | null {
   const draft = getInvitationDraft(slug);
   if (!draft) return null;
   try {
-    const { runtimeData } = draft;
-    const weddingDate = new Date(runtimeData.weddingDate);
-    if (Number.isNaN(weddingDate.getTime())) {
+    const runtimeData = deserializeRuntimeData(draft.runtimeData);
+    if (runtimeData === null) {
       removeDraft(slug);
       return null;
     }
-    return {
-      ...runtimeData,
-      weddingDate,
-    };
+
+    return runtimeData;
   } catch {
     removeDraft(slug);
     return null;

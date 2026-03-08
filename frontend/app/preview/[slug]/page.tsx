@@ -10,13 +10,12 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { resolveInvitationBySlug } from '@/src/lib/resolveInvitationData';
 import { saveInvitationDraft } from '@/src/lib/invitationStorage';
-import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
 import { getShareContent, buildShareUrl, shareLink, type ShareTemplateType } from '@/src/lib/share';
 import { useI18n } from '@/src/contexts/I18nContext';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
-import type { WeddingClassicData } from '@/src/templates/weddingClassic/data';
 import type { Invitation } from '@/src/lib/api';
-import { resolveRendererByTemplateKey } from '@/src/templates/registry';
+import type { InvitationRuntimeData } from '@/src/invitation/schemas';
+import { getTemplateRenderer } from '@/src/templates/registry';
 
 export default function PreviewPage() {
   const params = useParams();
@@ -25,7 +24,7 @@ export default function PreviewPage() {
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
 
-  const [data, setData] = useState<WeddingClassicData | null>(null);
+  const [data, setData] = useState<InvitationRuntimeData | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
   const [shared, setShared] = useState(false);
@@ -85,8 +84,8 @@ export default function PreviewPage() {
 
   if (!slug) return null;
   if (!data) return null;
-  const renderer = resolveRendererByTemplateKey(invitation?.templateKey ?? null);
-  if (renderer !== 'weddingClassic') return null;
+  const Template = getTemplateRenderer(invitation?.templateKey ?? null);
+  if (!Template) return null;
 
   return (
     <>
@@ -116,7 +115,7 @@ export default function PreviewPage() {
           </button>
         )}
       </div>
-      <WeddingClassicInvitation
+      <Template
         data={data}
         invitationSlug={slug}
         onShare={handleShare}

@@ -13,11 +13,12 @@ import {
   type TemplateCategory,
   type TemplateStyle,
 } from '../admin/templateStore';
+import { isValidTemplateKey, resolveTemplateComponentByKey } from '../admin/templateRegistry';
 import { logAdminAction } from '../admin/adminAuditLog';
 
 const router = Router();
 
-const TEMPLATE_CATEGORIES = new Set<TemplateCategory>(['wedding', 'birthday', 'funeral', 'party']);
+const TEMPLATE_CATEGORIES = new Set<TemplateCategory>(['wedding', 'birthday', 'funeral', 'party', 'message']);
 const TEMPLATE_STYLES = new Set<TemplateStyle>([
   'korean',
   'japanese',
@@ -110,17 +111,24 @@ router.post('/templates', async (req, res) => {
     const category = normalizeText(req.body?.category);
     const style = normalizeText(req.body?.style);
     const description = normalizeText(req.body?.description);
-    const component = normalizeText(req.body?.component);
     const templateKey = normalizeText(req.body?.templateKey) || 'wedding_classic';
     const creatorId = normalizeText(req.body?.creatorId);
     const price = normalizeNumber(req.body?.price);
     const creatorShare = normalizeNumber(req.body?.creatorShare);
 
-    if (!name || !description || !component) {
+    if (!name || !description) {
       return res.status(400).json({ error: 'REQUIRED_FIELDS_MISSING' });
     }
     if (!validateCategory(category) || !validateStyle(style)) {
       return res.status(400).json({ error: 'INVALID_TEMPLATE_TAXONOMY' });
+    }
+    if (!isValidTemplateKey(templateKey)) {
+      return res.status(400).json({ error: 'INVALID_TEMPLATE_KEY' });
+    }
+
+    const component = resolveTemplateComponentByKey(templateKey);
+    if (!component) {
+      return res.status(400).json({ error: 'INVALID_TEMPLATE_KEY' });
     }
 
     const template = await createTemplate({
@@ -163,8 +171,20 @@ router.patch('/templates/:id', async (req, res) => {
 
     if (typeof req.body?.name === 'string') payload.name = normalizeText(req.body.name);
     if (typeof req.body?.description === 'string') payload.description = normalizeText(req.body.description);
-    if (typeof req.body?.component === 'string') payload.component = normalizeText(req.body.component);
-    if (typeof req.body?.templateKey === 'string') payload.templateKey = normalizeText(req.body.templateKey);
+    if (typeof req.body?.templateKey === 'string') {
+      const templateKey = normalizeText(req.body.templateKey);
+      if (!isValidTemplateKey(templateKey)) {
+        return res.status(400).json({ error: 'INVALID_TEMPLATE_KEY' });
+      }
+
+      const component = resolveTemplateComponentByKey(templateKey);
+      if (!component) {
+        return res.status(400).json({ error: 'INVALID_TEMPLATE_KEY' });
+      }
+
+      payload.templateKey = templateKey;
+      payload.component = component;
+    }
     if (typeof req.body?.category === 'string') {
       const category = normalizeText(req.body.category);
       if (!validateCategory(category)) {

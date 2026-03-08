@@ -1,9 +1,18 @@
+import type { ComponentType } from 'react';
 import { buildApiUrl } from '@/src/lib/apiBase';
+import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
+import FuneralClassicInvitation from '@/src/templates/funeralClassic/FuneralClassicInvitation';
+import MessageSimpleCard from '@/src/templates/messageSimple/MessageSimpleCard';
+import MessageThankYouCard from '@/src/templates/messageThankYou/MessageThankYouCard';
+import MessageBrandedJCI from '@/src/templates/messageBranded/jci/MessageBrandedJCI';
 
-export type TemplateCategory = 'wedding' | 'birthday' | 'funeral' | 'party';
+export type TemplateCategory = 'wedding' | 'birthday' | 'funeral' | 'party' | 'message';
 export type TemplateStyle = 'korean' | 'japanese' | 'western' | 'traditional' | 'modern';
 export type TemplateMarketplaceType = 'SYSTEM' | 'CREATOR';
-export type TemplateRendererKind = 'weddingClassic';
+
+export type TemplateEditorType = 'wedding' | 'funeral' | 'message';
+export type TemplateRegistryCategory = 'wedding' | 'funeral' | 'message';
+export type TemplateRendererComponent = ComponentType<any>;
 
 export interface TemplateDefinition {
   id: string;
@@ -22,17 +31,94 @@ export interface TemplateDefinition {
   createdAt: string;
 }
 
-type ComponentBinding = {
-  renderer: TemplateRendererKind;
-  supportedTemplateKeys: string[];
+export type TemplateRegistryEntry = {
+  category: TemplateRegistryCategory;
+  editorType: TemplateEditorType;
+  renderer: TemplateRendererComponent;
+  schema: 'WeddingInvitationData' | 'FuneralInvitationData' | 'MessageInvitationData';
+  label: string;
+  componentName: string;
+  editorPath: (slug: string) => string;
 };
 
-const COMPONENT_BINDINGS: Record<string, ComponentBinding> = {
-  WeddingClassicTemplate: {
-    renderer: 'weddingClassic',
-    supportedTemplateKeys: ['wedding_classic', 'classic'],
+export const TEMPLATE_REGISTRY: Record<string, TemplateRegistryEntry> = {
+  wedding_classic: {
+    category: 'wedding',
+    editorType: 'wedding',
+    renderer: WeddingClassicInvitation,
+    schema: 'WeddingInvitationData',
+    label: 'Wedding Classic',
+    componentName: 'WeddingClassicTemplate',
+    editorPath: (slug) => `/editor/${slug}`,
+  },
+  classic: {
+    category: 'wedding',
+    editorType: 'wedding',
+    renderer: WeddingClassicInvitation,
+    schema: 'WeddingInvitationData',
+    label: 'Wedding Classic (Legacy)',
+    componentName: 'WeddingClassicTemplate',
+    editorPath: (slug) => `/editor/${slug}`,
+  },
+  funeral_classic: {
+    category: 'funeral',
+    editorType: 'funeral',
+    renderer: FuneralClassicInvitation,
+    schema: 'FuneralInvitationData',
+    label: 'Funeral Classic',
+    componentName: 'FuneralClassicTemplate',
+    editorPath: (slug) => `/editor/${slug}`,
+  },
+  message_simple: {
+    category: 'message',
+    editorType: 'message',
+    renderer: MessageSimpleCard,
+    schema: 'MessageInvitationData',
+    label: 'Message Simple',
+    componentName: 'MessageSimpleTemplate',
+    editorPath: (slug) => `/message/editor/${slug}`,
+  },
+  message_thankyou: {
+    category: 'message',
+    editorType: 'message',
+    renderer: MessageThankYouCard,
+    schema: 'MessageInvitationData',
+    label: 'Message Thank You',
+    componentName: 'MessageThankYouTemplate',
+    editorPath: (slug) => `/message/editor/${slug}`,
+  },
+  message_branded_jci: {
+    category: 'message',
+    editorType: 'message',
+    renderer: MessageBrandedJCI,
+    schema: 'MessageInvitationData',
+    label: 'Message Branded JCI',
+    componentName: 'MessageBrandedJciTemplate',
+    editorPath: (slug) => `/message/branded/editor/${slug}`,
+  },
+  message_branded: {
+    category: 'message',
+    editorType: 'message',
+    renderer: MessageBrandedJCI,
+    schema: 'MessageInvitationData',
+    label: 'Message Branded JCI (Legacy)',
+    componentName: 'MessageBrandedJciTemplate',
+    editorPath: (slug) => `/message/branded/editor/${slug}`,
   },
 };
+
+export const ADMIN_TEMPLATE_KEY_OPTIONS = [
+  { value: 'wedding_classic', label: 'Wedding Classic' },
+  { value: 'classic', label: 'Wedding Classic (legacy alias)' },
+  { value: 'funeral_classic', label: 'Funeral Classic' },
+  { value: 'message_simple', label: 'Message Simple' },
+  { value: 'message_thankyou', label: 'Message Thank You' },
+  { value: 'message_branded_jci', label: 'Message Branded JCI' },
+  { value: 'message_branded', label: 'Message Branded JCI (legacy alias)' },
+] as const;
+
+export type SupportedTemplateKey = keyof typeof TEMPLATE_REGISTRY;
+export const VALID_TEMPLATE_KEYS = Object.keys(TEMPLATE_REGISTRY) as SupportedTemplateKey[];
 
 const LEGACY_TEMPLATE_ALIASES: Record<string, string> = {
   FULL: 'wedding-korean-classic',
@@ -121,12 +207,35 @@ export function getDefaultTemplateRegistry(): TemplateDefinition[] {
   return DEFAULT_TEMPLATE_REGISTRY.map((template) => ({ ...template }));
 }
 
-export function resolveComponentBinding(component: string): ComponentBinding | null {
-  return COMPONENT_BINDINGS[component] ?? null;
+export function getTemplateRegistryEntry(templateKey: string | null | undefined): TemplateRegistryEntry | null {
+  if (!templateKey) return null;
+  return TEMPLATE_REGISTRY[templateKey] ?? null;
+}
+
+export function getTemplateRenderer(templateKey: string | null | undefined): TemplateRendererComponent | null {
+  return getTemplateRegistryEntry(templateKey)?.renderer ?? null;
+}
+
+export function getTemplateEditorType(templateKey: string | null | undefined): TemplateEditorType | null {
+  return getTemplateRegistryEntry(templateKey)?.editorType ?? null;
+}
+
+export function getTemplateComponentName(templateKey: string | null | undefined): string | null {
+  return getTemplateRegistryEntry(templateKey)?.componentName ?? null;
+}
+
+export function getTemplateEditorPath(templateKey: string | null | undefined, slug: string): string | null {
+  const entry = getTemplateRegistryEntry(templateKey);
+  if (!entry) return null;
+  return entry.editorPath(slug);
+}
+
+export function isValidTemplateKey(templateKey: string | null | undefined): templateKey is SupportedTemplateKey {
+  return Boolean(getTemplateRegistryEntry(templateKey));
 }
 
 export function isTemplateSupported(template: TemplateDefinition): boolean {
-  return Boolean(resolveComponentBinding(template.component));
+  return isValidTemplateKey(template.templateKey);
 }
 
 export function isTemplateVisible(template: TemplateDefinition): boolean {
@@ -161,13 +270,8 @@ export function resolveTemplateKeyByTemplateId(
   return template?.templateKey ?? null;
 }
 
-export function resolveRendererByTemplateKey(templateKey: string | null): TemplateRendererKind | null {
-  if (!templateKey) return null;
-
-  const binding = Object.values(COMPONENT_BINDINGS).find((candidate) =>
-    candidate.supportedTemplateKeys.includes(templateKey)
-  );
-  return binding?.renderer ?? null;
+export function resolveRendererByTemplateKey(templateKey: string | null): string | null {
+  return getTemplateRegistryEntry(templateKey)?.label ?? null;
 }
 
 export async function fetchVisibleTemplateDefinitions(): Promise<TemplateDefinition[]> {

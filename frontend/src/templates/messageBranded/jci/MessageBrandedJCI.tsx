@@ -1,12 +1,12 @@
 'use client';
 
 import styles from './MessageBrandedJCI.module.css';
-import type { BrandedMessageCard } from '@/src/models/messageBranded';
+import type { MessageBrandedInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 
 type MessageBrandedJCIProps = {
-  data: BrandedMessageCard;
+  data: MessageBrandedInvitationData;
   onShare?: () => void;
   isShared?: boolean;
 };

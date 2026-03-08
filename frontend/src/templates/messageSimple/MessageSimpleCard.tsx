@@ -1,12 +1,12 @@
 'use client';
 
 import styles from './MessageSimpleCard.module.css';
-import type { MessageCardSimple } from '@/src/models/messageSimple';
+import type { MessageSimpleInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 
 type MessageSimpleCardProps = {
-  data: MessageCardSimple;
+  data: MessageSimpleInvitationData;
   onShare?: () => void;
   isShared?: boolean;
   onKakaoShare?: () => void;

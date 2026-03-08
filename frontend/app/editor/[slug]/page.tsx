@@ -17,19 +17,21 @@ import FuneralEditor from '@/src/editors/funeral/FuneralEditor';
 import { createFuneralEditorState } from '@/src/editors/funeral/state/funeralEditor.initial';
 import type { FuneralEditorState } from '@/src/editors/funeral/state/funeralEditor.types';
 import {
-  isWeddingClassicTemplate,
-} from '@/src/templates/weddingClassic/data';
-import {
   getFuneralClassicDemoData,
   isFuneralClassicDemoSlug,
-  isFuneralClassicTemplate,
 } from '@/src/templates/funeralClassic/data';
+import type { FuneralInvitationData, WeddingInvitationData } from '@/src/invitation/schemas';
+import { isFuneralInvitationData, isWeddingInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import { ensureGuestToken, getStoredSession, setLastDraftSlug } from '@/src/lib/auth';
 import { getInvitationDraft, getRuntimeDataFromDraft, saveInvitationDraft } from '@/src/lib/invitationStorage';
-import { fetchTemplateDefinitionById } from '@/src/templates/registry';
+import {
+  fetchTemplateDefinitionById,
+  getTemplateEditorPath,
+  getTemplateEditorType,
+} from '@/src/templates/registry';
 
 type EditorError = {
   title: string;
@@ -66,6 +68,7 @@ export default function EditorPage() {
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<EditorError | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
   const [draftStatus, setDraftStatus] = useState<'draft' | 'published'>('draft');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
@@ -95,6 +98,7 @@ export default function EditorPage() {
       setFuneralData(null);
       setDraftStatus('draft');
       setLastSavedAt(null);
+      setSaveNotice(null);
 
       try {
         if (isFuneralDemo) {
@@ -105,6 +109,11 @@ export default function EditorPage() {
 
         const draft = getInvitationDraft(slug);
         if (draft) {
+          const redirectPath = getTemplateEditorPath(draft.invitation.templateKey, slug);
+          if (redirectPath && redirectPath !== `/editor/${slug}`) {
+            router.replace(redirectPath);
+            return;
+          }
           if (!isMounted) return;
           setInvitation(draft.invitation);
           setDraftStatus(draft.status);
@@ -120,6 +129,12 @@ export default function EditorPage() {
         const templateDefinition = await fetchTemplateDefinitionById(requestedTemplate);
         if (!templateDefinition) {
           router.replace('/templates');
+          return;
+        }
+
+        const redirectPath = getTemplateEditorPath(templateDefinition.templateKey, slug);
+        if (redirectPath && redirectPath !== `/editor/${slug}`) {
+          router.replace(`${redirectPath}?template=${requestedTemplate}`);
           return;
         }
 
@@ -142,6 +157,7 @@ export default function EditorPage() {
           isOwner: true,
           createdAt: now,
           updatedAt: now,
+          data: templateDefinition.templateKey === 'funeral_classic' ? getFuneralClassicDemoData() : undefined,
         };
         if (!isMounted) return;
         setInvitation(newDraft);
@@ -182,24 +198,37 @@ export default function EditorPage() {
     }
 
     if (invitation) {
-      const templateType = isFuneralClassicTemplate(invitation.templateKey) ? 'funeral' : 'wedding';
+      const templateType = getTemplateEditorType(invitation.templateKey) === 'funeral' ? 'funeral' : 'wedding';
       trackEvent({ eventType: 'editor_open', templateType, language, pageUrl });
       editorLoggedRef.current = true;
     }
   }, [funeralData, invitation, language, pageUrl]);
 
+  const editorType = useMemo(
+    () => getTemplateEditorType(invitation?.templateKey ?? (isFuneralDemo ? 'funeral_classic' : null)),
+    [invitation?.templateKey, isFuneralDemo]
+  );
+
   const initialState = useMemo(() => {
-    if (!invitation) return null;
+    if (!invitation || editorType !== 'wedding') return null;
     const runtimeData = getRuntimeDataFromDraft(slug);
-    if (runtimeData) {
+    if (isWeddingInvitationData(runtimeData)) {
       return createWeddingEditorStateFromDraft(invitation, runtimeData);
     }
     return createWeddingEditorState(invitation);
-  }, [invitation, slug]);
-  const funeralInitialState = useMemo(
-    () => (funeralData ? createFuneralEditorState(funeralData) : null),
-    [funeralData]
-  );
+  }, [editorType, invitation, slug]);
+  const funeralInitialState = useMemo(() => {
+    if (funeralData) {
+      return createFuneralEditorState(funeralData);
+    }
+    if (!invitation || editorType !== 'funeral') {
+      return null;
+    }
+
+    const runtimeData = getRuntimeDataFromDraft(slug);
+    const invitationData = isFuneralInvitationData(invitation.data) ? invitation.data : undefined;
+    return createFuneralEditorState(isFuneralInvitationData(runtimeData) ? runtimeData : invitationData ?? null);
+  }, [editorType, funeralData, invitation, slug]);
 
   const handleSave = async (state: WeddingEditorState): Promise<void> => {
     if (!slug) return;
@@ -207,6 +236,7 @@ export default function EditorPage() {
     setSaving(true);
     setError(null);
     setSaveError(null);
+    setSaveNotice(null);
 
     try {
       const invitationPayload = weddingEditorStateToInvitation(state, slug);
@@ -237,6 +267,7 @@ export default function EditorPage() {
     if (!slug) return;
     setPublishing(true);
     setSaveError(null);
+    setSaveNotice(null);
     try {
       const invitationPayload = weddingEditorStateToInvitation(state, slug);
       const runtimeData = buildWeddingClassicPreviewData(state);
@@ -253,9 +284,41 @@ export default function EditorPage() {
     }
   };
 
-  const handleFuneralSave = async (_state: FuneralEditorState) => {
+  const handleFuneralSave = async (state: FuneralEditorState) => {
+    if (!slug) return;
+
     setSaveError(null);
-    alert('데모에서는 저장되지 않습니다.');
+
+    const now = new Date().toISOString();
+    const invitationPayload: Invitation = {
+      ...(invitation ?? {
+        id: slug,
+        slug,
+        templateKey: 'funeral_classic',
+        countryCode: 'GLOBAL',
+        language: 'ko',
+        status: 'draft',
+        isPaid: false,
+        canShare: true,
+        createdAt: now,
+        updatedAt: now,
+      }),
+      templateKey: 'funeral_classic',
+      title: `${state.deceasedName} 부고장`,
+      eventDate: state.schedule.funeralDate,
+      locationText: state.funeralHall.address || state.funeralHall.name,
+      message: state.message,
+      data: state,
+      status: 'draft',
+      updatedAt: now,
+    };
+
+    saveInvitationDraft(slug, invitationPayload, state, 'draft');
+    setInvitation(invitationPayload);
+    setDraftStatus('draft');
+    setLastSavedAt(now);
+    setSaveNotice('로컬 초안에 저장되었습니다.');
+    setTimeout(() => setSaveNotice(null), 2000);
   };
 
   if (loading) {
@@ -290,10 +353,10 @@ export default function EditorPage() {
   }
 
   if (isFuneralDemo && funeralInitialState) {
-    return <FuneralEditor initialState={funeralInitialState} onSave={handleFuneralSave} />;
+    return <FuneralEditor initialState={funeralInitialState} onSave={handleFuneralSave} saveNotice={saveNotice} />;
   }
 
-  if (!invitation || !initialState) {
+  if (!invitation) {
     return null;
   }
 
@@ -306,37 +369,40 @@ export default function EditorPage() {
     );
   }
 
-  if (!isWeddingClassicTemplate(invitation.templateKey)) {
-    if (isFuneralClassicTemplate(invitation.templateKey)) {
-      return (
-        <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-          <h1>부고장 에디터는 demo-funeral-classic에서 확인할 수 있습니다.</h1>
-          <p>실제 데이터 연동은 다음 단계에서 진행됩니다.</p>
-        </div>
-      );
-    }
+  if (editorType === 'funeral' && funeralInitialState) {
     return (
-      <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-        <h1>지원하지 않는 템플릿입니다.</h1>
-        <p>현재는 wedding_classic 템플릿만 결혼식 에디터를 지원합니다.</p>
-      </div>
+      <FuneralEditor
+        initialState={funeralInitialState}
+        onSave={handleFuneralSave}
+        saveNotice={saveNotice}
+        saveError={saveError}
+      />
+    );
+  }
+
+  if (editorType === 'wedding' && initialState) {
+    return (
+      <WeddingEditor
+        key={invitation.id}
+        initialState={initialState}
+        pageUrl={pageUrl}
+        onSave={handleSave}
+        onSaveAndExit={handleSaveAndExit}
+        onPublish={handlePublish}
+        saving={saving}
+        publishing={publishing}
+        isDemo={false}
+        saveError={saveError}
+        draftStatus={draftStatus}
+        lastSavedAt={lastSavedAt}
+      />
     );
   }
 
   return (
-    <WeddingEditor
-      key={invitation.id}
-      initialState={initialState}
-      pageUrl={pageUrl}
-      onSave={handleSave}
-      onSaveAndExit={handleSaveAndExit}
-      onPublish={handlePublish}
-      saving={saving}
-      publishing={publishing}
-      isDemo={false}
-      saveError={saveError}
-      draftStatus={draftStatus}
-      lastSavedAt={lastSavedAt}
-    />
+    <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
+      <h1>지원하지 않는 템플릿입니다.</h1>
+      <p>Registry에 연결된 editorType을 확인해 주세요.</p>
+    </div>
   );
 }
