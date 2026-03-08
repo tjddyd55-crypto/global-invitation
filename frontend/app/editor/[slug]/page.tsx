@@ -29,7 +29,7 @@ import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import { ensureGuestToken, getStoredSession, setLastDraftSlug } from '@/src/lib/auth';
 import { getInvitationDraft, getRuntimeDataFromDraft, saveInvitationDraft } from '@/src/lib/invitationStorage';
-import { resolveTemplateKeyByTemplateId } from '@/src/lib/templateCatalog';
+import { fetchTemplateDefinitionById } from '@/src/templates/registry';
 
 type EditorError = {
   title: string;
@@ -57,7 +57,6 @@ export default function EditorPage() {
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
   const requestedTemplate = searchParams.get('template');
-  const resolvedTemplateKey = resolveTemplateKeyByTemplateId(requestedTemplate);
   const { language } = useI18n();
   const editorLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
@@ -87,65 +86,84 @@ export default function EditorPage() {
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    setInvitation(null);
-    setFuneralData(null);
-    setDraftStatus('draft');
-    setLastSavedAt(null);
+    let isMounted = true;
 
-    try {
-      if (isFuneralDemo) {
-        setFuneralData(getFuneralClassicDemoData());
-        setLoading(false);
-        return;
+    async function initializeEditor() {
+      setLoading(true);
+      setError(null);
+      setInvitation(null);
+      setFuneralData(null);
+      setDraftStatus('draft');
+      setLastSavedAt(null);
+
+      try {
+        if (isFuneralDemo) {
+          if (!isMounted) return;
+          setFuneralData(getFuneralClassicDemoData());
+          return;
+        }
+
+        const draft = getInvitationDraft(slug);
+        if (draft) {
+          if (!isMounted) return;
+          setInvitation(draft.invitation);
+          setDraftStatus(draft.status);
+          setLastSavedAt(draft.savedAt);
+          return;
+        }
+
+        if (!requestedTemplate) {
+          router.replace('/templates');
+          return;
+        }
+
+        const templateDefinition = await fetchTemplateDefinitionById(requestedTemplate);
+        if (!templateDefinition) {
+          router.replace('/templates');
+          return;
+        }
+
+        const now = new Date().toISOString();
+        const newDraft: Invitation = {
+          id: slug,
+          slug,
+          title: null,
+          eventDate: null,
+          locationText: null,
+          message: null,
+          templateKey: templateDefinition.templateKey,
+          musicKey: 'piano_wedding',
+          countryCode: 'GLOBAL',
+          language: 'ko',
+          status: 'draft',
+          isPaid: false,
+          canShare: true,
+          paidAt: null,
+          isOwner: true,
+          createdAt: now,
+          updatedAt: now,
+        };
+        if (!isMounted) return;
+        setInvitation(newDraft);
+      } catch {
+        if (!isMounted) return;
+        setError({
+          title: '일시적인 오류입니다.',
+          message: '다시 시도해 주세요.',
+        });
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-
-      const draft = getInvitationDraft(slug);
-      if (draft) {
-        setInvitation(draft.invitation);
-        setDraftStatus(draft.status);
-        setLastSavedAt(draft.savedAt);
-        setLoading(false);
-        return;
-      }
-
-      if (!resolvedTemplateKey) {
-        router.replace('/templates');
-        setLoading(false);
-        return;
-      }
-
-      const now = new Date().toISOString();
-      const newDraft: Invitation = {
-        id: slug,
-        slug,
-        title: null,
-        eventDate: null,
-        locationText: null,
-        message: null,
-        templateKey: resolvedTemplateKey,
-        musicKey: 'piano_wedding',
-        countryCode: 'GLOBAL',
-        language: 'ko',
-        status: 'draft',
-        isPaid: false,
-        canShare: true,
-        paidAt: null,
-        isOwner: true,
-        createdAt: now,
-        updatedAt: now,
-      };
-      setInvitation(newDraft);
-    } catch {
-      setError({
-        title: '일시적인 오류입니다.',
-        message: '다시 시도해 주세요.',
-      });
-    } finally {
-      setLoading(false);
     }
-  }, [slug, router, isFuneralDemo, resolvedTemplateKey]);
+
+    void initializeEditor();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [slug, router, isFuneralDemo, requestedTemplate]);
 
   useEffect(() => {
     if (!invitation || hasSession) return;

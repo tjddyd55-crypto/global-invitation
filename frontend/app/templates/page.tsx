@@ -1,16 +1,17 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { generateDraftSlug } from '@/src/lib/invitationStorage';
 import MarketingLayout from '@/src/components/MarketingLayout';
 import {
-  TEMPLATE_CATALOG,
+  fetchVisibleTemplateDefinitions,
   type TemplateCategory,
-  type TemplateCatalogItem,
+  type TemplateDefinition,
   type TemplateStyle,
-} from '@/src/lib/templateCatalog';
+  listVisibleTemplateDefinitions,
+} from '@/src/templates/registry';
 import styles from './templates.module.css';
 
 type FilterOption<T extends string> = { value: T | 'all'; label: string };
@@ -51,16 +52,35 @@ export default function TemplatesPage() {
   const router = useRouter();
   const [categoryFilter, setCategoryFilter] = useState<TemplateCategory | 'all'>('all');
   const [styleFilter, setStyleFilter] = useState<TemplateStyle | 'all'>('all');
+  const [templates, setTemplates] = useState<TemplateDefinition[]>(() => listVisibleTemplateDefinitions());
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadTemplates() {
+      const nextTemplates = await fetchVisibleTemplateDefinitions();
+      if (!isMounted) return;
+      setTemplates(nextTemplates);
+      setLoading(false);
+    }
+
+    void loadTemplates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredTemplates = useMemo(() => {
-    return TEMPLATE_CATALOG.filter((item) => {
+    return templates.filter((item) => {
       const isCategoryMatched = categoryFilter === 'all' || item.category === categoryFilter;
       const isStyleMatched = styleFilter === 'all' || item.style === styleFilter;
       return isCategoryMatched && isStyleMatched;
     });
-  }, [categoryFilter, styleFilter]);
+  }, [categoryFilter, styleFilter, templates]);
 
-  const handleCreate = (card: TemplateCatalogItem) => {
+  const handleCreate = (card: TemplateDefinition) => {
     const slug = generateDraftSlug();
     router.push(`/editor/${slug}?template=${card.id}`);
   };
@@ -113,6 +133,7 @@ export default function TemplatesPage() {
         <div className={styles.resultCount}>
           총 <strong>{filteredTemplates.length}</strong>개의 템플릿
         </div>
+        {loading && <p className={styles.emptyState}>템플릿 레지스트리를 불러오는 중입니다...</p>}
         <div className={styles.grid}>
           {filteredTemplates.map((card) => (
             <article key={card.id} className={styles.card}>

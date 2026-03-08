@@ -5,6 +5,7 @@ import {
   type WeddingClassicData,
 } from '@/src/templates/weddingClassic/data';
 import { getInvitationDraft, getRuntimeDataFromDraft } from '@/src/lib/invitationStorage';
+import { resolveRendererByTemplateKey } from '@/src/templates/registry';
 
 export type ResolvedInvitationData = {
   invitation: Invitation;
@@ -31,6 +32,9 @@ export function resolveInvitationBySlug(slug: string): ResolvedInvitationData {
   try {
     const draft = getInvitationDraft(slug);
     if (draft) {
+      if (resolveRendererByTemplateKey(draft.invitation.templateKey) !== 'weddingClassic') {
+        return buildSampleFallback();
+      }
       const runtimeData = getRuntimeDataFromDraft(slug) ?? buildWeddingClassicData(draft.invitation);
       return {
         invitation: draft.invitation,

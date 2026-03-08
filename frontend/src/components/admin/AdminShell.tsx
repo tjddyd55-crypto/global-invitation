@@ -1,0 +1,111 @@
+'use client';
+/* eslint-disable i18next/no-literal-string */
+
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { getAdminSession, logoutAdmin, type AdminSession } from '@/src/lib/adminApi';
+import styles from './AdminShell.module.css';
+
+type AdminShellProps = {
+  children: React.ReactNode;
+};
+
+const ADMIN_NAV_ITEMS = [
+  { href: '/admin/dashboard', label: 'Dashboard' },
+  { href: '/admin/templates', label: 'Template Management' },
+  { href: '/admin/users', label: 'Users' },
+  { href: '/admin/payments', label: 'Payments' },
+  { href: '/admin/system', label: 'System' },
+];
+
+export default function AdminShell({ children }: AdminShellProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [session, setSession] = useState<AdminSession | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const isLoginPage = pathname === '/admin/login';
+
+  useEffect(() => {
+    if (isLoginPage) {
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadSession() {
+      try {
+        const nextSession = await getAdminSession();
+        if (!isMounted) return;
+        setSession(nextSession);
+      } catch {
+        if (!isMounted) return;
+        router.replace('/admin/login');
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isLoginPage, router]);
+
+  const navItems = useMemo(
+    () =>
+      ADMIN_NAV_ITEMS.map((item) => ({
+        ...item,
+        isActive: pathname === item.href || pathname.startsWith(`${item.href}/`),
+      })),
+    [pathname]
+  );
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
+  if (loading) {
+    return <div className={styles.loading}>관리자 인증 상태를 확인하는 중입니다...</div>;
+  }
+
+  if (!session) {
+    return null;
+  }
+
+  const handleLogout = async () => {
+    await logoutAdmin().catch(() => undefined);
+    router.replace('/admin/login');
+  };
+
+  return (
+    <div className={styles.shell}>
+      <aside className={styles.sidebar}>
+        <div className={styles.brand}>Global Invitation Admin</div>
+        <nav className={styles.nav}>
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`${styles.navLink} ${item.isActive ? styles.navLinkActive : ''}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className={styles.sidebarFooter}>
+          <div>{session.adminId}</div>
+          <button type="button" onClick={handleLogout} className={styles.logoutButton}>
+            Logout
+          </button>
+        </div>
+      </aside>
+      <main className={styles.main}>{children}</main>
+    </div>
+  );
+}

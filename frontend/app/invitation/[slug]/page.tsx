@@ -16,6 +16,7 @@ import { resolveInvitationBySlug } from '@/src/lib/resolveInvitationData';
 import EditorBackButton from '@/app/_components/EditorBackButton';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import type { Invitation } from '@/src/lib/api';
+import { resolveRendererByTemplateKey } from '@/src/templates/registry';
 
 const EVENT_TRACKING_ENABLED = false;
 let didWarnEventTracking = false;
@@ -209,6 +210,9 @@ export default function InvitationPage() {
 
   const weddingClassicData = runtimeDataOverride;
   if (!weddingClassicData) return null;
+  if (resolveRendererByTemplateKey(invitation.templateKey) !== 'weddingClassic') {
+    return null;
+  }
 
   return (
     <>

@@ -4,12 +4,38 @@ import prisma from './lib/prisma';
 import invitationsRouter from './routes/invitations';
 import eventsRouter from './routes/events';
 import authRouter from './routes/auth';
+import adminAuthRouter from './routes/adminAuth';
+import adminRouter from './routes/admin';
+import templateRegistryRouter from './routes/templateRegistry';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+function resolveAllowedOrigins(): string[] {
+  const configuredOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.NEXT_PUBLIC_SITE_URL,
+    'http://localhost:3000',
+  ]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .map((value) => value.trim());
+
+  return Array.from(new Set(configuredOrigins));
+}
+
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      const allowedOrigins = resolveAllowedOrigins();
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Health check endpoint
@@ -27,6 +53,9 @@ app.get('/health', async (req, res) => {
 app.use('/api/invitations', invitationsRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/admin/auth', adminAuthRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/template-registry', templateRegistryRouter);
 
 // Start server
 app.listen(PORT, () => {

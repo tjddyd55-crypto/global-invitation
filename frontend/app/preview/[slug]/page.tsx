@@ -16,6 +16,7 @@ import { useI18n } from '@/src/contexts/I18nContext';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import type { WeddingClassicData } from '@/src/templates/weddingClassic/data';
 import type { Invitation } from '@/src/lib/api';
+import { resolveRendererByTemplateKey } from '@/src/templates/registry';
 
 export default function PreviewPage() {
   const params = useParams();
@@ -84,6 +85,8 @@ export default function PreviewPage() {
 
   if (!slug) return null;
   if (!data) return null;
+  const renderer = resolveRendererByTemplateKey(invitation?.templateKey ?? null);
+  if (renderer !== 'weddingClassic') return null;
 
   return (
     <>
