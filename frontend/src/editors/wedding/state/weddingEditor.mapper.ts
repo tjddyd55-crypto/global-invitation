@@ -119,7 +119,7 @@ export function weddingEditorStateToInvitation(state: WeddingEditorState, slug: 
     eventDate: state.basic.eventDateTime || undefined,
     locationText: locationText || undefined,
     message: message || undefined,
-    templateKey: 'wedding_classic',
+    templateKey: state.setup.templateKey,
     musicKey: 'piano_wedding',
     countryCode: 'GLOBAL',
     language: state.setup.language,

@@ -89,7 +89,7 @@ export default function PreviewPage() {
     <>
       <div style={{ marginBottom: '1rem', padding: '0.5rem 1rem', background: '#f0f4ff', fontSize: '14px' }}>
         <span style={{ marginRight: '0.75rem', fontWeight: 600 }}>
-          {status === 'published' ? '공개됨' : '미공개 상태'}
+          {status === 'published' ? 'published (공개됨)' : 'draft (미공개 상태)'}
         </span>
         <Link href={`/editor/${slug}`} style={{ marginRight: '1rem', color: '#2f6fed' }}>편집</Link>
         <Link href={`/invitation/${slug}`} style={{ color: '#2f6fed' }}>공개 페이지 보기</Link>

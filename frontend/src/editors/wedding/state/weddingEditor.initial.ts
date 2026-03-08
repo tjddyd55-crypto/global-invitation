@@ -70,6 +70,10 @@ function normalizeLanguage(language?: string | null): Language {
   return 'ko';
 }
 
+function normalizeTemplateKey(templateKey?: string | null): 'wedding_classic' | 'classic' {
+  return templateKey === 'classic' ? 'classic' : 'wedding_classic';
+}
+
 function buildGalleryImages(): WeddingEditorImage[] {
   return DEFAULT_GALLERY_IMAGES.map((url, index) => ({
     id: `gallery-${index + 1}`,
@@ -130,11 +134,12 @@ export function createWeddingEditorState(invitation?: Invitation | null): Weddin
   const eventDateTime = toDateTimeLocal(invitation?.eventDate ?? null);
   const venueName = invitation?.locationText || DEFAULT_VENUE_NAME;
   const language = normalizeLanguage(invitation?.language ?? null);
+  const templateKey = normalizeTemplateKey(invitation?.templateKey ?? null);
 
   return {
     setup: {
       invitationType: 'wedding',
-      templateKey: 'wedding_classic',
+      templateKey,
       language,
     },
     basic: {

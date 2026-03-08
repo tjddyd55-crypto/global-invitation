@@ -6,6 +6,7 @@
  */
 
 import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { generateDraftSlug } from '@/src/lib/invitationStorage';
 import MarketingLayout from '@/src/components/MarketingLayout';
@@ -13,26 +14,41 @@ import styles from './templates.module.css';
 
 type TemplateCard = {
   id: string;
-  title: string;
+  name: string;
+  category: '웨딩' | '심플';
   description: string;
-  createLabel: string;
+  template: 'FULL' | 'SIMPLE';
 };
 
-const TEMPLATE_CARDS: TemplateCard[] = [
+const TEMPLATE_LIST: TemplateCard[] = [
   {
-    id: 'wedding_classic',
-    title: '웨딩 클래식',
-    description: '결혼식 초대장을 생성하고 저장/공개/공유까지 한 번에 진행할 수 있습니다.',
-    createLabel: '이 템플릿으로 만들기',
+    id: 'wedding-classic',
+    name: '웨딩 클래식',
+    category: '웨딩',
+    description: '전통적이고 우아한 결혼식 초대장',
+    template: 'FULL',
+  },
+  {
+    id: 'simple-minimal',
+    name: '심플 미니멀',
+    category: '심플',
+    description: '간결하고 모던한 초대장',
+    template: 'SIMPLE',
   },
 ];
 
 export default function TemplatesPage() {
   const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState<'전체' | '웨딩' | '심플'>('전체');
 
-  const handleCreate = (_card: TemplateCard) => {
+  const filteredTemplates = useMemo(() => {
+    if (selectedCategory === '전체') return TEMPLATE_LIST;
+    return TEMPLATE_LIST.filter((item) => item.category === selectedCategory);
+  }, [selectedCategory]);
+
+  const handleCreate = (card: TemplateCard) => {
     const slug = generateDraftSlug();
-    router.push(`/editor/${slug}?template=FULL`);
+    router.push(`/editor/${slug}?template=${card.template}`);
   };
 
   return (
@@ -42,10 +58,25 @@ export default function TemplatesPage() {
         <p className={styles.subtitle}>
           운영용 생성 흐름: 템플릿 선택 → 편집/저장 → 공개 → 공유
         </p>
+        <div className={styles.filters}>
+          {(['전체', '웨딩', '심플'] as const).map((category) => (
+            <button
+              key={category}
+              type="button"
+              className={selectedCategory === category ? `${styles.filterButton} ${styles.filterButtonActive}` : styles.filterButton}
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
         <div className={styles.grid}>
-          {TEMPLATE_CARDS.map((card) => (
+          {filteredTemplates.map((card) => (
             <article key={card.id} className={styles.card}>
-              <h2 className={styles.cardTitle}>{card.title}</h2>
+              <div className={styles.thumbnail}>
+                <span className={styles.thumbnailLabel}>{card.category}</span>
+              </div>
+              <h2 className={styles.cardTitle}>{card.name}</h2>
               <p className={styles.cardDesc}>{card.description}</p>
               <div className={styles.actions}>
                 <button
@@ -53,7 +84,7 @@ export default function TemplatesPage() {
                   onClick={() => handleCreate(card)}
                   className={styles.button}
                 >
-                  {card.createLabel}
+                  이 템플릿으로 만들기
                 </button>
               </div>
             </article>
