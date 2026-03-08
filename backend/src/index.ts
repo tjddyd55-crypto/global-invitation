@@ -8,6 +8,7 @@ import authRouter from './routes/auth';
 import adminAuthRouter from './routes/adminAuth';
 import adminRouter from './routes/admin';
 import templateRegistryRouter from './routes/templateRegistry';
+import rsvpRouter from './routes/rsvp';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -61,6 +62,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/admin', adminAuthRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/templates', templateRegistryRouter);
+app.use('/api/rsvp', rsvpRouter);
 
 // Start server
 app.listen(PORT, () => {

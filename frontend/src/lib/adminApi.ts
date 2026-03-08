@@ -21,6 +21,29 @@ export type AdminDashboardSummary = {
   };
 };
 
+export type AdminInvitationGuest = {
+  id: string;
+  guestName: string;
+  attendance: 'yes' | 'no' | 'maybe';
+  guestCount: number;
+  mealChoice?: string | null;
+  message?: string | null;
+  createdAt: string;
+};
+
+export type AdminInvitationGuestList = {
+  invitation: {
+    id: string;
+    slug: string;
+    title?: string | null;
+  };
+  totalGuests: number;
+  attending: number;
+  declined: number;
+  maybe: number;
+  guests: AdminInvitationGuest[];
+};
+
 export type AdminTemplatePayload = {
   name: string;
   category: TemplateDefinition['category'];
@@ -144,4 +167,9 @@ export async function deleteAdminTemplate(templateId: string) {
     })
   );
   return parseJsonOrThrow<TemplateDefinition>(response);
+}
+
+export async function getAdminInvitationGuestList(invitationId: string) {
+  const response = await fetch(buildApiUrl(`/api/rsvp/${invitationId}`), buildAdminRequestInit());
+  return parseJsonOrThrow<AdminInvitationGuestList>(response);
 }

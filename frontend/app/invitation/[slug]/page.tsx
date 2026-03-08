@@ -13,6 +13,8 @@ import EditorBackButton from '@/app/_components/EditorBackButton';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import type { Invitation } from '@/src/lib/api';
 import { getTemplateRenderer } from '@/src/templates/registry';
+import RSVPForm from '@/src/components/rsvp/RSVPForm';
+import { isWeddingInvitationData } from '@/src/invitation/schemas';
 
 const EVENT_TRACKING_ENABLED = false;
 let didWarnEventTracking = false;
@@ -209,6 +211,9 @@ export default function InvitationPage() {
     return null;
   }
 
+  const shouldRenderGuestRsvp =
+    isWeddingInvitationData(runtimeDataOverride) && runtimeDataOverride.rsvp?.enabled === true;
+
   return (
     <>
       <EditorBackButton fallbackUrl={`/editor/${slug}`} />
@@ -233,9 +238,11 @@ export default function InvitationPage() {
         data={runtimeDataOverride}
         invitationSlug={slug}
         showPlayButton={false}
+        showRsvp={shouldRenderGuestRsvp ? false : undefined}
         onShare={handleShare}
         isShared={shared}
       />
+      {shouldRenderGuestRsvp && <RSVPForm invitationSlug={slug} />}
       {shareFallbackUrl && (
         <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
       )}
