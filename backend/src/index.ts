@@ -9,6 +9,7 @@ import adminAuthRouter from './routes/adminAuth';
 import adminRouter from './routes/admin';
 import templateRegistryRouter from './routes/templateRegistry';
 import rsvpRouter from './routes/rsvp';
+import invitationAnalyticsRouter from './routes/invitationAnalytics';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -57,6 +58,7 @@ app.get('/health', async (req, res) => {
 
 // API routes
 app.use('/api/invitations', invitationsRouter);
+app.use('/api/invitations', invitationAnalyticsRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminAuthRouter);

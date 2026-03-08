@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
+import { getInvitationAnalyticsSummary } from '../analytics/invitationAnalytics';
 import { requireAdminSession } from '../lib/adminSession';
 import {
   createTemplate,
@@ -52,6 +53,11 @@ function validateStyle(value: string): value is TemplateStyle {
   return TEMPLATE_STYLES.has(value as TemplateStyle);
 }
 
+function escapeCsvCell(value: unknown): string {
+  const normalized = value == null ? '' : String(value);
+  return `"${normalized.replace(/"/g, '""')}"`;
+}
+
 router.get('/dashboard', async (_req, res) => {
   try {
     const [templateSummary, totalInvitationsCreated, invitationsCreatedToday] = await Promise.all([
@@ -78,6 +84,200 @@ router.get('/dashboard', async (_req, res) => {
   } catch (error) {
     console.error('Error fetching admin dashboard:', error);
     return res.status(500).json({ error: 'FAILED_TO_FETCH_ADMIN_DASHBOARD' });
+  }
+});
+
+router.get('/invitations/:id/rsvp/export', async (req, res) => {
+  try {
+    const invitationId = normalizeText(req.params.id);
+    if (!invitationId) {
+      return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
+    }
+
+    const invitation = await prisma.invitation.findUnique({
+      where: { id: invitationId },
+      select: {
+        id: true,
+        slug: true,
+      },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'INVITATION_NOT_FOUND' });
+    }
+
+    const guests = await prisma.rSVP.findMany({
+      where: { invitationId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        guestName: true,
+        attendance: true,
+        guestCount: true,
+        mealChoice: true,
+        message: true,
+        createdAt: true,
+      },
+    });
+
+    const rows = [
+      ['guest_name', 'attendance', 'guest_count', 'meal_choice', 'message', 'created_at'].join(','),
+      ...guests.map((guest) =>
+        [
+          escapeCsvCell(guest.guestName),
+          escapeCsvCell(guest.attendance),
+          escapeCsvCell(guest.guestCount),
+          escapeCsvCell(guest.mealChoice),
+          escapeCsvCell(guest.message),
+          escapeCsvCell(guest.createdAt.toISOString()),
+        ].join(',')
+      ),
+    ];
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="invitation-${invitation.slug}-rsvp.csv"`
+    );
+    return res.status(200).send(rows.join('\n'));
+  } catch (error) {
+    console.error('Error exporting RSVP CSV:', error);
+    return res.status(500).json({ error: 'FAILED_TO_EXPORT_RSVP_CSV' });
+  }
+});
+
+router.get('/invitations/:id/analytics', async (req, res) => {
+  try {
+    const invitationId = normalizeText(req.params.id);
+    if (!invitationId) {
+      return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
+    }
+
+    const invitation = await prisma.invitation.findUnique({
+      where: { id: invitationId },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+      },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'INVITATION_NOT_FOUND' });
+    }
+
+    const summary = await getInvitationAnalyticsSummary(invitationId);
+
+    return res.status(200).json({
+      invitation,
+      ...summary,
+    });
+  } catch (error) {
+    console.error('Error fetching invitation analytics:', error);
+    return res.status(500).json({ error: 'FAILED_TO_FETCH_INVITATION_ANALYTICS' });
+  }
+});
+
+router.patch('/rsvp/:id', async (req, res) => {
+  try {
+    const rsvpId = normalizeText(req.params.id);
+    const adminId = String(res.locals.adminSession?.adminId || 'unknown-admin');
+    const isHidden = Boolean(req.body?.isHidden);
+
+    if (!rsvpId) {
+      return res.status(400).json({ error: 'RSVP_ID_REQUIRED' });
+    }
+
+    const rsvp = await prisma.rSVP.update({
+      where: { id: rsvpId },
+      data: {
+        isHidden,
+      },
+      select: {
+        id: true,
+        invitationId: true,
+        guestName: true,
+        attendance: true,
+        guestCount: true,
+        mealChoice: true,
+        message: true,
+        isHidden: true,
+        createdAt: true,
+      },
+    });
+
+    await logAdminAction({
+      adminId,
+      action: isHidden ? 'rsvp_message_hide' : 'rsvp_message_show',
+      targetType: 'rsvp',
+      targetId: rsvp.id,
+      payload: {
+        invitationId: rsvp.invitationId,
+        guestName: rsvp.guestName,
+        isHidden: rsvp.isHidden,
+      },
+    }).catch((error) => {
+      console.warn('Failed to write RSVP moderation audit log:', error);
+    });
+
+    return res.status(200).json({
+      success: true,
+      rsvp,
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      return res.status(404).json({ error: 'RSVP_NOT_FOUND' });
+    }
+    console.error('Error updating RSVP visibility:', error);
+    return res.status(500).json({ error: 'FAILED_TO_UPDATE_RSVP_VISIBILITY' });
+  }
+});
+
+router.delete('/rsvp/:id', async (req, res) => {
+  try {
+    const rsvpId = normalizeText(req.params.id);
+    const adminId = String(res.locals.adminSession?.adminId || 'unknown-admin');
+
+    if (!rsvpId) {
+      return res.status(400).json({ error: 'RSVP_ID_REQUIRED' });
+    }
+
+    const existing = await prisma.rSVP.findUnique({
+      where: { id: rsvpId },
+      select: {
+        id: true,
+        invitationId: true,
+        guestName: true,
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'RSVP_NOT_FOUND' });
+    }
+
+    await prisma.rSVP.delete({
+      where: { id: rsvpId },
+    });
+
+    await logAdminAction({
+      adminId,
+      action: 'rsvp_delete',
+      targetType: 'rsvp',
+      targetId: existing.id,
+      payload: {
+        invitationId: existing.invitationId,
+        guestName: existing.guestName,
+      },
+    }).catch((error) => {
+      console.warn('Failed to write RSVP delete audit log:', error);
+    });
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      return res.status(404).json({ error: 'RSVP_NOT_FOUND' });
+    }
+    console.error('Error deleting RSVP:', error);
+    return res.status(500).json({ error: 'FAILED_TO_DELETE_RSVP' });
   }
 });
 

@@ -9,6 +9,7 @@ import { logEvent } from '@/src/lib/events';
 import { getShareContent } from '@/src/lib/share';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import { resolveInvitationBySlug } from '@/src/lib/resolveInvitationData';
+import { trackInvitationView } from '@/src/lib/trackInvitationView';
 import EditorBackButton from '@/app/_components/EditorBackButton';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import type { Invitation } from '@/src/lib/api';
@@ -47,6 +48,7 @@ export default function InvitationPage() {
   const [showPlayButton, setShowPlayButton] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const viewLoggedRef = useRef(false);
+  const analyticsTrackedSlugRef = useRef<string | null>(null);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
 
   useEffect(() => {
@@ -129,6 +131,19 @@ export default function InvitationPage() {
       viewLoggedRef.current = true;
     }
   }, [invitation, loading, language, pageUrl]);
+
+  useEffect(() => {
+    if (!slug || loading || !invitation || publishStatus !== 'published') {
+      return;
+    }
+
+    if (analyticsTrackedSlugRef.current === slug) {
+      return;
+    }
+
+    analyticsTrackedSlugRef.current = slug;
+    trackInvitationView(slug);
+  }, [invitation, loading, publishStatus, slug]);
 
   const handleShare = async () => {
     if (isSharing) return;

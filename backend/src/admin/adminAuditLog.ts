@@ -5,9 +5,12 @@ export type AdminAuditAction =
   | 'template_create'
   | 'template_update'
   | 'template_delete'
-  | 'admin_login';
+  | 'admin_login'
+  | 'rsvp_delete'
+  | 'rsvp_message_hide'
+  | 'rsvp_message_show';
 
-type AdminAuditTargetType = 'template' | 'admin';
+type AdminAuditTargetType = 'template' | 'admin' | 'rsvp';
 
 export async function logAdminAction(params: {
   adminId: string;

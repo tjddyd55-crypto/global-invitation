@@ -28,6 +28,7 @@ export type AdminInvitationGuest = {
   guestCount: number;
   mealChoice?: string | null;
   message?: string | null;
+  isHidden: boolean;
   createdAt: string;
 };
 
@@ -36,12 +37,44 @@ export type AdminInvitationGuestList = {
     id: string;
     slug: string;
     title?: string | null;
+    rsvpDeadline?: string | null;
   };
   totalGuests: number;
-  attending: number;
-  declined: number;
-  maybe: number;
+  totalPeople: number;
+  attendingPeople: number;
+  declinedPeople: number;
+  maybePeople: number;
   guests: AdminInvitationGuest[];
+};
+
+export type InvitationAnalyticsSummary = {
+  invitation: {
+    id: string;
+    slug: string;
+    title?: string | null;
+  };
+  totalViews: number;
+  uniqueSessions: number;
+  viewsToday: number;
+  viewsLast7Days: number;
+  deviceBreakdown: {
+    mobile: number;
+    tablet: number;
+    desktop: number;
+    unknown: number;
+  };
+  referrerBreakdown: Array<{
+    referrer: string;
+    count: number;
+  }>;
+  rsvpSummary: {
+    totalGuests: number;
+    totalPeople: number;
+    attendingPeople: number;
+    declinedPeople: number;
+    maybePeople: number;
+  };
+  conversionRate: number;
 };
 
 export type AdminTemplatePayload = {
@@ -169,7 +202,79 @@ export async function deleteAdminTemplate(templateId: string) {
   return parseJsonOrThrow<TemplateDefinition>(response);
 }
 
-export async function getAdminInvitationGuestList(invitationId: string) {
-  const response = await fetch(buildApiUrl(`/api/rsvp/${invitationId}`), buildAdminRequestInit());
+export async function getAdminInvitationGuestList(
+  invitationId: string,
+  filters?: {
+    search?: string;
+    attendance?: '' | 'yes' | 'no' | 'maybe';
+  }
+) {
+  const params = new URLSearchParams();
+  if (filters?.search?.trim()) {
+    params.set('search', filters.search.trim());
+  }
+  if (filters?.attendance) {
+    params.set('attendance', filters.attendance);
+  }
+  const query = params.toString();
+  const response = await fetch(
+    buildApiUrl(`/api/rsvp/${invitationId}${query ? `?${query}` : ''}`),
+    buildAdminRequestInit()
+  );
   return parseJsonOrThrow<AdminInvitationGuestList>(response);
+}
+
+export async function exportAdminInvitationGuestCsv(invitationId: string) {
+  const response = await fetch(
+    buildApiUrl(`/api/admin/invitations/${invitationId}/rsvp/export`),
+    buildAdminRequestInit({
+      method: 'GET',
+      headers: {},
+    })
+  );
+
+  if (!response.ok) {
+    let errorMessage = 'CSV export failed';
+    try {
+      const payload = (await response.json()) as { error?: string };
+      errorMessage = payload.error || errorMessage;
+    } catch {
+      errorMessage = await response.text().catch(() => errorMessage);
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.blob();
+}
+
+export async function deleteAdminRsvp(rsvpId: string) {
+  const response = await fetch(
+    buildApiUrl(`/api/admin/rsvp/${rsvpId}`),
+    buildAdminRequestInit({
+      method: 'DELETE',
+    })
+  );
+  return parseJsonOrThrow<{ success: true }>(response);
+}
+
+export async function updateAdminRsvpVisibility(rsvpId: string, isHidden: boolean) {
+  const response = await fetch(
+    buildApiUrl(`/api/admin/rsvp/${rsvpId}`),
+    buildAdminRequestInit({
+      method: 'PATCH',
+      body: JSON.stringify({ isHidden }),
+    })
+  );
+  return parseJsonOrThrow<{
+    success: true;
+    rsvp: AdminInvitationGuest & { invitationId: string };
+  }>(response);
+}
+
+export async function getInvitationAnalytics(invitationId: string) {
+  const response = await fetch(
+    buildApiUrl(`/api/admin/invitations/${invitationId}/analytics`),
+    buildAdminRequestInit()
+  );
+  return parseJsonOrThrow<InvitationAnalyticsSummary>(response);
 }

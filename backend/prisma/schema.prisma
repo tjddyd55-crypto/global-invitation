@@ -56,12 +56,14 @@ model Invitation {
   isPaid      Boolean          @default(false) @map("is_paid")
   canShare    Boolean          @default(false) @map("can_share")
   paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
+  rsvpDeadline DateTime?       @map("rsvp_deadline") @db.Timestamptz(6)
   createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
   template Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   rsvps RSVP[]
+  views InvitationView[]
 
   @@index([ownerId])
   @@index([guestToken])
@@ -77,12 +79,33 @@ model RSVP {
   guestCount  Int        @default(1) @map("guest_count")
   mealChoice  String?    @map("meal_choice")
   message     String?
+  isHidden    Boolean    @default(false) @map("is_hidden")
   createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
 
   invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
+  @@unique([invitationId, guestName])
   @@map("rsvps")
+}
+
+model InvitationView {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invitationId String    @map("invitation_id") @db.Uuid
+  viewedAt    DateTime   @default(now()) @map("viewed_at") @db.Timestamptz(6)
+  viewerIp    String?    @map("viewer_ip")
+  userAgent   String?    @map("user_agent")
+  referrer    String?
+  deviceType  String?    @map("device_type")
+  countryCode String?    @map("country_code")
+  sessionId   String?    @map("session_id")
+
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([invitationId])
+  @@index([viewedAt])
+  @@index([invitationId, viewedAt])
+  @@map("invitation_views")
 }
 
 model MagicLinkToken {

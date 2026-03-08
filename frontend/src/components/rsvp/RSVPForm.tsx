@@ -11,6 +11,20 @@ type RSVPFormProps = {
 
 type AttendanceValue = 'yes' | 'no' | 'maybe';
 
+type RsvpSubmissionResponse = {
+  success: true;
+  mode: 'created' | 'updated';
+  rsvp: {
+    id: string;
+    guestName: string;
+    attendance: AttendanceValue;
+    guestCount: number;
+    mealChoice?: string | null;
+    message?: string | null;
+    createdAt: string;
+  };
+};
+
 const DEFAULT_FORM = {
   guestName: '',
   attendance: 'yes' as AttendanceValue,
@@ -19,12 +33,39 @@ const DEFAULT_FORM = {
   message: '',
 };
 
+function getRsvpStorageKey(invitationSlug: string) {
+  return `invitation_rsvp_submission_${invitationSlug}`;
+}
+
+function loadStoredRsvp(invitationSlug: string): RsvpSubmissionResponse['rsvp'] | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(getRsvpStorageKey(invitationSlug));
+    if (!raw) return null;
+    return JSON.parse(raw) as RsvpSubmissionResponse['rsvp'];
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredRsvp(invitationSlug: string, rsvp: RsvpSubmissionResponse['rsvp']) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(getRsvpStorageKey(invitationSlug), JSON.stringify(rsvp));
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
+  const storedRsvp = loadStoredRsvp(invitationSlug);
   const [guestName, setGuestName] = useState(DEFAULT_FORM.guestName);
   const [attendance, setAttendance] = useState<AttendanceValue>(DEFAULT_FORM.attendance);
   const [guestCount, setGuestCount] = useState(DEFAULT_FORM.guestCount);
   const [mealChoice, setMealChoice] = useState(DEFAULT_FORM.mealChoice);
   const [message, setMessage] = useState(DEFAULT_FORM.message);
+  const [rsvpId, setRsvpId] = useState<string | null>(storedRsvp?.id ?? null);
+  const [submittedGuestName, setSubmittedGuestName] = useState<string | null>(storedRsvp?.guestName ?? null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -51,13 +92,15 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
 
     setSubmitting(true);
     try {
-      const response = await fetch(buildApiUrl('/api/rsvp'), {
-        method: 'POST',
+      const shouldPatch = Boolean(rsvpId && submittedGuestName && submittedGuestName === normalizedGuestName);
+      const endpoint = shouldPatch ? buildApiUrl(`/api/rsvp/${rsvpId}`) : buildApiUrl('/api/rsvp');
+      const response = await fetch(endpoint, {
+        method: shouldPatch ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          invitationSlug,
+          invitationSlug: shouldPatch ? undefined : invitationSlug,
           guestName: normalizedGuestName,
           attendance,
           guestCount,
@@ -71,21 +114,30 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
         if (payload?.error === 'RSVP_DISABLED') {
           throw new Error('이 초대장은 RSVP 접수가 비활성화되어 있습니다.');
         }
+        if (payload?.error === 'RSVP_CLOSED') {
+          throw new Error('RSVP 접수 기간이 종료되었습니다.');
+        }
         if (payload?.error === 'TOO_MANY_RSVP_REQUESTS') {
           throw new Error('너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해 주세요.');
         }
         if (payload?.error === 'INVITATION_NOT_FOUND') {
           throw new Error('초대장을 찾을 수 없습니다.');
         }
+        if (payload?.error === 'GUEST_NAME_MISMATCH') {
+          throw new Error('기존 응답을 수정하려면 동일한 이름을 사용해 주세요.');
+        }
         throw new Error('RSVP 제출에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       }
 
-      setSuccess('참석 응답이 접수되었습니다. 감사합니다.');
-      setGuestName(DEFAULT_FORM.guestName);
-      setAttendance(DEFAULT_FORM.attendance);
-      setGuestCount(DEFAULT_FORM.guestCount);
-      setMealChoice(DEFAULT_FORM.mealChoice);
-      setMessage(DEFAULT_FORM.message);
+      const payload = (await response.json()) as RsvpSubmissionResponse;
+      setRsvpId(payload.rsvp.id);
+      setSubmittedGuestName(payload.rsvp.guestName);
+      saveStoredRsvp(invitationSlug, payload.rsvp);
+      setSuccess(
+        payload.mode === 'updated'
+          ? '기존 RSVP 응답이 업데이트되었습니다.'
+          : '참석 응답이 접수되었습니다. 감사합니다.'
+      );
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'RSVP 제출에 실패했습니다.');
     } finally {
@@ -99,6 +151,11 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
       <p className={styles.description}>
         초대해 주셔서 감사합니다. 참석 가능 여부와 간단한 메모를 남겨 주세요.
       </p>
+      {submittedGuestName && (
+        <div className={styles.helperText}>
+          이미 RSVP를 제출하셨습니다. 같은 이름으로 다시 제출하면 기존 응답이 업데이트됩니다.
+        </div>
+      )}
 
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.fieldGrid}>
@@ -171,7 +228,7 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
 
         <div className={styles.actions}>
           <button type="submit" className={styles.submitButton} disabled={submitting}>
-            {submitting ? '제출 중...' : '응답 제출'}
+            {submitting ? '제출 중...' : submittedGuestName ? '응답 업데이트' : '응답 제출'}
           </button>
         </div>
       </form>

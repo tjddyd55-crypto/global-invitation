@@ -1,6 +1,7 @@
 import { Router, type Request } from 'express';
 import { getAdminSession } from '../lib/adminSession';
 import prisma from '../lib/prisma';
+import { buildRsvpSummary } from '../rsvp/rsvpSummary';
 
 const router = Router();
 
@@ -8,6 +9,14 @@ const RSVP_WINDOW_MS = 5 * 60_000;
 const RSVP_MAX_ATTEMPTS = 10;
 const RSVP_ATTENDANCE_VALUES = new Set(['yes', 'no', 'maybe']);
 const rsvpAttemptsByIp = new Map<string, number[]>();
+
+type NormalizedRsvpPayload = {
+  guestName: string;
+  attendance: 'yes' | 'no' | 'maybe';
+  guestCount: number;
+  mealChoice: string;
+  message: string;
+};
 
 function resolveClientIp(req: Request): string {
   const forwarded = req.headers['x-forwarded-for'];
@@ -64,6 +73,54 @@ function ensureAdminApiSession(req: Request) {
   return getAdminSession(req);
 }
 
+function parseRsvpPayload(source: unknown): NormalizedRsvpPayload {
+  const payload = (source ?? {}) as Record<string, unknown>;
+  return {
+    guestName: normalizeText(payload.guestName),
+    attendance: normalizeText(payload.attendance).toLowerCase() as NormalizedRsvpPayload['attendance'],
+    guestCount: normalizeGuestCount(payload.guestCount),
+    mealChoice: normalizeText(payload.mealChoice),
+    message: normalizeText(payload.message),
+  };
+}
+
+function validateRsvpPayload(payload: NormalizedRsvpPayload): string | null {
+  if (!payload.guestName || !RSVP_ATTENDANCE_VALUES.has(payload.attendance)) {
+    return 'INVALID_RSVP_PAYLOAD';
+  }
+
+  if (payload.guestName.length > 80) {
+    return 'GUEST_NAME_TOO_LONG';
+  }
+
+  if (payload.guestCount < 1 || payload.guestCount > 10) {
+    return 'INVALID_GUEST_COUNT';
+  }
+
+  if (payload.mealChoice.length > 80) {
+    return 'MEAL_CHOICE_TOO_LONG';
+  }
+
+  if (payload.message.length > 1000) {
+    return 'MESSAGE_TOO_LONG';
+  }
+
+  return null;
+}
+
+function validateAttendanceFilter(value: string): value is 'yes' | 'no' | 'maybe' {
+  return RSVP_ATTENDANCE_VALUES.has(value);
+}
+
+function isRsvpEnabled(invitationData: unknown): boolean {
+  const data = invitationData as { rsvp?: { enabled?: boolean } } | null;
+  return data?.rsvp?.enabled === true;
+}
+
+function isRsvpClosed(deadline: Date | null | undefined): boolean {
+  return Boolean(deadline && deadline.getTime() < Date.now());
+}
+
 router.post('/', async (req, res) => {
   try {
     const ip = resolveClientIp(req);
@@ -74,30 +131,15 @@ router.post('/', async (req, res) => {
     }
 
     const invitationSlug = normalizeText(req.body?.invitationSlug);
-    const guestName = normalizeText(req.body?.guestName);
-    const attendance = normalizeText(req.body?.attendance).toLowerCase();
-    const guestCount = normalizeGuestCount(req.body?.guestCount);
-    const mealChoice = normalizeText(req.body?.mealChoice);
-    const message = normalizeText(req.body?.message);
+    const payload = parseRsvpPayload(req.body);
+    const validationError = validateRsvpPayload(payload);
 
-    if (!invitationSlug || !guestName || !RSVP_ATTENDANCE_VALUES.has(attendance)) {
+    if (!invitationSlug) {
       return res.status(400).json({ error: 'INVALID_RSVP_PAYLOAD' });
     }
 
-    if (guestName.length > 80) {
-      return res.status(400).json({ error: 'GUEST_NAME_TOO_LONG' });
-    }
-
-    if (guestCount < 1 || guestCount > 10) {
-      return res.status(400).json({ error: 'INVALID_GUEST_COUNT' });
-    }
-
-    if (mealChoice.length > 80) {
-      return res.status(400).json({ error: 'MEAL_CHOICE_TOO_LONG' });
-    }
-
-    if (message.length > 1000) {
-      return res.status(400).json({ error: 'MESSAGE_TOO_LONG' });
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
     }
 
     const invitation = await prisma.invitation.findUnique({
@@ -106,6 +148,7 @@ router.post('/', async (req, res) => {
         id: true,
         isPublished: true,
         data: true,
+        rsvpDeadline: true,
       },
     });
 
@@ -117,20 +160,44 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ error: 'INVITATION_NOT_PUBLISHED' });
     }
 
-    const invitationData = invitation.data as { rsvp?: { enabled?: boolean } } | null;
-    const isRsvpEnabled = invitationData?.rsvp?.enabled === true;
-    if (!isRsvpEnabled) {
+    if (!isRsvpEnabled(invitation.data)) {
       return res.status(403).json({ error: 'RSVP_DISABLED' });
     }
 
-    const rsvp = await prisma.rSVP.create({
-      data: {
+    if (isRsvpClosed(invitation.rsvpDeadline)) {
+      return res.status(403).json({ error: 'RSVP_CLOSED' });
+    }
+
+    const existing = await prisma.rSVP.findUnique({
+      where: {
+        invitationId_guestName: {
+          invitationId: invitation.id,
+          guestName: payload.guestName,
+        },
+      },
+      select: { id: true },
+    });
+
+    const rsvp = await prisma.rSVP.upsert({
+      where: {
+        invitationId_guestName: {
+          invitationId: invitation.id,
+          guestName: payload.guestName,
+        },
+      },
+      create: {
         invitationId: invitation.id,
-        guestName,
-        attendance,
-        guestCount,
-        mealChoice: mealChoice || null,
-        message: message || null,
+        guestName: payload.guestName,
+        attendance: payload.attendance,
+        guestCount: payload.guestCount,
+        mealChoice: payload.mealChoice || null,
+        message: payload.message || null,
+      },
+      update: {
+        attendance: payload.attendance,
+        guestCount: payload.guestCount,
+        mealChoice: payload.mealChoice || null,
+        message: payload.message || null,
       },
       select: {
         id: true,
@@ -143,13 +210,94 @@ router.post('/', async (req, res) => {
       },
     });
 
-    return res.status(201).json({
+    return res.status(existing ? 200 : 201).json({
       success: true,
+      mode: existing ? 'updated' : 'created',
       rsvp,
     });
   } catch (error) {
     console.error('Error creating RSVP:', error);
     return res.status(500).json({ error: 'FAILED_TO_CREATE_RSVP' });
+  }
+});
+
+router.patch('/:id', async (req, res) => {
+  try {
+    const rsvpId = normalizeText(req.params.id);
+    const payload = parseRsvpPayload(req.body);
+    const validationError = validateRsvpPayload(payload);
+
+    if (!rsvpId) {
+      return res.status(400).json({ error: 'RSVP_ID_REQUIRED' });
+    }
+
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
+    }
+
+    const existing = await prisma.rSVP.findUnique({
+      where: { id: rsvpId },
+      select: {
+        id: true,
+        guestName: true,
+        invitation: {
+          select: {
+            id: true,
+            isPublished: true,
+            data: true,
+            rsvpDeadline: true,
+          },
+        },
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'RSVP_NOT_FOUND' });
+    }
+
+    if (payload.guestName !== existing.guestName) {
+      return res.status(400).json({ error: 'GUEST_NAME_MISMATCH' });
+    }
+
+    if (!existing.invitation.isPublished) {
+      return res.status(403).json({ error: 'INVITATION_NOT_PUBLISHED' });
+    }
+
+    if (!isRsvpEnabled(existing.invitation.data)) {
+      return res.status(403).json({ error: 'RSVP_DISABLED' });
+    }
+
+    if (isRsvpClosed(existing.invitation.rsvpDeadline)) {
+      return res.status(403).json({ error: 'RSVP_CLOSED' });
+    }
+
+    const rsvp = await prisma.rSVP.update({
+      where: { id: rsvpId },
+      data: {
+        attendance: payload.attendance,
+        guestCount: payload.guestCount,
+        mealChoice: payload.mealChoice || null,
+        message: payload.message || null,
+      },
+      select: {
+        id: true,
+        guestName: true,
+        attendance: true,
+        guestCount: true,
+        mealChoice: true,
+        message: true,
+        createdAt: true,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      mode: 'updated',
+      rsvp,
+    });
+  } catch (error) {
+    console.error('Error updating RSVP:', error);
+    return res.status(500).json({ error: 'FAILED_TO_UPDATE_RSVP' });
   }
 });
 
@@ -161,8 +309,13 @@ router.get('/:invitationId', async (req, res) => {
     }
 
     const invitationId = normalizeText(req.params.invitationId);
+    const search = normalizeText(req.query.search);
+    const attendance = normalizeText(req.query.attendance).toLowerCase();
     if (!invitationId) {
       return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
+    }
+    if (attendance && !validateAttendanceFilter(attendance)) {
+      return res.status(400).json({ error: 'INVALID_ATTENDANCE_FILTER' });
     }
 
     const invitation = await prisma.invitation.findUnique({
@@ -171,6 +324,7 @@ router.get('/:invitationId', async (req, res) => {
         id: true,
         slug: true,
         title: true,
+        rsvpDeadline: true,
       },
     });
 
@@ -179,7 +333,18 @@ router.get('/:invitationId', async (req, res) => {
     }
 
     const guests = await prisma.rSVP.findMany({
-      where: { invitationId },
+      where: {
+        invitationId,
+        ...(search
+          ? {
+              guestName: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            }
+          : {}),
+        ...(attendance ? { attendance } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -188,29 +353,14 @@ router.get('/:invitationId', async (req, res) => {
         guestCount: true,
         mealChoice: true,
         message: true,
+        isHidden: true,
         createdAt: true,
       },
     });
 
-    const summary = guests.reduce(
-      (acc, guest) => {
-        acc.totalGuests += guest.guestCount;
-        if (guest.attendance === 'yes') acc.attending += guest.guestCount;
-        if (guest.attendance === 'no') acc.declined += guest.guestCount;
-        if (guest.attendance === 'maybe') acc.maybe += guest.guestCount;
-        return acc;
-      },
-      {
-        totalGuests: 0,
-        attending: 0,
-        declined: 0,
-        maybe: 0,
-      }
-    );
-
     return res.status(200).json({
       invitation,
-      ...summary,
+      ...buildRsvpSummary(guests),
       guests,
     });
   } catch (error) {
