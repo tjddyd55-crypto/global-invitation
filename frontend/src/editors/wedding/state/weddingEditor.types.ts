@@ -33,6 +33,7 @@ export type WeddingEditorImage = {
   id: string;
   url: string;
   name?: string;
+  mediaId?: string;
 };
 
 export type WeddingEditorGallery = {

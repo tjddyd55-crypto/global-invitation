@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef, useState } from 'react';
+import { deleteMediaFile, uploadMediaImage } from '@/src/lib/mediaApi';
 import styles from '../messageSimpleEditor.module.css';
 
 type Step0MainImageProps = {
@@ -14,19 +16,52 @@ function revokeIfObjectUrl(url?: string) {
 }
 
 export default function Step0MainImage({ heroImage, onChange }: Step0MainImageProps) {
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadedMediaByUrlRef = useRef<Record<string, string>>({});
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (heroImage) {
-      revokeIfObjectUrl(heroImage);
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      if (heroImage) {
+        revokeIfObjectUrl(heroImage);
+      }
+      const uploaded = await uploadMediaImage(file);
+      uploadedMediaByUrlRef.current[uploaded.url] = uploaded.id;
+      onChange(uploaded.url);
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.');
+    } finally {
+      setUploading(false);
+      event.target.value = '';
     }
-    onChange(URL.createObjectURL(file));
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (!heroImage) return;
-    revokeIfObjectUrl(heroImage);
-    onChange('');
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      const mediaId = uploadedMediaByUrlRef.current[heroImage];
+      if (mediaId) {
+        await deleteMediaFile(mediaId);
+        delete uploadedMediaByUrlRef.current[heroImage];
+      } else {
+        revokeIfObjectUrl(heroImage);
+      }
+      onChange('');
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : '이미지 삭제에 실패했습니다.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -46,15 +81,22 @@ export default function Step0MainImage({ heroImage, onChange }: Step0MainImagePr
           )}
           <div className={styles.uploaderActions}>
             <label className={styles.buttonGhost}>
-              이미지 선택
-              <input type="file" accept="image/*" className={styles.hiddenInput} onChange={handleFileChange} />
+              {uploading ? '업로드 중...' : '이미지 선택'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className={styles.hiddenInput}
+                onChange={(event) => void handleFileChange(event)}
+                disabled={uploading}
+              />
             </label>
             {heroImage && (
-              <button type="button" className={styles.buttonSubtle} onClick={handleClear}>
+              <button type="button" className={styles.buttonSubtle} onClick={() => void handleClear()} disabled={uploading}>
                 제거
               </button>
             )}
           </div>
+          {error && <p className={styles.errorText}>{error}</p>}
         </div>
       </div>
     </section>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
+import { deleteMediaFile, uploadMediaImage } from '@/src/lib/mediaApi';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorImage } from '../state/weddingEditor.types';
 
@@ -23,28 +24,59 @@ function buildId() {
 
 export default function MultiImageUploader({ label, description, images, onChange }: MultiImageUploaderProps) {
   const inputId = useId();
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     if (files.length === 0) return;
 
-    const nextImages = [
-      ...images,
-      ...files.map((file) => ({
-        id: buildId(),
-        url: URL.createObjectURL(file),
-        name: file.name,
-      })),
-    ];
-    onChange(nextImages);
-    event.target.value = '';
+    setUploading(true);
+    setError(null);
+
+    try {
+      const uploadedImages: WeddingEditorImage[] = [];
+
+      for (const file of files) {
+        const uploaded = await uploadMediaImage(file);
+        uploadedImages.push({
+          id: uploaded.id || buildId(),
+          url: uploaded.url,
+          name: uploaded.fileName || file.name,
+          mediaId: uploaded.id,
+        });
+      }
+
+      onChange([...images, ...uploadedImages]);
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.');
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
   };
 
-  const handleRemove = (index: number) => {
+  const handleRemove = async (index: number) => {
     const target = images[index];
-    revokeIfObjectUrl(target?.url);
-    const nextImages = images.filter((_, idx) => idx !== index);
-    onChange(nextImages);
+    if (!target) return;
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      if (target.mediaId) {
+        await deleteMediaFile(target.mediaId);
+      } else {
+        revokeIfObjectUrl(target.url);
+      }
+
+      const nextImages = images.filter((_, idx) => idx !== index);
+      onChange(nextImages);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : '이미지 삭제에 실패했습니다.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleMove = (from: number, to: number) => {
@@ -66,17 +98,19 @@ export default function MultiImageUploader({ label, description, images, onChang
       <div className={styles.uploaderBody}>
         <div className={styles.uploaderActions}>
           <label className={styles.buttonGhost} htmlFor={inputId}>
-            이미지 추가
+            {uploading ? '업로드 중...' : '이미지 추가'}
           </label>
           <input
             id={inputId}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             multiple
             className={styles.hiddenInput}
-            onChange={handleAddFiles}
+            onChange={(event) => void handleAddFiles(event)}
+            disabled={uploading}
           />
         </div>
+        {error && <p className={styles.fieldDescription}>{error}</p>}
         {images.length === 0 ? (
           <div className={styles.uploaderPlaceholder}>아직 등록된 이미지가 없습니다.</div>
         ) : (
@@ -104,7 +138,8 @@ export default function MultiImageUploader({ label, description, images, onChang
                   <button
                     type="button"
                     className={styles.buttonDanger}
-                    onClick={() => handleRemove(index)}
+                    onClick={() => void handleRemove(index)}
+                    disabled={uploading}
                   >
                     삭제
                   </button>

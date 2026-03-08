@@ -1,6 +1,7 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, useRef, useState } from 'react';
+import { deleteMediaFile, uploadMediaImage } from '@/src/lib/mediaApi';
 import styles from '../messageCardEditor.module.css';
 
 type ImageUploaderProps = {
@@ -20,21 +21,52 @@ function revokeIfObjectUrl(url?: string) {
 
 export default function ImageUploader({ label, description, value, onChange, onClear, required }: ImageUploaderProps) {
   const inputId = useId();
+  const uploadedMediaByUrlRef = useRef<Record<string, string>>({});
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (value) {
-      revokeIfObjectUrl(value);
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      if (value) {
+        revokeIfObjectUrl(value);
+      }
+      const uploaded = await uploadMediaImage(file);
+      uploadedMediaByUrlRef.current[uploaded.url] = uploaded.id;
+      onChange(uploaded.url);
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.');
+    } finally {
+      setUploading(false);
+      event.target.value = '';
     }
-    const url = URL.createObjectURL(file);
-    onChange(url);
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (!value) return;
-    revokeIfObjectUrl(value);
-    onClear?.();
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      const mediaId = uploadedMediaByUrlRef.current[value];
+      if (mediaId) {
+        await deleteMediaFile(mediaId);
+        delete uploadedMediaByUrlRef.current[value];
+      } else {
+        revokeIfObjectUrl(value);
+      }
+      onClear?.();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : '이미지 삭제에 실패했습니다.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -55,20 +87,22 @@ export default function ImageUploader({ label, description, value, onChange, onC
         )}
         <div className={styles.uploaderActions}>
           <label className={styles.buttonGhost} htmlFor={inputId}>
-            이미지 선택
+            {uploading ? '업로드 중...' : '이미지 선택'}
           </label>
           {value && (
-            <button type="button" className={styles.buttonSubtle} onClick={handleClear}>
+            <button type="button" className={styles.buttonSubtle} onClick={() => void handleClear()} disabled={uploading}>
               제거
             </button>
           )}
         </div>
+        {error && <p className={styles.fieldDescription}>{error}</p>}
         <input
           id={inputId}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp"
           className={styles.hiddenInput}
-          onChange={handleFileChange}
+          onChange={(event) => void handleFileChange(event)}
+          disabled={uploading}
         />
       </div>
     </div>
