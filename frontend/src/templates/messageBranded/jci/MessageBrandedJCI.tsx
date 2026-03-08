@@ -9,13 +9,19 @@ type MessageBrandedJCIProps = {
   data: MessageBrandedInvitationData;
   onShare?: () => void;
   isShared?: boolean;
+  previewMode?: boolean;
 };
 
 function buildMapSrc(lat: number, lng: number): string {
   return `https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
 }
 
-export default function MessageBrandedJCI({ data, onShare, isShared = false }: MessageBrandedJCIProps) {
+export default function MessageBrandedJCI({
+  data,
+  onShare,
+  isShared = false,
+  previewMode = false,
+}: MessageBrandedJCIProps) {
   const { t } = useI18n();
 
   return (
@@ -47,14 +53,20 @@ export default function MessageBrandedJCI({ data, onShare, isShared = false }: M
               {data.schedule.place}
             </div>
           </div>
-          <iframe
-            className={styles.mapFrame}
-            src={buildMapSrc(data.map.lat, data.map.lng)}
-            title={data.map.label}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
-          {onShare && (
+          {previewMode ? (
+            <div className={`${styles.mapFrame} ${styles.mapPlaceholder}`} role="img" aria-label={data.map.label}>
+              {data.map.label}
+            </div>
+          ) : (
+            <iframe
+              className={styles.mapFrame}
+              src={buildMapSrc(data.map.lat, data.map.lng)}
+              title={data.map.label}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          )}
+          {!previewMode && onShare && (
             <button type="button" className={styles.shareButton} onClick={onShare}>
               {isShared ? t(I18N_KEYS.common.shared) : t(I18N_KEYS.common.share)}
             </button>

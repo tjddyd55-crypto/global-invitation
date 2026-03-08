@@ -1,5 +1,13 @@
 import type { ComponentType } from 'react';
 import { buildApiUrl } from '@/src/lib/apiBase';
+import type { TemplatePreviewData } from '@/src/templates/previewData';
+import {
+  funeralPreviewData,
+  messageBrandedJciPreviewData,
+  messageSimplePreviewData,
+  messageThankYouPreviewData,
+  weddingPreviewData,
+} from '@/src/templates/previewData';
 import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
 import FuneralClassicInvitation from '@/src/templates/funeralClassic/FuneralClassicInvitation';
 import MessageSimpleCard from '@/src/templates/messageSimple/MessageSimpleCard';
@@ -35,6 +43,7 @@ export type TemplateRegistryEntry = {
   category: TemplateRegistryCategory;
   editorType: TemplateEditorType;
   renderer: TemplateRendererComponent;
+  previewData: TemplatePreviewData;
   schema: 'WeddingInvitationData' | 'FuneralInvitationData' | 'MessageInvitationData';
   label: string;
   componentName: string;
@@ -46,6 +55,7 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateRegistryEntry> = {
     category: 'wedding',
     editorType: 'wedding',
     renderer: WeddingClassicInvitation,
+    previewData: weddingPreviewData,
     schema: 'WeddingInvitationData',
     label: 'Wedding Classic',
     componentName: 'WeddingClassicTemplate',
@@ -55,6 +65,7 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateRegistryEntry> = {
     category: 'wedding',
     editorType: 'wedding',
     renderer: WeddingClassicInvitation,
+    previewData: weddingPreviewData,
     schema: 'WeddingInvitationData',
     label: 'Wedding Classic (Legacy)',
     componentName: 'WeddingClassicTemplate',
@@ -64,6 +75,7 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateRegistryEntry> = {
     category: 'funeral',
     editorType: 'funeral',
     renderer: FuneralClassicInvitation,
+    previewData: funeralPreviewData,
     schema: 'FuneralInvitationData',
     label: 'Funeral Classic',
     componentName: 'FuneralClassicTemplate',
@@ -73,6 +85,7 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateRegistryEntry> = {
     category: 'message',
     editorType: 'message',
     renderer: MessageSimpleCard,
+    previewData: messageSimplePreviewData,
     schema: 'MessageInvitationData',
     label: 'Message Simple',
     componentName: 'MessageSimpleTemplate',
@@ -82,6 +95,7 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateRegistryEntry> = {
     category: 'message',
     editorType: 'message',
     renderer: MessageThankYouCard,
+    previewData: messageThankYouPreviewData,
     schema: 'MessageInvitationData',
     label: 'Message Thank You',
     componentName: 'MessageThankYouTemplate',
@@ -91,6 +105,7 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateRegistryEntry> = {
     category: 'message',
     editorType: 'message',
     renderer: MessageBrandedJCI,
+    previewData: messageBrandedJciPreviewData,
     schema: 'MessageInvitationData',
     label: 'Message Branded JCI',
     componentName: 'MessageBrandedJciTemplate',
@@ -100,6 +115,7 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateRegistryEntry> = {
     category: 'message',
     editorType: 'message',
     renderer: MessageBrandedJCI,
+    previewData: messageBrandedJciPreviewData,
     schema: 'MessageInvitationData',
     label: 'Message Branded JCI (Legacy)',
     componentName: 'MessageBrandedJciTemplate',
@@ -214,6 +230,10 @@ export function getTemplateRegistryEntry(templateKey: string | null | undefined)
 
 export function getTemplateRenderer(templateKey: string | null | undefined): TemplateRendererComponent | null {
   return getTemplateRegistryEntry(templateKey)?.renderer ?? null;
+}
+
+export function getTemplatePreviewData(templateKey: string | null | undefined): TemplatePreviewData | null {
+  return getTemplateRegistryEntry(templateKey)?.previewData ?? null;
 }
 
 export function getTemplateEditorType(templateKey: string | null | undefined): TemplateEditorType | null {

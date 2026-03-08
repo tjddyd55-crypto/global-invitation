@@ -39,6 +39,7 @@ type WeddingClassicInvitationProps = {
   data: WeddingInvitationData;
   invitationSlug?: string;
   showPlayButton?: boolean;
+  previewMode?: boolean;
   onPlayMusic?: () => void;
   showRsvp?: boolean;
   showGuestbook?: boolean;
@@ -96,6 +97,7 @@ export default function WeddingClassicInvitation({
   data,
   invitationSlug = 'demo-wedding-classic',
   showPlayButton,
+  previewMode = false,
   onPlayMusic,
   showRsvp = true,
   showGuestbook = true,
@@ -109,6 +111,13 @@ export default function WeddingClassicInvitation({
   const [attendingChoice, setAttendingChoice] = useState<'yes' | 'no'>('yes');
 
   useEffect(() => {
+    if (previewMode) {
+      setRsvpUiState(RSVP_UI_STATE.READ_ONLY);
+      setRsvpAttending(null);
+      setRsvpName('');
+      return;
+    }
+
     const stored = getStoredRsvp(invitationSlug);
     setRsvpUiState(getRsvpUiState(stored));
     if (stored) {
@@ -118,7 +127,7 @@ export default function WeddingClassicInvitation({
       setRsvpAttending(null);
       setRsvpName('');
     }
-  }, [invitationSlug]);
+  }, [invitationSlug, previewMode]);
 
   const handleRsvpSubmit = () => {
     const attending = attendingChoice === 'yes';
@@ -137,7 +146,7 @@ export default function WeddingClassicInvitation({
   const hasGallery = Array.isArray(galleryImages) && galleryImages.length > 0;
   const introText = safeArray(r?.introText);
   const hasSpecialNotes = introText.length > 0 || Boolean(r?.introQuote);
-  const rsvpEnabled = showRsvp && r?.rsvp?.enabled === true;
+  const rsvpEnabled = !previewMode && showRsvp && r?.rsvp?.enabled === true;
   const accounts = safeArray(r?.accounts);
   const messages = safeArray(r?.messages);
   const weekdays = [

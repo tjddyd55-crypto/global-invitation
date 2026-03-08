@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { generateDraftSlug } from '@/src/lib/invitationStorage';
 import MarketingLayout from '@/src/components/MarketingLayout';
+import TemplatePreviewWrapper from '@/src/templates/TemplatePreviewWrapper';
 import {
   fetchVisibleTemplateDefinitions,
   type TemplateCategory,
@@ -140,6 +141,7 @@ export default function TemplatesPage() {
           {filteredTemplates.map((card) => (
             <article key={card.id} className={styles.card}>
               <div className={styles.thumbnail}>
+                <TemplatePreviewWrapper templateKey={card.templateKey} />
                 <span className={styles.thumbnailLabel}>
                   {CATEGORY_LABELS[card.category]} · {STYLE_LABELS[card.style]}
                 </span>
