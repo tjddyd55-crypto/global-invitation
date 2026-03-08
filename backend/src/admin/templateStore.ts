@@ -1,12 +1,26 @@
-import path from 'path';
-import { promises as fs } from 'fs';
+import { Prisma } from '@prisma/client';
+import prisma from '../lib/prisma';
 
 export type TemplateCategory = 'wedding' | 'birthday' | 'funeral' | 'party';
 export type TemplateStyle = 'korean' | 'japanese' | 'western' | 'traditional' | 'modern';
 export type TemplateMarketplaceType = 'SYSTEM' | 'CREATOR';
+export type TemplateFieldType = 'text' | 'textarea' | 'date' | 'datetime' | 'number' | 'select';
+
+export interface TemplateFieldDefinition {
+  id: string;
+  templateId: string;
+  fieldName: string;
+  fieldType: TemplateFieldType;
+  label: string;
+  placeholder: string;
+  isRequired: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
 
 export interface TemplateDefinition {
   id: string;
+  slug: string;
   name: string;
   category: TemplateCategory;
   style: TemplateStyle;
@@ -20,6 +34,8 @@ export interface TemplateDefinition {
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
+  updatedAt: string;
+  fields?: TemplateFieldDefinition[];
 }
 
 export type TemplateCreateInput = {
@@ -39,79 +55,16 @@ export type TemplateUpdateInput = Partial<TemplateCreateInput> & {
   isDeleted?: boolean;
 };
 
-const DATA_DIRECTORY = path.resolve(__dirname, '../../data');
-const TEMPLATE_REGISTRY_FILE = path.join(DATA_DIRECTORY, 'template-registry.json');
-
-const DEFAULT_TEMPLATE_REGISTRY: TemplateDefinition[] = [
-  {
-    id: 'wedding-korean-classic',
-    name: '한국 전통 웨딩',
-    category: 'wedding',
-    style: 'korean',
-    description: '전통적인 한국식 결혼식 초대장',
-    price: 50,
-    creatorShare: 0,
-    component: 'WeddingClassicTemplate',
-    templateKey: 'wedding_classic',
-    marketplaceType: 'SYSTEM',
-    isActive: true,
-    isDeleted: false,
-    createdAt: '2026-02-17T00:00:00.000Z',
-  },
-  {
-    id: 'wedding-modern-white',
-    name: '모던 화이트 웨딩',
-    category: 'wedding',
-    style: 'modern',
-    description: '깔끔하고 현대적인 웨딩 초대장',
-    price: 50,
-    creatorShare: 0,
-    component: 'WeddingClassicTemplate',
-    templateKey: 'wedding_classic',
-    marketplaceType: 'SYSTEM',
-    isActive: true,
-    isDeleted: false,
-    createdAt: '2026-02-17T00:00:00.000Z',
-  },
-  {
-    id: 'wedding-japanese-minimal',
-    name: '일본식 웨딩',
-    category: 'wedding',
-    style: 'japanese',
-    description: '절제된 일본 스타일의 웨딩 초대장',
-    price: 50,
-    creatorShare: 20,
-    creatorId: 'creator-japan-studio',
-    component: 'WeddingClassicTemplate',
-    templateKey: 'wedding_classic',
-    marketplaceType: 'CREATOR',
-    isActive: true,
-    isDeleted: false,
-    createdAt: '2026-02-17T00:00:00.000Z',
-  },
-  {
-    id: 'wedding-simple-minimal',
-    name: '심플 웨딩',
-    category: 'wedding',
-    style: 'western',
-    description: '군더더기 없이 단정한 웨딩 초대장',
-    price: 30,
-    creatorShare: 0,
-    component: 'WeddingClassicTemplate',
-    templateKey: 'classic',
-    marketplaceType: 'SYSTEM',
-    isActive: true,
-    isDeleted: false,
-    createdAt: '2026-02-17T00:00:00.000Z',
-  },
-];
-
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
 function normalizeText(value: string): string {
   return value.trim();
+}
+
+function normalizeMarketplaceType(creatorId?: string): TemplateMarketplaceType {
+  return creatorId?.trim() ? 'CREATOR' : 'SYSTEM';
 }
 
 function slugify(value: string): string {
@@ -123,58 +76,84 @@ function slugify(value: string): string {
     .slice(0, 60);
 }
 
-function normalizeTemplateRecord(record: TemplateDefinition): TemplateDefinition {
-  const creatorId = normalizeText(record.creatorId || '');
-  const marketplaceType: TemplateMarketplaceType = creatorId ? 'CREATOR' : 'SYSTEM';
-
+function mapTemplateRecord(
+  row: {
+    id: string;
+    slug: string;
+    name: string;
+    category: string;
+    style: string;
+    description: string;
+    price: number;
+    creatorShare: number;
+    creatorId: string | null;
+    component: string;
+    templateKey: string;
+    marketplaceType: string;
+    isActive: boolean;
+    isDeleted: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    fields?: Array<{
+      id: string;
+      templateId: string;
+      fieldName: string;
+      fieldType: string;
+      label: string;
+      placeholder: string;
+      isRequired: boolean;
+      sortOrder: number;
+      createdAt: Date;
+    }>;
+  }
+): TemplateDefinition {
   return {
-    ...record,
-    id: normalizeText(record.id),
-    name: normalizeText(record.name),
-    category: record.category,
-    style: record.style,
-    description: normalizeText(record.description),
-    price: Number(record.price) || 0,
-    creatorShare: clampNumber(Number(record.creatorShare) || 0, 0, 100),
-    creatorId: creatorId || undefined,
-    component: normalizeText(record.component),
-    templateKey: normalizeText(record.templateKey) || 'wedding_classic',
-    marketplaceType,
-    isActive: Boolean(record.isActive),
-    isDeleted: Boolean(record.isDeleted),
-    createdAt: record.createdAt,
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    category: row.category as TemplateCategory,
+    style: row.style as TemplateStyle,
+    description: row.description,
+    price: row.price,
+    creatorShare: row.creatorShare,
+    creatorId: row.creatorId ?? undefined,
+    component: row.component,
+    templateKey: row.templateKey,
+    marketplaceType: (row.marketplaceType as TemplateMarketplaceType) || 'SYSTEM',
+    isActive: row.isActive,
+    isDeleted: row.isDeleted,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    fields: row.fields?.map((field) => ({
+      id: field.id,
+      templateId: field.templateId,
+      fieldName: field.fieldName,
+      fieldType: field.fieldType as TemplateFieldType,
+      label: field.label,
+      placeholder: field.placeholder,
+      isRequired: field.isRequired,
+      sortOrder: field.sortOrder,
+      createdAt: field.createdAt.toISOString(),
+    })),
   };
 }
 
-async function ensureStoreFile() {
-  await fs.mkdir(DATA_DIRECTORY, { recursive: true });
-  try {
-    await fs.access(TEMPLATE_REGISTRY_FILE);
-  } catch {
-    await fs.writeFile(
-      TEMPLATE_REGISTRY_FILE,
-      JSON.stringify(DEFAULT_TEMPLATE_REGISTRY, null, 2),
-      'utf8'
-    );
+async function createUniqueSlug(baseName: string): Promise<string> {
+  const baseSlug = slugify(baseName) || `template-${Date.now()}`;
+  let attempt = 0;
+  while (attempt < 50) {
+    const suffix = attempt === 0 ? '' : `-${attempt + 1}`;
+    const candidate = `${baseSlug}${suffix}`;
+    const existing = await prisma.template.findUnique({
+      where: { slug: candidate },
+      select: { id: true },
+    });
+    if (!existing) {
+      return candidate;
+    }
+    attempt += 1;
   }
-}
-
-async function readRegistry(): Promise<TemplateDefinition[]> {
-  await ensureStoreFile();
-  const raw = await fs.readFile(TEMPLATE_REGISTRY_FILE, 'utf8');
-  const parsed = JSON.parse(raw) as TemplateDefinition[];
-  return parsed.map(normalizeTemplateRecord);
-}
-
-async function writeRegistry(definitions: TemplateDefinition[]): Promise<void> {
-  const normalized = definitions.map(normalizeTemplateRecord);
-  await fs.writeFile(TEMPLATE_REGISTRY_FILE, JSON.stringify(normalized, null, 2), 'utf8');
-}
-
-function createTemplateId(input: TemplateCreateInput): string {
-  const base = slugify(`${input.category}-${input.style}-${input.name}`);
-  const fallback = `template-${Date.now()}`;
-  return base || fallback;
+  throw new Error('Failed to allocate unique template slug');
 }
 
 export function calculateRevenue(price: number, creatorShare: number) {
@@ -192,86 +171,183 @@ export function calculateRevenue(price: number, creatorShare: number) {
 }
 
 export async function listTemplates(): Promise<TemplateDefinition[]> {
-  const definitions = await readRegistry();
-  return definitions.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  const rows = await prisma.template.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(mapTemplateRecord);
 }
 
 export async function listVisibleTemplates(): Promise<TemplateDefinition[]> {
-  const definitions = await listTemplates();
-  return definitions.filter((definition) => definition.isActive && !definition.isDeleted);
+  const rows = await prisma.template.findMany({
+    where: {
+      isActive: true,
+      isDeleted: false,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return rows.map(mapTemplateRecord);
 }
 
-export async function getTemplateById(id: string): Promise<TemplateDefinition | null> {
-  const definitions = await listTemplates();
-  return definitions.find((definition) => definition.id === id) ?? null;
+export async function getTemplates(): Promise<TemplateDefinition[]> {
+  return listTemplates();
+}
+
+export async function getTemplateById(identifier: string): Promise<TemplateDefinition | null> {
+  const row = await prisma.template.findFirst({
+    where: {
+      OR: [{ id: identifier }, { slug: identifier }],
+    },
+    include: {
+      fields: {
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
+  });
+  return row ? mapTemplateRecord(row) : null;
+}
+
+export async function getTemplateFields(identifier: string): Promise<TemplateFieldDefinition[]> {
+  const template = await prisma.template.findFirst({
+    where: {
+      OR: [{ id: identifier }, { slug: identifier }],
+    },
+    select: { id: true },
+  });
+
+  if (!template) {
+    return [];
+  }
+
+  const fields = await prisma.templateField.findMany({
+    where: { templateId: template.id },
+    orderBy: { sortOrder: 'asc' },
+  });
+
+  return fields.map((field) => ({
+    id: field.id,
+    templateId: field.templateId,
+    fieldName: field.fieldName,
+    fieldType: field.fieldType as TemplateFieldType,
+    label: field.label,
+    placeholder: field.placeholder,
+    isRequired: field.isRequired,
+    sortOrder: field.sortOrder,
+    createdAt: field.createdAt.toISOString(),
+  }));
 }
 
 export async function createTemplate(input: TemplateCreateInput): Promise<TemplateDefinition> {
-  const definitions = await listTemplates();
-  const createdAt = new Date().toISOString();
-  const id = createTemplateId(input);
-
-  if (definitions.some((definition) => definition.id === id)) {
-    throw new Error('Template id already exists');
-  }
-
-  const record = normalizeTemplateRecord({
-    id,
-    name: input.name,
-    category: input.category,
-    style: input.style,
-    description: input.description,
-    price: input.price,
-    creatorShare: input.creatorShare,
-    creatorId: input.creatorId,
-    component: input.component,
-    templateKey: input.templateKey,
-    marketplaceType: input.creatorId?.trim() ? 'CREATOR' : 'SYSTEM',
-    isActive: true,
-    isDeleted: false,
-    createdAt,
+  const creatorId = normalizeText(input.creatorId || '');
+  const slug = await createUniqueSlug(`${input.category}-${input.style}-${input.name}`);
+  const row = await prisma.template.create({
+    data: {
+      slug,
+      name: normalizeText(input.name),
+      category: input.category,
+      style: input.style,
+      description: normalizeText(input.description),
+      price: Number(input.price) || 0,
+      creatorShare: clampNumber(Number(input.creatorShare) || 0, 0, 100),
+      creatorId: creatorId || null,
+      component: normalizeText(input.component),
+      templateKey: normalizeText(input.templateKey) || 'wedding_classic',
+      marketplaceType: normalizeMarketplaceType(creatorId),
+      isActive: true,
+      isDeleted: false,
+    },
   });
-
-  definitions.push(record);
-  await writeRegistry(definitions);
-  return record;
+  return mapTemplateRecord(row);
 }
 
-export async function updateTemplate(id: string, input: TemplateUpdateInput): Promise<TemplateDefinition | null> {
-  const definitions = await listTemplates();
-  const targetIndex = definitions.findIndex((definition) => definition.id === id);
-  if (targetIndex < 0) {
+export async function updateTemplate(
+  identifier: string,
+  input: TemplateUpdateInput
+): Promise<TemplateDefinition | null> {
+  const existing = await prisma.template.findFirst({
+    where: {
+      OR: [{ id: identifier }, { slug: identifier }],
+    },
+  });
+
+  if (!existing) {
     return null;
   }
 
-  const current = definitions[targetIndex];
-  const updated = normalizeTemplateRecord({
-    ...current,
-    ...input,
-    id: current.id,
-    createdAt: current.createdAt,
+  const payload: Prisma.TemplateUpdateInput = {};
+
+  if (input.name !== undefined) {
+    payload.name = normalizeText(input.name);
+  }
+  if (input.category !== undefined) {
+    payload.category = input.category;
+  }
+  if (input.style !== undefined) {
+    payload.style = input.style;
+  }
+  if (input.description !== undefined) {
+    payload.description = normalizeText(input.description);
+  }
+  if (input.price !== undefined) {
+    payload.price = Number(input.price) || 0;
+  }
+  if (input.creatorShare !== undefined) {
+    payload.creatorShare = clampNumber(Number(input.creatorShare) || 0, 0, 100);
+  }
+  if (input.creatorId !== undefined) {
+    const creatorId = normalizeText(input.creatorId || '');
+    payload.creatorId = creatorId || null;
+    payload.marketplaceType = normalizeMarketplaceType(creatorId);
+  }
+  if (input.component !== undefined) {
+    payload.component = normalizeText(input.component);
+  }
+  if (input.templateKey !== undefined) {
+    payload.templateKey = normalizeText(input.templateKey) || 'wedding_classic';
+  }
+  if (input.isActive !== undefined) {
+    payload.isActive = Boolean(input.isActive);
+  }
+  if (input.isDeleted !== undefined) {
+    payload.isDeleted = Boolean(input.isDeleted);
+  }
+
+  const row = await prisma.template.update({
+    where: { id: existing.id },
+    data: payload,
   });
 
-  definitions[targetIndex] = updated;
-  await writeRegistry(definitions);
-  return updated;
+  return mapTemplateRecord(row);
 }
 
-export async function disableTemplate(id: string): Promise<TemplateDefinition | null> {
-  return updateTemplate(id, { isActive: false });
+export async function deleteTemplate(identifier: string): Promise<TemplateDefinition | null> {
+  return updateTemplate(identifier, {
+    isDeleted: true,
+    isActive: false,
+  });
 }
 
-export async function softDeleteTemplate(id: string): Promise<TemplateDefinition | null> {
-  return updateTemplate(id, { isDeleted: true, isActive: false });
+export async function disableTemplate(identifier: string): Promise<TemplateDefinition | null> {
+  return updateTemplate(identifier, { isActive: false });
+}
+
+export async function softDeleteTemplate(identifier: string): Promise<TemplateDefinition | null> {
+  return deleteTemplate(identifier);
 }
 
 export async function getTemplateStoreSummary() {
-  const definitions = await listTemplates();
-  const activeTemplates = definitions.filter((definition) => definition.isActive && !definition.isDeleted);
+  const [allTemplates, activeTemplates] = await Promise.all([
+    prisma.template.findMany(),
+    prisma.template.findMany({
+      where: {
+        isActive: true,
+        isDeleted: false,
+      },
+    }),
+  ]);
 
   const revenueSummary = activeTemplates.reduce(
     (summary, definition) => {
-      const revenue = calculateRevenue(definition.price, definition.creatorShare);
+      const revenue = calculateRevenue(Number(definition.price), Number(definition.creatorShare));
       return {
         totalTemplatePrice: Number((summary.totalTemplatePrice + revenue.price).toFixed(2)),
         totalCreatorEarnings: Number(
@@ -290,10 +366,10 @@ export async function getTemplateStoreSummary() {
   );
 
   return {
-    totalTemplates: definitions.length,
+    totalTemplates: allTemplates.length,
     activeTemplates: activeTemplates.length,
-    creatorTemplates: definitions.filter((definition) => definition.marketplaceType === 'CREATOR').length,
-    systemTemplates: definitions.filter((definition) => definition.marketplaceType === 'SYSTEM').length,
+    creatorTemplates: allTemplates.filter((definition) => definition.marketplaceType === 'CREATOR').length,
+    systemTemplates: allTemplates.filter((definition) => definition.marketplaceType === 'SYSTEM').length,
     revenueSummary,
   };
 }

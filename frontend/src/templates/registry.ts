@@ -172,7 +172,7 @@ export function resolveRendererByTemplateKey(templateKey: string | null): Templa
 
 export async function fetchVisibleTemplateDefinitions(): Promise<TemplateDefinition[]> {
   try {
-    const response = await fetch(buildApiUrl('/api/template-registry'), {
+    const response = await fetch(buildApiUrl('/api/templates'), {
       cache: 'no-store',
     });
     if (!response.ok) {
@@ -192,7 +192,7 @@ export async function fetchTemplateDefinitionById(templateId: string): Promise<T
       return null;
     }
 
-    const response = await fetch(buildApiUrl(`/api/template-registry/${normalizedId}`), {
+    const response = await fetch(buildApiUrl(`/api/templates/${normalizedId}`), {
       cache: 'no-store',
     });
 

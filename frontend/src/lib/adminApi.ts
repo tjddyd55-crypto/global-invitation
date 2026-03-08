@@ -62,10 +62,10 @@ function buildAdminRequestInit(init?: RequestInit): RequestInit {
 
 export async function loginAdmin(adminId: string, password: string) {
   const response = await fetch(
-    buildApiUrl('/api/admin/auth/login'),
+    buildApiUrl('/api/admin/login'),
     buildAdminRequestInit({
       method: 'POST',
-      body: JSON.stringify({ adminId, password }),
+      body: JSON.stringify({ id: adminId, password }),
     })
   );
   return parseJsonOrThrow<{ authenticated: true; adminId: string }>(response);
@@ -73,7 +73,7 @@ export async function loginAdmin(adminId: string, password: string) {
 
 export async function logoutAdmin() {
   const response = await fetch(
-    buildApiUrl('/api/admin/auth/logout'),
+    buildApiUrl('/api/admin/logout'),
     buildAdminRequestInit({
       method: 'POST',
       body: JSON.stringify({}),
@@ -83,7 +83,7 @@ export async function logoutAdmin() {
 }
 
 export async function getAdminSession() {
-  const response = await fetch(buildApiUrl('/api/admin/auth/me'), buildAdminRequestInit());
+  const response = await fetch(buildApiUrl('/api/admin/me'), buildAdminRequestInit());
   return parseJsonOrThrow<AdminSession>(response);
 }
 

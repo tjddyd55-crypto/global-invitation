@@ -1,8 +1,10 @@
 import crypto from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
 
-const ADMIN_SESSION_COOKIE = 'gi_admin_session';
+const ADMIN_SESSION_COOKIE = 'admin_session';
 const ADMIN_SESSION_TTL_HOURS = 12;
+const DEV_DEFAULT_ADMIN_ID = 'admin';
+const DEV_DEFAULT_ADMIN_PASSWORD = 'admin!2345';
 
 export type AdminSession = {
   adminId: string;
@@ -16,10 +18,34 @@ type AdminCredentials = {
   secret: string;
 };
 
+function isProduction(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
+function resolveAdminId(): string {
+  const configured = process.env.ADMIN_ID?.trim();
+  if (configured) {
+    return configured;
+  }
+  return isProduction() ? '' : DEV_DEFAULT_ADMIN_ID;
+}
+
+function resolveAdminPassword(): string {
+  const configured = process.env.ADMIN_PASSWORD?.trim();
+  if (configured) {
+    return configured;
+  }
+  return isProduction() ? '' : DEV_DEFAULT_ADMIN_PASSWORD;
+}
+
+function resolveAdminSessionSecret(): string {
+  return process.env.ADMIN_SESSION_SECRET?.trim() || '';
+}
+
 function getAdminCredentials(): AdminCredentials | null {
-  const id = process.env.ADMIN_ID?.trim();
-  const password = process.env.ADMIN_PASSWORD?.trim();
-  const secret = (process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || '').trim();
+  const id = resolveAdminId();
+  const password = resolveAdminPassword();
+  const secret = resolveAdminSessionSecret();
 
   if (!id || !password || !secret) {
     return null;
@@ -130,24 +156,22 @@ export function setAdminSessionCookie(res: Response, adminId: string) {
   }
 
   const token = serializeSession(buildSession(adminId), credentials.secret);
-  const isProduction = process.env.NODE_ENV === 'production';
-  const sameSite = isProduction ? 'none' : 'lax';
+  const secure = isProduction();
   res.cookie(ADMIN_SESSION_COOKIE, token, {
     httpOnly: true,
-    sameSite,
-    secure: isProduction,
+    sameSite: 'lax',
+    secure,
     maxAge: ADMIN_SESSION_TTL_HOURS * 60 * 60 * 1000,
     path: '/',
   });
 }
 
 export function clearAdminSessionCookie(res: Response) {
-  const isProduction = process.env.NODE_ENV === 'production';
-  const sameSite = isProduction ? 'none' : 'lax';
+  const secure = isProduction();
   res.clearCookie(ADMIN_SESSION_COOKIE, {
     httpOnly: true,
-    sameSite,
-    secure: isProduction,
+    sameSite: 'lax',
+    secure,
     path: '/',
   });
 }
@@ -169,9 +193,17 @@ export function getAdminSession(req: Request): AdminSession | null {
 export function requireAdminSession(req: Request, res: Response, next: NextFunction) {
   const session = getAdminSession(req);
   if (!session) {
-    return res.status(401).json({ error: 'ADMIN_UNAUTHORIZED' });
+    return res.redirect('/admin/login');
   }
 
   res.locals.adminSession = session;
   return next();
+}
+
+export function getResolvedAdminId(): string {
+  return resolveAdminId();
+}
+
+export function getResolvedAdminPassword(): string {
+  return resolveAdminPassword();
 }

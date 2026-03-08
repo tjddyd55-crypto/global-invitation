@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { requireAdminSession } from '../lib/adminSession';
 import {
@@ -12,6 +13,7 @@ import {
   type TemplateCategory,
   type TemplateStyle,
 } from '../admin/templateStore';
+import { logAdminAction } from '../admin/adminAuditLog';
 
 const router = Router();
 
@@ -103,6 +105,7 @@ router.get('/templates/:id', async (req, res) => {
 
 router.post('/templates', async (req, res) => {
   try {
+    const adminId = String(res.locals.adminSession?.adminId || 'unknown-admin');
     const name = normalizeText(req.body?.name);
     const category = normalizeText(req.body?.category);
     const style = normalizeText(req.body?.style);
@@ -131,6 +134,21 @@ router.post('/templates', async (req, res) => {
       component,
       templateKey,
     });
+    await logAdminAction({
+      adminId,
+      action: 'template_create',
+      targetType: 'template',
+      targetId: template.id,
+      payload: {
+        slug: template.slug,
+        name: template.name,
+        category: template.category,
+        style: template.style,
+        component: template.component,
+      },
+    }).catch((error) => {
+      console.warn('Failed to write template_create audit log:', error);
+    });
     return res.status(201).json(template);
   } catch (error) {
     console.error('Error creating admin template:', error);
@@ -140,6 +158,7 @@ router.post('/templates', async (req, res) => {
 
 router.patch('/templates/:id', async (req, res) => {
   try {
+    const adminId = String(res.locals.adminSession?.adminId || 'unknown-admin');
     const payload: Record<string, unknown> = {};
 
     if (typeof req.body?.name === 'string') payload.name = normalizeText(req.body.name);
@@ -170,6 +189,15 @@ router.patch('/templates/:id', async (req, res) => {
     if (!template) {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
+    await logAdminAction({
+      adminId,
+      action: 'template_update',
+      targetType: 'template',
+      targetId: template.id,
+      payload: payload as Prisma.InputJsonValue,
+    }).catch((error) => {
+      console.warn('Failed to write template_update audit log:', error);
+    });
     return res.status(200).json(template);
   } catch (error) {
     console.error('Error updating admin template:', error);
@@ -179,10 +207,20 @@ router.patch('/templates/:id', async (req, res) => {
 
 router.post('/templates/:id/disable', async (req, res) => {
   try {
+    const adminId = String(res.locals.adminSession?.adminId || 'unknown-admin');
     const template = await disableTemplate(req.params.id);
     if (!template) {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
+    await logAdminAction({
+      adminId,
+      action: 'template_update',
+      targetType: 'template',
+      targetId: template.id,
+      payload: { isActive: false, reason: 'admin_disable' },
+    }).catch((error) => {
+      console.warn('Failed to write template_update audit log:', error);
+    });
     return res.status(200).json(template);
   } catch (error) {
     console.error('Error disabling admin template:', error);
@@ -192,10 +230,20 @@ router.post('/templates/:id/disable', async (req, res) => {
 
 router.post('/templates/:id/delete', async (req, res) => {
   try {
+    const adminId = String(res.locals.adminSession?.adminId || 'unknown-admin');
     const template = await softDeleteTemplate(req.params.id);
     if (!template) {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
+    await logAdminAction({
+      adminId,
+      action: 'template_delete',
+      targetType: 'template',
+      targetId: template.id,
+      payload: { isDeleted: true, isActive: false },
+    }).catch((error) => {
+      console.warn('Failed to write template_delete audit log:', error);
+    });
     return res.status(200).json(template);
   } catch (error) {
     console.error('Error deleting admin template:', error);

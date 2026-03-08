@@ -37,10 +37,13 @@ model Invitation {
   id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ownerType   OwnerType        @default(GUEST) @map("owner_type")
   ownerId     String           @map("owner_id") // userId(UUID) 또는 guestToken(String)
+  createdBy   String?          @map("created_by")
   userId      String?          @map("user_id") @db.Uuid
   guestToken  String?          @map("guest_token")
+  templateId  String?          @map("template_id") @db.Uuid
   slug        String           @unique
   title       String?          // 행사명 또는 제목
+  data        Json?            @db.JsonB
   eventDate   DateTime?        @map("event_date") @db.Timestamptz(6)
   locationText String?         @map("location_text") // 장소 정보
   message     String?          // 초대장 메시지
@@ -49,6 +52,7 @@ model Invitation {
   countryCode String           @default("GLOBAL") @map("country_code")
   language    String           @default("en")
   status      InvitationStatus @default(DRAFT)
+  isPublished Boolean          @default(false) @map("is_published")
   isPaid      Boolean          @default(false) @map("is_paid")
   canShare    Boolean          @default(false) @map("can_share")
   paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
@@ -56,9 +60,11 @@ model Invitation {
   updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  template Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
   @@index([ownerId])
   @@index([guestToken])
+  @@index([templateId])
   @@map("invitations")
 }
 
@@ -101,4 +107,59 @@ model EventLog {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("event_logs")
+}
+
+model AdminAuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId    String   @map("admin_id")
+  action     String
+  targetType String   @map("target_type")
+  targetId   String?  @map("target_id")
+  payload    Json?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([adminId, createdAt])
+  @@index([action, createdAt])
+  @@map("admin_audit_logs")
+}
+
+model Template {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug            String   @unique
+  name            String
+  category        String
+  style           String
+  description     String
+  price           Float
+  creatorShare    Float    @map("creator_share")
+  creatorId       String?  @map("creator_id")
+  component       String
+  templateKey     String   @map("template_key")
+  marketplaceType String   @map("marketplace_type")
+  isActive        Boolean  @default(true) @map("is_active")
+  isDeleted       Boolean  @default(false) @map("is_deleted")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  fields          TemplateField[]
+  invitations     Invitation[]
+
+  @@map("templates")
+}
+
+model TemplateField {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  templateId  String   @map("template_id") @db.Uuid
+  fieldName   String   @map("field_name")
+  fieldType   String   @map("field_type")
+  label       String
+  placeholder String   @default("")
+  isRequired  Boolean  @default(false) @map("is_required")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, fieldName])
+  @@index([templateId, sortOrder])
+  @@map("template_fields")
 }

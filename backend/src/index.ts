@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import prisma from './lib/prisma';
@@ -10,6 +11,10 @@ import templateRegistryRouter from './routes/templateRegistry';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+if (!process.env.ADMIN_SESSION_SECRET?.trim()) {
+  throw new Error('ADMIN_SESSION_SECRET must be defined');
+}
 
 function resolveAllowedOrigins(): string[] {
   const configuredOrigins = [
@@ -53,9 +58,9 @@ app.get('/health', async (req, res) => {
 app.use('/api/invitations', invitationsRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/auth', authRouter);
-app.use('/api/admin/auth', adminAuthRouter);
+app.use('/api/admin', adminAuthRouter);
 app.use('/api/admin', adminRouter);
-app.use('/api/template-registry', templateRegistryRouter);
+app.use('/api/templates', templateRegistryRouter);
 
 // Start server
 app.listen(PORT, () => {

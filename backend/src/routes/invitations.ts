@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { InvitationStatus } from '@prisma/client';
+import { InvitationStatus, Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { generateSlug } from '../utils/slug';
 import { createToken, getAuthUser, getGuestToken } from '../lib/auth';
@@ -48,6 +48,36 @@ function resolveGuestTokenFromBody(value: unknown): string | null {
     return value.trim();
   }
   return null;
+}
+
+function normalizeInvitationData(value: unknown): Prisma.InputJsonValue | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return undefined;
+  if (typeof value === 'object') return value as Prisma.InputJsonValue;
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value as Prisma.InputJsonValue;
+  }
+  return undefined;
+}
+
+async function resolveTemplateReference(value: unknown): Promise<{ id: string; templateKey: string } | null> {
+  if (typeof value !== 'string' || !value.trim()) {
+    return null;
+  }
+
+  const key = value.trim();
+  const template = await prisma.template.findFirst({
+    where: {
+      OR: [{ id: key }, { slug: key }],
+      isDeleted: false,
+    },
+    select: {
+      id: true,
+      templateKey: true,
+    },
+  });
+
+  return template ?? null;
 }
 
 // GET /api/invitations - List invitations (owner or guest)
@@ -120,6 +150,10 @@ router.post('/', async (req, res) => {
   try {
     const user = await getAuthUser(req);
     const guestToken = resolveGuestTokenFromBody(req.body?.guestToken) || getGuestToken(req);
+    const resolvedTemplate = await resolveTemplateReference(
+      req.body?.templateId ?? req.body?.templateSlug ?? req.body?.template
+    );
+    const invitationData = normalizeInvitationData(req.body?.data);
 
     // Generate unique slug with retry logic
     let slug: string;
@@ -147,15 +181,24 @@ router.post('/', async (req, res) => {
     // Create invitation with default values
     const ownerType = user ? 'USER' : 'GUEST';
     const ownerId = user ? user.id : (guestToken || createToken());
+    const resolvedTemplateKey =
+      typeof req.body?.templateKey === 'string' && req.body.templateKey.trim()
+        ? req.body.templateKey.trim()
+        : resolvedTemplate?.templateKey || 'basic';
+
     const invitation = await prisma.invitation.create({
       data: {
         slug,
         ownerType,
         ownerId,
+        createdBy: ownerId,
         status: InvitationStatus.DRAFT,
+        isPublished: false,
         isPaid: false,
         canShare: false,
-        templateKey: req.body.templateKey || 'basic',
+        templateKey: resolvedTemplateKey,
+        templateId: resolvedTemplate?.id ?? null,
+        data: invitationData,
         countryCode: req.body.countryCode || 'GLOBAL',
         language: req.body.language || 'en',
         userId: user?.id ?? null,
@@ -164,6 +207,12 @@ router.post('/', async (req, res) => {
       select: {
         id: true,
         slug: true,
+        templateId: true,
+        templateKey: true,
+        title: true,
+        data: true,
+        createdBy: true,
+        isPublished: true,
         status: true,
         canShare: true,
         createdAt: true,
@@ -197,7 +246,11 @@ router.get('/:slug', async (req, res) => {
         userId: true,
         guestToken: true,
         slug: true,
+        templateId: true,
         title: true,
+        data: true,
+        createdBy: true,
+        isPublished: true,
         eventDate: true,
         locationText: true,
         message: true,
@@ -239,6 +292,10 @@ router.put('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
     const { title, eventDate, locationText, message, templateKey, musicKey, status } = req.body;
+    const resolvedTemplate = await resolveTemplateReference(
+      req.body?.templateId ?? req.body?.templateSlug ?? req.body?.template
+    );
+    const invitationData = normalizeInvitationData(req.body?.data);
     const user = await getAuthUser(req);
     const guestToken = resolveGuestTokenFromBody(req.body?.guestToken) || getGuestToken(req);
 
@@ -274,30 +331,44 @@ router.put('/:slug', async (req, res) => {
       eventDate?: Date | null;
       locationText?: string | null;
       message?: string | null;
+      templateId?: string | null;
       templateKey?: string;
+      data?: Prisma.InputJsonValue;
       musicKey?: string | null;
       status?: InvitationStatus;
+      isPublished?: boolean;
     } = {};
 
     if (title !== undefined) updateData.title = title;
     if (eventDate !== undefined) updateData.eventDate = eventDate ? new Date(eventDate) : null;
     if (locationText !== undefined) updateData.locationText = locationText;
     if (message !== undefined) updateData.message = message;
-    if (templateKey !== undefined) updateData.templateKey = templateKey;
+    if (resolvedTemplate) {
+      updateData.templateId = resolvedTemplate.id;
+      updateData.templateKey = resolvedTemplate.templateKey;
+    } else if (templateKey !== undefined) {
+      updateData.templateKey = templateKey;
+    }
+    if (invitationData !== undefined) updateData.data = invitationData;
     if (musicKey !== undefined) updateData.musicKey = musicKey || null;
     if (normalizedStatus !== undefined && allowedStatuses.has(normalizedStatus)) {
       updateData.status = normalizedStatus;
+      updateData.isPublished = normalizedStatus === 'PUBLISHED';
     }
 
     const invitation = await prisma.invitation.update({
       where: { slug },
-      data: updateData,
+      data: updateData as Prisma.InvitationUncheckedUpdateInput,
       select: {
         id: true,
         userId: true,
         guestToken: true,
         slug: true,
+        templateId: true,
         title: true,
+        data: true,
+        createdBy: true,
+        isPublished: true,
         eventDate: true,
         locationText: true,
         message: true,
