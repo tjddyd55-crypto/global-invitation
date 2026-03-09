@@ -2,6 +2,8 @@
 /* eslint-disable i18next/no-literal-string */
 
 import type { CreatorActiveCategory } from '@/src/creator/studioConfig';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { getStudioSectionLabel } from './sectionLabels';
 import styles from './TemplateCreatorStudio.module.css';
 
 export type TemplateMetaValue = {
@@ -34,6 +36,8 @@ export default function TemplateMetaPanel({
   onNavigateSection,
   onThumbnailUpload,
 }: TemplateMetaPanelProps) {
+  const { language } = useI18n();
+
   return (
     <section className={styles.panel}>
       <h2 className={styles.panelTitle}>Template Metadata</h2>
@@ -123,7 +127,7 @@ export default function TemplateMetaPanel({
                 className={`${styles.button} ${styles.buttonSecondary}`}
                 onClick={() => onNavigateSection(section)}
               >
-                {section}
+                {getStudioSectionLabel(section, language)}
               </button>
             ))}
           </div>

@@ -178,6 +178,8 @@
 
 .editorSection {
   scroll-margin-top: 12px;
+  display: grid;
+  gap: 1rem;
 }
 
 .mobileSectionNav {

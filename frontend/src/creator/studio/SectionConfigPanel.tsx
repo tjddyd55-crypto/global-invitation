@@ -7,6 +7,8 @@ import type {
   CreatorSectionMap,
 } from '@/src/creator/studioConfig';
 import { CREATOR_CATEGORY_SECTIONS } from '@/src/creator/studioConfig';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { getStudioSectionLabel } from './sectionLabels';
 import styles from './TemplateCreatorStudio.module.css';
 
 type SectionConfigPanelProps = {
@@ -29,6 +31,7 @@ export default function SectionConfigPanel({
   onSectionsChange,
   onSectionOrderChange,
 }: SectionConfigPanelProps) {
+  const { language } = useI18n();
   const sectionKeys = CREATOR_CATEGORY_SECTIONS[category];
 
   const updateSection = (sectionKey: string, payload: Partial<Record<string, unknown>>) => {
@@ -61,7 +64,7 @@ export default function SectionConfigPanel({
           return (
             <article key={sectionKey} id={`studio-section-${sectionKey}`} className={styles.sectionItem}>
               <div className={styles.sectionHeaderRow}>
-                <strong>{sectionKey}</strong>
+                <strong>{getStudioSectionLabel(sectionKey, language)}</strong>
                 <label>
                   <input
                     type="checkbox"
@@ -243,7 +246,7 @@ export default function SectionConfigPanel({
         })}
       </div>
       <p className={styles.helperText} style={{ marginTop: 10 }}>
-        sectionOrder: {sectionOrder.join(' → ')}
+        sectionOrder: {sectionOrder.map((sectionKey) => getStudioSectionLabel(sectionKey, language)).join(' → ')}
       </p>
     </section>
   );
