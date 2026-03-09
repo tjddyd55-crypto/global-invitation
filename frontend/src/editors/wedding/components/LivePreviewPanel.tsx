@@ -9,13 +9,24 @@ type LivePreviewPanelProps = {
   showRsvp: boolean;
   showGuestbook: boolean;
   title?: string;
+  fullscreen?: boolean;
 };
 
-export default function LivePreviewPanel({ data, showRsvp, showGuestbook, title }: LivePreviewPanelProps) {
+export default function LivePreviewPanel({
+  data,
+  showRsvp,
+  showGuestbook,
+  title,
+  fullscreen = false,
+}: LivePreviewPanelProps) {
+  const frameClassName = fullscreen
+    ? `${styles.previewFrame} ${styles.previewFrameFullscreen}`
+    : styles.previewFrame;
+
   return (
     <div className={styles.previewPanel}>
       {title && <div className={styles.previewTitle}>{title}</div>}
-      <div className={styles.previewFrame}>
+      <div className={frameClassName}>
         <WeddingClassicInvitation data={data} showRsvp={showRsvp} showGuestbook={showGuestbook} />
       </div>
     </div>

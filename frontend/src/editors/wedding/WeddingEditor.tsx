@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import styles from './weddingEditor.module.css';
-import StepperNav, { type StepItem } from './components/StepperNav';
 import LivePreviewPanel from './components/LivePreviewPanel';
 import Step0Setup from './steps/Step0Setup';
 import Step1BasicInfo from './steps/Step1BasicInfo';
@@ -19,17 +18,30 @@ import { weddingEditorReducer } from './state/weddingEditor.reducer';
 import type { WeddingEditorState } from './state/weddingEditor.types';
 import { logEvent } from '@/src/lib/events';
 
-const STEP_ITEMS: StepItem[] = [
-  { id: 0, title: '기본 설정' },
-  { id: 1, title: '대표 정보' },
-  { id: 2, title: '대표 이미지' },
-  { id: 3, title: '초대 문구' },
-  { id: 4, title: '신랑/신부' },
-  { id: 5, title: '갤러리' },
-  { id: 6, title: '위치' },
-  { id: 7, title: '계좌' },
-  { id: 8, title: '부가 기능' },
-  { id: 9, title: '공유 미리보기' },
+type EditorSectionKey =
+  | 'basic'
+  | 'hero'
+  | 'couple'
+  | 'gallery'
+  | 'location'
+  | 'accounts'
+  | 'rsvp'
+  | 'share';
+
+type EditorSectionItem = {
+  key: EditorSectionKey;
+  title: string;
+};
+
+const EDITOR_SECTIONS: EditorSectionItem[] = [
+  { key: 'basic', title: 'Basic Info' },
+  { key: 'hero', title: 'Hero' },
+  { key: 'couple', title: 'Couple' },
+  { key: 'gallery', title: 'Gallery' },
+  { key: 'location', title: 'Location' },
+  { key: 'accounts', title: 'Accounts' },
+  { key: 'rsvp', title: 'RSVP' },
+  { key: 'share', title: 'Share' },
 ];
 
 type WeddingEditorProps = {
@@ -62,24 +74,69 @@ export default function WeddingEditor({
   lastSavedAt,
 }: WeddingEditorProps) {
   const [state, dispatch] = useReducer(weddingEditorReducer, initialState);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<EditorSectionKey>('basic');
+  const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
   const previewLoggedRef = useRef(false);
+  const formScrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const sectionRefs = useRef<Record<EditorSectionKey, HTMLElement | null>>({
+    basic: null,
+    hero: null,
+    couple: null,
+    gallery: null,
+    location: null,
+    accounts: null,
+    rsvp: null,
+    share: null,
+  });
 
   const previewData = useMemo(() => buildWeddingClassicPreviewData(state), [state]);
   const sharePreview = useMemo(() => buildSharePreview(state), [state]);
 
-  const canGoPrev = currentStep > 0;
-  const canGoNext = currentStep < STEP_ITEMS.length - 1;
+  useEffect(() => {
+    if (previewLoggedRef.current || !fullscreenPreviewOpen) return;
+    if (isDemo) return;
+    logEvent({ eventType: 'preview_open', templateType: 'wedding', language: state.setup.language, pageUrl });
+    previewLoggedRef.current = true;
+  }, [fullscreenPreviewOpen, isDemo, pageUrl, state.setup.language]);
 
   useEffect(() => {
-    if (previewLoggedRef.current) return;
-    if (isDemo) return;
-    if (currentStep === 9 || mobilePreviewOpen) {
-      logEvent({ eventType: 'preview_open', templateType: 'wedding', language: state.setup.language, pageUrl });
-      previewLoggedRef.current = true;
-    }
-  }, [currentStep, isDemo, mobilePreviewOpen, pageUrl, state.setup.language]);
+    if (!fullscreenPreviewOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [fullscreenPreviewOpen]);
+
+  useEffect(() => {
+    const root = formScrollContainerRef.current;
+    if (!root) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visibleEntries.length === 0) return;
+        const key = visibleEntries[0].target.getAttribute('data-section-key') as EditorSectionKey | null;
+        if (!key) return;
+        setActiveSection(key);
+      },
+      {
+        root,
+        threshold: [0.2, 0.35, 0.5, 0.75],
+        rootMargin: '-20% 0px -55% 0px',
+      }
+    );
+
+    EDITOR_SECTIONS.forEach((section) => {
+      const node = sectionRefs.current[section.key];
+      if (node) observer.observe(node);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const handleSave = async () => {
     if (!onSave) return;
@@ -102,6 +159,17 @@ export default function WeddingEditor({
   const lastSavedLabel = lastSavedAt
     ? `최근 저장: ${new Date(lastSavedAt).toLocaleString()}`
     : '저장되지 않은 변경사항';
+
+  const handleScrollToSection = (key: EditorSectionKey) => {
+    const node = sectionRefs.current[key];
+    if (!node) return;
+    node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActiveSection(key);
+  };
+
+  const setSectionRef = (key: EditorSectionKey) => (node: HTMLElement | null) => {
+    sectionRefs.current[key] = node;
+  };
 
   return (
     <div className={styles.editorPage}>
@@ -140,130 +208,166 @@ export default function WeddingEditor({
               {publishing ? '공개 중...' : '공개하기'}
             </button>
           )}
-          <button
-            type="button"
-            className={`${styles.buttonGhost} ${styles.mobileOnly}`}
-            onClick={() => setMobilePreviewOpen(true)}
-          >
-            미리보기
-          </button>
         </div>
       </header>
 
       <div className={styles.editorLayout}>
         <aside className={styles.navColumn}>
-          <StepperNav steps={STEP_ITEMS} currentStep={currentStep} onStepSelect={setCurrentStep} />
+          <nav className={styles.sectionNav}>
+            {EDITOR_SECTIONS.map((section) => {
+              const isActive = section.key === activeSection;
+              return (
+                <button
+                  key={section.key}
+                  type="button"
+                  className={`${styles.sectionNavItem} ${isActive ? styles.sectionNavItemActive : ''}`}
+                  onClick={() => handleScrollToSection(section.key)}
+                >
+                  {section.title}
+                </button>
+              );
+            })}
+          </nav>
         </aside>
 
-        <main className={styles.formColumn}>
-          <div className={styles.mobileStepper}>
-            <StepperNav
-              steps={STEP_ITEMS}
-              currentStep={currentStep}
-              onStepSelect={setCurrentStep}
-              variant="horizontal"
-            />
+        <main className={styles.formColumn} ref={formScrollContainerRef}>
+          <div className={styles.mobileSectionNav}>
+            {EDITOR_SECTIONS.map((section) => {
+              const isActive = section.key === activeSection;
+              return (
+                <button
+                  key={section.key}
+                  type="button"
+                  className={`${styles.mobileSectionNavItem} ${isActive ? styles.mobileSectionNavItemActive : ''}`}
+                  onClick={() => handleScrollToSection(section.key)}
+                >
+                  {section.title}
+                </button>
+              );
+            })}
           </div>
 
-          {currentStep === 0 && (
-            <Step0Setup value={state.setup} onChange={(payload) => dispatch({ type: 'SET_SETUP', payload })} />
-          )}
-          {currentStep === 1 && (
-            <Step1BasicInfo value={state.basic} onChange={(payload) => dispatch({ type: 'SET_BASIC', payload })} />
-          )}
-          {currentStep === 2 && (
-            <Step2HeroImage value={state.hero} onChange={(payload) => dispatch({ type: 'SET_HERO', payload })} />
-          )}
-          {currentStep === 3 && (
-            <Step3InvitationMessage
-              value={state.invitationMessage}
-              onChange={(payload) => dispatch({ type: 'SET_INVITATION_MESSAGE', payload })}
-            />
-          )}
-          {currentStep === 4 && (
-            <Step4CoupleInfo
-              groom={state.groom}
-              bride={state.bride}
-              onGroomChange={(payload) => dispatch({ type: 'SET_GROOM', payload })}
-              onBrideChange={(payload) => dispatch({ type: 'SET_BRIDE', payload })}
-            />
-          )}
-          {currentStep === 5 && (
-            <Step5Gallery
-              value={state.gallery}
-              onChange={(images) => dispatch({ type: 'SET_GALLERY_IMAGES', payload: images })}
-            />
-          )}
-          {currentStep === 6 && (
-            <Step6Location
-              value={state.location}
-              onChange={(payload) => dispatch({ type: 'SET_LOCATION', payload })}
-            />
-          )}
-          {currentStep === 7 && (
-            <Step7Accounts
-              accounts={state.accounts}
-              onChange={(accounts) => dispatch({ type: 'SET_ACCOUNTS', payload: accounts })}
-            />
-          )}
-          {currentStep === 8 && (
-            <Step8Extras value={state.extras} onChange={(payload) => dispatch({ type: 'SET_EXTRAS', payload })} />
-          )}
-          {currentStep === 9 && (
-            <Step9SharePreview
-              data={previewData}
-              share={state.share}
-              previewShare={sharePreview}
-              heroImage={state.hero.heroImage}
-              showRsvp={state.extras.rsvpEnabled}
-              showGuestbook={state.extras.guestbookEnabled}
-              onShareChange={(payload) => dispatch({ type: 'SET_SHARE', payload })}
-            />
-          )}
+          <div className={styles.sectionStack}>
+            <section
+              className={styles.editorSection}
+              data-section-key="basic"
+              ref={setSectionRef('basic')}
+            >
+              <Step0Setup value={state.setup} onChange={(payload) => dispatch({ type: 'SET_SETUP', payload })} />
+              <Step1BasicInfo value={state.basic} onChange={(payload) => dispatch({ type: 'SET_BASIC', payload })} />
+              <Step3InvitationMessage
+                value={state.invitationMessage}
+                onChange={(payload) => dispatch({ type: 'SET_INVITATION_MESSAGE', payload })}
+              />
+            </section>
 
-          <div className={styles.mobileNav}>
+            <section
+              className={styles.editorSection}
+              data-section-key="hero"
+              ref={setSectionRef('hero')}
+            >
+              <Step2HeroImage value={state.hero} onChange={(payload) => dispatch({ type: 'SET_HERO', payload })} />
+            </section>
+
+            <section
+              className={styles.editorSection}
+              data-section-key="couple"
+              ref={setSectionRef('couple')}
+            >
+              <Step4CoupleInfo
+                groom={state.groom}
+                bride={state.bride}
+                onGroomChange={(payload) => dispatch({ type: 'SET_GROOM', payload })}
+                onBrideChange={(payload) => dispatch({ type: 'SET_BRIDE', payload })}
+              />
+            </section>
+
+            <section
+              className={styles.editorSection}
+              data-section-key="gallery"
+              ref={setSectionRef('gallery')}
+            >
+              <Step5Gallery
+                value={state.gallery}
+                onChange={(images) => dispatch({ type: 'SET_GALLERY_IMAGES', payload: images })}
+              />
+            </section>
+
+            <section
+              className={styles.editorSection}
+              data-section-key="location"
+              ref={setSectionRef('location')}
+            >
+              <Step6Location
+                value={state.location}
+                onChange={(payload) => dispatch({ type: 'SET_LOCATION', payload })}
+              />
+            </section>
+
+            <section
+              className={styles.editorSection}
+              data-section-key="accounts"
+              ref={setSectionRef('accounts')}
+            >
+              <Step7Accounts
+                accounts={state.accounts}
+                onChange={(accounts) => dispatch({ type: 'SET_ACCOUNTS', payload: accounts })}
+              />
+            </section>
+
+            <section
+              className={styles.editorSection}
+              data-section-key="rsvp"
+              ref={setSectionRef('rsvp')}
+            >
+              <Step8Extras value={state.extras} onChange={(payload) => dispatch({ type: 'SET_EXTRAS', payload })} />
+            </section>
+
+            <section
+              className={styles.editorSection}
+              data-section-key="share"
+              ref={setSectionRef('share')}
+            >
+              <Step9SharePreview
+                data={previewData}
+                share={state.share}
+                previewShare={sharePreview}
+                heroImage={state.hero.heroImage}
+                showRsvp={state.extras.rsvpEnabled}
+                showGuestbook={state.extras.guestbookEnabled}
+                onShareChange={(payload) => dispatch({ type: 'SET_SHARE', payload })}
+              />
+            </section>
+          </div>
+        </main>
+      </div>
+
+      <button
+        type="button"
+        className={styles.previewFloatingButton}
+        onClick={() => setFullscreenPreviewOpen(true)}
+      >
+        Preview
+      </button>
+
+      {fullscreenPreviewOpen && (
+        <div className={styles.fullscreenPreviewOverlay}>
+          <div className={styles.fullscreenPreviewHeader}>
+            <strong>라이브 미리보기</strong>
             <button
               type="button"
               className={styles.buttonGhost}
-              onClick={() => setCurrentStep((step) => Math.max(0, step - 1))}
-              disabled={!canGoPrev}
+              onClick={() => setFullscreenPreviewOpen(false)}
             >
-              이전
-            </button>
-            <button
-              type="button"
-              className={styles.buttonPrimary}
-              onClick={() => setCurrentStep((step) => Math.min(STEP_ITEMS.length - 1, step + 1))}
-              disabled={!canGoNext}
-            >
-              다음
-            </button>
-          </div>
-        </main>
-
-        <aside className={styles.previewColumn}>
-          <LivePreviewPanel
-            data={previewData}
-            showRsvp={state.extras.rsvpEnabled}
-            showGuestbook={state.extras.guestbookEnabled}
-            title="라이브 미리보기"
-          />
-        </aside>
-      </div>
-
-      {mobilePreviewOpen && (
-        <div className={styles.previewOverlay}>
-          <div className={styles.previewOverlayHeader}>
-            <span>미리보기</span>
-            <button type="button" className={styles.buttonGhost} onClick={() => setMobilePreviewOpen(false)}>
               닫기
             </button>
           </div>
-          <div className={styles.previewOverlayBody}>
+          <div className={styles.fullscreenPreviewBody}>
             <LivePreviewPanel
               data={previewData}
               showRsvp={state.extras.rsvpEnabled}
               showGuestbook={state.extras.guestbookEnabled}
+              fullscreen
             />
           </div>
         </div>

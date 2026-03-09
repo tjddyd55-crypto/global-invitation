@@ -67,7 +67,7 @@
 
 .editorLayout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 360px;
+  grid-template-columns: 220px minmax(0, 1fr);
   gap: 1.5rem;
   padding: 1.5rem 2rem 3rem;
 }
@@ -80,12 +80,96 @@
 
 .formColumn {
   min-width: 0;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  scroll-behavior: smooth;
 }
 
 .previewColumn {
   position: sticky;
   top: 1.5rem;
   align-self: start;
+}
+
+.previewFloatingButton {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  border: none;
+  border-radius: 999px;
+  padding: 0.75rem 1.1rem;
+  background: #2f2f2f;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
+.fullscreenPreviewOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(15, 15, 15, 0.78);
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreenPreviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid #e4ded4;
+}
+
+.fullscreenPreviewBody {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.sectionNav {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.sectionNavItem {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #fff;
+  color: #4f4a42;
+  text-align: left;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.8rem;
+  cursor: pointer;
+}
+
+.sectionNavItemActive {
+  border-color: #a9ba7a;
+  background: #f7f8f1;
+  color: #2e3b18;
+  font-weight: 600;
+}
+
+.sectionStack {
+  display: grid;
+  gap: 1rem;
+}
+
+.editorSection {
+  scroll-margin-top: 12px;
+}
+
+.mobileSectionNav {
+  display: none;
+}
+
+.mobilePreviewSection {
+  display: none;
+  margin-top: 1.25rem;
 }
 
 .stepperNav {
@@ -491,6 +575,11 @@
   background: #fff;
 }
 
+.previewFrameFullscreen {
+  max-height: none;
+  min-height: calc(100vh - 130px);
+}
+
 .previewStack {
   display: grid;
   gap: 1.5rem;
@@ -585,45 +674,9 @@
   gap: 1rem;
 }
 
-.mobileOnly {
-  display: none;
-}
-
-.previewOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(20, 20, 20, 0.5);
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-}
-
-.previewOverlayHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  background: #fff;
-  border-bottom: 1px solid #e4ded4;
-}
-
-.previewOverlayBody {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-}
-
 @media (max-width: 1200px) {
   .editorLayout {
-    grid-template-columns: 200px minmax(0, 1fr);
-  }
-
-  .previewColumn {
-    display: none;
-  }
-
-  .mobileOnly {
-    display: inline-flex;
+    grid-template-columns: 180px minmax(0, 1fr);
   }
 }
 
@@ -635,25 +688,63 @@
 
   .editorLayout {
     grid-template-columns: 1fr;
+    gap: 1rem;
+    padding-bottom: 6rem;
   }
 
   .navColumn {
     display: none;
   }
 
-  .mobileStepper {
-    display: block;
-  }
-
   .fieldGrid {
     grid-template-columns: 1fr;
   }
 
-  .mobileNav {
-    display: flex;
+  .formColumn {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 
-  .editorLayout {
-    padding-bottom: 5rem;
+  .mobileSectionNav {
+    display: flex;
+    gap: 0.45rem;
+    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    background: #f6f4ef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    z-index: 2;
+  }
+
+  .mobileSectionNavItem {
+    border: 1px solid #dfd7ca;
+    border-radius: 999px;
+    background: #fff;
+    color: #4f4a42;
+    white-space: nowrap;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.84rem;
+    cursor: pointer;
+  }
+
+  .mobileSectionNavItemActive {
+    border-color: #a9ba7a;
+    background: #eef4df;
+    color: #2e3b18;
+  }
+
+  .previewFloatingButton {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .fullscreenPreviewHeader {
+    padding: 0.85rem 1rem;
+  }
+
+  .fullscreenPreviewBody {
+    padding: 0.75rem;
   }
 }
