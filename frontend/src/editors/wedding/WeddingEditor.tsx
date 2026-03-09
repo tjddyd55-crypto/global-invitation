@@ -340,6 +340,15 @@ export default function WeddingEditor({
             </section>
           </div>
         </main>
+
+        <aside className={styles.previewColumn}>
+          <LivePreviewPanel
+            title="라이브 미리보기"
+            data={previewData}
+            showRsvp={state.extras.rsvpEnabled}
+            showGuestbook={state.extras.guestbookEnabled}
+          />
+        </aside>
       </div>
 
       <button
@@ -353,14 +362,15 @@ export default function WeddingEditor({
       {fullscreenPreviewOpen && (
         <div className={styles.fullscreenPreviewOverlay}>
           <div className={styles.fullscreenPreviewHeader}>
-            <strong>라이브 미리보기</strong>
             <button
               type="button"
-              className={styles.buttonGhost}
+              className={styles.previewBackButton}
               onClick={() => setFullscreenPreviewOpen(false)}
+              aria-label="미리보기 닫기"
             >
-              닫기
+              ←
             </button>
+            <strong>라이브 미리보기</strong>
           </div>
           <div className={styles.fullscreenPreviewBody}>
             <LivePreviewPanel
