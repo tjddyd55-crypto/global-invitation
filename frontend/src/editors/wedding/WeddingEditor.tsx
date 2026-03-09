@@ -76,8 +76,10 @@ export default function WeddingEditor({
   const [state, dispatch] = useReducer(weddingEditorReducer, initialState);
   const [activeSection, setActiveSection] = useState<EditorSectionKey>('basic');
   const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
+  const [isMobileNavPinned, setIsMobileNavPinned] = useState(false);
   const previewLoggedRef = useRef(false);
   const formScrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const mobileNavSentinelRef = useRef<HTMLDivElement | null>(null);
   const sectionRefs = useRef<Record<EditorSectionKey, HTMLElement | null>>({
     basic: null,
     hero: null,
@@ -109,8 +111,9 @@ export default function WeddingEditor({
   }, [fullscreenPreviewOpen]);
 
   useEffect(() => {
-    const root = formScrollContainerRef.current;
-    if (!root) return;
+    const isMobile = window.matchMedia('(max-width: 960px)').matches;
+    const root = isMobile ? null : formScrollContainerRef.current;
+    if (!isMobile && !root) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -126,7 +129,7 @@ export default function WeddingEditor({
       {
         root,
         threshold: [0.2, 0.35, 0.5, 0.75],
-        rootMargin: '-20% 0px -55% 0px',
+        rootMargin: isMobile ? '-96px 0px -55% 0px' : '-20% 0px -55% 0px',
       }
     );
 
@@ -135,6 +138,25 @@ export default function WeddingEditor({
       if (node) observer.observe(node);
     });
 
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const sentinel = mobileNavSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setIsMobileNavPinned(!entry.isIntersecting);
+      },
+      {
+        root: null,
+        threshold: 0,
+      }
+    );
+
+    observer.observe(sentinel);
     return () => observer.disconnect();
   }, []);
 
@@ -230,8 +252,12 @@ export default function WeddingEditor({
           </nav>
         </aside>
 
-        <main className={styles.formColumn} ref={formScrollContainerRef}>
-          <div className={styles.mobileSectionNav}>
+        <main
+          className={`${styles.formColumn} ${isMobileNavPinned ? styles.formColumnPinnedOffset : ''}`}
+          ref={formScrollContainerRef}
+        >
+          <div ref={mobileNavSentinelRef} className={styles.mobileNavSentinel} aria-hidden />
+          <div className={`${styles.mobileSectionNav} ${isMobileNavPinned ? styles.mobileSectionNavPinned : ''}`}>
             {EDITOR_SECTIONS.map((section) => {
               const isActive = section.key === activeSection;
               return (

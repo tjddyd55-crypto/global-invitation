@@ -184,6 +184,10 @@
   display: none;
 }
 
+.mobileNavSentinel {
+  display: none;
+}
+
 .mobilePreviewSection {
   display: none;
   margin-top: 1.25rem;
@@ -725,22 +729,38 @@
     max-height: none;
     overflow: visible;
     padding-right: 0;
+  }
+
+  .formColumnPinnedOffset {
     padding-top: calc(3.35rem + env(safe-area-inset-top));
+  }
+
+  .mobileNavSentinel {
+    display: block;
+    width: 100%;
+    height: 1px;
   }
 
   .mobileSectionNav {
     display: flex;
     gap: 0.45rem;
     overflow-x: auto;
+    position: relative;
+    background: #f6f4ef;
+    padding: 0.45rem 0 0.55rem;
+    margin-bottom: 0.75rem;
+    z-index: 30;
+    border-bottom: 1px solid #e4ded4;
+  }
+
+  .mobileSectionNavPinned {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    background: #f6f4ef;
     padding: calc(0.45rem + env(safe-area-inset-top)) 1rem 0.55rem;
     margin-bottom: 0;
     z-index: 50;
-    border-bottom: 1px solid #e4ded4;
   }
 
   .mobileSectionNavItem {
