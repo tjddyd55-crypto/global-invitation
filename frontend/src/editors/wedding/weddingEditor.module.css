@@ -734,9 +734,10 @@
     position: sticky;
     top: 0;
     background: #f6f4ef;
-    padding-bottom: 0.5rem;
+    padding: 0.45rem 0 0.55rem;
     margin-bottom: 0.75rem;
-    z-index: 2;
+    z-index: 30;
+    border-bottom: 1px solid #e4ded4;
   }
 
   .mobileSectionNavItem {
@@ -754,6 +755,10 @@
     border-color: #a9ba7a;
     background: #eef4df;
     color: #2e3b18;
+  }
+
+  .editorSection {
+    scroll-margin-top: 72px;
   }
 
   .previewFloatingButton {
