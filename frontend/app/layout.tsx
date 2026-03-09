@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import ClientLayout from '@/src/components/ClientLayout'
+import { getMetadataBase } from '@/src/lib/siteUrl'
 
 export const metadata: Metadata = {
+  metadataBase: getMetadataBase(),
   title: 'Global Invitation',
   description: 'Create and share digital invitations for weddings, events, and special occasions',
 }

@@ -109,8 +109,8 @@ export function saveInvitationDraft(
   invitation: Invitation,
   runtimeData: InvitationRuntimeData,
   status: 'draft' | 'published' = 'draft'
-): void {
-  if (typeof window === 'undefined') return;
+): boolean {
+  if (typeof window === 'undefined') return false;
   const normalizedInvitation: Invitation = {
     ...invitation,
     status,
@@ -123,8 +123,9 @@ export function saveInvitationDraft(
   };
   try {
     window.localStorage.setItem(storageKey(slug), JSON.stringify(stored));
+    return true;
   } catch {
-    // quota or disabled
+    return false;
   }
 }
 

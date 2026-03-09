@@ -42,6 +42,7 @@ type WeddingEditorProps = {
   publishing?: boolean;
   isDemo?: boolean;
   saveError?: string | null;
+  saveNotice?: string | null;
   draftStatus?: 'draft' | 'published';
   lastSavedAt?: string | null;
 };
@@ -56,6 +57,7 @@ export default function WeddingEditor({
   publishing,
   isDemo,
   saveError,
+  saveNotice,
   draftStatus = 'draft',
   lastSavedAt,
 }: WeddingEditorProps) {
@@ -111,6 +113,7 @@ export default function WeddingEditor({
             <span className={statusClassName}>{statusLabel}</span>
             <span className={styles.statusMeta}>{lastSavedLabel}</span>
           </div>
+          {saveNotice && <p className={styles.noticeText}>{saveNotice}</p>}
           {saveError && <p className={styles.errorText}>{saveError}</p>}
         </div>
         <div className={styles.headerActions}>

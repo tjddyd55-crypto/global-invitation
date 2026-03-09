@@ -31,6 +31,7 @@ export default function PreviewPage() {
   const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug) {
@@ -73,10 +74,16 @@ export default function PreviewPage() {
   const handlePublish = async () => {
     if (!slug || !invitation || !data || isPublishing) return;
     setIsPublishing(true);
+    setPublishError(null);
     try {
-      saveInvitationDraft(slug, invitation, data, 'published');
+      const saved = saveInvitationDraft(slug, invitation, data, 'published');
+      if (!saved) {
+        throw new Error('DRAFT_PERSIST_FAILED');
+      }
       setStatus('published');
       router.push(`/invitation/${slug}`);
+    } catch {
+      setPublishError('공개 상태 저장에 실패했습니다. 브라우저 저장 공간을 확인해 주세요.');
     } finally {
       setIsPublishing(false);
     }
@@ -114,6 +121,7 @@ export default function PreviewPage() {
             {isPublishing ? '공개 중...' : '공개하기'}
           </button>
         )}
+        {publishError && <div style={{ marginTop: '0.75rem', color: '#d0653b' }}>{publishError}</div>}
       </div>
       <Template
         data={data}

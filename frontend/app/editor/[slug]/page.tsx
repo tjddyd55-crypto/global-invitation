@@ -61,6 +61,7 @@ export default function EditorPage() {
   const requestedTemplate = searchParams.get('template');
   const { language } = useI18n();
   const editorLoggedRef = useRef(false);
+  const saveNoticeTimerRef = useRef<number | null>(null);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
 
   const [loading, setLoading] = useState(true);
@@ -82,6 +83,23 @@ export default function EditorPage() {
     const session = getStoredSession();
     setHasSession(Boolean(session));
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (saveNoticeTimerRef.current) {
+        window.clearTimeout(saveNoticeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const scheduleSaveNoticeClear = () => {
+    if (saveNoticeTimerRef.current) {
+      window.clearTimeout(saveNoticeTimerRef.current);
+    }
+    saveNoticeTimerRef.current = window.setTimeout(() => {
+      setSaveNotice(null);
+    }, 2000);
+  };
 
   useEffect(() => {
     if (!slug) {
@@ -241,13 +259,19 @@ export default function EditorPage() {
     try {
       const invitationPayload = weddingEditorStateToInvitation(state, slug);
       const runtimeData = buildWeddingClassicPreviewData(state);
-      saveInvitationDraft(slug, invitationPayload, runtimeData, 'draft');
+      const saved = saveInvitationDraft(slug, invitationPayload, runtimeData, 'draft');
+      if (!saved || !getInvitationDraft(slug) || !getRuntimeDataFromDraft(slug)) {
+        throw new Error('DRAFT_PERSIST_FAILED');
+      }
       setLastDraftSlug(slug);
       setInvitation({ ...invitationPayload, status: 'draft' });
       setDraftStatus('draft');
-      setLastSavedAt(new Date().toISOString());
+      const savedAt = new Date().toISOString();
+      setLastSavedAt(savedAt);
+      setSaveNotice('로컬 초안에 저장되었습니다.');
+      scheduleSaveNoticeClear();
     } catch (err) {
-      setSaveError('저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      setSaveError('저장에 실패했습니다. 브라우저 저장 공간 또는 초안 데이터 상태를 확인해 주세요.');
       throw err;
     } finally {
       setSaving(false);
@@ -271,14 +295,19 @@ export default function EditorPage() {
     try {
       const invitationPayload = weddingEditorStateToInvitation(state, slug);
       const runtimeData = buildWeddingClassicPreviewData(state);
-      saveInvitationDraft(slug, invitationPayload, runtimeData, 'published');
+      const saved = saveInvitationDraft(slug, invitationPayload, runtimeData, 'published');
+      if (!saved || !getInvitationDraft(slug) || !getRuntimeDataFromDraft(slug)) {
+        throw new Error('DRAFT_PERSIST_FAILED');
+      }
       setLastDraftSlug(slug);
       setInvitation({ ...invitationPayload, status: 'published' });
       setDraftStatus('published');
-      setLastSavedAt(new Date().toISOString());
+      const savedAt = new Date().toISOString();
+      setLastSavedAt(savedAt);
+      setSaveNotice('공개용 초안이 저장되었습니다.');
       router.push(`/invitation/${slug}`);
     } catch {
-      setSaveError('공개에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      setSaveError('공개에 실패했습니다. 저장 상태를 확인한 뒤 다시 시도해 주세요.');
     } finally {
       setPublishing(false);
     }
@@ -313,12 +342,16 @@ export default function EditorPage() {
       updatedAt: now,
     };
 
-    saveInvitationDraft(slug, invitationPayload, state, 'draft');
+    const saved = saveInvitationDraft(slug, invitationPayload, state, 'draft');
+    if (!saved || !getInvitationDraft(slug) || !getRuntimeDataFromDraft(slug)) {
+      setSaveError('저장에 실패했습니다. 브라우저 저장 공간 또는 초안 데이터 상태를 확인해 주세요.');
+      return;
+    }
     setInvitation(invitationPayload);
     setDraftStatus('draft');
     setLastSavedAt(now);
     setSaveNotice('로컬 초안에 저장되었습니다.');
-    setTimeout(() => setSaveNotice(null), 2000);
+      scheduleSaveNoticeClear();
   };
 
   if (loading) {
@@ -393,6 +426,7 @@ export default function EditorPage() {
         publishing={publishing}
         isDemo={false}
         saveError={saveError}
+        saveNotice={saveNotice}
         draftStatus={draftStatus}
         lastSavedAt={lastSavedAt}
       />

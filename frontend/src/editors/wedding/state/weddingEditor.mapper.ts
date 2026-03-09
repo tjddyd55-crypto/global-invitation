@@ -27,6 +27,14 @@ function buildCoupleNames(groomName: string, brideName: string, language: Langua
   return `${groom} ♥ ${bride}`;
 }
 
+function resolveInvitationTitle(state: WeddingEditorState): string {
+  const normalized = state.basic.title.trim();
+  if (normalized) {
+    return normalized;
+  }
+  return buildCoupleNames(state.groom.name, state.bride.name, state.setup.language);
+}
+
 function resolveVenueName(venueName: string, venueDetail?: string): string {
   if (!venueDetail) return venueName;
   return `${venueName} ${venueDetail}`;
@@ -47,8 +55,9 @@ function resolveSharePreview(state: WeddingEditorState): WeddingEditorShare {
 export function buildWeddingClassicPreviewData(state: WeddingEditorState): WeddingInvitationData {
   const weddingDate = safeDate(state.basic.eventDateTime);
   const venueName = resolveVenueName(state.basic.venueName, state.basic.venueDetail);
-  const coupleNames = buildCoupleNames(state.groom.name, state.bride.name, state.setup.language);
-  const heroTitle = buildWeddingClassicHeroTitle(state.groom.name, state.bride.name, state.setup.language);
+  const invitationTitle = resolveInvitationTitle(state);
+  const coupleNames = invitationTitle;
+  const heroTitle = invitationTitle;
   const defaultLabels = getWeddingClassicDefaultLabels(state.setup.language);
 
   return {
