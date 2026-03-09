@@ -14,6 +14,7 @@ type AdminShellProps = {
 const ADMIN_NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Dashboard' },
   { href: '/admin/templates', label: 'Template Management' },
+  { href: '/admin/template-submissions', label: 'Template Submissions' },
   { href: '/admin/users', label: 'Users' },
   { href: '/admin/payments', label: 'Payments' },
   { href: '/admin/system', label: 'System' },

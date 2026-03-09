@@ -31,6 +31,9 @@ export interface TemplateDefinition {
   component: string;
   templateKey: string;
   marketplaceType: TemplateMarketplaceType;
+  studioConfig?: Prisma.JsonValue | null;
+  previewThumbnailUrl?: string | null;
+  sourceSubmissionId?: string | null;
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
@@ -48,6 +51,9 @@ export type TemplateCreateInput = {
   creatorId?: string;
   component: string;
   templateKey: string;
+  studioConfig?: Prisma.InputJsonValue;
+  previewThumbnailUrl?: string;
+  sourceSubmissionId?: string;
 };
 
 export type TemplateUpdateInput = Partial<TemplateCreateInput> & {
@@ -95,6 +101,9 @@ function mapTemplateRecord(
     component: string;
     templateKey: string;
     marketplaceType: string;
+    studioConfig?: Prisma.JsonValue | null;
+    previewThumbnailUrl?: string | null;
+    sourceSubmissionId?: string | null;
     isActive: boolean;
     isDeleted: boolean;
     createdAt: Date;
@@ -125,6 +134,9 @@ function mapTemplateRecord(
     component: row.component,
     templateKey: row.templateKey,
     marketplaceType: (row.marketplaceType as TemplateMarketplaceType) || 'SYSTEM',
+    studioConfig: row.studioConfig ?? null,
+    previewThumbnailUrl: row.previewThumbnailUrl ?? null,
+    sourceSubmissionId: row.sourceSubmissionId ?? null,
     isActive: row.isActive,
     isDeleted: row.isDeleted,
     createdAt: row.createdAt.toISOString(),
@@ -257,6 +269,9 @@ export async function createTemplate(input: TemplateCreateInput): Promise<Templa
       component: normalizeText(input.component),
       templateKey: normalizeText(input.templateKey) || 'wedding_classic',
       marketplaceType: normalizeMarketplaceType(creatorId),
+      studioConfig: input.studioConfig === undefined ? undefined : input.studioConfig,
+      previewThumbnailUrl: normalizeText(input.previewThumbnailUrl || '') || null,
+      sourceSubmissionId: normalizeText(input.sourceSubmissionId || '') || null,
       isActive: true,
       isDeleted: false,
     },
@@ -308,6 +323,15 @@ export async function updateTemplate(
   }
   if (input.templateKey !== undefined) {
     payload.templateKey = normalizeText(input.templateKey) || 'wedding_classic';
+  }
+  if (input.studioConfig !== undefined) {
+    payload.studioConfig = input.studioConfig;
+  }
+  if (input.previewThumbnailUrl !== undefined) {
+    payload.previewThumbnailUrl = normalizeText(input.previewThumbnailUrl || '') || null;
+  }
+  if (input.sourceSubmissionId !== undefined) {
+    payload.sourceSubmissionId = normalizeText(input.sourceSubmissionId || '') || null;
   }
   if (input.isActive !== undefined) {
     payload.isActive = Boolean(input.isActive);

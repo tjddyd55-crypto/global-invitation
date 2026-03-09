@@ -160,6 +160,7 @@ export default function EditorPage() {
         const newDraft: Invitation = {
           id: slug,
           slug,
+          templateId: templateDefinition.id,
           title: null,
           eventDate: null,
           locationText: null,

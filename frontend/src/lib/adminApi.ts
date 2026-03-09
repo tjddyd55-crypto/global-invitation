@@ -77,6 +77,31 @@ export type InvitationAnalyticsSummary = {
   conversionRate: number;
 };
 
+export type AdminTemplateSubmission = {
+  id: string;
+  creatorId: string;
+  category: string;
+  templateKeyCandidate: string;
+  name: string;
+  description: string;
+  style: string;
+  price: number;
+  creatorShare: number;
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+  studioConfig: Record<string, unknown> | null;
+  previewThumbnailUrl: string | null;
+  parentSubmissionId: string | null;
+  revisionNumber: number;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  approvedTemplateId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  creator?: { id: string; email: string | null } | null;
+  approvedTemplate?: { id: string; slug: string; templateKey: string; isActive: boolean } | null;
+};
+
 export type AdminTemplatePayload = {
   name: string;
   category: TemplateDefinition['category'];
@@ -277,4 +302,42 @@ export async function getInvitationAnalytics(invitationId: string) {
     buildAdminRequestInit()
   );
   return parseJsonOrThrow<InvitationAnalyticsSummary>(response);
+}
+
+export async function listAdminTemplateSubmissions() {
+  const response = await fetch(buildApiUrl('/api/admin/template-submissions'), buildAdminRequestInit());
+  return parseJsonOrThrow<AdminTemplateSubmission[]>(response);
+}
+
+export async function getAdminTemplateSubmission(submissionId: string) {
+  const response = await fetch(
+    buildApiUrl(`/api/admin/template-submissions/${submissionId}`),
+    buildAdminRequestInit()
+  );
+  return parseJsonOrThrow<AdminTemplateSubmission>(response);
+}
+
+export async function approveAdminTemplateSubmission(
+  submissionId: string,
+  payload?: { reviewNote?: string; creatorShare?: number }
+) {
+  const response = await fetch(
+    buildApiUrl(`/api/admin/template-submissions/${submissionId}/approve`),
+    buildAdminRequestInit({
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    })
+  );
+  return parseJsonOrThrow<AdminTemplateSubmission>(response);
+}
+
+export async function rejectAdminTemplateSubmission(submissionId: string, payload?: { reviewNote?: string }) {
+  const response = await fetch(
+    buildApiUrl(`/api/admin/template-submissions/${submissionId}/reject`),
+    buildAdminRequestInit({
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    })
+  );
+  return parseJsonOrThrow<AdminTemplateSubmission>(response);
 }

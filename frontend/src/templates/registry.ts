@@ -13,8 +13,19 @@ import FuneralClassicInvitation from '@/src/templates/funeralClassic/FuneralClas
 import MessageSimpleCard from '@/src/templates/messageSimple/MessageSimpleCard';
 import MessageThankYouCard from '@/src/templates/messageThankYou/MessageThankYouCard';
 import MessageBrandedJCI from '@/src/templates/messageBranded/jci/MessageBrandedJCI';
+import CreatorWeddingRenderer from '@/src/templates/creator/CreatorWeddingRenderer';
+import CreatorFuneralRenderer from '@/src/templates/creator/CreatorFuneralRenderer';
+import CreatorMessageRenderer from '@/src/templates/creator/CreatorMessageRenderer';
 
-export type TemplateCategory = 'wedding' | 'birthday' | 'funeral' | 'party' | 'message';
+export type TemplateCategory =
+  | 'wedding'
+  | 'birthday'
+  | 'funeral'
+  | 'party'
+  | 'message'
+  | 'simple_notice'
+  | 'event'
+  | 'business';
 export type TemplateStyle = 'korean' | 'japanese' | 'western' | 'traditional' | 'modern';
 export type TemplateMarketplaceType = 'SYSTEM' | 'CREATOR';
 
@@ -34,6 +45,9 @@ export interface TemplateDefinition {
   component: string;
   templateKey: string;
   marketplaceType: TemplateMarketplaceType;
+  studioConfig?: Record<string, unknown> | null;
+  previewThumbnailUrl?: string | null;
+  sourceSubmissionId?: string | null;
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
@@ -120,6 +134,41 @@ export const TEMPLATE_REGISTRY: Record<string, TemplateRegistryEntry> = {
     label: 'Message Branded JCI (Legacy)',
     componentName: 'MessageBrandedJciTemplate',
     editorPath: (slug) => `/message/branded/editor/${slug}`,
+  },
+};
+
+const CREATOR_TEMPLATE_KEY_REGEX = /^creator_(wedding|funeral|message)_[a-z0-9_]+$/;
+
+const CREATOR_CATEGORY_REGISTRY: Record<TemplateRegistryCategory, TemplateRegistryEntry> = {
+  wedding: {
+    category: 'wedding',
+    editorType: 'wedding',
+    renderer: CreatorWeddingRenderer,
+    previewData: weddingPreviewData,
+    schema: 'WeddingInvitationData',
+    label: 'Creator Wedding',
+    componentName: 'CreatorWeddingTemplate',
+    editorPath: (slug) => `/editor/${slug}`,
+  },
+  funeral: {
+    category: 'funeral',
+    editorType: 'funeral',
+    renderer: CreatorFuneralRenderer,
+    previewData: funeralPreviewData,
+    schema: 'FuneralInvitationData',
+    label: 'Creator Funeral',
+    componentName: 'CreatorFuneralTemplate',
+    editorPath: (slug) => `/editor/${slug}`,
+  },
+  message: {
+    category: 'message',
+    editorType: 'message',
+    renderer: CreatorMessageRenderer,
+    previewData: messageSimplePreviewData,
+    schema: 'MessageInvitationData',
+    label: 'Creator Message',
+    componentName: 'CreatorMessageTemplate',
+    editorPath: (slug) => `/message/editor/${slug}`,
   },
 };
 
@@ -225,7 +274,18 @@ export function getDefaultTemplateRegistry(): TemplateDefinition[] {
 
 export function getTemplateRegistryEntry(templateKey: string | null | undefined): TemplateRegistryEntry | null {
   if (!templateKey) return null;
-  return TEMPLATE_REGISTRY[templateKey] ?? null;
+  const staticEntry = TEMPLATE_REGISTRY[templateKey];
+  if (staticEntry) {
+    return staticEntry;
+  }
+
+  const creatorMatch = templateKey.match(CREATOR_TEMPLATE_KEY_REGEX);
+  if (!creatorMatch) {
+    return null;
+  }
+
+  const category = creatorMatch[1] as TemplateRegistryCategory;
+  return CREATOR_CATEGORY_REGISTRY[category] ?? null;
 }
 
 export function getTemplateRenderer(templateKey: string | null | undefined): TemplateRendererComponent | null {
@@ -250,7 +310,7 @@ export function getTemplateEditorPath(templateKey: string | null | undefined, sl
   return entry.editorPath(slug);
 }
 
-export function isValidTemplateKey(templateKey: string | null | undefined): templateKey is SupportedTemplateKey {
+export function isValidTemplateKey(templateKey: string | null | undefined): boolean {
   return Boolean(getTemplateRegistryEntry(templateKey));
 }
 

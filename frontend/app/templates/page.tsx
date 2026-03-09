@@ -24,6 +24,9 @@ const CATEGORY_FILTERS: FilterOption<TemplateCategory>[] = [
   { value: 'funeral', label: '장례식' },
   { value: 'party', label: '파티' },
   { value: 'message', label: '메시지' },
+  { value: 'simple_notice', label: '공지' },
+  { value: 'event', label: '이벤트' },
+  { value: 'business', label: '비즈니스' },
 ];
 
 const STYLE_FILTERS: FilterOption<TemplateStyle>[] = [
@@ -41,6 +44,9 @@ const CATEGORY_LABELS: Record<TemplateCategory, string> = {
   funeral: '장례식',
   party: '파티',
   message: '메시지',
+  simple_notice: '공지',
+  event: '이벤트',
+  business: '비즈니스',
 };
 
 const STYLE_LABELS: Record<TemplateStyle, string> = {
@@ -141,12 +147,15 @@ export default function TemplatesPage() {
           {filteredTemplates.map((card) => (
             <article key={card.id} className={styles.card}>
               <div className={styles.thumbnail}>
-                <TemplatePreviewWrapper templateKey={card.templateKey} />
+                <TemplatePreviewWrapper templateKey={card.templateKey} studioConfig={card.studioConfig || undefined} />
                 <span className={styles.thumbnailLabel}>
                   {CATEGORY_LABELS[card.category]} · {STYLE_LABELS[card.style]}
                 </span>
               </div>
               <h2 className={styles.cardTitle}>{card.name}</h2>
+              {card.marketplaceType === 'CREATOR' && (
+                <p className={styles.cardDesc}>Creator template</p>
+              )}
               <p className={styles.cardDesc}>{card.description}</p>
               <div className={styles.actions}>
                 <button

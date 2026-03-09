@@ -21,12 +21,21 @@ enum InvitationStatus {
   PUBLISHED
 }
 
+enum TemplateSubmissionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email     String?  @unique
+  isCreator Boolean  @default(false) @map("is_creator")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  invitations    Invitation[]
+  invitations     Invitation[]
+  templateSubmissions TemplateSubmission[]
   magicLinkTokens MagicLinkToken[]
   authSessions    AuthSession[]
   mediaFiles      MediaFile[]
@@ -192,12 +201,16 @@ model Template {
   component       String
   templateKey     String   @map("template_key")
   marketplaceType String   @map("marketplace_type")
+  studioConfig    Json?    @map("studio_config") @db.JsonB
+  previewThumbnailUrl String? @map("preview_thumbnail_url")
+  sourceSubmissionId String? @map("source_submission_id") @db.Uuid
   isActive        Boolean  @default(true) @map("is_active")
   isDeleted       Boolean  @default(false) @map("is_deleted")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   fields          TemplateField[]
   invitations     Invitation[]
+  approvedSubmissions TemplateSubmission[]
 
   @@map("templates")
 }
@@ -218,4 +231,37 @@ model TemplateField {
   @@unique([templateId, fieldName])
   @@index([templateId, sortOrder])
   @@map("template_fields")
+}
+
+model TemplateSubmission {
+  id                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  creatorId          String                   @map("creator_id") @db.Uuid
+  category           String
+  templateKeyCandidate String                 @map("template_key_candidate")
+  name               String
+  description        String
+  style              String
+  price              Int                      @default(0)
+  creatorShare       Float                    @default(0) @map("creator_share")
+  status             TemplateSubmissionStatus @default(DRAFT)
+  studioConfig       Json?                    @map("studio_config") @db.JsonB
+  previewThumbnailUrl String?                 @map("preview_thumbnail_url")
+  parentSubmissionId String?                  @map("parent_submission_id") @db.Uuid
+  revisionNumber     Int                      @default(1) @map("revision_number")
+  submittedAt        DateTime?                @map("submitted_at") @db.Timestamptz(6)
+  reviewedAt         DateTime?                @map("reviewed_at") @db.Timestamptz(6)
+  reviewNote         String?                  @map("review_note")
+  approvedTemplateId String?                  @map("approved_template_id") @db.Uuid
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  creator            User                     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  parentSubmission   TemplateSubmission?      @relation("TemplateSubmissionRevision", fields: [parentSubmissionId], references: [id], onDelete: SetNull)
+  childSubmissions   TemplateSubmission[]     @relation("TemplateSubmissionRevision")
+  approvedTemplate   Template?                @relation(fields: [approvedTemplateId], references: [id], onDelete: SetNull)
+
+  @@index([creatorId, status])
+  @@index([status, submittedAt])
+  @@unique([creatorId, templateKeyCandidate, revisionNumber])
+  @@map("template_submissions")
 }

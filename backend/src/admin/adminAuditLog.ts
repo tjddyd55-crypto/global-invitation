@@ -8,9 +8,13 @@ export type AdminAuditAction =
   | 'admin_login'
   | 'rsvp_delete'
   | 'rsvp_message_hide'
-  | 'rsvp_message_show';
+  | 'rsvp_message_show'
+  | 'submission_created'
+  | 'submission_submitted'
+  | 'submission_approved'
+  | 'submission_rejected';
 
-type AdminAuditTargetType = 'template' | 'admin' | 'rsvp';
+type AdminAuditTargetType = 'template' | 'admin' | 'rsvp' | 'template_submission';
 
 export async function logAdminAction(params: {
   adminId: string;

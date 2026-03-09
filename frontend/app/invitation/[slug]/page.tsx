@@ -13,9 +13,15 @@ import { trackInvitationView } from '@/src/lib/trackInvitationView';
 import EditorBackButton from '@/app/_components/EditorBackButton';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import type { Invitation } from '@/src/lib/api';
-import { getTemplateRenderer } from '@/src/templates/registry';
+import {
+  fetchTemplateDefinitionById,
+  getTemplateRegistryEntry,
+  getTemplateRenderer,
+  type TemplateDefinition,
+} from '@/src/templates/registry';
 import RSVPForm from '@/src/components/rsvp/RSVPForm';
 import { isWeddingInvitationData } from '@/src/invitation/schemas';
+import SafeCreatorRenderer from '@/src/templates/creator/SafeCreatorRenderer';
 
 const EVENT_TRACKING_ENABLED = false;
 let didWarnEventTracking = false;
@@ -41,6 +47,7 @@ export default function InvitationPage() {
   const [loading, setLoading] = useState(true);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [runtimeDataOverride, setRuntimeDataOverride] = useState<unknown | null>(null);
+  const [templateDefinition, setTemplateDefinition] = useState<TemplateDefinition | null>(null);
   const [publishStatus, setPublishStatus] = useState<'draft' | 'published'>('draft');
   const [shared, setShared] = useState(false);
   const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
@@ -60,6 +67,7 @@ export default function InvitationPage() {
     setLoading(true);
     setInvitation(null);
     setRuntimeDataOverride(null);
+    setTemplateDefinition(null);
     setPublishStatus('draft');
     setShared(false);
     setShareFallbackUrl(null);
@@ -79,6 +87,31 @@ export default function InvitationPage() {
       setLoading(false);
     }
   }, [slug, router]);
+
+  useEffect(() => {
+    const templateId = invitation?.templateId;
+    if (!templateId) {
+      setTemplateDefinition(null);
+      return;
+    }
+
+    let isMounted = true;
+    async function loadTemplateDefinition() {
+      try {
+        const definition = await fetchTemplateDefinitionById(templateId as string);
+        if (!isMounted) return;
+        setTemplateDefinition(definition);
+      } catch {
+        if (!isMounted) return;
+        setTemplateDefinition(null);
+      }
+    }
+
+    void loadTemplateDefinition();
+    return () => {
+      isMounted = false;
+    };
+  }, [invitation?.templateId]);
 
   // 음악 자동 재생 시도
   useEffect(() => {
@@ -228,6 +261,18 @@ export default function InvitationPage() {
 
   const shouldRenderGuestRsvp =
     isWeddingInvitationData(runtimeDataOverride) && runtimeDataOverride.rsvp?.enabled === true;
+  const isCreatorTemplate = /^creator_(wedding|funeral|message)_[a-z0-9_]+$/.test(invitation.templateKey);
+  const hasStudioConfig = Boolean(templateDefinition?.studioConfig);
+  const templateCategory =
+    templateDefinition?.category || getTemplateRegistryEntry(invitation.templateKey)?.category || 'wedding';
+
+  const fallbackTemplateKey =
+    templateCategory === 'funeral'
+      ? 'funeral_classic'
+      : templateCategory === 'message'
+        ? 'message_simple'
+        : 'wedding_classic';
+  const FallbackTemplate = getTemplateRenderer(fallbackTemplateKey);
 
   return (
     <>
@@ -249,14 +294,49 @@ export default function InvitationPage() {
           </button>
         </div>
       )}
-      <Template
-        data={runtimeDataOverride}
-        invitationSlug={slug}
-        showPlayButton={false}
-        showRsvp={shouldRenderGuestRsvp ? false : undefined}
-        onShare={handleShare}
-        isShared={shared}
-      />
+      {isCreatorTemplate && hasStudioConfig && FallbackTemplate ? (
+        <SafeCreatorRenderer
+          creatorRenderer={Template}
+          fallbackRenderer={FallbackTemplate}
+          creatorProps={{
+            data: runtimeDataOverride,
+            runtimeData: runtimeDataOverride,
+            studioConfig: templateDefinition?.studioConfig,
+            invitationSlug: slug,
+            previewMode: false,
+            showPlayButton: false,
+            showRsvp: shouldRenderGuestRsvp ? false : undefined,
+            onShare: handleShare,
+            isShared: shared,
+          }}
+          fallbackProps={{
+            data: runtimeDataOverride,
+            invitationSlug: slug,
+            showPlayButton: false,
+            showRsvp: shouldRenderGuestRsvp ? false : undefined,
+            onShare: handleShare,
+            isShared: shared,
+          }}
+        />
+      ) : isCreatorTemplate && FallbackTemplate ? (
+        <FallbackTemplate
+          data={runtimeDataOverride}
+          invitationSlug={slug}
+          showPlayButton={false}
+          showRsvp={shouldRenderGuestRsvp ? false : undefined}
+          onShare={handleShare}
+          isShared={shared}
+        />
+      ) : (
+        <Template
+          data={runtimeDataOverride}
+          invitationSlug={slug}
+          showPlayButton={false}
+          showRsvp={shouldRenderGuestRsvp ? false : undefined}
+          onShare={handleShare}
+          isShared={shared}
+        />
+      )}
       {shouldRenderGuestRsvp && <RSVPForm invitationSlug={slug} />}
       {shareFallbackUrl && (
         <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />

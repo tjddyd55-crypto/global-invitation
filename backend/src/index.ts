@@ -11,6 +11,8 @@ import templateRegistryRouter from './routes/templateRegistry';
 import rsvpRouter from './routes/rsvp';
 import invitationAnalyticsRouter from './routes/invitationAnalytics';
 import mediaRouter from './routes/media';
+import templateSubmissionsRouter from './routes/templateSubmissions';
+import adminTemplateSubmissionsRouter from './routes/adminTemplateSubmissions';
 import {
   ensureLocalMediaStorageReady,
   LOCAL_MEDIA_ROUTE_PREFIX,
@@ -72,6 +74,8 @@ app.use('/api/events', eventsRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminAuthRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/admin', adminTemplateSubmissionsRouter);
+app.use('/api/creator', templateSubmissionsRouter);
 app.use('/api/templates', templateRegistryRouter);
 app.use('/api/rsvp', rsvpRouter);
 app.use('/api/media', mediaRouter);

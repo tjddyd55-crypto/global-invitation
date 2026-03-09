@@ -1,14 +1,15 @@
 'use client';
 
 import type { TemplatePreviewData } from '@/src/templates/previewData';
-import { getTemplatePreviewData, getTemplateRegistryEntry, type SupportedTemplateKey } from '@/src/templates/registry';
+import { getTemplatePreviewData, getTemplateRegistryEntry } from '@/src/templates/registry';
 
 type TemplatePreviewWrapperProps = {
   templateKey: string;
   sampleData?: TemplatePreviewData;
+  studioConfig?: unknown;
 };
 
-function resolvePreviewScale(templateKey: SupportedTemplateKey) {
+function resolvePreviewScale(templateKey: string) {
   const entry = getTemplateRegistryEntry(templateKey);
   if (!entry) return 0.28;
   if (entry.category === 'message') return 0.3;
@@ -16,10 +17,16 @@ function resolvePreviewScale(templateKey: SupportedTemplateKey) {
   return 0.24;
 }
 
-function buildPreviewProps(templateKey: SupportedTemplateKey, data: unknown) {
+function isCreatorTemplateKey(templateKey: string): boolean {
+  return /^creator_(wedding|funeral|message)_[a-z0-9_]+$/.test(templateKey);
+}
+
+function buildPreviewProps(templateKey: string, data: unknown, studioConfig?: unknown) {
   const baseProps = {
     data,
+    runtimeData: data,
     previewMode: true,
+    studioConfig,
   };
 
   switch (templateKey) {
@@ -38,11 +45,20 @@ function buildPreviewProps(templateKey: SupportedTemplateKey, data: unknown) {
         interactive: false,
       };
     default:
+      if (isCreatorTemplateKey(templateKey)) {
+        return {
+          ...baseProps,
+          invitationSlug: `preview-${templateKey}`,
+          showPlayButton: false,
+          showRsvp: false,
+          showGuestbook: false,
+        };
+      }
       return baseProps;
   }
 }
 
-export default function TemplatePreviewWrapper({ templateKey, sampleData }: TemplatePreviewWrapperProps) {
+export default function TemplatePreviewWrapper({ templateKey, sampleData, studioConfig }: TemplatePreviewWrapperProps) {
   const entry = getTemplateRegistryEntry(templateKey);
   const previewData = sampleData ?? getTemplatePreviewData(templateKey);
 
@@ -51,7 +67,7 @@ export default function TemplatePreviewWrapper({ templateKey, sampleData }: Temp
   }
 
   const Renderer = entry.renderer;
-  const scale = resolvePreviewScale(templateKey as SupportedTemplateKey);
+  const scale = resolvePreviewScale(templateKey);
 
   return (
     <div
@@ -71,7 +87,7 @@ export default function TemplatePreviewWrapper({ templateKey, sampleData }: Temp
           pointerEvents: 'none',
         }}
       >
-        <Renderer {...buildPreviewProps(templateKey as SupportedTemplateKey, previewData)} />
+        <Renderer {...buildPreviewProps(templateKey, previewData, studioConfig)} />
       </div>
     </div>
   );

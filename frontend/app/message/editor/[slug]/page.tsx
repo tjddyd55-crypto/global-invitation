@@ -98,6 +98,12 @@ export default function MessageCardEditorPage() {
         return;
       }
 
+      if (/^creator_message_[a-z0-9_]+$/.test(templateDefinition.templateKey)) {
+        setSimpleData(getMessageSimpleDemoData());
+        setLoading(false);
+        return;
+      }
+
       if (templateDefinition.templateKey === 'message_thankyou') {
         setData({
           ...getMessageCardDemoData(),
