@@ -64,6 +64,7 @@ export default function Step0Basic({
         value={heroImage}
         onChange={(value) => onChange({ heroImage: value })}
         onClear={() => onChange({ heroImage: '' })}
+        uploadAssetType="hero"
       />
     </section>
   );

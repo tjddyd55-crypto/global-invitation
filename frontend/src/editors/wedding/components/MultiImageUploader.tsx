@@ -38,12 +38,11 @@ export default function MultiImageUploader({ label, description, images, onChang
       const uploadedImages: WeddingEditorImage[] = [];
 
       for (const file of files) {
-        const uploaded = await uploadMediaImage(file);
+        const uploaded = await uploadMediaImage(file, { assetType: 'gallery' });
         uploadedImages.push({
-          id: uploaded.id || buildId(),
+          id: buildId(),
           url: uploaded.url,
-          name: uploaded.fileName || file.name,
-          mediaId: uploaded.id,
+          name: file.name,
         });
       }
 
@@ -64,11 +63,7 @@ export default function MultiImageUploader({ label, description, images, onChang
     setError(null);
 
     try {
-      if (target.mediaId) {
-        await deleteMediaFile(target.mediaId);
-      } else {
-        revokeIfObjectUrl(target.url);
-      }
+      await deleteMediaFile(target.url);
 
       const nextImages = images.filter((_, idx) => idx !== index);
       onChange(nextImages);

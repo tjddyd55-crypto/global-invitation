@@ -13,16 +13,9 @@ import invitationAnalyticsRouter from './routes/invitationAnalytics';
 import mediaRouter from './routes/media';
 import templateSubmissionsRouter from './routes/templateSubmissions';
 import adminTemplateSubmissionsRouter from './routes/adminTemplateSubmissions';
-import {
-  ensureLocalMediaStorageReady,
-  LOCAL_MEDIA_ROUTE_PREFIX,
-  resolveLocalMediaDirectory,
-} from './storage/mediaStorage';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-ensureLocalMediaStorageReady();
 
 if (!process.env.ADMIN_SESSION_SECRET?.trim()) {
   throw new Error('ADMIN_SESSION_SECRET must be defined');
@@ -54,7 +47,6 @@ app.use(
   })
 );
 app.use(express.json());
-app.use(LOCAL_MEDIA_ROUTE_PREFIX, express.static(resolveLocalMediaDirectory()));
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

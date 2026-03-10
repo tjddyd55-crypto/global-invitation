@@ -22,6 +22,7 @@ export default function Step2HeroImage({ value, onChange }: Step2HeroImageProps)
         value={value.heroImage}
         onChange={(heroImage) => onChange({ heroImage })}
         onClear={() => onChange({ heroImage: '' })}
+        uploadAssetType="hero"
         required
       />
       <label className={styles.field}>

@@ -1,11 +1,66 @@
 import crypto from 'crypto';
 import type { Request } from 'express';
+import type { Response } from 'express';
 import type { Invitation } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import prisma from './prisma';
 
 const MAGIC_LINK_TTL_MINUTES = 30;
 const SESSION_TTL_DAYS = 30;
+const AUTH_SESSION_COOKIE = 'auth_session_token';
+
+function isProduction(): boolean {
+  return process.env.NODE_ENV === 'production';
+}
+
+function parseCookieValue(req: Request, cookieName: string): string | null {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return null;
+
+  const cookie = cookieHeader
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${cookieName}=`));
+
+  if (!cookie) return null;
+  return decodeURIComponent(cookie.slice(cookieName.length + 1));
+}
+
+function resolveSessionToken(req: Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    const headerToken = authHeader.replace('Bearer', '').trim();
+    if (headerToken) {
+      return headerToken;
+    }
+  }
+
+  const cookieToken = parseCookieValue(req, AUTH_SESSION_COOKIE);
+  return cookieToken?.trim() || null;
+}
+
+export function setAuthSessionCookie(res: Response, token: string) {
+  const secure = isProduction();
+  const sameSite = secure ? 'none' : 'lax';
+  res.cookie(AUTH_SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite,
+    secure,
+    maxAge: SESSION_TTL_DAYS * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+}
+
+export function clearAuthSessionCookie(res: Response) {
+  const secure = isProduction();
+  const sameSite = secure ? 'none' : 'lax';
+  res.clearCookie(AUTH_SESSION_COOKIE, {
+    httpOnly: true,
+    sameSite,
+    secure,
+    path: '/',
+  });
+}
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -50,9 +105,7 @@ export function getGuestToken(req: Request): string | null {
 }
 
 export async function getAuthUser(req: Request) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) return null;
-  const token = authHeader.replace('Bearer', '').trim();
+  const token = resolveSessionToken(req);
   if (!token) return null;
 
   const session = await prisma.authSession.findUnique({

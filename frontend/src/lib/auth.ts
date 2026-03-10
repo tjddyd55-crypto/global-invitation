@@ -99,6 +99,7 @@ export async function requestMagicLink(email: string, draftSlug?: string): Promi
   const guestToken = ensureGuestToken();
   const response = await fetch(buildApiUrl('/api/auth/magic-link'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -121,6 +122,7 @@ export async function verifyMagicLink(token: string): Promise<VerifyResponse> {
   const guestToken = getGuestToken();
   const response = await fetch(buildApiUrl('/api/auth/verify'), {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },

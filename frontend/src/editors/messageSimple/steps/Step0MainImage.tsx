@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { deleteMediaFile, uploadMediaImage } from '@/src/lib/mediaApi';
 import styles from '../messageSimpleEditor.module.css';
 
@@ -16,7 +16,6 @@ function revokeIfObjectUrl(url?: string) {
 }
 
 export default function Step0MainImage({ heroImage, onChange }: Step0MainImageProps) {
-  const uploadedMediaByUrlRef = useRef<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,8 +30,7 @@ export default function Step0MainImage({ heroImage, onChange }: Step0MainImagePr
       if (heroImage) {
         revokeIfObjectUrl(heroImage);
       }
-      const uploaded = await uploadMediaImage(file);
-      uploadedMediaByUrlRef.current[uploaded.url] = uploaded.id;
+      const uploaded = await uploadMediaImage(file, { assetType: 'hero' });
       onChange(uploaded.url);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.');
@@ -49,13 +47,7 @@ export default function Step0MainImage({ heroImage, onChange }: Step0MainImagePr
     setError(null);
 
     try {
-      const mediaId = uploadedMediaByUrlRef.current[heroImage];
-      if (mediaId) {
-        await deleteMediaFile(mediaId);
-        delete uploadedMediaByUrlRef.current[heroImage];
-      } else {
-        revokeIfObjectUrl(heroImage);
-      }
+      await deleteMediaFile(heroImage);
       onChange('');
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : '이미지 삭제에 실패했습니다.');

@@ -2,12 +2,14 @@ import { Router } from 'express';
 import prisma from '../lib/prisma';
 import {
   buildMagicLink,
+  clearAuthSessionCookie,
   createToken,
   getAuthUser,
   getMagicLinkExpiry,
   getSessionExpiry,
   isValidEmail,
   normalizeEmail,
+  setAuthSessionCookie,
   transferGuestData,
 } from '../lib/auth';
 import { sendMagicLinkEmail } from '../lib/mailer';
@@ -100,6 +102,7 @@ router.post('/verify', async (req, res) => {
       },
       include: { user: true },
     });
+    setAuthSessionCookie(res, sessionToken);
 
     const mergeGuestToken =
       typeof guestToken === 'string' && guestToken.trim()
@@ -140,6 +143,31 @@ router.get('/me', async (req, res) => {
   } catch (error) {
     console.error('Error fetching current user:', error);
     res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+router.post('/logout', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const tokenFromHeader =
+      typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+        ? authHeader.replace('Bearer', '').trim()
+        : '';
+
+    if (tokenFromHeader) {
+      await prisma.authSession
+        .update({
+          where: { token: tokenFromHeader },
+          data: { revokedAt: new Date() },
+        })
+        .catch(() => undefined);
+    }
+
+    clearAuthSessionCookie(res);
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error during logout:', error);
+    return res.status(500).json({ error: 'FAILED_TO_LOGOUT' });
   }
 });
 

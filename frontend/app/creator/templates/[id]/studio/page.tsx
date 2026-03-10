@@ -202,7 +202,11 @@ export default function CreatorTemplateStudioPage() {
     setUploadingThumbnail(true);
     setError(null);
     try {
-      const uploaded = await uploadMediaImage(file);
+      const uploaded = await uploadMediaImage(file, {
+        context: 'template',
+        entityId: submission.id,
+        assetType: 'thumbnail',
+      });
       setMetaValue((current) => (current ? { ...current, previewThumbnailUrl: uploaded.url } : current));
       setSuccess('Thumbnail uploaded');
     } catch (uploadError) {

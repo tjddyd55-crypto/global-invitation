@@ -1,7 +1,7 @@
 'use client';
 
-import { useId, useRef, useState } from 'react';
-import { deleteMediaFile, uploadMediaImage } from '@/src/lib/mediaApi';
+import { useId, useState } from 'react';
+import { deleteMediaFile, uploadMediaImage, type MediaUploadAssetType } from '@/src/lib/mediaApi';
 import styles from '../messageCardEditor.module.css';
 
 type ImageUploaderProps = {
@@ -11,6 +11,7 @@ type ImageUploaderProps = {
   onChange: (url: string) => void;
   onClear?: () => void;
   required?: boolean;
+  uploadAssetType?: MediaUploadAssetType;
 };
 
 function revokeIfObjectUrl(url?: string) {
@@ -19,9 +20,16 @@ function revokeIfObjectUrl(url?: string) {
   }
 }
 
-export default function ImageUploader({ label, description, value, onChange, onClear, required }: ImageUploaderProps) {
+export default function ImageUploader({
+  label,
+  description,
+  value,
+  onChange,
+  onClear,
+  required,
+  uploadAssetType = 'gallery',
+}: ImageUploaderProps) {
   const inputId = useId();
-  const uploadedMediaByUrlRef = useRef<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,8 +44,7 @@ export default function ImageUploader({ label, description, value, onChange, onC
       if (value) {
         revokeIfObjectUrl(value);
       }
-      const uploaded = await uploadMediaImage(file);
-      uploadedMediaByUrlRef.current[uploaded.url] = uploaded.id;
+      const uploaded = await uploadMediaImage(file, { assetType: uploadAssetType });
       onChange(uploaded.url);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.');
@@ -54,13 +61,7 @@ export default function ImageUploader({ label, description, value, onChange, onC
     setError(null);
 
     try {
-      const mediaId = uploadedMediaByUrlRef.current[value];
-      if (mediaId) {
-        await deleteMediaFile(mediaId);
-        delete uploadedMediaByUrlRef.current[value];
-      } else {
-        revokeIfObjectUrl(value);
-      }
+      await deleteMediaFile(value);
       onClear?.();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : '이미지 삭제에 실패했습니다.');
