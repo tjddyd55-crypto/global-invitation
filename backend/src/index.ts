@@ -13,6 +13,7 @@ import invitationAnalyticsRouter from './routes/invitationAnalytics';
 import mediaRouter from './routes/media';
 import templateSubmissionsRouter from './routes/templateSubmissions';
 import adminTemplateSubmissionsRouter from './routes/adminTemplateSubmissions';
+import testLoginRouter from './routes/testLogin';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -71,6 +72,7 @@ app.use('/api/creator', templateSubmissionsRouter);
 app.use('/api/templates', templateRegistryRouter);
 app.use('/api/rsvp', rsvpRouter);
 app.use('/api/media', mediaRouter);
+app.use('/api/test-login', testLoginRouter);
 
 // Start server
 app.listen(PORT, () => {

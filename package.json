@@ -13,10 +13,14 @@
     "prebuild": "npm run install:backend",
     "build": "npm run build:backend",
     "start": "npm run start --prefix backend",
-    "check:i18n": "ts-node scripts/check-i18n.ts"
+    "check:i18n": "ts-node scripts/check-i18n.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "workspaces": [],
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
