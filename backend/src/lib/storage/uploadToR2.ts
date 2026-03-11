@@ -47,6 +47,7 @@ export async function createPresignedUploadUrl(params: {
     Bucket: config.bucketName,
     Key: params.key,
     ContentType: params.contentType,
+    CacheControl: CACHE_CONTROL_HEADER,
   });
   return getSignedUrl(r2Client, command, {
     expiresIn: params.expiresInSeconds ?? DEFAULT_PRESIGNED_EXPIRES_SECONDS,
