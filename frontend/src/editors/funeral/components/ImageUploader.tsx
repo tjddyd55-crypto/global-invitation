@@ -29,6 +29,7 @@ export default function ImageUploader({
 }: ImageUploaderProps) {
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,18 +37,23 @@ export default function ImageUploader({
     if (!file) return;
 
     setUploading(true);
+    setProgress(0);
     setError(null);
 
     try {
       if (value) {
         revokeIfObjectUrl(value);
       }
-      const uploaded = await uploadMediaImage(file, { assetType: uploadAssetType });
+      const uploaded = await uploadMediaImage(file, {
+        assetType: uploadAssetType,
+        onProgress: (value) => setProgress(value),
+      });
       onChange(uploaded.url);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.');
     } finally {
       setUploading(false);
+      setProgress(0);
       event.target.value = '';
     }
   };
@@ -94,6 +100,7 @@ export default function ImageUploader({
             </button>
           )}
         </div>
+        {uploading && <p className={styles.fieldDescription}>업로드 진행률 {progress}%</p>}
         {error && <p className={styles.fieldDescription}>{error}</p>}
         <input
           id={inputId}

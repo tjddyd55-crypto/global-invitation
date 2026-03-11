@@ -77,7 +77,10 @@ test.describe('초대장 에디터 상호작용 QA', () => {
       const newFirstSrc = await newFirstItemImage.getAttribute('src');
       expect(newFirstSrc).not.toBe(firstSrc);
 
-      const uploadedItem = gallerySection.locator('li:has(img[src*="r2.dev"])').first();
+      const uploadedItem = gallerySection
+        .locator('li')
+        .filter({ has: page.locator('button:has-text("삭제")') })
+        .last();
       await expect(uploadedItem).toBeVisible();
       const targetImage = uploadedItem.locator('img').first();
       const targetSrc = await targetImage.getAttribute('src');

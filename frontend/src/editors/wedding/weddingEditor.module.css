@@ -406,6 +406,11 @@
   background: #faf8f4;
 }
 
+.uploaderDropActive {
+  border-color: #9db06d;
+  background: #f3f8e8;
+}
+
 .uploaderPreview img {
   width: 100%;
   border-radius: 12px;
@@ -427,8 +432,52 @@
   flex-wrap: wrap;
 }
 
+.uploadDropHint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #766f65;
+}
+
 .hiddenInput {
   display: none;
+}
+
+.uploadQueue {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.uploadQueueItem {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #e2dbcf;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.uploadQueueMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: #635d55;
+}
+
+.uploadProgressTrack {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #ece6da;
+  overflow: hidden;
+}
+
+.uploadProgressBar {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #a9ba7a, #8ea466);
+  transition: width 0.2s ease;
 }
 
 .galleryList {

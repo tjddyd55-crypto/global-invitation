@@ -17,6 +17,7 @@ function revokeIfObjectUrl(url?: string) {
 
 export default function Step0MainImage({ heroImage, onChange }: Step0MainImageProps) {
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,18 +25,23 @@ export default function Step0MainImage({ heroImage, onChange }: Step0MainImagePr
     if (!file) return;
 
     setUploading(true);
+    setProgress(0);
     setError(null);
 
     try {
       if (heroImage) {
         revokeIfObjectUrl(heroImage);
       }
-      const uploaded = await uploadMediaImage(file, { assetType: 'hero' });
+      const uploaded = await uploadMediaImage(file, {
+        assetType: 'hero',
+        onProgress: (value) => setProgress(value),
+      });
       onChange(uploaded.url);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.');
     } finally {
       setUploading(false);
+      setProgress(0);
       event.target.value = '';
     }
   };
@@ -88,6 +94,7 @@ export default function Step0MainImage({ heroImage, onChange }: Step0MainImagePr
               </button>
             )}
           </div>
+          {uploading && <p className={styles.noticeText}>업로드 진행률 {progress}%</p>}
           {error && <p className={styles.errorText}>{error}</p>}
         </div>
       </div>
