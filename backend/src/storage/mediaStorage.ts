@@ -33,11 +33,18 @@ export type UploadImageResult = {
 
 const WEBP_QUALITY = 84;
 const MAX_IMAGE_WIDTH = 2000;
+const SHARP_LIMIT_INPUT_PIXELS = 60_000_000;
 const THUMBNAIL_WIDTH_BY_ASSET: Record<MediaAssetType, number> = {
   hero: 1200,
   gallery: 1600,
   thumbnail: 600,
   asset: 1600,
+};
+const WEBP_QUALITY_BY_ASSET: Record<MediaAssetType, number> = {
+  hero: 84,
+  gallery: 82,
+  thumbnail: 80,
+  asset: 82,
 };
 
 type ResolvedDirectUploadTarget = {
@@ -138,6 +145,10 @@ function getThumbnailWidth(assetType: MediaAssetType): number {
   return THUMBNAIL_WIDTH_BY_ASSET[assetType] || 1600;
 }
 
+function getWebpQuality(assetType: MediaAssetType): number {
+  return WEBP_QUALITY_BY_ASSET[assetType] || WEBP_QUALITY;
+}
+
 function extractBaseName(fileName: string): string {
   const trimmed = fileName.trim();
   const withoutExt = trimmed.replace(/\.[^/.]+$/g, '');
@@ -208,9 +219,9 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
   };
 }
 
-async function optimizeToWebp(buffer: Buffer, widthLimit: number): Promise<Buffer> {
+async function optimizeToWebp(buffer: Buffer, widthLimit: number, quality: number): Promise<Buffer> {
   try {
-    const image = sharp(buffer, { failOn: 'none' }).rotate();
+    const image = sharp(buffer, { failOn: 'none', limitInputPixels: SHARP_LIMIT_INPUT_PIXELS }).rotate();
     const metadata = await image.metadata();
 
     if (!metadata.width || !metadata.height) {
@@ -223,22 +234,27 @@ async function optimizeToWebp(buffer: Buffer, widthLimit: number): Promise<Buffe
           width: widthLimit,
           withoutEnlargement: true,
         })
-        .webp({ quality: WEBP_QUALITY })
+        .webp({ quality })
         .toBuffer();
     }
 
-    return image.webp({ quality: WEBP_QUALITY }).toBuffer();
+    return image.webp({ quality }).toBuffer();
   } catch (_error) {
     throw new Error('INVALID_IMAGE_FILE');
   }
 }
 
 export async function uploadImage(params: UploadImageParams): Promise<UploadImageResult> {
-  const optimized = await optimizeToWebp(params.fileBuffer, MAX_IMAGE_WIDTH);
+  const assetType = params.assetType || 'asset';
+  const optimized = await optimizeToWebp(params.fileBuffer, MAX_IMAGE_WIDTH, getWebpQuality(assetType));
   const key = buildStorageKey(params);
   const thumbnailKey = resolveThumbnailKeyForOriginalKey(key);
-  const thumbnailWidth = getThumbnailWidth(params.assetType || 'asset');
-  const thumbnail = await optimizeToWebp(params.fileBuffer, Math.min(MAX_IMAGE_WIDTH, thumbnailWidth));
+  const thumbnailWidth = getThumbnailWidth(assetType);
+  const thumbnail = await optimizeToWebp(
+    params.fileBuffer,
+    Math.min(MAX_IMAGE_WIDTH, thumbnailWidth),
+    getWebpQuality(assetType)
+  );
   const url = await uploadFile(optimized, key, 'image/webp');
   const thumbnailUrl = await uploadFile(thumbnail, thumbnailKey, 'image/webp');
 
@@ -273,10 +289,11 @@ export async function completeDirectUpload(fileKey: string): Promise<UploadImage
   const sourceBuffer = await readFileBuffer(fileKey);
   const { originalKey, thumbnailKey, assetType } = resolveDirectUploadTarget(fileKey);
   const thumbnailWidth = getThumbnailWidth(assetType);
+  const quality = getWebpQuality(assetType);
 
   const [optimized, thumbnail] = await Promise.all([
-    optimizeToWebp(sourceBuffer, MAX_IMAGE_WIDTH),
-    optimizeToWebp(sourceBuffer, Math.min(MAX_IMAGE_WIDTH, thumbnailWidth)),
+    optimizeToWebp(sourceBuffer, MAX_IMAGE_WIDTH, quality),
+    optimizeToWebp(sourceBuffer, Math.min(MAX_IMAGE_WIDTH, thumbnailWidth), quality),
   ]);
 
   await Promise.all([
