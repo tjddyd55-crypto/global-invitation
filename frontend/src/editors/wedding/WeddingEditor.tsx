@@ -77,6 +77,7 @@ export default function WeddingEditor({
   const [activeSection, setActiveSection] = useState<EditorSectionKey>('basic');
   const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
   const [isMobileNavPinned, setIsMobileNavPinned] = useState(false);
+  const [hasBlockingUploadState, setHasBlockingUploadState] = useState(false);
   const previewLoggedRef = useRef(false);
   const formScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const mobileNavSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -175,6 +176,10 @@ export default function WeddingEditor({
     await onPublish(state);
   };
 
+  const handleGalleryUploadStateChange = (uploadState: { isUploading: boolean; hasError: boolean }) => {
+    setHasBlockingUploadState(uploadState.isUploading || uploadState.hasError);
+  };
+
   const statusLabel = draftStatus === 'published' ? '공개됨' : '초안';
   const statusClassName =
     draftStatus === 'published' ? `${styles.statusBadge} ${styles.statusPublished}` : styles.statusBadge;
@@ -194,7 +199,7 @@ export default function WeddingEditor({
   };
 
   return (
-    <div className={styles.editorPage}>
+    <div className={styles.editorPage} data-testid="wedding-editor-root">
       <header className={styles.editorHeader}>
         <div>
           <h1 className={styles.editorTitle}>결혼식 에디터</h1>
@@ -211,7 +216,9 @@ export default function WeddingEditor({
             type="button"
             className={styles.buttonPrimary}
             onClick={handleSave}
-            disabled={saving || !onSave}
+            disabled={saving || !onSave || hasBlockingUploadState}
+            data-testid="editor-save-button"
+            data-saving={saving ? 'true' : 'false'}
           >
             {saving ? '저장 중...' : isDemo ? '저장(데모)' : '저장'}
           </button>
@@ -226,6 +233,7 @@ export default function WeddingEditor({
               className={styles.buttonPrimary}
               onClick={handlePublish}
               disabled={saving || publishing}
+              data-testid="editor-publish-button"
             >
               {publishing ? '공개 중...' : '공개하기'}
             </button>
@@ -316,6 +324,7 @@ export default function WeddingEditor({
               <Step5Gallery
                 value={state.gallery}
                 onChange={(images) => dispatch({ type: 'SET_GALLERY_IMAGES', payload: images })}
+                onUploadStateChange={handleGalleryUploadStateChange}
               />
             </section>
 

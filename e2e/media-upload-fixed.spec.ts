@@ -1,21 +1,10 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 const EDITOR_URL = 'http://localhost:3000/editor/qa-e2e-media-20260309?template=40dec797-cdff-44fb-a5fe-9fe757eb12a4';
 const TEST_IMAGE_PATH =
   'C:/Users/tjddy/.cursor/projects/d-workspace-global-invitation/assets/c__Users_tjddy_AppData_Roaming_Cursor_User_workspaceStorage_650309767ffeb210ade59192394822cf_images_image-d41d32f3-e403-40e4-93d4-e14c4734110d.png';
 
-async function ensureTestLogin(page: Page) {
-  const response = await page.request.post('http://localhost:3001/api/test-login', {
-    data: { email: 'test@example.com' },
-  });
-  expect(response.ok()).toBeTruthy();
-}
-
 test.describe('미디어 업로드 UI QA (수정)', () => {
-  test.beforeEach(async ({ page }) => {
-    await ensureTestLogin(page);
-  });
-
   test('1. Hero 업로드 요청에서 AUTH_REQUIRED가 발생하지 않아야 함', async ({ page }) => {
     let mediaCallCount = 0;
     const failures: Array<{ status: number; errorCode: string | null }> = [];
@@ -37,7 +26,7 @@ test.describe('미디어 업로드 UI QA (수정)', () => {
     await page.waitForTimeout(1500);
 
     const heroSection = page.locator('[data-section-key="hero"]');
-    const fileInput = heroSection.locator('input[type="file"]').first();
+    const fileInput = page.getByTestId('hero-upload-input');
     await fileInput.setInputFiles(TEST_IMAGE_PATH);
 
     await expect
@@ -56,10 +45,7 @@ test.describe('미디어 업로드 UI QA (수정)', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1500);
 
-    const gallerySection = page.locator('[data-section-key="gallery"]');
-    await gallerySection.scrollIntoViewIfNeeded();
-
-    const fileInput = gallerySection.locator('input[type="file"][multiple]');
+    const fileInput = page.getByTestId('gallery-upload-input');
     await expect(fileInput).toBeAttached();
 
     await fileInput.setInputFiles([TEST_IMAGE_PATH, TEST_IMAGE_PATH]);
@@ -88,11 +74,10 @@ test.describe('미디어 업로드 UI QA (수정)', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1500);
 
-    const heroSection = page.locator('[data-section-key="hero"]');
-    const fileInput = heroSection.locator('input[type="file"]').first();
+    const fileInput = page.getByTestId('hero-upload-input');
     await fileInput.setInputFiles(TEST_IMAGE_PATH);
 
-    const saveButton = page.locator('button:has-text("저장")').first();
+    const saveButton = page.getByTestId('editor-save-button');
     await expect(saveButton).toBeEnabled({ timeout: 10000 });
     await saveButton.click();
 

@@ -1,20 +1,9 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 const EDITOR_URL = 'http://localhost:3000/editor/qa-e2e-media-20260309?template=40dec797-cdff-44fb-a5fe-9fe757eb12a4';
 const TEST_IMAGE_PATH = 'C:/Users/tjddy/.cursor/projects/d-workspace-global-invitation/assets/c__Users_tjddy_AppData_Roaming_Cursor_User_workspaceStorage_650309767ffeb210ade59192394822cf_images_image-d41d32f3-e403-40e4-93d4-e14c4734110d.png';
 
-async function ensureTestLogin(page: Page) {
-  const response = await page.request.post('http://localhost:3001/api/test-login', {
-    data: { email: 'test@example.com' },
-  });
-  expect(response.ok()).toBeTruthy();
-}
-
 test.describe('초대장 에디터 상호작용 QA', () => {
-  test.beforeEach(async ({ page }) => {
-    await ensureTestLogin(page);
-  });
-
   test('A. Hero 이미지 업로드 동작 (업로드 후 프리뷰 반영)', async ({ page }) => {
     await page.goto(EDITOR_URL);
     await page.waitForLoadState('networkidle');
@@ -23,7 +12,7 @@ test.describe('초대장 에디터 상호작용 QA', () => {
     const heroSection = page.locator('[data-section-key="hero"]');
     await expect(heroSection).toBeVisible();
 
-    const fileInput = heroSection.locator('input[type="file"]');
+    const fileInput = page.getByTestId('hero-upload-input');
     await expect(fileInput).toBeAttached();
 
     await fileInput.setInputFiles(TEST_IMAGE_PATH);
@@ -53,7 +42,7 @@ test.describe('초대장 에디터 상호작용 QA', () => {
     await gallerySection.scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
 
-    const fileInput = gallerySection.locator('input[type="file"][multiple]');
+    const fileInput = page.getByTestId('gallery-upload-input');
     await expect(fileInput).toBeAttached();
 
     await fileInput.setInputFiles([TEST_IMAGE_PATH, TEST_IMAGE_PATH]);
@@ -192,7 +181,7 @@ test.describe('초대장 에디터 상호작용 QA', () => {
     await titleInput.fill(uniqueTitle);
     await page.waitForTimeout(500);
 
-    const saveButton = page.locator('button:has-text("저장")').first();
+    const saveButton = page.getByTestId('editor-save-button');
     await saveButton.click();
     
     await page.waitForFunction(() => {
@@ -224,7 +213,7 @@ test.describe('초대장 에디터 상호작용 QA', () => {
     await heroSection.scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
 
-    const heroFileInput = heroSection.locator('input[type="file"]');
+    const heroFileInput = page.getByTestId('hero-upload-input');
     await heroFileInput.setInputFiles(TEST_IMAGE_PATH);
     await page.waitForTimeout(3000);
 
@@ -232,11 +221,11 @@ test.describe('초대장 에디터 상호작용 QA', () => {
     await gallerySection.scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
 
-    const galleryFileInput = gallerySection.locator('input[type="file"][multiple]');
+    const galleryFileInput = page.getByTestId('gallery-upload-input');
     await galleryFileInput.setInputFiles([TEST_IMAGE_PATH]);
     await page.waitForTimeout(3000);
 
-    const saveButton = page.locator('button:has-text("저장")').first();
+    const saveButton = page.getByTestId('editor-save-button');
     await saveButton.click();
     await page.waitForTimeout(2000);
 

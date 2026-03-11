@@ -469,6 +469,7 @@ export default function EditorPage() {
       <>
         {shareUrl && (
           <section
+            data-testid="share-panel"
             style={{
               margin: '1rem auto 0',
               maxWidth: '1200px',
@@ -480,7 +481,7 @@ export default function EditorPage() {
           >
             <h2 style={{ margin: 0, fontSize: '1rem' }}>공유</h2>
             <p style={{ margin: '0.45rem 0 0.75rem', color: '#496093' }}>
-              공개가 완료되었습니다. 공유 URL: <strong>{shareAbsoluteUrl}</strong>
+              공개가 완료되었습니다. 공유 URL: <strong data-testid="share-url">{shareAbsoluteUrl}</strong>
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               <button type="button" onClick={handleCopyShareUrl}>URL 복사</button>

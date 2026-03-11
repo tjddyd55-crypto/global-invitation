@@ -7,9 +7,10 @@ import type { WeddingEditorGallery, WeddingEditorImage } from '../state/weddingE
 type Step5GalleryProps = {
   value: WeddingEditorGallery;
   onChange: (images: WeddingEditorImage[]) => void;
+  onUploadStateChange?: (state: { isUploading: boolean; hasError: boolean }) => void;
 };
 
-export default function Step5Gallery({ value, onChange }: Step5GalleryProps) {
+export default function Step5Gallery({ value, onChange, onUploadStateChange }: Step5GalleryProps) {
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
@@ -21,6 +22,8 @@ export default function Step5Gallery({ value, onChange }: Step5GalleryProps) {
         description="초대장 표시 순서가 입력 순서를 그대로 따릅니다."
         images={value.images}
         onChange={onChange}
+        inputTestId="gallery-upload-input"
+        onUploadStateChange={onUploadStateChange}
       />
     </section>
   );

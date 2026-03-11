@@ -5,6 +5,7 @@ import { buildAuthHeaders } from '@/src/lib/auth';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const IS_E2E_MODE = process.env.NEXT_PUBLIC_E2E_TEST_MODE === 'true';
 
 export type UploadedMediaFile = {
   url: string;
@@ -84,6 +85,10 @@ function sanitizePathSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, '').trim();
 }
 
+function withOptionalE2EPrefix(folder: string): string {
+  return IS_E2E_MODE ? `e2e/${folder}` : folder;
+}
+
 function resolveUploadFolder(options: UploadMediaOptions): string {
   const context = options.context || 'user';
   const assetType = options.assetType || 'asset';
@@ -91,18 +96,18 @@ function resolveUploadFolder(options: UploadMediaOptions): string {
 
   if (context === 'invitation') {
     if (!entityId) throw new Error('INVALID_MEDIA_PATH');
-    return `invitations/${entityId}/${assetType === 'hero' ? 'hero' : 'gallery'}`;
+    return withOptionalE2EPrefix(`invitations/${entityId}/${assetType === 'hero' ? 'hero' : 'gallery'}`);
   }
 
   if (context === 'template') {
     if (!entityId) throw new Error('INVALID_MEDIA_PATH');
     if (assetType === 'thumbnail') {
-      return `templates/thumbnails/${entityId}`;
+      return withOptionalE2EPrefix(`templates/thumbnails/${entityId}`);
     }
-    return `creator/self/${entityId}/assets`;
+    return withOptionalE2EPrefix(`creator/self/${entityId}/assets`);
   }
 
-  return 'users/self';
+  return withOptionalE2EPrefix('users/self');
 }
 
 type ApiFailure = {

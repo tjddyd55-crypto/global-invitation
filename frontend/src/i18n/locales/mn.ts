@@ -91,6 +91,7 @@ const mn: LocaleDictionary = {
   'messageTemplates.actionPreview': 'Урьдчилан харах',
   'marketing.brandName': 'Global Invitation',
   'marketing.nav.createInvitation': 'Урилга үүсгэх',
+  'marketing.nav.createTemplate': 'Загвар үүсгэх',
   'marketing.nav.myInvitations': 'Миний урилгууд',
   'marketing.nav.templates': 'Загварууд',
   'marketing.nav.login': 'Нэвтрэх',

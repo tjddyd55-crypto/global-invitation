@@ -34,6 +34,7 @@ export type UploadImageResult = {
 const WEBP_QUALITY = 84;
 const MAX_IMAGE_WIDTH = 2000;
 const SHARP_LIMIT_INPUT_PIXELS = 60_000_000;
+const E2E_MEDIA_PREFIX = 'e2e';
 const THUMBNAIL_WIDTH_BY_ASSET: Record<MediaAssetType, number> = {
   hero: 1200,
   gallery: 1600,
@@ -53,8 +54,17 @@ type ResolvedDirectUploadTarget = {
   assetType: MediaAssetType;
 };
 
+type NormalizedPathWithPrefix = {
+  normalizedPath: string;
+  hasE2EPrefix: boolean;
+};
+
 export function sanitizePathSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, '').trim();
+}
+
+function isE2ETestModeEnabled(): boolean {
+  return process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production';
 }
 
 function buildUniqueFileName() {
@@ -107,8 +117,37 @@ function normalizeFolder(folder: string): string {
   return normalized;
 }
 
+function normalizePathWithOptionalE2EPrefix(input: string): NormalizedPathWithPrefix {
+  const normalized = normalizeFolder(input);
+  if (!normalized.startsWith(`${E2E_MEDIA_PREFIX}/`)) {
+    return {
+      normalizedPath: normalized,
+      hasE2EPrefix: false,
+    };
+  }
+
+  if (!isE2ETestModeEnabled()) {
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+
+  const stripped = normalized.slice(`${E2E_MEDIA_PREFIX}/`.length).trim();
+  if (!stripped) {
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+
+  return {
+    normalizedPath: stripped,
+    hasE2EPrefix: true,
+  };
+}
+
+function applyE2EPrefix(path: string, hasE2EPrefix: boolean): string {
+  return hasE2EPrefix ? `${E2E_MEDIA_PREFIX}/${path}` : path;
+}
+
 function parseFolderSegments(folder: string): string[] {
-  return normalizeFolder(folder)
+  const { normalizedPath } = normalizePathWithOptionalE2EPrefix(folder);
+  return normalizedPath
     .split('/')
     .map((segment) => segment.trim())
     .filter(Boolean);
@@ -190,7 +229,8 @@ function resolveRelatedDeleteKeys(key: string): string[] {
 }
 
 function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget {
-  const segments = fileKey.split('/').filter(Boolean);
+  const { normalizedPath, hasE2EPrefix } = normalizePathWithOptionalE2EPrefix(fileKey);
+  const segments = normalizedPath.split('/').filter(Boolean);
   if (segments.length < 2) {
     throw new Error('INVALID_MEDIA_PATH');
   }
@@ -198,14 +238,15 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
   const fileName = segments[segments.length - 1] || '';
   const baseName = extractBaseName(fileName);
 
+  const prefix = hasE2EPrefix ? `${E2E_MEDIA_PREFIX}/` : '';
   if (segments[0] === 'templates' && segments[1] === 'thumbnails' && segments.length >= 4) {
     const entityId = sanitizePathSegment(segments[2] || '');
     if (!entityId) {
       throw new Error('INVALID_MEDIA_PATH');
     }
     return {
-      originalKey: `templates/thumbnails/${entityId}.webp`,
-      thumbnailKey: `templates/thumbnails/thumb_${entityId}.webp`,
+      originalKey: `${prefix}templates/thumbnails/${entityId}.webp`,
+      thumbnailKey: `${prefix}templates/thumbnails/thumb_${entityId}.webp`,
       assetType: 'thumbnail',
     };
   }
@@ -213,8 +254,8 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
   const folder = segments.slice(0, -1).join('/');
   const assetType = resolveAssetTypeFromFolder(folder);
   return {
-    originalKey: `${folder}/${baseName}.webp`,
-    thumbnailKey: `${folder}/thumb_${baseName}.webp`,
+    originalKey: `${prefix}${folder}/${baseName}.webp`,
+    thumbnailKey: `${prefix}${folder}/thumb_${baseName}.webp`,
     assetType,
   };
 }
@@ -272,9 +313,10 @@ export async function createDirectUploadPresign(params: {
   folder: string;
   contentType: string;
 }): Promise<{ uploadUrl: string; fileKey: string }> {
-  const folder = normalizeFolder(params.folder);
-  resolveAssetTypeFromFolder(folder);
-  const fileKey = `${folder}/${crypto.randomUUID()}.upload`;
+  const { normalizedPath, hasE2EPrefix } = normalizePathWithOptionalE2EPrefix(params.folder);
+  resolveAssetTypeFromFolder(params.folder);
+  const folderWithPrefix = applyE2EPrefix(normalizedPath, hasE2EPrefix);
+  const fileKey = `${folderWithPrefix}/${crypto.randomUUID()}.upload`;
   const uploadUrl = await createPresignedUploadUrl({
     key: fileKey,
     contentType: params.contentType,

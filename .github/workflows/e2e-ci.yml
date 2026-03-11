@@ -1,0 +1,177 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: 1/2
+            shard_index: 1
+          - shard: 2/2
+            shard_index: 2
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      E2E_TEST_MODE: true
+      NEXT_PUBLIC_E2E_TEST_MODE: true
+      PORT: 3001
+      FRONTEND_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3001
+      E2E_API_BASE_URL: http://localhost:3001
+      ADMIN_ID: admin
+      ADMIN_PASSWORD: change-me
+      ADMIN_SESSION_SECRET: ci-admin-session-secret
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/global_invitation_test?schema=public
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME || 'invitation-media' }}
+      R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL || 'https://pub-5b2e66f46a5e403fbc9567b2772378be.r2.dev' }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: global_invitation_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d global_invitation_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Repository checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            frontend/node_modules
+            backend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: 의존성 설치
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: |
+          npm install
+          npm run install:all
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright
+
+      - name: Playwright 브라우저 설치
+        run: npx playwright install --with-deps
+
+      - name: R2 환경 변수 확인
+        run: |
+          if [ -z "${R2_ACCOUNT_ID}" ] || [ -z "${R2_ACCESS_KEY_ID}" ] || [ -z "${R2_SECRET_ACCESS_KEY}" ] || [ -z "${R2_BUCKET_NAME}" ] || [ -z "${R2_PUBLIC_URL}" ]; then
+            echo "Missing required R2 env vars. Configure repository secrets: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL."
+            exit 1
+          fi
+
+      - name: DB 확장/마이그레이션 적용
+        run: |
+          npx --prefix backend prisma db execute --schema backend/prisma/schema.prisma --stdin <<'SQL'
+          CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+          SQL
+          npx --prefix backend prisma migrate deploy --schema backend/prisma/schema.prisma
+          npx --prefix backend prisma generate --schema backend/prisma/schema.prisma
+
+      - name: E2E 템플릿 시드 데이터 준비
+        run: |
+          npx --prefix backend prisma db execute --schema backend/prisma/schema.prisma --stdin <<'SQL'
+          INSERT INTO "templates" (
+            "id", "slug", "name", "category", "style", "description",
+            "price", "creator_share", "component", "template_key",
+            "marketplace_type", "is_active", "is_deleted",
+            "created_at", "updated_at"
+          ) VALUES (
+            '40dec797-cdff-44fb-a5fe-9fe757eb12a4',
+            'wedding-classic-e2e',
+            'Wedding Classic E2E',
+            'wedding',
+            'korean',
+            'Template used for automated E2E flow verification',
+            0,
+            0,
+            'WeddingClassicInvitation',
+            'wedding_classic',
+            'SYSTEM',
+            true,
+            false,
+            NOW(),
+            NOW()
+          )
+          ON CONFLICT ("id") DO NOTHING;
+          SQL
+
+      - name: 백엔드 서버 시작
+        run: npm run dev:backend > backend.log 2>&1 &
+
+      - name: 프론트엔드 서버 시작
+        run: npm run dev:frontend > frontend.log 2>&1 &
+
+      - name: 서버 준비 확인
+        run: |
+          for i in {1..90}; do
+            if curl -fsS "http://127.0.0.1:3001/health" > /dev/null && curl -fsS "http://127.0.0.1:3000" > /dev/null; then
+              echo "Frontend/Backend ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Server readiness timeout"
+          exit 1
+
+      - name: E2E 테스트 실행
+        run: npx playwright test --shard=${{ matrix.shard }}
+
+      - name: 서버 로그 출력 (실패 시)
+        if: failure()
+        run: |
+          echo "=== Backend log (tail) ==="
+          test -f backend.log && tail -n 500 backend.log || true
+          echo "=== Frontend log (tail) ==="
+          test -f frontend.log && tail -n 500 frontend.log || true
+
+      - name: Playwright 결과 아티팩트 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results-shard-${{ matrix.shard_index }}
+          path: |
+            playwright-report
+            test-results
+            backend.log
+            frontend.log
+          if-no-files-found: ignore

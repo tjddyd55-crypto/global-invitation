@@ -1,25 +1,14 @@
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
 
 const EDITOR_URL = 'http://localhost:3000/editor/qa-e2e-media-20260309?template=40dec797-cdff-44fb-a5fe-9fe757eb12a4';
 const TEST_IMAGE_PATH =
   'C:/Users/tjddy/.cursor/projects/d-workspace-global-invitation/assets/c__Users_tjddy_AppData_Roaming_Cursor_User_workspaceStorage_650309767ffeb210ade59192394822cf_images_image-d41d32f3-e403-40e4-93d4-e14c4734110d.png';
 
-async function ensureTestLogin(page: Page) {
-  const response = await page.request.post('http://localhost:3001/api/test-login', {
-    data: { email: 'test@example.com' },
-  });
-  expect(response.ok()).toBeTruthy();
-}
-
 test.describe('R2 Direct Upload Flow', () => {
-  test.beforeEach(async ({ page }) => {
-    await ensureTestLogin(page);
-  });
-
   test('hero 업로드 시 presign/complete 경유 및 썸네일 키 생성', async ({ request }) => {
-    const presignResponse = await request.post('http://127.0.0.1:3001/api/media/presign', {
+    const presignResponse = await request.post('http://localhost:3001/api/media/presign', {
       data: {
-        folder: 'users/self',
+        folder: 'e2e/users/self',
         contentType: 'image/png',
       },
     });
@@ -31,7 +20,7 @@ test.describe('R2 Direct Upload Flow', () => {
     const directPutResponse = await putSmallPng(request, presignPayload.uploadUrl);
     expect(directPutResponse.ok()).toBeTruthy();
 
-    const completeResponse = await request.post('http://127.0.0.1:3001/api/media/complete', {
+    const completeResponse = await request.post('http://localhost:3001/api/media/complete', {
       data: {
         fileKey: presignPayload.fileKey,
       },
@@ -62,10 +51,7 @@ test.describe('R2 Direct Upload Flow', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1500);
 
-    const gallerySection = page.locator('[data-section-key="gallery"]');
-    await gallerySection.scrollIntoViewIfNeeded();
-
-    const fileInput = gallerySection.locator('input[type="file"][multiple]');
+    const fileInput = page.getByTestId('gallery-upload-input');
     await expect(fileInput).toBeAttached();
 
     await fileInput.setInputFiles([TEST_IMAGE_PATH, TEST_IMAGE_PATH, TEST_IMAGE_PATH]);
@@ -89,6 +75,9 @@ test.describe('R2 Direct Upload Flow', () => {
     );
     expect(doneCount).toBeGreaterThan(0);
     expect(presignCalls).toBeGreaterThan(0);
+
+    const saveButton = page.getByTestId('editor-save-button');
+    await expect(saveButton).toBeEnabled();
   });
 });
 

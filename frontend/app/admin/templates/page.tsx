@@ -76,7 +76,7 @@ export default function AdminTemplatesPage() {
             템플릿 메타데이터, 가격, 제작자 수익, 활성 상태를 운영합니다.
           </p>
         </div>
-        <Link href="/admin/templates/create" className={styles.button}>
+        <Link href="/admin/templates/new" className={styles.button}>
           Create Template
         </Link>
       </div>

@@ -1,21 +1,10 @@
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
 
 const EDITOR_URL = 'http://localhost:3000/editor/qa-e2e-media-20260309?template=40dec797-cdff-44fb-a5fe-9fe757eb12a4';
 const TEST_IMAGE_PATH =
   'C:/Users/tjddy/.cursor/projects/d-workspace-global-invitation/assets/c__Users_tjddy_AppData_Roaming_Cursor_User_workspaceStorage_650309767ffeb210ade59192394822cf_images_image-d41d32f3-e403-40e4-93d4-e14c4734110d.png';
 
-async function ensureTestLogin(page: Page) {
-  const response = await page.request.post('http://localhost:3001/api/test-login', {
-    data: { email: 'test@example.com' },
-  });
-  expect(response.ok()).toBeTruthy();
-}
-
 test.describe('미디어 업로드 UI QA (최종)', () => {
-  test.beforeEach(async ({ page }) => {
-    await ensureTestLogin(page);
-  });
-
   test('1. Editor Hero 업로드 시 미디어 API가 호출되고 AUTH_REQUIRED가 없어야 함', async ({ page }) => {
     const mediaResponses: Array<{ url: string; status: number; errorCode: string | null }> = [];
 
@@ -38,7 +27,7 @@ test.describe('미디어 업로드 UI QA (최종)', () => {
 
     const heroSection = page.locator('[data-section-key="hero"]');
     await expect(heroSection).toBeVisible();
-    const fileInput = heroSection.locator('input[type="file"]').first();
+    const fileInput = page.getByTestId('hero-upload-input');
     await expect(fileInput).toBeAttached();
 
     await fileInput.setInputFiles(TEST_IMAGE_PATH);
@@ -57,7 +46,7 @@ test.describe('미디어 업로드 UI QA (최종)', () => {
   test('2. API 직접 호출로 presign/complete 흐름 검증', async ({ page }) => {
     const presignResponse = await page.request.post('http://localhost:3001/api/media/presign', {
       data: {
-        folder: 'users/self',
+        folder: 'e2e/users/self',
         contentType: 'image/png',
       },
     });
@@ -91,9 +80,7 @@ test.describe('미디어 업로드 UI QA (최종)', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1500);
 
-    const gallerySection = page.locator('[data-section-key="gallery"]');
-    await gallerySection.scrollIntoViewIfNeeded();
-    const fileInput = gallerySection.locator('input[type="file"][multiple]');
+    const fileInput = page.getByTestId('gallery-upload-input');
     await expect(fileInput).toBeAttached();
 
     await fileInput.setInputFiles([TEST_IMAGE_PATH, TEST_IMAGE_PATH, TEST_IMAGE_PATH]);
@@ -115,6 +102,9 @@ test.describe('미디어 업로드 UI QA (최종)', () => {
       (elements) => elements.filter((element) => element.getAttribute('data-upload-status') === 'done').length
     );
     expect(doneCount).toBeGreaterThan(0);
+
+    const saveButton = page.getByTestId('editor-save-button');
+    await expect(saveButton).toBeEnabled();
   });
 });
 

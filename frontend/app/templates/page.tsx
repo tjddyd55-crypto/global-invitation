@@ -155,9 +155,9 @@ export default function TemplatesPage() {
           총 <strong>{filteredTemplates.length}</strong>개의 템플릿
         </div>
         {loading && <p className={styles.emptyState}>템플릿 레지스트리를 불러오는 중입니다...</p>}
-        <div className={styles.grid}>
+        <div className={styles.grid} data-testid="templates-grid">
           {filteredTemplates.map((card) => (
-            <article key={card.id} className={styles.card}>
+            <article key={card.id} className={styles.card} data-testid="template-card">
               <div className={styles.thumbnail}>
                 <TemplatePreviewWrapper templateKey={card.templateKey} studioConfig={card.studioConfig || undefined} />
                 <span className={styles.thumbnailLabel}>
@@ -175,6 +175,7 @@ export default function TemplatesPage() {
                   onClick={() => handleCreate(card)}
                   className={styles.button}
                   disabled={creatingTemplateId === card.id}
+                  data-testid="template-create-button"
                 >
                   {creatingTemplateId === card.id ? '생성 중...' : '이 템플릿으로 만들기'}
                 </button>

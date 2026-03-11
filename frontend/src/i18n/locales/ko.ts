@@ -91,6 +91,7 @@ const ko: LocaleDictionary = {
   'messageTemplates.actionPreview': '미리보기',
   'marketing.brandName': 'Global Invitation',
   'marketing.nav.createInvitation': '초대장 만들기',
+  'marketing.nav.createTemplate': '템플릿 만들기',
   'marketing.nav.myInvitations': '내 초대장',
   'marketing.nav.templates': '템플릿',
   'marketing.nav.login': '로그인',

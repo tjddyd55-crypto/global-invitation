@@ -63,6 +63,9 @@ function MainHeader({ t }: { t: Translate }) {
         </Link>
         <nav className={styles.navMenu}>
           <Link href="/templates">{t(I18N_KEYS.marketing.navCreateInvitation)}</Link>
+          <Link href="/admin/templates/new" data-testid="create-template-button">
+            {t(I18N_KEYS.marketing.navCreateTemplate)}
+          </Link>
           <Link href="/my-invitations">{t(I18N_KEYS.marketing.navMyInvitations)}</Link>
           <Link href="/templates">{t(I18N_KEYS.marketing.navTemplates)}</Link>
         </nav>

@@ -142,6 +142,7 @@ export const I18N_KEYS = {
   marketing: {
     brandName: 'marketing.brandName',
     navCreateInvitation: 'marketing.nav.createInvitation',
+    navCreateTemplate: 'marketing.nav.createTemplate',
     navMyInvitations: 'marketing.nav.myInvitations',
     navTemplates: 'marketing.nav.templates',
     navLogin: 'marketing.nav.login',

@@ -12,6 +12,7 @@ type ImageUploaderProps = {
   onClear?: () => void;
   required?: boolean;
   uploadAssetType?: MediaUploadAssetType;
+  inputTestId?: string;
 };
 
 function revokeIfObjectUrl(url?: string) {
@@ -28,6 +29,7 @@ export default function ImageUploader({
   onClear,
   required,
   uploadAssetType = 'gallery',
+  inputTestId,
 }: ImageUploaderProps) {
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
@@ -115,6 +117,7 @@ export default function ImageUploader({
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className={styles.hiddenInput}
+          data-testid={inputTestId}
           onChange={(event) => void handleFileChange(event)}
           disabled={uploading}
         />

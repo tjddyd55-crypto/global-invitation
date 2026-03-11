@@ -91,6 +91,7 @@ const en: LocaleDictionary = {
   'messageTemplates.actionPreview': 'Preview',
   'marketing.brandName': 'Global Invitation',
   'marketing.nav.createInvitation': 'Create Invitation',
+  'marketing.nav.createTemplate': 'Create Template',
   'marketing.nav.myInvitations': 'My Invitations',
   'marketing.nav.templates': 'Templates',
   'marketing.nav.login': 'Login',

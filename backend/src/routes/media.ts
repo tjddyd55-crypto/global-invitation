@@ -17,6 +17,7 @@ const router = Router();
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const VALID_FOLDER_SEGMENT = /^[a-zA-Z0-9_-]+$/;
+const E2E_MEDIA_PREFIX = 'e2e';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -34,6 +35,10 @@ const upload = multer({
 
 function normalizeText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function isE2ETestModeEnabled(): boolean {
+  return process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production';
 }
 
 function isUuidLike(value: string): boolean {
@@ -63,6 +68,11 @@ type FolderAuthorizationTarget = {
   ownerId?: string;
 };
 
+type NormalizedFolderInfo = {
+  normalizedFolder: string;
+  hasE2EPrefix: boolean;
+};
+
 function normalizeFolderSegment(value: string): string {
   const segment = value.trim();
   if (!segment || !VALID_FOLDER_SEGMENT.test(segment)) {
@@ -71,7 +81,7 @@ function normalizeFolderSegment(value: string): string {
   return segment;
 }
 
-function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): FolderAuthorizationTarget {
+function normalizeFolderWithOptionalE2EPrefix(rawFolder: unknown): NormalizedFolderInfo {
   const folder = normalizeText(rawFolder)
     .replace(/\\/g, '/')
     .replace(/^\/+/, '')
@@ -81,7 +91,47 @@ function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): F
     throw new Error('INVALID_MEDIA_FOLDER');
   }
 
-  const segments = folder.split('/').map((segment) => segment.trim()).filter(Boolean);
+  if (!folder.startsWith(`${E2E_MEDIA_PREFIX}/`)) {
+    return {
+      normalizedFolder: folder,
+      hasE2EPrefix: false,
+    };
+  }
+
+  if (!isE2ETestModeEnabled()) {
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+
+  const stripped = folder.slice(`${E2E_MEDIA_PREFIX}/`.length).trim();
+  if (!stripped) {
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+
+  return {
+    normalizedFolder: stripped,
+    hasE2EPrefix: true,
+  };
+}
+
+function applyE2EPrefix(folder: string, hasE2EPrefix: boolean): string {
+  return hasE2EPrefix ? `${E2E_MEDIA_PREFIX}/${folder}` : folder;
+}
+
+function stripE2EPrefixFromStorageKey(key: string): string {
+  const normalized = key.trim().replace(/^\/+/, '');
+  if (!normalized.startsWith(`${E2E_MEDIA_PREFIX}/`)) {
+    return normalized;
+  }
+  if (!isE2ETestModeEnabled()) {
+    return normalized;
+  }
+  return normalized.slice(`${E2E_MEDIA_PREFIX}/`.length);
+}
+
+function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): FolderAuthorizationTarget {
+  const { normalizedFolder, hasE2EPrefix } = normalizeFolderWithOptionalE2EPrefix(rawFolder);
+
+  const segments = normalizedFolder.split('/').map((segment) => segment.trim()).filter(Boolean);
   if (segments.length < 2) {
     throw new Error('INVALID_MEDIA_FOLDER');
   }
@@ -94,8 +144,9 @@ function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): F
     if (mediaType !== 'hero' && mediaType !== 'gallery') {
       throw new Error('INVALID_MEDIA_FOLDER');
     }
+    const resolvedFolder = `invitations/${invitationId}/${mediaType}`;
     return {
-      folder: `invitations/${invitationId}/${mediaType}`,
+      folder: applyE2EPrefix(resolvedFolder, hasE2EPrefix),
       context: 'invitation',
       entityId: invitationId,
     };
@@ -107,8 +158,9 @@ function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): F
     if (category !== 'thumbnails') {
       throw new Error('INVALID_MEDIA_FOLDER');
     }
+    const resolvedFolder = `templates/thumbnails/${entityId}`;
     return {
-      folder: `templates/thumbnails/${entityId}`,
+      folder: applyE2EPrefix(resolvedFolder, hasE2EPrefix),
       context: 'template',
       entityId,
     };
@@ -122,8 +174,9 @@ function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): F
       throw new Error('INVALID_MEDIA_FOLDER');
     }
     const creatorId = creatorIdRaw === 'self' ? userId : creatorIdRaw;
+    const resolvedFolder = `creator/${creatorId}/${entityId}/assets`;
     return {
-      folder: `creator/${creatorId}/${entityId}/assets`,
+      folder: applyE2EPrefix(resolvedFolder, hasE2EPrefix),
       context: 'template',
       entityId,
       ownerId: creatorId,
@@ -138,14 +191,16 @@ function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): F
       if (assetSegment !== 'assets') {
         throw new Error('INVALID_MEDIA_FOLDER');
       }
+      const resolvedFolder = `users/${ownerId}/assets`;
       return {
-        folder: `users/${ownerId}/assets`,
+        folder: applyE2EPrefix(resolvedFolder, hasE2EPrefix),
         context: 'user',
         entityId: ownerId,
       };
     }
+    const resolvedFolder = `users/${ownerId}`;
     return {
-      folder: `users/${ownerId}`,
+      folder: applyE2EPrefix(resolvedFolder, hasE2EPrefix),
       context: 'user',
       entityId: ownerId,
     };
@@ -222,7 +277,8 @@ async function canDeleteByStorageKey(params: {
   isCreator: boolean;
   key: string;
 }): Promise<boolean> {
-  const segments = params.key.split('/').filter(Boolean);
+  const keyForAuthorization = stripE2EPrefixFromStorageKey(params.key);
+  const segments = keyForAuthorization.split('/').filter(Boolean);
   if (segments.length < 2) return false;
 
   if (segments[0] === 'users') {

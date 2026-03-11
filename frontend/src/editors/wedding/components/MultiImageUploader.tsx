@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { deleteMediaFile, uploadMediaImage } from '@/src/lib/mediaApi';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorImage } from '../state/weddingEditor.types';
@@ -10,6 +10,8 @@ type MultiImageUploaderProps = {
   description?: string;
   images: WeddingEditorImage[];
   onChange: (images: WeddingEditorImage[]) => void;
+  inputTestId?: string;
+  onUploadStateChange?: (state: { isUploading: boolean; hasError: boolean }) => void;
 };
 
 function buildId() {
@@ -24,12 +26,26 @@ type UploadQueueItem = {
   error?: string;
 };
 
-export default function MultiImageUploader({ label, description, images, onChange }: MultiImageUploaderProps) {
+export default function MultiImageUploader({
+  label,
+  description,
+  images,
+  onChange,
+  inputTestId,
+  onUploadStateChange,
+}: MultiImageUploaderProps) {
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
+
+  useEffect(() => {
+    onUploadStateChange?.({
+      isUploading: uploading,
+      hasError: Boolean(error),
+    });
+  }, [error, onUploadStateChange, uploading]);
 
   const updateQueueItem = (itemId: string, next: Partial<UploadQueueItem>) => {
     setUploadQueue((prev) =>
@@ -167,6 +183,7 @@ export default function MultiImageUploader({ label, description, images, onChang
             accept="image/jpeg,image/png,image/webp"
             multiple
             className={styles.hiddenInput}
+            data-testid={inputTestId}
             onChange={(event) => void handleAddFiles(event)}
             disabled={uploading}
           />

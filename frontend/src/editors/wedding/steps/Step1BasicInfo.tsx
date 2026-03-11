@@ -23,6 +23,7 @@ export default function Step1BasicInfo({ value, onChange }: Step1BasicInfoProps)
             value={value.title}
             onChange={(event) => onChange({ title: event.target.value })}
             placeholder="예: 유동규 ♥ 이소영"
+            data-testid="basic-title-input"
             required
           />
         </label>

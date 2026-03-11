@@ -1,21 +1,10 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 const EDITOR_URL = 'http://localhost:3000/editor/qa-e2e-media-20260309?template=40dec797-cdff-44fb-a5fe-9fe757eb12a4';
 const TEST_IMAGE_PATH =
   'C:/Users/tjddy/.cursor/projects/d-workspace-global-invitation/assets/c__Users_tjddy_AppData_Roaming_Cursor_User_workspaceStorage_650309767ffeb210ade59192394822cf_images_image-d41d32f3-e403-40e4-93d4-e14c4734110d.png';
 
-async function ensureTestLogin(page: Page) {
-  const response = await page.request.post('http://localhost:3001/api/test-login', {
-    data: { email: 'test@example.com' },
-  });
-  expect(response.ok()).toBeTruthy();
-}
-
 test.describe('미디어 업로드 UI QA', () => {
-  test.beforeEach(async ({ page }) => {
-    await ensureTestLogin(page);
-  });
-
   test('1. Editor Hero 업로드 후 프리뷰/저장이 가능해야 함', async ({ page }) => {
     await page.goto(EDITOR_URL);
     await page.waitForLoadState('networkidle');
@@ -24,7 +13,7 @@ test.describe('미디어 업로드 UI QA', () => {
     const heroSection = page.locator('[data-section-key="hero"]');
     await expect(heroSection).toBeVisible();
 
-    const fileInput = heroSection.locator('input[type="file"]').first();
+    const fileInput = page.getByTestId('hero-upload-input');
     await fileInput.setInputFiles(TEST_IMAGE_PATH);
 
     const previewImage = heroSection.locator('img[alt*="preview"]').first();
@@ -32,7 +21,7 @@ test.describe('미디어 업로드 UI QA', () => {
     const src = await previewImage.getAttribute('src');
     expect(src || '').not.toBe('');
 
-    const saveButton = page.locator('button:has-text("저장")').first();
+    const saveButton = page.getByTestId('editor-save-button');
     await saveButton.click();
     await page.waitForFunction(() => {
       const buttons = Array.from(document.querySelectorAll('button'));
@@ -48,10 +37,7 @@ test.describe('미디어 업로드 UI QA', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1500);
 
-    const gallerySection = page.locator('[data-section-key="gallery"]');
-    await gallerySection.scrollIntoViewIfNeeded();
-
-    const fileInput = gallerySection.locator('input[type="file"][multiple]');
+    const fileInput = page.getByTestId('gallery-upload-input');
     await fileInput.setInputFiles([TEST_IMAGE_PATH, TEST_IMAGE_PATH, TEST_IMAGE_PATH]);
 
     const queueItems = page.locator('[data-testid="upload-queue-item"]');
@@ -81,13 +67,10 @@ test.describe('미디어 업로드 UI QA', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1500);
 
-    const heroSection = page.locator('[data-section-key="hero"]');
-    const heroFileInput = heroSection.locator('input[type="file"]').first();
+    const heroFileInput = page.getByTestId('hero-upload-input');
     await heroFileInput.setInputFiles(TEST_IMAGE_PATH);
 
-    const gallerySection = page.locator('[data-section-key="gallery"]');
-    await gallerySection.scrollIntoViewIfNeeded();
-    const galleryFileInput = gallerySection.locator('input[type="file"][multiple]');
+    const galleryFileInput = page.getByTestId('gallery-upload-input');
     await galleryFileInput.setInputFiles([TEST_IMAGE_PATH]);
 
     const queueItems = page.locator('[data-testid="upload-queue-item"]');
@@ -102,7 +85,7 @@ test.describe('미디어 업로드 UI QA', () => {
       )
       .toBe(1);
 
-    const saveButton = page.locator('button:has-text("저장")').first();
+    const saveButton = page.getByTestId('editor-save-button');
     await saveButton.click();
 
     await page.waitForFunction(() => {
