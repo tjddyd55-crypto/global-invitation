@@ -2,7 +2,10 @@ import { Router } from 'express';
 import multer from 'multer';
 import prisma from '../lib/prisma';
 import { getAuthUser } from '../lib/auth';
+import { buildPublicFileUrl } from '../lib/storage/r2Client';
 import {
+  completeDirectUpload,
+  createDirectUploadPresign,
   deleteImageByUrl,
   resolveStorageKeyFromUrl,
   uploadImage,
@@ -13,6 +16,7 @@ import {
 const router = Router();
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const VALID_FOLDER_SEGMENT = /^[a-zA-Z0-9_-]+$/;
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -50,6 +54,104 @@ function normalizeAssetType(value: unknown): MediaAssetType {
   if (normalized === 'hero') return 'hero';
   if (normalized === 'gallery') return 'gallery';
   return 'asset';
+}
+
+type FolderAuthorizationTarget = {
+  folder: string;
+  context: MediaContext;
+  entityId: string;
+  ownerId?: string;
+};
+
+function normalizeFolderSegment(value: string): string {
+  const segment = value.trim();
+  if (!segment || !VALID_FOLDER_SEGMENT.test(segment)) {
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+  return segment;
+}
+
+function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): FolderAuthorizationTarget {
+  const folder = normalizeText(rawFolder)
+    .replace(/\\/g, '/')
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '');
+
+  if (!folder) {
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+
+  const segments = folder.split('/').map((segment) => segment.trim()).filter(Boolean);
+  if (segments.length < 2) {
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+
+  const head = segments[0];
+
+  if (head === 'invitations' && segments.length === 3) {
+    const invitationId = normalizeFolderSegment(segments[1]);
+    const mediaType = normalizeFolderSegment(segments[2]);
+    if (mediaType !== 'hero' && mediaType !== 'gallery') {
+      throw new Error('INVALID_MEDIA_FOLDER');
+    }
+    return {
+      folder: `invitations/${invitationId}/${mediaType}`,
+      context: 'invitation',
+      entityId: invitationId,
+    };
+  }
+
+  if (head === 'templates' && segments.length === 3) {
+    const category = normalizeFolderSegment(segments[1]);
+    const entityId = normalizeFolderSegment(segments[2]);
+    if (category !== 'thumbnails') {
+      throw new Error('INVALID_MEDIA_FOLDER');
+    }
+    return {
+      folder: `templates/thumbnails/${entityId}`,
+      context: 'template',
+      entityId,
+    };
+  }
+
+  if (head === 'creator' && segments.length === 4) {
+    const creatorIdRaw = normalizeFolderSegment(segments[1]);
+    const entityId = normalizeFolderSegment(segments[2]);
+    const assets = normalizeFolderSegment(segments[3]);
+    if (assets !== 'assets') {
+      throw new Error('INVALID_MEDIA_FOLDER');
+    }
+    const creatorId = creatorIdRaw === 'self' ? userId : creatorIdRaw;
+    return {
+      folder: `creator/${creatorId}/${entityId}/assets`,
+      context: 'template',
+      entityId,
+      ownerId: creatorId,
+    };
+  }
+
+  if (head === 'users' && (segments.length === 2 || segments.length === 3)) {
+    const ownerRaw = normalizeFolderSegment(segments[1]);
+    const ownerId = ownerRaw === 'self' ? userId : ownerRaw;
+    if (segments.length === 3) {
+      const assetSegment = normalizeFolderSegment(segments[2]);
+      if (assetSegment !== 'assets') {
+        throw new Error('INVALID_MEDIA_FOLDER');
+      }
+      return {
+        folder: `users/${ownerId}/assets`,
+        context: 'user',
+        entityId: ownerId,
+      };
+    }
+    return {
+      folder: `users/${ownerId}`,
+      context: 'user',
+      entityId: ownerId,
+    };
+  }
+
+  throw new Error('INVALID_MEDIA_FOLDER');
 }
 
 async function canAccessInvitationMedia(userId: string, invitationIdOrSlug: string): Promise<boolean> {
@@ -135,8 +237,11 @@ async function canDeleteByStorageKey(params: {
   if (segments[0] === 'templates') {
     if (!params.isCreator) return false;
     if (segments[1] === 'thumbnails') {
-      const fileName = segments[2] || '';
-      const entityId = fileName.replace(/\.webp$/i, '');
+      const fileNameOrFolder = segments[2] || '';
+      const entityId =
+        segments.length > 3
+          ? fileNameOrFolder
+          : fileNameOrFolder.replace(/\.webp$/i, '').replace(/^thumb_/i, '');
       return canAccessTemplateMedia(params.userId, entityId);
     }
   }
@@ -207,6 +312,9 @@ router.post('/upload', (req, res) => {
 
       return res.status(201).json({
         url: uploaded.url,
+        fileKey: uploaded.key,
+        thumbnailUrl: uploaded.thumbnailUrl,
+        thumbnailKey: uploaded.thumbnailKey,
         mimeType: uploaded.mimeType,
         fileSize: uploaded.fileSize,
       });
@@ -226,6 +334,97 @@ router.post('/upload', (req, res) => {
   });
 });
 
+router.post('/presign', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    }
+
+    const contentType = normalizeText(req.body?.contentType).toLowerCase();
+    if (!contentType || !ALLOWED_IMAGE_TYPES.has(contentType)) {
+      return res.status(400).json({ error: 'UNSUPPORTED_MEDIA_TYPE' });
+    }
+
+    const folderTarget = resolveFolderAuthorizationTarget(req.body?.folder, user.id);
+    if (folderTarget.ownerId && folderTarget.ownerId !== user.id) {
+      return res.status(401).json({ error: 'UNAUTHORIZED_MEDIA_ACCESS' });
+    }
+    const canUpload = await canUploadForContext({
+      userId: user.id,
+      isCreator: Boolean(user.isCreator),
+      context: folderTarget.context,
+      entityId: folderTarget.entityId,
+    });
+    if (!canUpload) {
+      return res.status(401).json({ error: 'UNAUTHORIZED_MEDIA_ACCESS' });
+    }
+
+    const signed = await createDirectUploadPresign({
+      folder: folderTarget.folder,
+      contentType,
+    });
+    return res.status(200).json({
+      uploadUrl: signed.uploadUrl,
+      fileKey: signed.fileKey,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'INVALID_MEDIA_FOLDER') {
+      return res.status(400).json({ error: 'INVALID_MEDIA_FOLDER' });
+    }
+    if (error instanceof Error && error.message === 'R2_STORAGE_NOT_CONFIGURED') {
+      return res.status(503).json({ error: 'R2_STORAGE_NOT_CONFIGURED' });
+    }
+    console.error('Error creating media presign:', error);
+    return res.status(500).json({ error: 'FAILED_TO_CREATE_PRESIGNED_UPLOAD' });
+  }
+});
+
+router.post('/complete', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    }
+
+    const fileKey = normalizeText(req.body?.fileKey);
+    if (!fileKey) {
+      return res.status(400).json({ error: 'FILE_KEY_REQUIRED' });
+    }
+
+    const canProcess = await canDeleteByStorageKey({
+      userId: user.id,
+      isCreator: Boolean(user.isCreator),
+      key: fileKey,
+    });
+    if (!canProcess) {
+      return res.status(401).json({ error: 'UNAUTHORIZED_MEDIA_ACCESS' });
+    }
+
+    const completed = await completeDirectUpload(fileKey);
+    return res.status(200).json({
+      url: completed.url,
+      fileKey: completed.key,
+      thumbnailUrl: completed.thumbnailUrl,
+      thumbnailKey: completed.thumbnailKey,
+      mimeType: completed.mimeType,
+      fileSize: completed.fileSize,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'INVALID_MEDIA_PATH') {
+      return res.status(400).json({ error: 'INVALID_MEDIA_PATH' });
+    }
+    if (error instanceof Error && error.message === 'INVALID_IMAGE_FILE') {
+      return res.status(400).json({ error: 'INVALID_MEDIA_FILE' });
+    }
+    if (error instanceof Error && error.message === 'R2_STORAGE_NOT_CONFIGURED') {
+      return res.status(503).json({ error: 'R2_STORAGE_NOT_CONFIGURED' });
+    }
+    console.error('Error completing direct upload:', error);
+    return res.status(500).json({ error: 'FAILED_TO_COMPLETE_MEDIA_UPLOAD' });
+  }
+});
+
 router.delete('/', async (req, res) => {
   try {
     const user = await getAuthUser(req);
@@ -233,7 +432,9 @@ router.delete('/', async (req, res) => {
       return res.status(401).json({ error: 'AUTH_REQUIRED' });
     }
 
-    const fileUrl = normalizeText(req.body?.url) || normalizeText(req.body?.fileUrl);
+    const fileKey = normalizeText(req.body?.fileKey);
+    const fileUrlInput = normalizeText(req.body?.url) || normalizeText(req.body?.fileUrl);
+    const fileUrl = fileKey ? buildPublicFileUrl(fileKey) : fileUrlInput;
     if (!fileUrl) {
       return res.status(400).json({ error: 'MEDIA_URL_REQUIRED' });
     }
