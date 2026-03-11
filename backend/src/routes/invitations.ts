@@ -3,6 +3,7 @@ import { InvitationStatus, Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { generateSlug } from '../utils/slug';
 import { createToken, getAuthUser, getGuestToken } from '../lib/auth';
+import { cleanupInvitationMedia } from '../storage/mediaCleanup';
 
 const router = Router();
 
@@ -398,6 +399,56 @@ router.put('/:slug', async (req, res) => {
   } catch (error) {
     console.error('Error updating invitation:', error);
     res.status(500).json({ error: 'Failed to update invitation' });
+  }
+});
+
+router.delete('/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const user = await getAuthUser(req);
+    const guestToken = getGuestToken(req);
+
+    const existing = await prisma.invitation.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        slug: true,
+        userId: true,
+        guestToken: true,
+      },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
+
+    const isOwner = existing.userId
+      ? Boolean(user && user.id === existing.userId)
+      : Boolean(existing.guestToken && guestToken && existing.guestToken === guestToken);
+
+    if (!isOwner) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    await prisma.invitation.delete({
+      where: { id: existing.id },
+    });
+
+    let mediaDeletedCount = 0;
+    try {
+      mediaDeletedCount = await cleanupInvitationMedia(existing.id);
+    } catch (cleanupError) {
+      console.warn('Failed to cleanup invitation media:', cleanupError);
+    }
+
+    return res.status(200).json({
+      success: true,
+      slug: existing.slug,
+      mediaDeletedCount,
+    });
+  } catch (error) {
+    console.error('Error deleting invitation:', error);
+    return res.status(500).json({ error: 'Failed to delete invitation' });
   }
 });
 

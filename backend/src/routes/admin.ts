@@ -16,6 +16,7 @@ import {
 } from '../admin/templateStore';
 import { isValidTemplateKey, resolveTemplateComponentByKey } from '../admin/templateRegistry';
 import { logAdminAction } from '../admin/adminAuditLog';
+import { cleanupTemplateMedia } from '../storage/mediaCleanup';
 
 const router = Router();
 
@@ -454,6 +455,16 @@ router.post('/templates/:id/delete', async (req, res) => {
     const template = await softDeleteTemplate(req.params.id);
     if (!template) {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
+    }
+    try {
+      await cleanupTemplateMedia({
+        id: template.id,
+        creatorId: template.creatorId,
+        sourceSubmissionId: template.sourceSubmissionId,
+        previewThumbnailUrl: template.previewThumbnailUrl,
+      });
+    } catch (cleanupError) {
+      console.warn('Failed to cleanup template media:', cleanupError);
     }
     await logAdminAction({
       adminId,
