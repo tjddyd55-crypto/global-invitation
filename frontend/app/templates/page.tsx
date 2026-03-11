@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { generateDraftSlug } from '@/src/lib/invitationStorage';
+import { cloneTemplateInvitation } from '@/src/lib/api';
+import { setGuestToken } from '@/src/lib/auth';
 import MarketingLayout from '@/src/components/MarketingLayout';
 import TemplatePreviewWrapper from '@/src/templates/TemplatePreviewWrapper';
 import {
@@ -63,6 +64,7 @@ export default function TemplatesPage() {
   const [styleFilter, setStyleFilter] = useState<TemplateStyle | 'all'>('all');
   const [templates, setTemplates] = useState<TemplateDefinition[]>(() => listVisibleTemplateDefinitions());
   const [loading, setLoading] = useState(true);
+  const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -89,9 +91,19 @@ export default function TemplatesPage() {
     });
   }, [categoryFilter, styleFilter, templates]);
 
-  const handleCreate = (card: TemplateDefinition) => {
-    const slug = generateDraftSlug();
-    router.push(`/editor/${slug}?template=${card.id}`);
+  const handleCreate = async (card: TemplateDefinition) => {
+    setCreatingTemplateId(card.id);
+    try {
+      const cloned = await cloneTemplateInvitation(card.id);
+      if (cloned.guest_token) {
+        setGuestToken(cloned.guest_token);
+      }
+      router.push(cloned.editor_url);
+    } catch {
+      router.push(`/editor/new?template=${card.id}`);
+    } finally {
+      setCreatingTemplateId(null);
+    }
   };
 
   return (
@@ -162,8 +174,9 @@ export default function TemplatesPage() {
                   type="button"
                   onClick={() => handleCreate(card)}
                   className={styles.button}
+                  disabled={creatingTemplateId === card.id}
                 >
-                  이 템플릿으로 만들기
+                  {creatingTemplateId === card.id ? '생성 중...' : '이 템플릿으로 만들기'}
                 </button>
               </div>
             </article>

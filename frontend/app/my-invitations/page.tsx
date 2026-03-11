@@ -2,14 +2,35 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { listDraftSummaries, type DraftSummary } from '@/src/lib/invitationStorage';
+import { listGuestInvitations, listMyInvitations, type InvitationSummary } from '@/src/lib/api';
+import { getGuestToken, getStoredSession } from '@/src/lib/auth';
 import MarketingLayout from '@/src/components/MarketingLayout';
 
 export default function MyInvitationsPage() {
-  const [items, setItems] = useState<DraftSummary[]>([]);
+  const [items, setItems] = useState<InvitationSummary[]>([]);
+  const [guestToken, setGuestToken] = useState<string | null>(null);
 
   useEffect(() => {
-    setItems(listDraftSummaries());
+    const token = getGuestToken();
+    setGuestToken(token);
+
+    async function loadInvitations() {
+      const session = getStoredSession();
+      try {
+        if (session?.token) {
+          setItems(await listMyInvitations());
+          return;
+        }
+        if (token) {
+          setItems(await listGuestInvitations(token));
+          return;
+        }
+        setItems([]);
+      } catch {
+        setItems([]);
+      }
+    }
+    void loadInvitations();
   }, []);
 
   return (
@@ -71,21 +92,28 @@ export default function MyInvitationsPage() {
                         fontSize: '0.8rem',
                         borderRadius: '999px',
                         padding: '0.18rem 0.55rem',
-                        background: item.status === 'published' ? '#ecf7e8' : '#f3f3f3',
-                        color: item.status === 'published' ? '#4e7d3a' : '#666',
-                        border: item.status === 'published' ? '1px solid #b9d4ab' : '1px solid #dfdfdf',
+                        background: item.status === 'PUBLISHED' || item.status === 'published' ? '#ecf7e8' : '#f3f3f3',
+                        color: item.status === 'PUBLISHED' || item.status === 'published' ? '#4e7d3a' : '#666',
+                        border:
+                          item.status === 'PUBLISHED' || item.status === 'published'
+                            ? '1px solid #b9d4ab'
+                            : '1px solid #dfdfdf',
                       }}
                     >
-                      {item.status === 'published' ? 'published' : 'draft'}
+                      {item.status === 'PUBLISHED' || item.status === 'published' ? 'published' : 'draft'}
                     </span>
                     <span style={{ fontSize: '0.8rem', color: '#888' }}>
-                      저장: {new Date(item.savedAt).toLocaleString()}
+                      저장: {new Date(item.updatedAt).toLocaleString()}
                     </span>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <Link
-                    href={`/editor/${item.slug}`}
+                    href={
+                      guestToken
+                        ? `/editor/${item.id}?token=${encodeURIComponent(guestToken)}`
+                        : `/editor/${item.id}`
+                    }
                     style={{
                       border: '1px solid #d7d7d7',
                       borderRadius: '999px',
@@ -97,7 +125,7 @@ export default function MyInvitationsPage() {
                     수정
                   </Link>
                   <Link
-                    href={`/invitation/${item.slug}`}
+                    href={item.shareSlug ? `/i/${item.shareSlug}` : `/editor/${item.id}`}
                     style={{
                       border: '1px solid #2f6fed',
                       borderRadius: '999px',
@@ -106,7 +134,7 @@ export default function MyInvitationsPage() {
                       textDecoration: 'none',
                     }}
                   >
-                    공개 페이지 보기
+                    {item.shareSlug ? '공개 페이지 보기' : '편집 계속'}
                   </Link>
                 </div>
               </article>

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Router } from 'express';
 import { InvitationStatus, Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
@@ -6,37 +7,28 @@ import { createToken, getAuthUser, getGuestToken } from '../lib/auth';
 import { cleanupInvitationMedia } from '../storage/mediaCleanup';
 
 const router = Router();
+const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
+const SHARE_SLUG_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
 type InvitationSummary = {
   id: string;
   slug: string;
+  shareSlug: string | null;
   title: string | null;
   templateKey: string;
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  publishedAt: Date | null;
 };
 
-const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
-const SAMPLE_WEDDING_SLUG = 'sample-wedding';
-const SAMPLE_WEDDING_INVITATION = {
-  id: 'sample-wedding',
-  slug: SAMPLE_WEDDING_SLUG,
-  title: '샘플 웨딩 초대장',
-  eventDate: '2025-04-13T17:20:00',
-  locationText: '더링크호텔 서울 3층 베일리홀',
-  message: '샘플 초대장입니다. 정상 렌더링/공유/메타 검증용.',
-  templateKey: 'wedding_classic',
-  musicKey: 'piano_wedding',
-  countryCode: 'GLOBAL',
-  language: 'ko',
-  status: 'published',
-  isPaid: false,
-  canShare: false,
-  paidAt: null,
-  createdAt: '2025-03-01T00:00:00',
-  updatedAt: '2025-03-01T00:00:00',
-};
+function normalizeText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function isUuidLike(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
 
 function parseInvitationStatus(value: string | null | undefined): InvitationStatus | undefined {
   if (typeof value !== 'string' || !value.trim()) return undefined;
@@ -44,33 +36,68 @@ function parseInvitationStatus(value: string | null | undefined): InvitationStat
   return INVITATION_STATUS_VALUES.has(upper) ? (upper as InvitationStatus) : undefined;
 }
 
-function resolveGuestTokenFromBody(value: unknown): string | null {
-  if (typeof value === 'string' && value.trim()) {
-    return value.trim();
-  }
-  return null;
-}
-
 function normalizeInvitationData(value: unknown): Prisma.InputJsonValue | undefined {
-  if (value === undefined) return undefined;
-  if (value === null) return undefined;
-  if (typeof value === 'object') return value as Prisma.InputJsonValue;
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'object' || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return value as Prisma.InputJsonValue;
   }
   return undefined;
 }
 
-async function resolveTemplateReference(value: unknown): Promise<{ id: string; templateKey: string } | null> {
-  if (typeof value !== 'string' || !value.trim()) {
-    return null;
-  }
+function resolveGuestTokenFromRequest(req: {
+  body?: Record<string, unknown>;
+  query?: Record<string, unknown>;
+  headers?: Record<string, unknown>;
+}): string | null {
+  const tokenCandidates = [
+    normalizeText(req.body?.guestToken),
+    normalizeText(req.body?.guest_token),
+    normalizeText(req.query?.token),
+    normalizeText(req.query?.guestToken),
+    normalizeText(req.query?.guest_token),
+    typeof req.headers?.['x-guest-token'] === 'string' ? req.headers['x-guest-token'].trim() : '',
+  ].filter(Boolean);
 
-  const key = value.trim();
+  return tokenCandidates[0] || null;
+}
+
+function createGuestToken32Bytes(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function createShareSlugCandidate(length: number): string {
+  const bytes = crypto.randomBytes(length);
+  let result = '';
+  for (let index = 0; index < bytes.length; index += 1) {
+    result += SHARE_SLUG_CHARS[bytes[index] % SHARE_SLUG_CHARS.length];
+  }
+  return result;
+}
+
+async function createUniqueShareSlug(): Promise<string> {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const length = 8 + Math.floor(Math.random() * 3);
+    const candidate = createShareSlugCandidate(length);
+    const existing = await prisma.invitation.findFirst({
+      where: { shareSlug: candidate },
+      select: { id: true },
+    });
+    if (!existing) {
+      return candidate;
+    }
+  }
+  throw new Error('FAILED_TO_ALLOCATE_SHARE_SLUG');
+}
+
+async function resolveTemplateReference(value: unknown): Promise<{ id: string; templateKey: string } | null> {
+  const key = normalizeText(value);
+  if (!key) return null;
+
   const template = await prisma.template.findFirst({
     where: {
       OR: [{ id: key }, { slug: key }],
       isDeleted: false,
+      isActive: true,
     },
     select: {
       id: true,
@@ -81,11 +108,260 @@ async function resolveTemplateReference(value: unknown): Promise<{ id: string; t
   return template ?? null;
 }
 
+async function findInvitationByIdentifier(identifier: string) {
+  const normalized = normalizeText(identifier);
+  if (!normalized) return null;
+  return prisma.invitation.findFirst({
+    where: isUuidLike(normalized) ? { OR: [{ id: normalized }, { slug: normalized }] } : { slug: normalized },
+  });
+}
+
+async function canEditInvitation(params: {
+  invitation: { userId: string | null; guestToken: string | null };
+  userId?: string;
+  guestToken?: string | null;
+}): Promise<boolean> {
+  if (params.invitation.userId) {
+    return Boolean(params.userId && params.invitation.userId === params.userId);
+  }
+  return Boolean(params.invitation.guestToken && params.guestToken && params.invitation.guestToken === params.guestToken);
+}
+
+async function claimGuestInvitationIfNeeded(params: {
+  invitation: { id: string; userId: string | null; guestToken: string | null };
+  userId?: string;
+  guestToken?: string | null;
+}) {
+  if (!params.userId) return;
+  if (params.invitation.userId) return;
+  if (!params.invitation.guestToken) return;
+  if (!params.guestToken || params.guestToken !== params.invitation.guestToken) return;
+
+  await prisma.invitation.update({
+    where: { id: params.invitation.id },
+    data: {
+      userId: params.userId,
+      guestToken: null,
+      ownerType: 'USER',
+      ownerId: params.userId,
+    },
+  });
+}
+
+function toPublicInvitation(row: {
+  id: string;
+  slug: string;
+  shareSlug: string | null;
+  templateId: string | null;
+  title: string | null;
+  data: Prisma.JsonValue | null;
+  dataJson: Prisma.JsonValue | null;
+  createdBy: string | null;
+  isPublished: boolean;
+  eventDate: Date | null;
+  locationText: string | null;
+  message: string | null;
+  templateKey: string;
+  musicKey: string | null;
+  countryCode: string;
+  language: string;
+  status: InvitationStatus;
+  isPaid: boolean;
+  canShare: boolean;
+  paidAt: Date | null;
+  publishedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: row.id,
+    slug: row.slug,
+    shareSlug: row.shareSlug,
+    templateId: row.templateId,
+    title: row.title,
+    data: row.dataJson ?? row.data,
+    dataJson: row.dataJson ?? row.data,
+    createdBy: row.createdBy,
+    isPublished: row.isPublished,
+    eventDate: row.eventDate,
+    locationText: row.locationText,
+    message: row.message,
+    templateKey: row.templateKey,
+    musicKey: row.musicKey,
+    countryCode: row.countryCode,
+    language: row.language,
+    status: row.status.toLowerCase(),
+    isPaid: row.isPaid,
+    canShare: row.canShare,
+    paidAt: row.paidAt,
+    publishedAt: row.publishedAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+async function createInvitationRecord(params: {
+  templateId?: string | null;
+  templateKey: string;
+  ownerType: 'USER' | 'GUEST';
+  ownerId: string;
+  userId?: string | null;
+  guestToken?: string | null;
+  data?: Prisma.InputJsonValue;
+  countryCode?: string;
+  language?: string;
+}) {
+  const slug = generateSlug();
+  return prisma.invitation.create({
+    data: {
+      id: crypto.randomUUID(),
+      slug,
+      ownerType: params.ownerType,
+      ownerId: params.ownerId,
+      createdBy: params.ownerId,
+      status: InvitationStatus.DRAFT,
+      isPublished: false,
+      isPaid: false,
+      canShare: false,
+      templateKey: params.templateKey || 'basic',
+      templateId: params.templateId || null,
+      data: params.data,
+      dataJson: params.data,
+      countryCode: params.countryCode || 'GLOBAL',
+      language: params.language || 'en',
+      userId: params.userId || null,
+      guestToken: params.guestToken || null,
+    },
+    select: {
+      id: true,
+      slug: true,
+      shareSlug: true,
+      templateId: true,
+      templateKey: true,
+      title: true,
+      data: true,
+      dataJson: true,
+      createdBy: true,
+      isPublished: true,
+      status: true,
+      canShare: true,
+      createdAt: true,
+      updatedAt: true,
+      publishedAt: true,
+    },
+  });
+}
+
+async function saveDraftByIdentifier(params: {
+  identifier: string;
+  body: Record<string, unknown>;
+  userId?: string;
+  guestToken?: string | null;
+}) {
+  const invitation = await findInvitationByIdentifier(params.identifier);
+  if (!invitation) {
+    return { error: 'NOT_FOUND' as const };
+  }
+
+  const editable = await canEditInvitation({
+    invitation: {
+      userId: invitation.userId,
+      guestToken: invitation.guestToken,
+    },
+    userId: params.userId,
+    guestToken: params.guestToken,
+  });
+  if (!editable) {
+    return { error: 'FORBIDDEN' as const };
+  }
+
+  await claimGuestInvitationIfNeeded({
+    invitation: {
+      id: invitation.id,
+      userId: invitation.userId,
+      guestToken: invitation.guestToken,
+    },
+    userId: params.userId,
+    guestToken: params.guestToken,
+  });
+
+  const payload: Prisma.InvitationUpdateInput = {};
+  const dataJson = normalizeInvitationData(params.body?.data_json ?? params.body?.data);
+  if (dataJson !== undefined) {
+    payload.data = dataJson;
+    payload.dataJson = dataJson;
+  }
+  if (params.body?.title !== undefined) {
+    payload.title = normalizeText(params.body.title) || null;
+  }
+  if (params.body?.eventDate !== undefined) {
+    payload.eventDate = normalizeText(params.body.eventDate) ? new Date(String(params.body.eventDate)) : null;
+  }
+  if (params.body?.locationText !== undefined) {
+    payload.locationText = normalizeText(params.body.locationText) || null;
+  }
+  if (params.body?.message !== undefined) {
+    payload.message = normalizeText(params.body.message) || null;
+  }
+  if (params.body?.templateKey !== undefined) {
+    payload.templateKey = normalizeText(params.body.templateKey) || invitation.templateKey;
+  }
+  if (params.body?.musicKey !== undefined) {
+    payload.musicKey = normalizeText(params.body.musicKey) || null;
+  }
+
+  payload.status = InvitationStatus.DRAFT;
+  payload.isPublished = false;
+
+  const updated = await prisma.invitation.update({
+    where: { id: invitation.id },
+    data: payload,
+    select: {
+      id: true,
+      slug: true,
+      shareSlug: true,
+      templateId: true,
+      title: true,
+      data: true,
+      dataJson: true,
+      createdBy: true,
+      isPublished: true,
+      eventDate: true,
+      locationText: true,
+      message: true,
+      templateKey: true,
+      musicKey: true,
+      countryCode: true,
+      language: true,
+      status: true,
+      isPaid: true,
+      canShare: true,
+      paidAt: true,
+      publishedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      userId: true,
+      guestToken: true,
+    },
+  });
+
+  const isOwner = updated.userId
+    ? Boolean(params.userId && params.userId === updated.userId)
+    : Boolean(updated.guestToken && params.guestToken && updated.guestToken === params.guestToken);
+
+  return {
+    data: {
+      ...toPublicInvitation(updated),
+      isOwner,
+    },
+  };
+}
+
 // GET /api/invitations - List invitations (owner or guest)
 router.get('/', async (req, res) => {
   try {
     const owner = typeof req.query.owner === 'string' ? req.query.owner : null;
-    const guestToken = typeof req.query.guestToken === 'string' ? req.query.guestToken : null;
+    const guestToken = normalizeText(req.query.guestToken);
     const statusParam = typeof req.query.status === 'string' ? req.query.status : null;
     const status = parseInvitationStatus(statusParam);
     const limit = typeof req.query.limit === 'string' ? Number(req.query.limit) : null;
@@ -106,11 +382,13 @@ router.get('/', async (req, res) => {
         select: {
           id: true,
           slug: true,
+          shareSlug: true,
           title: true,
           templateKey: true,
           status: true,
           createdAt: true,
           updatedAt: true,
+          publishedAt: true,
         },
       });
 
@@ -128,11 +406,13 @@ router.get('/', async (req, res) => {
         select: {
           id: true,
           slug: true,
+          shareSlug: true,
           title: true,
           templateKey: true,
           status: true,
           createdAt: true,
           updatedAt: true,
+          publishedAt: true,
         },
       });
 
@@ -146,110 +426,96 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/invitations - Create a new invitation
-router.post('/', async (req, res) => {
+// POST /api/invitations/guest - Create invitation for guest session
+router.post('/guest', async (req, res) => {
   try {
-    const user = await getAuthUser(req);
-    const guestToken = resolveGuestTokenFromBody(req.body?.guestToken) || getGuestToken(req);
     const resolvedTemplate = await resolveTemplateReference(
       req.body?.templateId ?? req.body?.templateSlug ?? req.body?.template
     );
-    const invitationData = normalizeInvitationData(req.body?.data);
+    const guestToken = createGuestToken32Bytes();
+    const invitationData = normalizeInvitationData(req.body?.data_json ?? req.body?.data);
+    const templateKey =
+      normalizeText(req.body?.templateKey) || resolvedTemplate?.templateKey || 'wedding_classic';
 
-    // Generate unique slug with retry logic
-    let slug: string;
-    let attempts = 0;
-    const maxAttempts = 5;
-
-    do {
-      slug = generateSlug();
-      attempts++;
-
-      // Check if slug exists
-      const existing = await prisma.invitation.findUnique({
-        where: { slug },
-      });
-
-      if (!existing) {
-        break; // Slug is unique
-      }
-
-      if (attempts >= maxAttempts) {
-        return res.status(500).json({ error: 'Failed to generate unique slug' });
-      }
-    } while (true);
-
-    // Create invitation with default values
-    const ownerType = user ? 'USER' : 'GUEST';
-    const ownerId = user ? user.id : (guestToken || createToken());
-    const resolvedTemplateKey =
-      typeof req.body?.templateKey === 'string' && req.body.templateKey.trim()
-        ? req.body.templateKey.trim()
-        : resolvedTemplate?.templateKey || 'basic';
-
-    const invitation = await prisma.invitation.create({
-      data: {
-        slug,
-        ownerType,
-        ownerId,
-        createdBy: ownerId,
-        status: InvitationStatus.DRAFT,
-        isPublished: false,
-        isPaid: false,
-        canShare: false,
-        templateKey: resolvedTemplateKey,
-        templateId: resolvedTemplate?.id ?? null,
-        data: invitationData,
-        countryCode: req.body.countryCode || 'GLOBAL',
-        language: req.body.language || 'en',
-        userId: user?.id ?? null,
-        guestToken: user ? null : ownerId,
-      },
-      select: {
-        id: true,
-        slug: true,
-        templateId: true,
-        templateKey: true,
-        title: true,
-        data: true,
-        createdBy: true,
-        isPublished: true,
-        status: true,
-        canShare: true,
-        createdAt: true,
-      },
+    const invitation = await createInvitationRecord({
+      templateId: resolvedTemplate?.id || null,
+      templateKey,
+      ownerType: 'GUEST',
+      ownerId: guestToken,
+      guestToken,
+      data: invitationData,
+      countryCode: normalizeText(req.body?.countryCode) || 'GLOBAL',
+      language: normalizeText(req.body?.language) || 'en',
     });
 
-    res.status(201).json(invitation);
+    return res.status(201).json({
+      id: invitation.id,
+      guest_token: guestToken,
+      editor_url: `/editor/${invitation.id}?token=${guestToken}`,
+    });
   } catch (error) {
-    console.error('Error creating invitation:', error);
-    res.status(500).json({ error: 'Failed to create invitation' });
+    console.error('Error creating guest invitation:', error);
+    return res.status(500).json({ error: 'Failed to create guest invitation' });
   }
 });
 
-// GET /api/invitations/:slug - Get invitation by slug
-router.get('/:slug', async (req, res) => {
+// POST /api/invitations - Create invitation (login or guest)
+router.post('/', async (req, res) => {
   try {
-    const { slug } = req.params;
+    const user = await getAuthUser(req);
+    const resolvedTemplate = await resolveTemplateReference(
+      req.body?.templateId ?? req.body?.templateSlug ?? req.body?.template
+    );
+    const requestGuestToken = resolveGuestTokenFromRequest(req) || getGuestToken(req) || createToken();
+    const invitationData = normalizeInvitationData(req.body?.data_json ?? req.body?.data);
+    const templateKey =
+      normalizeText(req.body?.templateKey) || resolvedTemplate?.templateKey || 'basic';
 
-    // Sample-only safe response (no DB dependency)
-    if (slug === SAMPLE_WEDDING_SLUG) {
-      return res.status(200).json({ ...SAMPLE_WEDDING_INVITATION, isOwner: false });
+    const invitation = await createInvitationRecord({
+      templateId: resolvedTemplate?.id || null,
+      templateKey,
+      ownerType: user ? 'USER' : 'GUEST',
+      ownerId: user?.id || requestGuestToken,
+      userId: user?.id || null,
+      guestToken: user ? null : requestGuestToken,
+      data: invitationData,
+      countryCode: normalizeText(req.body?.countryCode) || 'GLOBAL',
+      language: normalizeText(req.body?.language) || 'en',
+    });
+
+    return res.status(201).json({
+      ...invitation,
+      status: invitation.status.toLowerCase(),
+      data: invitation.dataJson ?? invitation.data,
+      dataJson: invitation.dataJson ?? invitation.data,
+    });
+  } catch (error) {
+    console.error('Error creating invitation:', error);
+    return res.status(500).json({ error: 'Failed to create invitation' });
+  }
+});
+
+// GET /api/invitations/share/:slug - Public invitation by share slug
+router.get('/share/:slug', async (req, res) => {
+  try {
+    const shareSlug = normalizeText(req.params.slug);
+    if (!shareSlug) {
+      return res.status(400).json({ error: 'INVALID_SHARE_SLUG' });
     }
 
-    const user = await getAuthUser(req);
-    const guestToken = getGuestToken(req);
-
-    const invitation = await prisma.invitation.findUnique({
-      where: { slug },
+    const invitation = await prisma.invitation.findFirst({
+      where: {
+        shareSlug,
+        status: InvitationStatus.PUBLISHED,
+      },
       select: {
         id: true,
-        userId: true,
-        guestToken: true,
         slug: true,
+        shareSlug: true,
         templateId: true,
         title: true,
         data: true,
+        dataJson: true,
         createdBy: true,
         isPublished: true,
         eventDate: true,
@@ -263,6 +529,7 @@ router.get('/:slug', async (req, res) => {
         isPaid: true,
         canShare: true,
         paidAt: true,
+        publishedAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -272,102 +539,142 @@ router.get('/:slug', async (req, res) => {
       return res.status(404).json({ error: 'NOT_FOUND' });
     }
 
-    const isOwner = invitation.userId
-      ? Boolean(user && user.id === invitation.userId)
-      : Boolean(invitation.guestToken && guestToken && invitation.guestToken === guestToken);
-
-    const { userId, guestToken: storedGuestToken, ...publicFields } = invitation;
-
-    res.status(200).json({
-      ...publicFields,
-      isOwner,
+    return res.status(200).json({
+      ...toPublicInvitation(invitation),
+      shareUrl: `/i/${shareSlug}`,
     });
   } catch (error) {
-    console.error('Error fetching invitation:', error);
-    res.status(503).json({ error: 'TEMP_UNAVAILABLE' });
+    console.error('Error fetching invitation by share slug:', error);
+    return res.status(500).json({ error: 'FAILED_TO_FETCH_SHARED_INVITATION' });
   }
 });
 
-// PUT /api/invitations/:slug - Update invitation
-router.put('/:slug', async (req, res) => {
+// PATCH /api/invitations/:id - Save draft
+router.patch('/:id', async (req, res) => {
   try {
-    const { slug } = req.params;
-    const { title, eventDate, locationText, message, templateKey, musicKey, status } = req.body;
-    const resolvedTemplate = await resolveTemplateReference(
-      req.body?.templateId ?? req.body?.templateSlug ?? req.body?.template
-    );
-    const invitationData = normalizeInvitationData(req.body?.data);
+    const identifier = normalizeText(req.params.id);
+    if (!identifier) {
+      return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
+    }
+
     const user = await getAuthUser(req);
-    const guestToken = resolveGuestTokenFromBody(req.body?.guestToken) || getGuestToken(req);
-
-    // Check if invitation exists
-    const existing = await prisma.invitation.findUnique({
-      where: { slug },
+    const guestToken = resolveGuestTokenFromRequest(req) || getGuestToken(req);
+    const result = await saveDraftByIdentifier({
+      identifier,
+      body: (req.body || {}) as Record<string, unknown>,
+      userId: user?.id,
+      guestToken,
     });
+    if (result.error === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
+    if (result.error === 'FORBIDDEN') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    return res.status(200).json(result.data);
+  } catch (error) {
+    console.error('Error patching invitation draft:', error);
+    return res.status(500).json({ error: 'Failed to patch invitation' });
+  }
+});
 
-    if (!existing) {
+// POST /api/invitations/:id/publish - Publish invitation
+router.post('/:id/publish', async (req, res) => {
+  try {
+    const identifier = normalizeText(req.params.id);
+    if (!identifier) {
+      return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
+    }
+
+    const invitation = await findInvitationByIdentifier(identifier);
+    if (!invitation) {
       return res.status(404).json({ error: 'Invitation not found' });
     }
 
-    const isOwner = existing.userId
-      ? Boolean(user && user.id === existing.userId)
-      : Boolean(existing.guestToken && guestToken && existing.guestToken === guestToken);
-
-    if (!isOwner) {
+    const user = await getAuthUser(req);
+    const guestToken = resolveGuestTokenFromRequest(req) || getGuestToken(req);
+    const editable = await canEditInvitation({
+      invitation: {
+        userId: invitation.userId,
+        guestToken: invitation.guestToken,
+      },
+      userId: user?.id,
+      guestToken,
+    });
+    if (!editable) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const allowedStatuses = new Set<InvitationStatus>(['DRAFT', 'PUBLISHED']);
-    const normalizedStatus = parseInvitationStatus(status);
-    if (typeof status === 'string' && status.trim() !== '' && normalizedStatus === undefined) {
-      return res.status(400).json({ error: 'Invalid status' });
-    }
-    if (normalizedStatus === 'PUBLISHED' && !user) {
-      return res.status(403).json({ error: 'Login required to publish' });
+    await claimGuestInvitationIfNeeded({
+      invitation: {
+        id: invitation.id,
+        userId: invitation.userId,
+        guestToken: invitation.guestToken,
+      },
+      userId: user?.id,
+      guestToken,
+    });
+
+    const shareSlug = invitation.shareSlug || (await createUniqueShareSlug());
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        status: InvitationStatus.PUBLISHED,
+        isPublished: true,
+        canShare: true,
+        shareSlug,
+        publishedAt: new Date(),
+      },
+    });
+
+    return res.status(200).json({
+      share_url: `/i/${shareSlug}`,
+      shareSlug,
+    });
+  } catch (error) {
+    console.error('Error publishing invitation:', error);
+    return res.status(500).json({ error: 'Failed to publish invitation' });
+  }
+});
+
+// GET /api/invitations/:id - Get invitation for editor (id or slug)
+router.get('/:id', async (req, res) => {
+  try {
+    const identifier = normalizeText(req.params.id);
+    if (!identifier) {
+      return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
     }
 
-    // Update only allowed fields
-    const updateData: {
-      title?: string;
-      eventDate?: Date | null;
-      locationText?: string | null;
-      message?: string | null;
-      templateId?: string | null;
-      templateKey?: string;
-      data?: Prisma.InputJsonValue;
-      musicKey?: string | null;
-      status?: InvitationStatus;
-      isPublished?: boolean;
-    } = {};
-
-    if (title !== undefined) updateData.title = title;
-    if (eventDate !== undefined) updateData.eventDate = eventDate ? new Date(eventDate) : null;
-    if (locationText !== undefined) updateData.locationText = locationText;
-    if (message !== undefined) updateData.message = message;
-    if (resolvedTemplate) {
-      updateData.templateId = resolvedTemplate.id;
-      updateData.templateKey = resolvedTemplate.templateKey;
-    } else if (templateKey !== undefined) {
-      updateData.templateKey = templateKey;
-    }
-    if (invitationData !== undefined) updateData.data = invitationData;
-    if (musicKey !== undefined) updateData.musicKey = musicKey || null;
-    if (normalizedStatus !== undefined && allowedStatuses.has(normalizedStatus)) {
-      updateData.status = normalizedStatus;
-      updateData.isPublished = normalizedStatus === 'PUBLISHED';
+    const invitation = await findInvitationByIdentifier(identifier);
+    if (!invitation) {
+      return res.status(404).json({ error: 'NOT_FOUND' });
     }
 
-    const invitation = await prisma.invitation.update({
-      where: { slug },
-      data: updateData as Prisma.InvitationUncheckedUpdateInput,
+    const user = await getAuthUser(req);
+    const guestToken = resolveGuestTokenFromRequest(req) || getGuestToken(req);
+
+    await claimGuestInvitationIfNeeded({
+      invitation: {
+        id: invitation.id,
+        userId: invitation.userId,
+        guestToken: invitation.guestToken,
+      },
+      userId: user?.id,
+      guestToken,
+    });
+
+    const refreshed = await prisma.invitation.findUnique({
+      where: { id: invitation.id },
       select: {
         id: true,
         userId: true,
         guestToken: true,
         slug: true,
+        shareSlug: true,
         templateId: true,
         title: true,
         data: true,
+        dataJson: true,
         createdBy: true,
         isPublished: true,
         eventDate: true,
@@ -381,52 +688,90 @@ router.put('/:slug', async (req, res) => {
         isPaid: true,
         canShare: true,
         paidAt: true,
+        publishedAt: true,
         createdAt: true,
         updatedAt: true,
       },
     });
 
-    const updatedIsOwner = invitation.userId
-      ? Boolean(user && user.id === invitation.userId)
-      : Boolean(invitation.guestToken && guestToken && invitation.guestToken === guestToken);
+    if (!refreshed) {
+      return res.status(404).json({ error: 'NOT_FOUND' });
+    }
 
-    const { userId, guestToken: storedGuestToken, ...publicFields } = invitation;
+    const isOwner = refreshed.userId
+      ? Boolean(user && user.id === refreshed.userId)
+      : Boolean(refreshed.guestToken && guestToken && refreshed.guestToken === guestToken);
 
-    res.status(200).json({
-      ...publicFields,
-      isOwner: updatedIsOwner,
+    if (!isOwner && refreshed.status !== InvitationStatus.PUBLISHED) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
+    }
+
+    return res.status(200).json({
+      ...toPublicInvitation(refreshed),
+      isOwner,
     });
   } catch (error) {
-    console.error('Error updating invitation:', error);
-    res.status(500).json({ error: 'Failed to update invitation' });
+    console.error('Error fetching invitation:', error);
+    return res.status(503).json({ error: 'TEMP_UNAVAILABLE' });
   }
 });
 
-router.delete('/:slug', async (req, res) => {
+// PUT /api/invitations/:id - Legacy update endpoint
+router.put('/:id', async (req, res) => {
   try {
-    const { slug } = req.params;
+    const identifier = normalizeText(req.params.id);
+    if (!identifier) {
+      return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
+    }
     const user = await getAuthUser(req);
-    const guestToken = getGuestToken(req);
-
-    const existing = await prisma.invitation.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        slug: true,
-        userId: true,
-        guestToken: true,
-      },
+    const guestToken = resolveGuestTokenFromRequest(req) || getGuestToken(req);
+    const result = await saveDraftByIdentifier({
+      identifier,
+      body: {
+        ...(req.body || {}),
+        data_json: req.body?.data_json ?? req.body?.data,
+      } as Record<string, unknown>,
+      userId: user?.id,
+      guestToken,
     });
+    if (result.error === 'NOT_FOUND') {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
+    if (result.error === 'FORBIDDEN') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    return res.status(200).json(result.data);
+  } catch (error) {
+    console.error('Error updating invitation:', error);
+    return res.status(500).json({ error: 'Failed to update invitation' });
+  }
+});
 
+router.delete('/:id', async (req, res) => {
+  try {
+    const identifier = normalizeText(req.params.id);
+    if (!identifier) {
+      return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
+    }
+
+    const existing = await findInvitationByIdentifier(identifier);
     if (!existing) {
       return res.status(404).json({ error: 'Invitation not found' });
     }
 
-    const isOwner = existing.userId
-      ? Boolean(user && user.id === existing.userId)
-      : Boolean(existing.guestToken && guestToken && existing.guestToken === guestToken);
-
-    if (!isOwner) {
+    const user = await getAuthUser(req);
+    const guestToken = resolveGuestTokenFromRequest(req) || getGuestToken(req);
+    const editable = await canEditInvitation(
+      {
+        invitation: {
+          userId: existing.userId,
+          guestToken: existing.guestToken,
+        },
+        userId: user?.id,
+        guestToken,
+      }
+    );
+    if (!editable) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
@@ -443,6 +788,7 @@ router.delete('/:slug', async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      id: existing.id,
       slug: existing.slug,
       mediaDeletedCount,
     });

@@ -116,6 +116,8 @@ router.post('/verify', async (req, res) => {
           userId: null,
         },
         data: {
+          ownerType: 'USER',
+          ownerId: session.userId,
           userId: session.userId,
           guestToken: null,
         },

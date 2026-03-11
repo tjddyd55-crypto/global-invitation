@@ -52,8 +52,10 @@ model Invitation {
   guestToken  String?          @map("guest_token")
   templateId  String?          @map("template_id") @db.Uuid
   slug        String           @unique
+  shareSlug   String?          @unique @map("share_slug")
   title       String?          // 행사명 또는 제목
   data        Json?            @db.JsonB
+  dataJson    Json?            @map("data_json") @db.JsonB
   eventDate   DateTime?        @map("event_date") @db.Timestamptz(6)
   locationText String?         @map("location_text") // 장소 정보
   message     String?          // 초대장 메시지
@@ -66,6 +68,7 @@ model Invitation {
   isPaid      Boolean          @default(false) @map("is_paid")
   canShare    Boolean          @default(false) @map("can_share")
   paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
+  publishedAt DateTime?        @map("published_at") @db.Timestamptz(6)
   rsvpDeadline DateTime?       @map("rsvp_deadline") @db.Timestamptz(6)
   createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)

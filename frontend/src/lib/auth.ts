@@ -41,6 +41,13 @@ export function getGuestToken(): string | null {
   return window.localStorage.getItem(GUEST_TOKEN_KEY);
 }
 
+export function setGuestToken(token: string) {
+  if (typeof window === 'undefined') return;
+  const normalized = typeof token === 'string' ? token.trim() : '';
+  if (!normalized) return;
+  window.localStorage.setItem(GUEST_TOKEN_KEY, normalized);
+}
+
 export function setLastDraftSlug(slug: string) {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(LAST_DRAFT_KEY, slug);

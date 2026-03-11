@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import type { Invitation } from '@/src/lib/api';
+import {
+  cloneTemplateInvitation,
+  getInvitationForEditor,
+  publishInvitationById,
+  saveInvitationDraftById,
+} from '@/src/lib/api';
 import WeddingEditor from '@/src/editors/wedding/WeddingEditor';
 import {
   createWeddingEditorState,
@@ -25,8 +31,7 @@ import { isFuneralInvitationData, isWeddingInvitationData } from '@/src/invitati
 import { useI18n } from '@/src/contexts/I18nContext';
 import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
-import { ensureGuestToken, getStoredSession, setLastDraftSlug } from '@/src/lib/auth';
-import { getInvitationDraft, getRuntimeDataFromDraft, saveInvitationDraft } from '@/src/lib/invitationStorage';
+import { ensureGuestToken, getStoredSession, setGuestToken, setLastDraftSlug } from '@/src/lib/auth';
 import {
   fetchTemplateDefinitionById,
   getTemplateEditorPath,
@@ -59,6 +64,7 @@ export default function EditorPage() {
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
   const requestedTemplate = searchParams.get('template');
+  const requestedToken = searchParams.get('token');
   const { language } = useI18n();
   const editorLoggedRef = useRef(false);
   const saveNoticeTimerRef = useRef<number | null>(null);
@@ -73,6 +79,8 @@ export default function EditorPage() {
   const [draftStatus, setDraftStatus] = useState<'draft' | 'published'>('draft');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareUiNotice, setShareUiNotice] = useState<string | null>(null);
   const [funeralData, setFuneralData] = useState<ReturnType<typeof getFuneralClassicDemoData> | null>(null);
   const [hasSession, setHasSession] = useState(false);
 
@@ -117,6 +125,8 @@ export default function EditorPage() {
       setDraftStatus('draft');
       setLastSavedAt(null);
       setSaveNotice(null);
+      setShareUrl(null);
+      setShareUiNotice(null);
 
       try {
         if (isFuneralDemo) {
@@ -125,61 +135,48 @@ export default function EditorPage() {
           return;
         }
 
-        const draft = getInvitationDraft(slug);
-        if (draft) {
-          const redirectPath = getTemplateEditorPath(draft.invitation.templateKey, slug);
-          if (redirectPath && redirectPath !== `/editor/${slug}`) {
-            router.replace(redirectPath);
+        if (requestedToken) {
+          setGuestToken(requestedToken);
+        }
+
+        let editorInvitation: Invitation | null = null;
+        try {
+          editorInvitation = await getInvitationForEditor(slug, requestedToken);
+        } catch {
+          editorInvitation = null;
+        }
+
+        if (!editorInvitation && requestedTemplate) {
+          const cloned = await cloneTemplateInvitation(requestedTemplate);
+          if (cloned.guest_token) {
+            setGuestToken(cloned.guest_token);
+          }
+          if (cloned.editor_url && cloned.editor_url !== `/editor/${slug}`) {
+            router.replace(cloned.editor_url);
             return;
           }
-          if (!isMounted) return;
-          setInvitation(draft.invitation);
-          setDraftStatus(draft.status);
-          setLastSavedAt(draft.savedAt);
-          return;
+          editorInvitation = await getInvitationForEditor(cloned.invitation_id || slug, cloned.guest_token || requestedToken);
         }
 
-        if (!requestedTemplate) {
+        if (!editorInvitation) {
           router.replace('/templates');
           return;
         }
 
-        const templateDefinition = await fetchTemplateDefinitionById(requestedTemplate);
-        if (!templateDefinition) {
-          router.replace('/templates');
+        const redirectPath = getTemplateEditorPath(editorInvitation.templateKey, editorInvitation.id);
+        if (redirectPath && redirectPath !== `/editor/${editorInvitation.id}`) {
+          router.replace(redirectPath);
           return;
         }
 
-        const redirectPath = getTemplateEditorPath(templateDefinition.templateKey, slug);
-        if (redirectPath && redirectPath !== `/editor/${slug}`) {
-          router.replace(`${redirectPath}?template=${requestedTemplate}`);
-          return;
-        }
-
-        const now = new Date().toISOString();
-        const newDraft: Invitation = {
-          id: slug,
-          slug,
-          templateId: templateDefinition.id,
-          title: null,
-          eventDate: null,
-          locationText: null,
-          message: null,
-          templateKey: templateDefinition.templateKey,
-          musicKey: 'piano_wedding',
-          countryCode: 'GLOBAL',
-          language: 'ko',
-          status: 'draft',
-          isPaid: false,
-          canShare: true,
-          paidAt: null,
-          isOwner: true,
-          createdAt: now,
-          updatedAt: now,
-          data: templateDefinition.templateKey === 'funeral_classic' ? getFuneralClassicDemoData() : undefined,
-        };
         if (!isMounted) return;
-        setInvitation(newDraft);
+        setInvitation(editorInvitation);
+        const normalizedStatus = editorInvitation.status === 'published' ? 'published' : 'draft';
+        setDraftStatus(normalizedStatus);
+        setLastSavedAt(editorInvitation.updatedAt ?? null);
+        if (editorInvitation.shareSlug) {
+          setShareUrl(`/i/${editorInvitation.shareSlug}`);
+        }
       } catch {
         if (!isMounted) return;
         setError({
@@ -198,7 +195,7 @@ export default function EditorPage() {
     return () => {
       isMounted = false;
     };
-  }, [slug, router, isFuneralDemo, requestedTemplate]);
+  }, [slug, router, isFuneralDemo, requestedTemplate, requestedToken]);
 
   useEffect(() => {
     if (!invitation || hasSession) return;
@@ -230,12 +227,12 @@ export default function EditorPage() {
 
   const initialState = useMemo(() => {
     if (!invitation || editorType !== 'wedding') return null;
-    const runtimeData = getRuntimeDataFromDraft(slug);
+    const runtimeData = (invitation.dataJson ?? invitation.data) as WeddingInvitationData | undefined;
     if (isWeddingInvitationData(runtimeData)) {
       return createWeddingEditorStateFromDraft(invitation, runtimeData);
     }
     return createWeddingEditorState(invitation);
-  }, [editorType, invitation, slug]);
+  }, [editorType, invitation]);
   const funeralInitialState = useMemo(() => {
     if (funeralData) {
       return createFuneralEditorState(funeralData);
@@ -244,35 +241,44 @@ export default function EditorPage() {
       return null;
     }
 
-    const runtimeData = getRuntimeDataFromDraft(slug);
-    const invitationData = isFuneralInvitationData(invitation.data) ? invitation.data : undefined;
+    const runtimeData = invitation.dataJson ?? invitation.data;
+    const invitationData = isFuneralInvitationData(runtimeData) ? runtimeData : undefined;
     return createFuneralEditorState(isFuneralInvitationData(runtimeData) ? runtimeData : invitationData ?? null);
-  }, [editorType, funeralData, invitation, slug]);
+  }, [editorType, funeralData, invitation]);
 
   const handleSave = async (state: WeddingEditorState): Promise<void> => {
-    if (!slug) return;
+    if (!invitation?.id) return;
 
     setSaving(true);
     setError(null);
     setSaveError(null);
     setSaveNotice(null);
+    setShareUiNotice(null);
 
     try {
-      const invitationPayload = weddingEditorStateToInvitation(state, slug);
       const runtimeData = buildWeddingClassicPreviewData(state);
-      const saved = saveInvitationDraft(slug, invitationPayload, runtimeData, 'draft');
-      if (!saved || !getInvitationDraft(slug) || !getRuntimeDataFromDraft(slug)) {
-        throw new Error('DRAFT_PERSIST_FAILED');
-      }
-      setLastDraftSlug(slug);
-      setInvitation({ ...invitationPayload, status: 'draft' });
+      const invitationPayload = weddingEditorStateToInvitation(state, invitation.slug || invitation.id);
+      const saved = await saveInvitationDraftById(
+        invitation.id,
+        {
+          title: invitationPayload.title,
+          eventDate: invitationPayload.eventDate,
+          locationText: invitationPayload.locationText,
+          message: invitationPayload.message,
+          templateKey: invitationPayload.templateKey,
+          musicKey: invitationPayload.musicKey,
+          data_json: runtimeData,
+        },
+        requestedToken
+      );
+      setLastDraftSlug(saved.slug);
+      setInvitation(saved);
       setDraftStatus('draft');
-      const savedAt = new Date().toISOString();
-      setLastSavedAt(savedAt);
-      setSaveNotice('로컬 초안에 저장되었습니다.');
+      setLastSavedAt(saved.updatedAt ?? new Date().toISOString());
+      setSaveNotice('초안이 저장되었습니다.');
       scheduleSaveNoticeClear();
     } catch (err) {
-      setSaveError('저장에 실패했습니다. 브라우저 저장 공간 또는 초안 데이터 상태를 확인해 주세요.');
+      setSaveError('저장에 실패했습니다. 권한 또는 네트워크 상태를 확인해 주세요.');
       throw err;
     } finally {
       setSaving(false);
@@ -285,54 +291,40 @@ export default function EditorPage() {
     } catch {
       return;
     }
-    router.push(`/preview/${slug}`);
+    router.push('/my-invitations');
   };
 
   const handlePublish = async (state: WeddingEditorState) => {
-    if (!slug) return;
+    if (!invitation?.id) return;
     setPublishing(true);
     setSaveError(null);
     setSaveNotice(null);
+    setShareUiNotice(null);
     try {
-      const invitationPayload = weddingEditorStateToInvitation(state, slug);
-      const runtimeData = buildWeddingClassicPreviewData(state);
-      const saved = saveInvitationDraft(slug, invitationPayload, runtimeData, 'published');
-      if (!saved || !getInvitationDraft(slug) || !getRuntimeDataFromDraft(slug)) {
-        throw new Error('DRAFT_PERSIST_FAILED');
-      }
-      setLastDraftSlug(slug);
-      setInvitation({ ...invitationPayload, status: 'published' });
+      await handleSave(state);
+      const published = await publishInvitationById(invitation.id, requestedToken);
+      const updated = await getInvitationForEditor(invitation.id, requestedToken);
+      setInvitation(updated);
+      setLastDraftSlug(updated.slug);
       setDraftStatus('published');
-      const savedAt = new Date().toISOString();
-      setLastSavedAt(savedAt);
-      setSaveNotice('공개용 초안이 저장되었습니다.');
-      router.push(`/invitation/${slug}`);
+      setLastSavedAt(updated.updatedAt ?? new Date().toISOString());
+      setShareUrl(published.share_url);
+      setSaveNotice('공개가 완료되었습니다. 공유 링크를 복사해 전달해 보세요.');
     } catch {
-      setSaveError('공개에 실패했습니다. 저장 상태를 확인한 뒤 다시 시도해 주세요.');
+      setSaveError('공개에 실패했습니다. 권한 또는 저장 상태를 확인해 주세요.');
     } finally {
       setPublishing(false);
     }
   };
 
   const handleFuneralSave = async (state: FuneralEditorState) => {
-    if (!slug) return;
+    if (!invitation?.id) return;
 
     setSaveError(null);
+    setShareUiNotice(null);
 
-    const now = new Date().toISOString();
     const invitationPayload: Invitation = {
-      ...(invitation ?? {
-        id: slug,
-        slug,
-        templateKey: 'funeral_classic',
-        countryCode: 'GLOBAL',
-        language: 'ko',
-        status: 'draft',
-        isPaid: false,
-        canShare: true,
-        createdAt: now,
-        updatedAt: now,
-      }),
+      ...(invitation as Invitation),
       templateKey: 'funeral_classic',
       title: `${state.deceasedName} 부고장`,
       eventDate: state.schedule.funeralDate,
@@ -340,19 +332,77 @@ export default function EditorPage() {
       message: state.message,
       data: state,
       status: 'draft',
-      updatedAt: now,
     };
 
-    const saved = saveInvitationDraft(slug, invitationPayload, state, 'draft');
-    if (!saved || !getInvitationDraft(slug) || !getRuntimeDataFromDraft(slug)) {
-      setSaveError('저장에 실패했습니다. 브라우저 저장 공간 또는 초안 데이터 상태를 확인해 주세요.');
+    try {
+      const saved = await saveInvitationDraftById(
+        invitation.id,
+        {
+          title: invitationPayload.title,
+          eventDate: invitationPayload.eventDate,
+          locationText: invitationPayload.locationText,
+          message: invitationPayload.message,
+          templateKey: invitationPayload.templateKey,
+          data_json: state,
+        },
+        requestedToken
+      );
+      setInvitation(saved);
+      setDraftStatus('draft');
+      setLastSavedAt(saved.updatedAt ?? new Date().toISOString());
+      setSaveNotice('초안이 저장되었습니다.');
+      scheduleSaveNoticeClear();
+    } catch {
+      setSaveError('저장에 실패했습니다. 권한 또는 네트워크 상태를 확인해 주세요.');
       return;
     }
-    setInvitation(invitationPayload);
-    setDraftStatus('draft');
-    setLastSavedAt(now);
-    setSaveNotice('로컬 초안에 저장되었습니다.');
-      scheduleSaveNoticeClear();
+  };
+
+  const shareAbsoluteUrl = useMemo(() => {
+    if (!shareUrl) return '';
+    if (typeof window === 'undefined') return shareUrl;
+    return shareUrl.startsWith('http') ? shareUrl : `${window.location.origin}${shareUrl}`;
+  }, [shareUrl]);
+
+  const handleCopyShareUrl = async () => {
+    if (!shareAbsoluteUrl || typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+      setShareUiNotice('공유 URL 복사 기능을 사용할 수 없습니다.');
+      return;
+    }
+    await navigator.clipboard.writeText(shareAbsoluteUrl);
+    setShareUiNotice('공유 URL이 복사되었습니다.');
+  };
+
+  const handleKakaoShare = () => {
+    if (!shareAbsoluteUrl || typeof window === 'undefined') return;
+    const url = `https://story.kakao.com/share?url=${encodeURIComponent(shareAbsoluteUrl)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleFacebookShare = () => {
+    if (!shareAbsoluteUrl || typeof window === 'undefined') return;
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareAbsoluteUrl)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleImageDownload = async () => {
+    if (typeof window === 'undefined' || !invitation) return;
+    const runtimeData = invitation.dataJson ?? invitation.data;
+    if (!isWeddingInvitationData(runtimeData) || !runtimeData.heroImage) {
+      setShareUiNotice('다운로드할 대표 이미지가 없습니다.');
+      return;
+    }
+    const anchor = document.createElement('a');
+    anchor.href = runtimeData.heroImage;
+    anchor.download = `invitation-${invitation.id}.jpg`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+  };
+
+  const handlePdfDownload = () => {
+    if (typeof window === 'undefined') return;
+    window.print();
   };
 
   if (loading) {
@@ -416,21 +466,48 @@ export default function EditorPage() {
 
   if (editorType === 'wedding' && initialState) {
     return (
-      <WeddingEditor
-        key={invitation.id}
-        initialState={initialState}
-        pageUrl={pageUrl}
-        onSave={handleSave}
-        onSaveAndExit={handleSaveAndExit}
-        onPublish={handlePublish}
-        saving={saving}
-        publishing={publishing}
-        isDemo={false}
-        saveError={saveError}
-        saveNotice={saveNotice}
-        draftStatus={draftStatus}
-        lastSavedAt={lastSavedAt}
-      />
+      <>
+        {shareUrl && (
+          <section
+            style={{
+              margin: '1rem auto 0',
+              maxWidth: '1200px',
+              border: '1px solid #d6e2ff',
+              background: '#f7faff',
+              borderRadius: '12px',
+              padding: '0.9rem 1rem',
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: '1rem' }}>공유</h2>
+            <p style={{ margin: '0.45rem 0 0.75rem', color: '#496093' }}>
+              공개가 완료되었습니다. 공유 URL: <strong>{shareAbsoluteUrl}</strong>
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <button type="button" onClick={handleCopyShareUrl}>URL 복사</button>
+              <button type="button" onClick={handleKakaoShare}>카카오 공유</button>
+              <button type="button" onClick={handleFacebookShare}>페이스북 공유</button>
+              <button type="button" onClick={handleImageDownload}>이미지 다운로드</button>
+              <button type="button" onClick={handlePdfDownload}>PDF 다운로드</button>
+            </div>
+            {shareUiNotice && <p style={{ margin: '0.5rem 0 0', color: '#315aa3' }}>{shareUiNotice}</p>}
+          </section>
+        )}
+        <WeddingEditor
+          key={invitation.id}
+          initialState={initialState}
+          pageUrl={pageUrl}
+          onSave={handleSave}
+          onSaveAndExit={handleSaveAndExit}
+          onPublish={handlePublish}
+          saving={saving}
+          publishing={publishing}
+          isDemo={false}
+          saveError={saveError}
+          saveNotice={saveNotice}
+          draftStatus={draftStatus}
+          lastSavedAt={lastSavedAt}
+        />
+      </>
     );
   }
 

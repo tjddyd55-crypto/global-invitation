@@ -1,6 +1,7 @@
 export interface Invitation {
   id: string;
   slug: string;
+  shareSlug?: string | null;
   templateId?: string | null;
   title?: string | null;
   eventDate?: string | null;
@@ -8,6 +9,7 @@ export interface Invitation {
   message?: string | null;
   templateKey: string;
   data?: unknown;
+  dataJson?: unknown;
   createdBy?: string;
   isPublished?: boolean;
   musicKey?: string | null;
@@ -17,6 +19,7 @@ export interface Invitation {
   isPaid: boolean;
   canShare: boolean;
   paidAt?: string | null;
+  publishedAt?: string | null;
   isOwner?: boolean;
   createdAt: string;
   updatedAt: string;
