@@ -37,6 +37,10 @@ function normalizeText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function isCreatorActor(user: { isCreator?: boolean; role?: string }): boolean {
+  return user.role === 'CREATOR';
+}
+
 function isE2ETestModeEnabled(): boolean {
   return process.env.E2E_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production';
 }
@@ -348,7 +352,7 @@ router.post('/upload', (req, res) => {
 
       const canUpload = await canUploadForContext({
         userId: user.id,
-        isCreator: Boolean(user.isCreator),
+        isCreator: isCreatorActor(user),
         context,
         entityId,
       });
@@ -408,7 +412,7 @@ router.post('/presign', async (req, res) => {
     }
     const canUpload = await canUploadForContext({
       userId: user.id,
-      isCreator: Boolean(user.isCreator),
+      isCreator: isCreatorActor(user),
       context: folderTarget.context,
       entityId: folderTarget.entityId,
     });
@@ -450,7 +454,7 @@ router.post('/complete', async (req, res) => {
 
     const canProcess = await canDeleteByStorageKey({
       userId: user.id,
-      isCreator: Boolean(user.isCreator),
+      isCreator: isCreatorActor(user),
       key: fileKey,
     });
     if (!canProcess) {
@@ -502,7 +506,7 @@ router.delete('/', async (req, res) => {
 
     const canDelete = await canDeleteByStorageKey({
       userId: user.id,
-      isCreator: Boolean(user.isCreator),
+      isCreator: isCreatorActor(user),
       key,
     });
     if (!canDelete) {

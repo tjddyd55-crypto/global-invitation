@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Prisma } from '@prisma/client';
+import { Prisma, type TemplateStatus } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { getInvitationAnalyticsSummary } from '../analytics/invitationAnalytics';
 import { requireAdminSession } from '../lib/adminSession';
@@ -28,6 +28,7 @@ const TEMPLATE_STYLES = new Set<TemplateStyle>([
   'traditional',
   'modern',
 ]);
+const TEMPLATE_STATUSES = new Set(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'PUBLISHED']);
 
 router.use(requireAdminSession);
 
@@ -52,6 +53,10 @@ function validateCategory(value: string): value is TemplateCategory {
 
 function validateStyle(value: string): value is TemplateStyle {
   return TEMPLATE_STYLES.has(value as TemplateStyle);
+}
+
+function validateTemplateStatus(value: string): value is 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PUBLISHED' {
+  return TEMPLATE_STATUSES.has(value);
 }
 
 function escapeCsvCell(value: unknown): string {
@@ -313,7 +318,9 @@ router.post('/templates', async (req, res) => {
     const style = normalizeText(req.body?.style);
     const description = normalizeText(req.body?.description);
     const templateKey = normalizeText(req.body?.templateKey) || 'wedding_classic';
+    const statusText = normalizeText(req.body?.status).toUpperCase();
     const creatorId = normalizeText(req.body?.creatorId);
+    const thumbnailUrl = normalizeText(req.body?.thumbnailUrl || req.body?.previewThumbnailUrl);
     const price = normalizeNumber(req.body?.price);
     const creatorShare = normalizeNumber(req.body?.creatorShare);
 
@@ -326,6 +333,10 @@ router.post('/templates', async (req, res) => {
     if (!isValidTemplateKey(templateKey)) {
       return res.status(400).json({ error: 'INVALID_TEMPLATE_KEY' });
     }
+    if (statusText && !validateTemplateStatus(statusText)) {
+      return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
+    }
+    const status = statusText ? (statusText as TemplateStatus) : undefined;
 
     const component = resolveTemplateComponentByKey(templateKey);
     if (!component) {
@@ -342,6 +353,8 @@ router.post('/templates', async (req, res) => {
       creatorId: creatorId || undefined,
       component,
       templateKey,
+      status,
+      previewThumbnailUrl: thumbnailUrl || undefined,
     });
     await logAdminAction({
       adminId,
@@ -386,6 +399,13 @@ router.patch('/templates/:id', async (req, res) => {
       payload.templateKey = templateKey;
       payload.component = component;
     }
+    if (typeof req.body?.status === 'string') {
+      const status = normalizeText(req.body.status).toUpperCase();
+      if (!validateTemplateStatus(status)) {
+        return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
+      }
+      payload.status = status;
+    }
     if (typeof req.body?.category === 'string') {
       const category = normalizeText(req.body.category);
       if (!validateCategory(category)) {
@@ -403,6 +423,9 @@ router.patch('/templates/:id', async (req, res) => {
     if (req.body?.price !== undefined) payload.price = normalizeNumber(req.body.price);
     if (req.body?.creatorShare !== undefined) payload.creatorShare = normalizeNumber(req.body.creatorShare);
     if (req.body?.creatorId !== undefined) payload.creatorId = normalizeText(req.body.creatorId) || undefined;
+    if (req.body?.thumbnailUrl !== undefined || req.body?.previewThumbnailUrl !== undefined) {
+      payload.previewThumbnailUrl = normalizeText(req.body?.thumbnailUrl || req.body?.previewThumbnailUrl);
+    }
     if (req.body?.isActive !== undefined) payload.isActive = Boolean(req.body.isActive);
     if (req.body?.isDeleted !== undefined) payload.isDeleted = Boolean(req.body.isDeleted);
 

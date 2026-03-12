@@ -27,6 +27,11 @@ function parseCookieValue(req: Request, cookieName: string): string | null {
 }
 
 function resolveSessionToken(req: Request): string | null {
+  const cookieToken = parseCookieValue(req, AUTH_SESSION_COOKIE);
+  if (cookieToken?.trim()) {
+    return cookieToken.trim();
+  }
+
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith('Bearer ')) {
     const headerToken = authHeader.replace('Bearer', '').trim();
@@ -34,9 +39,7 @@ function resolveSessionToken(req: Request): string | null {
       return headerToken;
     }
   }
-
-  const cookieToken = parseCookieValue(req, AUTH_SESSION_COOKIE);
-  return cookieToken?.trim() || null;
+  return null;
 }
 
 export function setAuthSessionCookie(res: Response, token: string) {

@@ -28,7 +28,8 @@ export default function AdminTemplateSubmissionDetailPage() {
   const [item, setItem] = useState<AdminTemplateSubmission | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [reviewNote, setReviewNote] = useState('');
+  const [approveNote, setApproveNote] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
   const [creatorShare, setCreatorShare] = useState<number>(0);
 
   useEffect(() => {
@@ -40,7 +41,8 @@ export default function AdminTemplateSubmissionDetailPage() {
         const next = await getAdminTemplateSubmission(submissionId);
         if (!isMounted) return;
         setItem(next);
-        setReviewNote(next.reviewNote || '');
+        setApproveNote(next.reviewNote || '');
+        setRejectReason(next.reviewNote || '');
         setCreatorShare(next.creatorShare || 0);
       } catch (loadError) {
         if (!isMounted) return;
@@ -70,7 +72,7 @@ export default function AdminTemplateSubmissionDetailPage() {
     setError(null);
     try {
       const updated = await approveAdminTemplateSubmission(item.id, {
-        reviewNote,
+        reviewNote: approveNote.trim() || undefined,
         creatorShare,
       });
       setItem(updated);
@@ -82,11 +84,15 @@ export default function AdminTemplateSubmissionDetailPage() {
   };
 
   const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      setError('반려 사유를 입력해주세요.');
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       const updated = await rejectAdminTemplateSubmission(item.id, {
-        reviewNote,
+        reviewNote: rejectReason.trim(),
       });
       setItem(updated);
     } catch (actionError) {
@@ -116,9 +122,19 @@ export default function AdminTemplateSubmissionDetailPage() {
         <article className={styles.card}>
           <div className={styles.metricLabel}>Creator</div>
           <p className={styles.metricValue}>{item.creator?.email || item.creatorId}</p>
+          <p className={styles.helperText}>Creator ID: {item.creatorId}</p>
+          <p className={styles.helperText}>
+            Submitted at: {item.submittedAt ? new Date(item.submittedAt).toLocaleString() : '미제출'}
+          </p>
+          <p className={styles.helperText}>
+            Reviewed at: {item.reviewedAt ? new Date(item.reviewedAt).toLocaleString() : '-'}
+          </p>
           <p className={styles.helperText}>Candidate key: {item.templateKeyCandidate}</p>
           <p className={styles.helperText}>Revision: r{item.revisionNumber}</p>
           <p className={styles.helperText}>Price: ${item.price.toFixed(2)}</p>
+          <p>
+            <span className={styles.pill}>{item.status}</span>
+          </p>
         </article>
         <article className={styles.card}>
           <div className={styles.metricLabel}>Thumbnail</div>
@@ -130,12 +146,25 @@ export default function AdminTemplateSubmissionDetailPage() {
           )}
         </article>
         <article className={styles.card}>
-          <div className={styles.metricLabel}>Review note</div>
+          <div className={styles.metricLabel}>Approve note (optional)</div>
           <textarea
-            value={reviewNote}
-            onChange={(e) => setReviewNote(e.target.value)}
+            value={approveNote}
+            onChange={(e) => setApproveNote(e.target.value)}
             style={{ width: '100%', minHeight: 120 }}
             disabled={busy}
+            data-testid="admin-approve-note-input"
+            placeholder="승인 시 전달할 메모를 입력하세요."
+          />
+          <div className={styles.metricLabel} style={{ marginTop: 12 }}>
+            Reject reason (required)
+          </div>
+          <textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            style={{ width: '100%', minHeight: 120 }}
+            disabled={busy}
+            data-testid="admin-reject-reason-input"
+            placeholder="반려 사유를 입력하세요."
           />
           <label className={styles.field} style={{ marginTop: 12 }}>
             <span>Creator share (%)</span>
@@ -146,6 +175,7 @@ export default function AdminTemplateSubmissionDetailPage() {
               value={creatorShare}
               onChange={(e) => setCreatorShare(Number(e.target.value) || 0)}
               disabled={busy}
+              data-testid="admin-creator-share-input"
             />
           </label>
         </article>

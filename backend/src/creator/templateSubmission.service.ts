@@ -68,12 +68,44 @@ export type TemplateSubmissionDto = {
 
 export type CreatorDashboardSummary = {
   totalTemplates: number;
+  publishedTemplates: number;
   draftCount: number;
   submittedCount: number;
   approvedCount: number;
   rejectedCount: number;
   usageCount: number;
+  viewCount: number;
+  cloneCount: number;
+  revenueTotal: number;
   revenuePlaceholder: number;
+  payoutSummary: {
+    totalPaid: number;
+    totalPending: number;
+    payoutCount: number;
+    lastPaidAt: string | null;
+  };
+  templateRevenueStats: Array<{
+    templateId: string;
+    templateName: string;
+    templateSlug: string;
+    templateStatus: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PUBLISHED';
+    usageCount: number;
+    viewCount: number;
+    cloneCount: number;
+    revenueTotal: number;
+    lastUsedAt: string | null;
+  }>;
+  recentUsages: Array<{
+    usageId: string;
+    templateId: string;
+    templateName: string;
+    invitationId: string;
+    invitationSlug: string;
+    usedAt: string;
+    usedBy: 'USER' | 'GUEST';
+    priceSnapshot: number;
+    creatorRevenue: number;
+  }>;
   updatedAt: string;
 };
 
@@ -157,6 +189,10 @@ function sanitizeTemplateKeyCandidate(value: unknown, fallback: string): string 
     .replace(/_+/g, '_')
     .slice(0, 64);
   return normalized || 'creator_template';
+}
+
+function isSubmissionKeyDuplicateError(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 }
 
 function toDto(row: SubmissionWithRelations): TemplateSubmissionDto {
@@ -256,6 +292,43 @@ async function createUniqueTemplateKey(
   throw new TemplateSubmissionError(500, 'FAILED_TO_ALLOCATE_TEMPLATE_KEY');
 }
 
+function appendTemplateCandidateSuffix(baseCandidate: string, suffixIndex: number): string {
+  if (suffixIndex <= 1) {
+    return baseCandidate;
+  }
+  const suffix = `_${suffixIndex}`;
+  const maxBaseLength = Math.max(1, 64 - suffix.length);
+  return `${baseCandidate.slice(0, maxBaseLength)}${suffix}`;
+}
+
+async function createUniqueSubmissionKeyCandidate(
+  client: Prisma.TransactionClient | typeof prisma,
+  creatorId: string,
+  baseCandidate: string,
+  revisionNumber: number,
+  excludeSubmissionId?: string
+): Promise<string> {
+  const normalizedBase = sanitizeTemplateKeyCandidate(baseCandidate, 'creator_template');
+  for (let attempt = 1; attempt <= 200; attempt += 1) {
+    const candidate = appendTemplateCandidateSuffix(normalizedBase, attempt);
+    const duplicated = await client.templateSubmission.findFirst({
+      where: {
+        creatorId,
+        templateKeyCandidate: candidate,
+        revisionNumber,
+        ...(excludeSubmissionId ? { id: { not: excludeSubmissionId } } : {}),
+      },
+      select: {
+        id: true,
+      },
+    });
+    if (!duplicated) {
+      return candidate;
+    }
+  }
+  throw new TemplateSubmissionError(500, 'FAILED_TO_ALLOCATE_SUBMISSION_KEY_CANDIDATE');
+}
+
 function resolveCreatorComponent(category: string): string {
   if (!isActiveCreatorCategory(category)) {
     throw new TemplateSubmissionError(400, 'UNSUPPORTED_CREATOR_CATEGORY');
@@ -341,9 +414,16 @@ export async function createTemplateSubmissionDraft(
     }
   }
 
-  const templateKeyCandidate = sanitizeTemplateKeyCandidate(
+  const templateKeyCandidateBase = sanitizeTemplateKeyCandidate(
     input.templateKeyCandidate,
     parentSubmission?.templateKeyCandidate ?? input.name ?? 'creator_template'
+  );
+  const revisionNumber = parentSubmission ? parentSubmission.revisionNumber + 1 : 1;
+  const templateKeyCandidate = await createUniqueSubmissionKeyCandidate(
+    prisma,
+    creatorId,
+    templateKeyCandidateBase,
+    revisionNumber
   );
 
   const studioConfigInput =
@@ -359,33 +439,53 @@ export async function createTemplateSubmissionDraft(
     normalizedStudioConfig = validation.normalized as Prisma.InputJsonValue;
   }
 
-  const row = await prisma.templateSubmission.create({
-    data: {
-      creatorId,
-      category: categoryText,
-      templateKeyCandidate,
-      name: normalizeText(input.name) || parentSubmission?.name || 'Untitled Creator Template',
-      description: normalizeText(input.description) || parentSubmission?.description || '',
-      style: normalizeStyle(input.style || parentSubmission?.style),
-      price: normalizeInteger(input.price ?? parentSubmission?.price ?? 0),
-      creatorShare: clampNumber(Number(parentSubmission?.creatorShare ?? 0), 0, 100),
-      status: 'DRAFT',
-      studioConfig: normalizedStudioConfig === undefined ? undefined : normalizedStudioConfig,
-      previewThumbnailUrl:
-        normalizeText(input.previewThumbnailUrl) || parentSubmission?.previewThumbnailUrl || null,
-      parentSubmissionId: parentSubmission?.id ?? null,
-      revisionNumber: parentSubmission ? parentSubmission.revisionNumber + 1 : 1,
-      submittedAt: null,
-      reviewedAt: null,
-      reviewNote: null,
-      approvedTemplateId: null,
-    },
-    include: {
-      approvedTemplate: {
-        select: { id: true, slug: true, templateKey: true, isActive: true },
-      },
-    },
-  });
+  let row: Awaited<ReturnType<typeof prisma.templateSubmission.create>> | null = null;
+  let nextCandidate = templateKeyCandidate;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      row = await prisma.templateSubmission.create({
+        data: {
+          creatorId,
+          category: categoryText,
+          templateKeyCandidate: nextCandidate,
+          name: normalizeText(input.name) || parentSubmission?.name || 'Untitled Creator Template',
+          description: normalizeText(input.description) || parentSubmission?.description || '',
+          style: normalizeStyle(input.style || parentSubmission?.style),
+          price: normalizeInteger(input.price ?? parentSubmission?.price ?? 0),
+          creatorShare: clampNumber(Number(parentSubmission?.creatorShare ?? 0), 0, 100),
+          status: 'DRAFT',
+          studioConfig: normalizedStudioConfig === undefined ? undefined : normalizedStudioConfig,
+          previewThumbnailUrl:
+            normalizeText(input.previewThumbnailUrl) || parentSubmission?.previewThumbnailUrl || null,
+          parentSubmissionId: parentSubmission?.id ?? null,
+          revisionNumber,
+          submittedAt: null,
+          reviewedAt: null,
+          reviewNote: null,
+          approvedTemplateId: null,
+        },
+        include: {
+          approvedTemplate: {
+            select: { id: true, slug: true, templateKey: true, isActive: true },
+          },
+        },
+      });
+      break;
+    } catch (error) {
+      if (!isSubmissionKeyDuplicateError(error)) {
+        throw error;
+      }
+      nextCandidate = await createUniqueSubmissionKeyCandidate(
+        prisma,
+        creatorId,
+        templateKeyCandidateBase,
+        revisionNumber
+      );
+    }
+  }
+  if (!row) {
+    throw new TemplateSubmissionError(500, 'FAILED_TO_ALLOCATE_SUBMISSION_KEY_CANDIDATE');
+  }
 
   return toDto(row as SubmissionWithRelations);
 }
@@ -401,9 +501,16 @@ export async function updateTemplateSubmissionDraft(
   const payload: Prisma.TemplateSubmissionUpdateInput = {};
 
   if (input.templateKeyCandidate !== undefined) {
-    payload.templateKeyCandidate = sanitizeTemplateKeyCandidate(
+    const baseCandidate = sanitizeTemplateKeyCandidate(
       input.templateKeyCandidate,
       submission.templateKeyCandidate
+    );
+    payload.templateKeyCandidate = await createUniqueSubmissionKeyCandidate(
+      prisma,
+      creatorId,
+      baseCandidate,
+      submission.revisionNumber,
+      submission.id
     );
   }
   if (input.name !== undefined) {
@@ -464,47 +571,250 @@ export async function submitTemplateSubmission(
     throw new TemplateSubmissionError(400, code, validation.errors.join('; '));
   }
 
-  const updated = await prisma.templateSubmission.update({
-    where: { id: submission.id },
-    data: {
-      status: 'SUBMITTED',
-      submittedAt: new Date(),
-      reviewedAt: null,
-      reviewNote: null,
-    },
-    include: {
-      approvedTemplate: {
-        select: { id: true, slug: true, templateKey: true, isActive: true },
+  const updated = await prisma.$transaction(async (tx) => {
+    if (submission.approvedTemplateId) {
+      await tx.template.updateMany({
+        where: {
+          id: submission.approvedTemplateId,
+          isDeleted: false,
+        },
+        data: {
+          status: 'SUBMITTED',
+        },
+      });
+    }
+
+    return tx.templateSubmission.update({
+      where: { id: submission.id },
+      data: {
+        status: 'SUBMITTED',
+        submittedAt: new Date(),
+        reviewedAt: null,
+        reviewNote: null,
       },
-    },
+      include: {
+        approvedTemplate: {
+          select: { id: true, slug: true, templateKey: true, isActive: true },
+        },
+      },
+    });
   });
 
   return toDto(updated as SubmissionWithRelations);
 }
 
 export async function getCreatorDashboardSummary(creatorId: string): Promise<CreatorDashboardSummary> {
-  const [statusCounts, templateCount, usageCount] = await Promise.all([
+  const [statusCounts, creatorTemplates, revenueSummary, paidPayoutSummary] = await Promise.all([
     prisma.templateSubmission.groupBy({
       by: ['status'],
       where: { creatorId },
       _count: { _all: true },
     }),
-    prisma.template.count({
+    prisma.template.findMany({
       where: {
         creatorId,
         isDeleted: false,
       },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     }),
-    prisma.invitation.count({
+    prisma.templateRevenue.aggregate({
       where: {
-        template: {
-          creatorId,
-        },
+        creatorId,
+      },
+      _sum: {
+        creatorRevenue: true,
+      },
+    }),
+    prisma.creatorPayout.aggregate({
+      where: {
+        creatorId,
+        status: 'PAID',
+      },
+      _sum: {
+        totalRevenue: true,
+      },
+      _count: {
+        _all: true,
+      },
+      _max: {
+        paidAt: true,
       },
     }),
   ]);
 
-  const countByStatus = {
+  const templateIds = creatorTemplates.map((template) => template.id);
+  let usageCount = 0;
+  let viewCount = 0;
+  let cloneCount = 0;
+  let usageGroupByTemplate: Array<{
+    templateId: string;
+    usageCount: number;
+    lastUsedAt: string | null;
+  }> = [];
+  let viewGroupByTemplate: Array<{ templateId: string; viewCount: number }> = [];
+  let cloneGroupByTemplate: Array<{ templateId: string; cloneCount: number }> = [];
+  let revenueGroupByTemplate: Array<{ templateId: string; revenueTotal: number }> = [];
+  let recentUsages: CreatorDashboardSummary['recentUsages'] = [];
+
+  if (templateIds.length > 0) {
+    const [
+      usageCountResult,
+      viewCountResult,
+      cloneCountResult,
+      usageGroupRows,
+      viewGroupRows,
+      cloneGroupRows,
+      revenueGroupRows,
+      recentUsageRows,
+    ] = await Promise.all([
+      prisma.templateUsage.count({
+        where: {
+          templateId: {
+            in: templateIds,
+          },
+        },
+      }),
+      prisma.templateView.count({
+        where: {
+          templateId: {
+            in: templateIds,
+          },
+        },
+      }),
+      prisma.templateClone.count({
+        where: {
+          templateId: {
+            in: templateIds,
+          },
+        },
+      }),
+      prisma.templateUsage.groupBy({
+        by: ['templateId'],
+        where: {
+          templateId: {
+            in: templateIds,
+          },
+        },
+        _count: {
+          _all: true,
+        },
+        _max: {
+          createdAt: true,
+        },
+      }),
+      prisma.templateView.groupBy({
+        by: ['templateId'],
+        where: {
+          templateId: {
+            in: templateIds,
+          },
+        },
+        _count: {
+          _all: true,
+        },
+      }),
+      prisma.templateClone.groupBy({
+        by: ['templateId'],
+        where: {
+          templateId: {
+            in: templateIds,
+          },
+        },
+        _count: {
+          _all: true,
+        },
+      }),
+      prisma.templateRevenue.groupBy({
+        by: ['templateId'],
+        where: {
+          templateId: {
+            in: templateIds,
+          },
+          creatorId,
+        },
+        _sum: {
+          creatorRevenue: true,
+        },
+      }),
+      prisma.templateUsage.findMany({
+        where: {
+          templateId: {
+            in: templateIds,
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+        select: {
+          id: true,
+          templateId: true,
+          invitationId: true,
+          usedByUserId: true,
+          usedByGuestToken: true,
+          priceSnapshot: true,
+          createdAt: true,
+          template: {
+            select: {
+              name: true,
+            },
+          },
+          invitation: {
+            select: {
+              slug: true,
+            },
+          },
+          revenue: {
+            select: {
+              creatorRevenue: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    usageCount = usageCountResult;
+    viewCount = viewCountResult;
+    cloneCount = cloneCountResult;
+    usageGroupByTemplate = usageGroupRows.map((row) => ({
+      templateId: row.templateId,
+      usageCount: row._count._all,
+      lastUsedAt: row._max.createdAt ? row._max.createdAt.toISOString() : null,
+    }));
+    viewGroupByTemplate = viewGroupRows.map((row) => ({
+      templateId: row.templateId,
+      viewCount: row._count._all,
+    }));
+    cloneGroupByTemplate = cloneGroupRows.map((row) => ({
+      templateId: row.templateId,
+      cloneCount: row._count._all,
+    }));
+    revenueGroupByTemplate = revenueGroupRows.map((row) => ({
+      templateId: row.templateId,
+      revenueTotal: Number((row._sum.creatorRevenue || 0).toFixed(2)),
+    }));
+    recentUsages = recentUsageRows.map((row) => ({
+      usageId: row.id,
+      templateId: row.templateId,
+      templateName: row.template.name,
+      invitationId: row.invitationId,
+      invitationSlug: row.invitation.slug,
+      usedAt: row.createdAt.toISOString(),
+      usedBy: row.usedByUserId ? ('USER' as const) : ('GUEST' as const),
+      priceSnapshot: row.priceSnapshot,
+      creatorRevenue: Number((row.revenue?.creatorRevenue || 0).toFixed(2)),
+    }));
+  }
+
+  const countByStatus: Record<'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED', number> = {
     DRAFT: 0,
     SUBMITTED: 0,
     APPROVED: 0,
@@ -514,14 +824,73 @@ export async function getCreatorDashboardSummary(creatorId: string): Promise<Cre
     countByStatus[row.status] = row._count._all;
   });
 
+  const revenueTotal = Number((revenueSummary._sum.creatorRevenue || 0).toFixed(2));
+  const usageByTemplate = new Map(
+    usageGroupByTemplate.map((row) => [
+      row.templateId,
+      {
+        usageCount: row.usageCount,
+        lastUsedAt: row.lastUsedAt,
+      },
+    ])
+  );
+  const revenueByTemplate = new Map(
+    revenueGroupByTemplate.map((row) => [row.templateId, row.revenueTotal])
+  );
+  const viewByTemplate = new Map(viewGroupByTemplate.map((row) => [row.templateId, row.viewCount]));
+  const cloneByTemplate = new Map(
+    cloneGroupByTemplate.map((row) => [row.templateId, row.cloneCount])
+  );
+  const paidPayoutTotal = Number((paidPayoutSummary._sum.totalRevenue || 0).toFixed(2));
+  const pendingPayoutTotal = Number(Math.max(0, revenueTotal - paidPayoutTotal).toFixed(2));
+
+  const templateRevenueStats = creatorTemplates
+    .map((template) => {
+      const usageInfo = usageByTemplate.get(template.id);
+      return {
+        templateId: template.id,
+        templateName: template.name,
+        templateSlug: template.slug,
+        templateStatus: template.status,
+        usageCount: usageInfo?.usageCount || 0,
+        viewCount: viewByTemplate.get(template.id) || 0,
+        cloneCount: cloneByTemplate.get(template.id) || 0,
+        revenueTotal: revenueByTemplate.get(template.id) || 0,
+        lastUsedAt: usageInfo?.lastUsedAt || null,
+      };
+    })
+    .sort((left, right) => {
+      if (right.revenueTotal !== left.revenueTotal) {
+        return right.revenueTotal - left.revenueTotal;
+      }
+      return right.usageCount - left.usageCount;
+    });
+
+  const totalTemplates = creatorTemplates.length;
+  const publishedTemplates = creatorTemplates.filter((template) => template.status === 'PUBLISHED').length;
+
   return {
-    totalTemplates: templateCount,
+    totalTemplates,
+    publishedTemplates,
     draftCount: countByStatus.DRAFT,
     submittedCount: countByStatus.SUBMITTED,
     approvedCount: countByStatus.APPROVED,
     rejectedCount: countByStatus.REJECTED,
     usageCount,
-    revenuePlaceholder: 0,
+    viewCount,
+    cloneCount,
+    revenueTotal,
+    revenuePlaceholder: revenueTotal,
+    payoutSummary: {
+      totalPaid: paidPayoutTotal,
+      totalPending: pendingPayoutTotal,
+      payoutCount: paidPayoutSummary._count._all,
+      lastPaidAt: paidPayoutSummary._max.paidAt
+        ? paidPayoutSummary._max.paidAt.toISOString()
+        : null,
+    },
+    templateRevenueStats,
+    recentUsages,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -635,11 +1004,28 @@ export async function approveTemplateSubmission(
         component,
         templateKey,
         marketplaceType: 'CREATOR',
+        status: 'PUBLISHED',
         studioConfig: validation.normalized as Prisma.InputJsonValue,
+        thumbnailUrl: submission.previewThumbnailUrl,
         previewThumbnailUrl: submission.previewThumbnailUrl,
         sourceSubmissionId: submission.id,
         isActive: true,
         isDeleted: false,
+      },
+    });
+
+    await tx.templateVersion.create({
+      data: {
+        templateId: template.id,
+        versionNumber: 1,
+        templateKey,
+        name: template.name,
+        style: template.style,
+        description: template.description,
+        price: template.price,
+        creatorShare: template.creatorShare,
+        studioConfig: template.studioConfig === null ? Prisma.JsonNull : template.studioConfig,
+        thumbnailUrl: template.thumbnailUrl,
       },
     });
 
@@ -677,47 +1063,61 @@ export async function rejectTemplateSubmission(
   input: RejectSubmissionInput
 ): Promise<TemplateSubmissionDto> {
   const reviewNote = normalizeText(input.reviewNote);
-  const submission = await prisma.templateSubmission.findUnique({
-    where: { id: submissionId },
-    include: {
-      creator: {
-        select: {
-          id: true,
-          email: true,
+  return prisma.$transaction(async (tx) => {
+    const submission = await tx.templateSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+        approvedTemplate: {
+          select: { id: true, slug: true, templateKey: true, isActive: true },
         },
       },
-      approvedTemplate: {
-        select: { id: true, slug: true, templateKey: true, isActive: true },
+    });
+
+    if (!submission) {
+      throw new TemplateSubmissionError(404, 'TEMPLATE_SUBMISSION_NOT_FOUND');
+    }
+    if (submission.status !== 'SUBMITTED') {
+      throw new TemplateSubmissionError(409, 'SUBMISSION_NOT_READY_FOR_REJECTION');
+    }
+
+    if (submission.approvedTemplateId) {
+      await tx.template.updateMany({
+        where: {
+          id: submission.approvedTemplateId,
+          isDeleted: false,
+        },
+        data: {
+          status: 'REJECTED',
+        },
+      });
+    }
+
+    const updated = await tx.templateSubmission.update({
+      where: { id: submission.id },
+      data: {
+        status: 'REJECTED',
+        reviewedAt: new Date(),
+        reviewNote: reviewNote || null,
       },
-    },
-  });
-
-  if (!submission) {
-    throw new TemplateSubmissionError(404, 'TEMPLATE_SUBMISSION_NOT_FOUND');
-  }
-  if (submission.status !== 'SUBMITTED') {
-    throw new TemplateSubmissionError(409, 'SUBMISSION_NOT_READY_FOR_REJECTION');
-  }
-
-  const updated = await prisma.templateSubmission.update({
-    where: { id: submission.id },
-    data: {
-      status: 'REJECTED',
-      reviewedAt: new Date(),
-      reviewNote: reviewNote || null,
-    },
-    include: {
-      creator: {
-        select: {
-          id: true,
-          email: true,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+        approvedTemplate: {
+          select: { id: true, slug: true, templateKey: true, isActive: true },
         },
       },
-      approvedTemplate: {
-        select: { id: true, slug: true, templateKey: true, isActive: true },
-      },
-    },
-  });
+    });
 
-  return toDto(updated as SubmissionWithRelations);
+    return toDto(updated as SubmissionWithRelations);
+  });
 }

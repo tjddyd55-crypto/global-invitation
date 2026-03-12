@@ -1,10 +1,11 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, TemplateStatus } from '@prisma/client';
 import prisma from '../lib/prisma';
 
 export type TemplateCategory = 'wedding' | 'birthday' | 'funeral' | 'party' | 'message';
 export type TemplateStyle = 'korean' | 'japanese' | 'western' | 'traditional' | 'modern';
 export type TemplateMarketplaceType = 'SYSTEM' | 'CREATOR';
 export type TemplateFieldType = 'text' | 'textarea' | 'date' | 'datetime' | 'number' | 'select';
+export type VisibleTemplateSort = 'newest' | 'popular' | 'trending';
 
 export interface TemplateFieldDefinition {
   id: string;
@@ -31,13 +32,18 @@ export interface TemplateDefinition {
   component: string;
   templateKey: string;
   marketplaceType: TemplateMarketplaceType;
+  status: TemplateStatus;
   studioConfig?: Prisma.JsonValue | null;
+  thumbnailUrl?: string | null;
   previewThumbnailUrl?: string | null;
   sourceSubmissionId?: string | null;
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
+  viewCount?: number;
+  cloneCount?: number;
+  trendingScore?: number;
   fields?: TemplateFieldDefinition[];
 }
 
@@ -51,7 +57,9 @@ export type TemplateCreateInput = {
   creatorId?: string;
   component: string;
   templateKey: string;
+  status?: TemplateStatus;
   studioConfig?: Prisma.InputJsonValue;
+  thumbnailUrl?: string;
   previewThumbnailUrl?: string;
   sourceSubmissionId?: string;
 };
@@ -101,7 +109,9 @@ function mapTemplateRecord(
     component: string;
     templateKey: string;
     marketplaceType: string;
+    status: TemplateStatus;
     studioConfig?: Prisma.JsonValue | null;
+    thumbnailUrl?: string | null;
     previewThumbnailUrl?: string | null;
     sourceSubmissionId?: string | null;
     isActive: boolean;
@@ -134,7 +144,9 @@ function mapTemplateRecord(
     component: row.component,
     templateKey: row.templateKey,
     marketplaceType: (row.marketplaceType as TemplateMarketplaceType) || 'SYSTEM',
+    status: row.status,
     studioConfig: row.studioConfig ?? null,
+    thumbnailUrl: row.thumbnailUrl ?? null,
     previewThumbnailUrl: row.previewThumbnailUrl ?? null,
     sourceSubmissionId: row.sourceSubmissionId ?? null,
     isActive: row.isActive,
@@ -195,14 +207,113 @@ export async function listTemplates(): Promise<TemplateDefinition[]> {
 }
 
 export async function listVisibleTemplates(): Promise<TemplateDefinition[]> {
+  return listVisibleTemplatesBySort({ sort: 'newest' });
+}
+
+export async function listVisibleTemplatesBySort(options?: {
+  sort?: VisibleTemplateSort;
+}): Promise<TemplateDefinition[]> {
+  const sort = options?.sort || 'newest';
   const rows = await prisma.template.findMany({
     where: {
       isActive: true,
       isDeleted: false,
+      status: 'PUBLISHED',
     },
     orderBy: { createdAt: 'desc' },
   });
-  return rows.map(mapTemplateRecord);
+  const mapped = rows.map(mapTemplateRecord);
+  if (sort === 'newest') {
+    return mapped;
+  }
+
+  const templateIds = mapped.map((template) => template.id);
+  if (templateIds.length === 0) {
+    return mapped;
+  }
+
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const [cloneCountsAll, viewCountsAll, cloneCountsRecent, viewCountsRecent] = await Promise.all([
+    prisma.templateClone.groupBy({
+      by: ['templateId'],
+      where: {
+        templateId: { in: templateIds },
+      },
+      _count: {
+        _all: true,
+      },
+    }),
+    prisma.templateView.groupBy({
+      by: ['templateId'],
+      where: {
+        templateId: { in: templateIds },
+      },
+      _count: {
+        _all: true,
+      },
+    }),
+    prisma.templateClone.groupBy({
+      by: ['templateId'],
+      where: {
+        templateId: { in: templateIds },
+        createdAt: { gte: sevenDaysAgo },
+      },
+      _count: {
+        _all: true,
+      },
+    }),
+    prisma.templateView.groupBy({
+      by: ['templateId'],
+      where: {
+        templateId: { in: templateIds },
+        createdAt: { gte: sevenDaysAgo },
+      },
+      _count: {
+        _all: true,
+      },
+    }),
+  ]);
+
+  const cloneCountMap = new Map(cloneCountsAll.map((row) => [row.templateId, row._count._all]));
+  const viewCountMap = new Map(viewCountsAll.map((row) => [row.templateId, row._count._all]));
+  const cloneRecentMap = new Map(cloneCountsRecent.map((row) => [row.templateId, row._count._all]));
+  const viewRecentMap = new Map(viewCountsRecent.map((row) => [row.templateId, row._count._all]));
+
+  const withStats = mapped.map((template) => {
+    const cloneCount = cloneCountMap.get(template.id) || 0;
+    const viewCount = viewCountMap.get(template.id) || 0;
+    const recentCloneCount = cloneRecentMap.get(template.id) || 0;
+    const recentViewCount = viewRecentMap.get(template.id) || 0;
+    const trendingScore = recentCloneCount * 3 + recentViewCount;
+    return {
+      ...template,
+      cloneCount,
+      viewCount,
+      trendingScore,
+    };
+  });
+
+  withStats.sort((left, right) => {
+    if (sort === 'popular') {
+      if ((right.cloneCount || 0) !== (left.cloneCount || 0)) {
+        return (right.cloneCount || 0) - (left.cloneCount || 0);
+      }
+      if ((right.viewCount || 0) !== (left.viewCount || 0)) {
+        return (right.viewCount || 0) - (left.viewCount || 0);
+      }
+      return Date.parse(right.createdAt) - Date.parse(left.createdAt);
+    }
+
+    if ((right.trendingScore || 0) !== (left.trendingScore || 0)) {
+      return (right.trendingScore || 0) - (left.trendingScore || 0);
+    }
+    if ((right.cloneCount || 0) !== (left.cloneCount || 0)) {
+      return (right.cloneCount || 0) - (left.cloneCount || 0);
+    }
+    return Date.parse(right.createdAt) - Date.parse(left.createdAt);
+  });
+
+  return withStats;
 }
 
 export async function getTemplates(): Promise<TemplateDefinition[]> {
@@ -256,6 +367,8 @@ export async function getTemplateFields(identifier: string): Promise<TemplateFie
 export async function createTemplate(input: TemplateCreateInput): Promise<TemplateDefinition> {
   const creatorId = normalizeText(input.creatorId || '');
   const slug = await createUniqueSlug(`${input.category}-${input.style}-${input.name}`);
+  const normalizedThumbnail =
+    normalizeText(input.thumbnailUrl || '') || normalizeText(input.previewThumbnailUrl || '') || null;
   const row = await prisma.template.create({
     data: {
       slug,
@@ -269,12 +382,25 @@ export async function createTemplate(input: TemplateCreateInput): Promise<Templa
       component: normalizeText(input.component),
       templateKey: normalizeText(input.templateKey) || 'wedding_classic',
       marketplaceType: normalizeMarketplaceType(creatorId),
+      status: input.status || 'PUBLISHED',
       studioConfig: input.studioConfig === undefined ? undefined : input.studioConfig,
-      previewThumbnailUrl: normalizeText(input.previewThumbnailUrl || '') || null,
+      thumbnailUrl: normalizedThumbnail,
+      previewThumbnailUrl: normalizedThumbnail,
       sourceSubmissionId: normalizeText(input.sourceSubmissionId || '') || null,
       isActive: true,
       isDeleted: false,
     },
+  });
+  await createTemplateVersion({
+    templateId: row.id,
+    templateKey: row.templateKey,
+    name: row.name,
+    style: row.style,
+    description: row.description,
+    price: row.price,
+    creatorShare: row.creatorShare,
+    studioConfig: row.studioConfig as Prisma.InputJsonValue | null,
+    thumbnailUrl: row.thumbnailUrl,
   });
   return mapTemplateRecord(row);
 }
@@ -324,11 +450,17 @@ export async function updateTemplate(
   if (input.templateKey !== undefined) {
     payload.templateKey = normalizeText(input.templateKey) || 'wedding_classic';
   }
+  if (input.status !== undefined) {
+    payload.status = input.status;
+  }
   if (input.studioConfig !== undefined) {
     payload.studioConfig = input.studioConfig;
   }
-  if (input.previewThumbnailUrl !== undefined) {
-    payload.previewThumbnailUrl = normalizeText(input.previewThumbnailUrl || '') || null;
+  if (input.thumbnailUrl !== undefined || input.previewThumbnailUrl !== undefined) {
+    const nextThumbnail =
+      normalizeText(input.thumbnailUrl || '') || normalizeText(input.previewThumbnailUrl || '') || null;
+    payload.thumbnailUrl = nextThumbnail;
+    payload.previewThumbnailUrl = nextThumbnail;
   }
   if (input.sourceSubmissionId !== undefined) {
     payload.sourceSubmissionId = normalizeText(input.sourceSubmissionId || '') || null;
@@ -345,7 +477,128 @@ export async function updateTemplate(
     data: payload,
   });
 
+  const shouldCreateVersion =
+    input.name !== undefined ||
+    input.style !== undefined ||
+    input.description !== undefined ||
+    input.price !== undefined ||
+    input.creatorShare !== undefined ||
+    input.templateKey !== undefined ||
+    input.studioConfig !== undefined ||
+    input.previewThumbnailUrl !== undefined;
+
+  if (shouldCreateVersion) {
+    await createTemplateVersion({
+      templateId: row.id,
+      templateKey: row.templateKey,
+      name: row.name,
+      style: row.style,
+      description: row.description,
+      price: row.price,
+      creatorShare: row.creatorShare,
+      studioConfig: row.studioConfig as Prisma.InputJsonValue | null,
+      thumbnailUrl: row.thumbnailUrl,
+    });
+  }
+
   return mapTemplateRecord(row);
+}
+
+type TemplateVersionInput = {
+  templateId: string;
+  templateKey: string;
+  name: string;
+  style: string;
+  description: string;
+  price: number;
+  creatorShare: number;
+  studioConfig?: Prisma.InputJsonValue | null;
+  thumbnailUrl?: string | null;
+};
+
+export async function createTemplateVersion(input: TemplateVersionInput) {
+  const lastVersion = await prisma.templateVersion.findFirst({
+    where: {
+      templateId: input.templateId,
+    },
+    orderBy: {
+      versionNumber: 'desc',
+    },
+    select: {
+      versionNumber: true,
+    },
+  });
+  const versionNumber = (lastVersion?.versionNumber || 0) + 1;
+  return prisma.templateVersion.create({
+    data: {
+      templateId: input.templateId,
+      versionNumber,
+      templateKey: input.templateKey,
+      name: input.name,
+      style: input.style,
+      description: input.description,
+      price: input.price,
+      creatorShare: input.creatorShare,
+      studioConfig:
+        input.studioConfig === undefined
+          ? undefined
+          : input.studioConfig === null
+            ? Prisma.JsonNull
+            : input.studioConfig,
+      thumbnailUrl: input.thumbnailUrl || null,
+    },
+  });
+}
+
+export async function getLatestTemplateVersion(templateId: string) {
+  return prisma.templateVersion.findFirst({
+    where: {
+      templateId,
+    },
+    orderBy: {
+      versionNumber: 'desc',
+    },
+  });
+}
+
+export async function recordTemplateView(input: {
+  templateId: string;
+  viewerUserId?: string | null;
+  viewerGuestToken?: string | null;
+  sessionId?: string | null;
+  referrer?: string | null;
+  userAgent?: string | null;
+}) {
+  return prisma.templateView.create({
+    data: {
+      templateId: input.templateId,
+      viewerUserId: input.viewerUserId || null,
+      viewerGuestToken: input.viewerGuestToken || null,
+      sessionId: input.sessionId || null,
+      referrer: input.referrer || null,
+      userAgent: input.userAgent || null,
+    },
+  });
+}
+
+export async function recordTemplateClone(input: {
+  templateId: string;
+  templateVersionId?: string | null;
+  templateUsageId?: string | null;
+  invitationId: string;
+  clonedByUserId?: string | null;
+  clonedByGuestToken?: string | null;
+}) {
+  return prisma.templateClone.create({
+    data: {
+      templateId: input.templateId,
+      templateVersionId: input.templateVersionId || null,
+      templateUsageId: input.templateUsageId || null,
+      invitationId: input.invitationId,
+      clonedByUserId: input.clonedByUserId || null,
+      clonedByGuestToken: input.clonedByGuestToken || null,
+    },
+  });
 }
 
 export async function deleteTemplate(identifier: string): Promise<TemplateDefinition | null> {

@@ -28,6 +28,7 @@ export type TemplateCategory =
   | 'business';
 export type TemplateStyle = 'korean' | 'japanese' | 'western' | 'traditional' | 'modern';
 export type TemplateMarketplaceType = 'SYSTEM' | 'CREATOR';
+export type TemplateLifecycleStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PUBLISHED';
 
 export type TemplateEditorType = 'wedding' | 'funeral' | 'message';
 export type TemplateRegistryCategory = 'wedding' | 'funeral' | 'message';
@@ -45,12 +46,17 @@ export interface TemplateDefinition {
   component: string;
   templateKey: string;
   marketplaceType: TemplateMarketplaceType;
+  status: TemplateLifecycleStatus;
   studioConfig?: Record<string, unknown> | null;
+  thumbnailUrl?: string | null;
   previewThumbnailUrl?: string | null;
   sourceSubmissionId?: string | null;
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
+  viewCount?: number;
+  cloneCount?: number;
+  trendingScore?: number;
 }
 
 export type TemplateRegistryEntry = {
@@ -202,6 +208,7 @@ const DEFAULT_TEMPLATE_REGISTRY: TemplateDefinition[] = [
     component: 'WeddingClassicTemplate',
     templateKey: 'wedding_classic',
     marketplaceType: 'SYSTEM',
+    status: 'PUBLISHED',
     isActive: true,
     isDeleted: false,
     createdAt: '2026-02-17T00:00:00.000Z',
@@ -217,6 +224,7 @@ const DEFAULT_TEMPLATE_REGISTRY: TemplateDefinition[] = [
     component: 'WeddingClassicTemplate',
     templateKey: 'wedding_classic',
     marketplaceType: 'SYSTEM',
+    status: 'PUBLISHED',
     isActive: true,
     isDeleted: false,
     createdAt: '2026-02-17T00:00:00.000Z',
@@ -233,6 +241,7 @@ const DEFAULT_TEMPLATE_REGISTRY: TemplateDefinition[] = [
     component: 'WeddingClassicTemplate',
     templateKey: 'wedding_classic',
     marketplaceType: 'CREATOR',
+    status: 'PUBLISHED',
     isActive: true,
     isDeleted: false,
     createdAt: '2026-02-17T00:00:00.000Z',
@@ -248,6 +257,7 @@ const DEFAULT_TEMPLATE_REGISTRY: TemplateDefinition[] = [
     component: 'WeddingClassicTemplate',
     templateKey: 'classic',
     marketplaceType: 'SYSTEM',
+    status: 'PUBLISHED',
     isActive: true,
     isDeleted: false,
     createdAt: '2026-02-17T00:00:00.000Z',
@@ -319,7 +329,12 @@ export function isTemplateSupported(template: TemplateDefinition): boolean {
 }
 
 export function isTemplateVisible(template: TemplateDefinition): boolean {
-  return template.isActive && !template.isDeleted && isTemplateSupported(template);
+  return (
+    template.status === 'PUBLISHED' &&
+    template.isActive &&
+    !template.isDeleted &&
+    isTemplateSupported(template)
+  );
 }
 
 export function listVisibleTemplateDefinitions(
@@ -354,9 +369,11 @@ export function resolveRendererByTemplateKey(templateKey: string | null): string
   return getTemplateRegistryEntry(templateKey)?.label ?? null;
 }
 
-export async function fetchVisibleTemplateDefinitions(): Promise<TemplateDefinition[]> {
+export async function fetchVisibleTemplateDefinitions(
+  sort: 'newest' | 'popular' | 'trending' = 'newest'
+): Promise<TemplateDefinition[]> {
   try {
-    const response = await fetch(buildApiUrl('/api/templates'), {
+    const response = await fetch(buildApiUrl(`/api/templates?sort=${encodeURIComponent(sort)}`), {
       cache: 'no-store',
     });
     if (!response.ok) {

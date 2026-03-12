@@ -1,9 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { cloneTemplateInvitation } from '@/src/lib/api';
+import { cloneTemplateInvitation, trackTemplateView } from '@/src/lib/api';
 import { setGuestToken } from '@/src/lib/auth';
 import MarketingLayout from '@/src/components/MarketingLayout';
 import TemplatePreviewWrapper from '@/src/templates/TemplatePreviewWrapper';
@@ -17,6 +17,8 @@ import {
 import styles from './templates.module.css';
 
 type FilterOption<T extends string> = { value: T | 'all'; label: string };
+type TemplateSortOption = 'newest' | 'popular' | 'trending';
+type DiscoveryOption = { value: TemplateSortOption; label: string; description: string };
 
 const CATEGORY_FILTERS: FilterOption<TemplateCategory>[] = [
   { value: 'all', label: '전체' },
@@ -58,19 +60,39 @@ const STYLE_LABELS: Record<TemplateStyle, string> = {
   modern: '모던',
 };
 
+const DISCOVERY_OPTIONS: DiscoveryOption[] = [
+  {
+    value: 'popular',
+    label: 'Popular',
+    description: '가장 많이 선택된 템플릿 중심으로 둘러봅니다.',
+  },
+  {
+    value: 'trending',
+    label: 'Trending',
+    description: '최근 7일간 반응이 빠르게 증가한 템플릿을 확인합니다.',
+  },
+  {
+    value: 'newest',
+    label: 'Newest',
+    description: '최근 등록된 템플릿을 먼저 살펴봅니다.',
+  },
+];
+
 export default function TemplatesPage() {
   const router = useRouter();
   const [categoryFilter, setCategoryFilter] = useState<TemplateCategory | 'all'>('all');
   const [styleFilter, setStyleFilter] = useState<TemplateStyle | 'all'>('all');
+  const [sortOption, setSortOption] = useState<TemplateSortOption>('newest');
   const [templates, setTemplates] = useState<TemplateDefinition[]>(() => listVisibleTemplateDefinitions());
   const [loading, setLoading] = useState(true);
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
+  const trackedTemplateIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadTemplates() {
-      const nextTemplates = await fetchVisibleTemplateDefinitions();
+      const nextTemplates = await fetchVisibleTemplateDefinitions(sortOption);
       if (!isMounted) return;
       setTemplates(nextTemplates);
       setLoading(false);
@@ -81,7 +103,7 @@ export default function TemplatesPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [sortOption]);
 
   const filteredTemplates = useMemo(() => {
     return templates.filter((item) => {
@@ -90,6 +112,22 @@ export default function TemplatesPage() {
       return isCategoryMatched && isStyleMatched;
     });
   }, [categoryFilter, styleFilter, templates]);
+  const discoveryTopTemplates = useMemo(() => filteredTemplates.slice(0, 3), [filteredTemplates]);
+  const currentDiscovery = useMemo(
+    () => DISCOVERY_OPTIONS.find((item) => item.value === sortOption) || DISCOVERY_OPTIONS[0],
+    [sortOption]
+  );
+
+  useEffect(() => {
+    const visibleCards = filteredTemplates.slice(0, 12);
+    visibleCards.forEach((template) => {
+      if (trackedTemplateIdsRef.current.has(template.id)) {
+        return;
+      }
+      trackedTemplateIdsRef.current.add(template.id);
+      void trackTemplateView(template.id);
+    });
+  }, [filteredTemplates]);
 
   const handleCreate = async (card: TemplateDefinition) => {
     setCreatingTemplateId(card.id);
@@ -113,6 +151,40 @@ export default function TemplatesPage() {
         <p className={styles.subtitle}>
           운영용 생성 흐름: 템플릿 선택 → 편집/저장 → 공개 → 공유
         </p>
+        <section className={styles.discoverySection}>
+          <div className={styles.discoveryHeader}>
+            <strong>Discovery</strong>
+            <p>{currentDiscovery.description}</p>
+          </div>
+          <div className={styles.discoveryTabs}>
+            {DISCOVERY_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={
+                  sortOption === option.value
+                    ? `${styles.discoveryTab} ${styles.discoveryTabActive}`
+                    : styles.discoveryTab
+                }
+                onClick={() => setSortOption(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <div className={styles.discoveryTop}>
+            {discoveryTopTemplates.map((item, index) => (
+              <article key={`top-${item.id}`} className={styles.discoveryTopCard}>
+                <div className={styles.discoveryTopRank}>#{index + 1}</div>
+                <strong>{item.name}</strong>
+                <p>{item.description}</p>
+                <span>
+                  views {item.viewCount || 0} · clones {item.cloneCount || 0}
+                </span>
+              </article>
+            ))}
+          </div>
+        </section>
         <section className={styles.filterSection}>
           <p className={styles.filterTitle}>카테고리</p>
           <div className={styles.filters}>
@@ -159,7 +231,18 @@ export default function TemplatesPage() {
           {filteredTemplates.map((card) => (
             <article key={card.id} className={styles.card} data-testid="template-card">
               <div className={styles.thumbnail}>
-                <TemplatePreviewWrapper templateKey={card.templateKey} studioConfig={card.studioConfig || undefined} />
+                {card.thumbnailUrl ? (
+                  <img
+                    src={card.thumbnailUrl}
+                    alt={`${card.name} template thumbnail`}
+                    className={styles.thumbnailImage}
+                  />
+                ) : (
+                  <TemplatePreviewWrapper
+                    templateKey={card.templateKey}
+                    studioConfig={card.studioConfig || undefined}
+                  />
+                )}
                 <span className={styles.thumbnailLabel}>
                   {CATEGORY_LABELS[card.category]} · {STYLE_LABELS[card.style]}
                 </span>
@@ -169,6 +252,10 @@ export default function TemplatesPage() {
                 <p className={styles.cardDesc}>Creator template</p>
               )}
               <p className={styles.cardDesc}>{card.description}</p>
+              <div className={styles.cardStats}>
+                <span>조회수 {card.viewCount || 0}</span>
+                <span>클론 {card.cloneCount || 0}</span>
+              </div>
               <div className={styles.actions}>
                 <button
                   type="button"

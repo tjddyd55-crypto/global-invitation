@@ -27,6 +27,7 @@ import LivePreviewPanel from '@/src/creator/studio/LivePreviewPanel';
 import SubmissionActions from '@/src/creator/studio/SubmissionActions';
 import studioStyles from '@/src/creator/studio/TemplateCreatorStudio.module.css';
 import { uploadMediaImage } from '@/src/lib/mediaApi';
+import { fetchCurrentUser } from '@/src/lib/auth';
 
 function buildMetaValue(submission: TemplateSubmission): TemplateMetaValue {
   return {
@@ -55,6 +56,7 @@ export default function CreatorTemplateStudioPage() {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [accessReady, setAccessReady] = useState(false);
 
   useEffect(() => {
     if (!submissionId) return;
@@ -62,10 +64,17 @@ export default function CreatorTemplateStudioPage() {
 
     async function loadSubmission() {
       try {
+        const me = await fetchCurrentUser();
+        if (!me || me.role !== 'CREATOR') {
+          router.replace('/signup?role=CREATOR');
+          return;
+        }
+
         const next = await getCreatorTemplateSubmission(submissionId);
         if (!isMounted) return;
         setSubmission(next);
         setMetaValue(buildMetaValue(next));
+        setAccessReady(true);
 
         if (isCreatorActiveCategory(next.category)) {
           const parsed = parseStudioConfig(next.studioConfig);
@@ -76,7 +85,13 @@ export default function CreatorTemplateStudioPage() {
         }
       } catch (loadError) {
         if (!isMounted) return;
-        setError(loadError instanceof Error ? loadError.message : 'Studio 데이터를 불러오지 못했습니다.');
+        const message = loadError instanceof Error ? loadError.message : 'Studio 데이터를 불러오지 못했습니다.';
+        if (message.includes('CREATOR_ROLE_REQUIRED') || message.includes('UNAUTHORIZED')) {
+          router.replace('/signup?role=CREATOR');
+          return;
+        }
+        setError(message);
+        setAccessReady(true);
       }
     }
 
@@ -85,7 +100,7 @@ export default function CreatorTemplateStudioPage() {
     return () => {
       isMounted = false;
     };
-  }, [submissionId]);
+  }, [submissionId, router]);
 
   const category = submission?.category;
   const activeCategory = isCreatorActiveCategory(category || '') ? (category as CreatorActiveCategory) : null;
@@ -109,6 +124,10 @@ export default function CreatorTemplateStudioPage() {
       metaValue.previewThumbnailUrl.trim() &&
       studioConfig
   );
+
+  if (!accessReady) {
+    return <div className={studioStyles.studioPage}>Loading creator access...</div>;
+  }
 
   if (!submission || !metaValue) {
     return <div className={studioStyles.studioPage}>Loading studio...</div>;
@@ -222,6 +241,11 @@ export default function CreatorTemplateStudioPage() {
       description={`Category: ${submission.category} · Status: ${submission.status}`}
       notice={
         <>
+          {submission.status === 'REJECTED' && (
+            <p className={studioStyles.error} data-testid="creator-rejected-reason">
+              반려 사유: {submission.reviewNote || '관리자 사유가 없습니다. 수정 후 재제출하세요.'}
+            </p>
+          )}
           {error && <p className={studioStyles.error}>{error}</p>}
           {success && <p className={studioStyles.success}>{success}</p>}
         </>

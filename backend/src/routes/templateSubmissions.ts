@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
+import prisma from '../lib/prisma';
 import { getAuthUser } from '../lib/auth';
 import {
   createTemplateSubmissionDraft,
@@ -25,7 +26,7 @@ async function resolveCreatorOrReject(req: Request, res: Response) {
     return null;
   }
 
-  if (!user.isCreator) {
+  if (user.role !== 'CREATOR') {
     res.status(403).json({ error: 'CREATOR_ROLE_REQUIRED' });
     return null;
   }
@@ -40,6 +41,46 @@ function handleServiceError(res: Response, error: unknown) {
   console.error('Template submission route error:', error);
   return res.status(500).json({ error: 'TEMPLATE_SUBMISSION_INTERNAL_ERROR' });
 }
+
+router.post('/enroll', async (req, res) => {
+  const user = await getAuthUser(req);
+  if (!user) {
+    return res.status(401).json({ error: 'UNAUTHORIZED' });
+  }
+
+  if (user.role === 'CREATOR' || user.role === 'ADMIN') {
+    return res.status(200).json({
+      ok: true,
+      role: user.role,
+      alreadyEnrolled: true,
+    });
+  }
+
+  try {
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        role: 'CREATOR',
+        isCreator: true,
+      },
+      select: {
+        id: true,
+        role: true,
+        isCreator: true,
+      },
+    });
+
+    return res.status(200).json({
+      ok: true,
+      userId: updated.id,
+      role: updated.role,
+      isCreator: updated.isCreator,
+    });
+  } catch (error) {
+    console.error('Creator enroll failed:', error);
+    return res.status(500).json({ error: 'CREATOR_ENROLL_FAILED' });
+  }
+});
 
 router.get('/dashboard', async (req, res) => {
   const creator = await resolveCreatorOrReject(req, res);

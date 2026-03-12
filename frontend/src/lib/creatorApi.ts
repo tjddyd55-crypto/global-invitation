@@ -39,12 +39,44 @@ export type TemplateSubmission = {
 
 export type CreatorDashboardSummary = {
   totalTemplates: number;
+  publishedTemplates: number;
   draftCount: number;
   submittedCount: number;
   approvedCount: number;
   rejectedCount: number;
   usageCount: number;
+  viewCount: number;
+  cloneCount: number;
+  revenueTotal: number;
   revenuePlaceholder: number;
+  payoutSummary: {
+    totalPaid: number;
+    totalPending: number;
+    payoutCount: number;
+    lastPaidAt: string | null;
+  };
+  templateRevenueStats: Array<{
+    templateId: string;
+    templateName: string;
+    templateSlug: string;
+    templateStatus: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PUBLISHED';
+    usageCount: number;
+    viewCount: number;
+    cloneCount: number;
+    revenueTotal: number;
+    lastUsedAt: string | null;
+  }>;
+  recentUsages: Array<{
+    usageId: string;
+    templateId: string;
+    templateName: string;
+    invitationId: string;
+    invitationSlug: string;
+    usedAt: string;
+    usedBy: 'USER' | 'GUEST';
+    priceSnapshot: number;
+    creatorRevenue: number;
+  }>;
   updatedAt: string;
 };
 
@@ -78,6 +110,7 @@ async function parseJsonOrThrow<T>(response: Response): Promise<T> {
 
 function buildCreatorRequestInit(init?: RequestInit): RequestInit {
   return {
+    credentials: 'include',
     cache: 'no-store',
     ...init,
     headers: {
@@ -91,6 +124,23 @@ function buildCreatorRequestInit(init?: RequestInit): RequestInit {
 export async function getCreatorDashboardSummary() {
   const response = await fetch(buildApiUrl('/api/creator/dashboard'), buildCreatorRequestInit());
   return parseJsonOrThrow<CreatorDashboardSummary>(response);
+}
+
+export async function enrollCreatorRole() {
+  const response = await fetch(
+    buildApiUrl('/api/creator/enroll'),
+    buildCreatorRequestInit({
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+  );
+  return parseJsonOrThrow<{
+    ok: true;
+    userId?: string;
+    role: 'USER' | 'CREATOR' | 'ADMIN';
+    isCreator?: boolean;
+    alreadyEnrolled?: boolean;
+  }>(response);
 }
 
 export async function listCreatorTemplateSubmissions() {

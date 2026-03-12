@@ -28,6 +28,8 @@ export interface TemplateCloneResponse {
   editor_url: string;
   guest_token?: string | null;
   invitation_id?: string;
+  template_version_id?: string | null;
+  template_key?: string;
 }
 
 export interface InvitationSummary {
@@ -182,6 +184,21 @@ export async function cloneTemplateInvitation(templateId: string): Promise<Templ
     throw new Error('Failed to clone template');
   }
   return response.json();
+}
+
+export async function trackTemplateView(templateId: string): Promise<void> {
+  try {
+    await fetch(buildApiUrl(`/api/templates/${encodeURIComponent(templateId)}/view`), {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        ...buildAuthHeaders(),
+      },
+      keepalive: true,
+    });
+  } catch {
+    // Analytics failure should not block template browsing.
+  }
 }
 
 export async function getInvitationForEditor(identifier: string, token?: string | null): Promise<Invitation> {

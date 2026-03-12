@@ -4,6 +4,7 @@ import Link from 'next/link';
 import styles from './HomePageClient.module.css';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
+import Navbar from '@/src/components/Navbar';
 
 type Translate = (key: string) => string;
 
@@ -54,26 +55,6 @@ function FeaturesSection({ t }: { t: Translate }) {
   );
 }
 
-function MainHeader({ t }: { t: Translate }) {
-  return (
-    <header className={styles.mainHeader}>
-      <div className={styles.headerInner}>
-        <Link href="/" className={styles.logo}>
-          {t(I18N_KEYS.marketing.brandName)}
-        </Link>
-        <nav className={styles.navMenu}>
-          <Link href="/templates">{t(I18N_KEYS.marketing.navCreateInvitation)}</Link>
-          <Link href="/admin/templates/new" data-testid="create-template-button">
-            {t(I18N_KEYS.marketing.navCreateTemplate)}
-          </Link>
-          <Link href="/my-invitations">{t(I18N_KEYS.marketing.navMyInvitations)}</Link>
-          <Link href="/templates">{t(I18N_KEYS.marketing.navTemplates)}</Link>
-        </nav>
-      </div>
-    </header>
-  );
-}
-
 function PricingSummarySection({ t }: { t: Translate }) {
   return (
     <section className={styles.section}>
@@ -100,7 +81,7 @@ export default function HomePageClient() {
 
   return (
     <div>
-      <MainHeader t={t} />
+      <Navbar />
       <HeroSection t={t} />
       <FeaturesSection t={t} />
       <PricingSummarySection t={t} />

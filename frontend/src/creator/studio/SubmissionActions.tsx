@@ -33,6 +33,7 @@ export default function SubmissionActions({
             className={styles.button}
             onClick={() => void onSave()}
             disabled={saving || submitting || status === 'APPROVED'}
+            data-testid="creator-save-draft-button"
           >
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
@@ -41,8 +42,9 @@ export default function SubmissionActions({
             className={`${styles.button} ${styles.buttonSecondary}`}
             onClick={() => void onSubmit()}
             disabled={!canSubmit || saving || submitting || status === 'APPROVED'}
+            data-testid="creator-submit-review-button"
           >
-            {submitting ? 'Submitting...' : 'Submit for Review'}
+            {submitting ? 'Submitting...' : status === 'REJECTED' ? 'Resubmit for Review' : 'Submit for Review'}
           </button>
         </div>
         {status === 'APPROVED' && onCreateRevision && (

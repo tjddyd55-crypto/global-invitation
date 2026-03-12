@@ -52,6 +52,7 @@ export default function TemplateMetaPanel({
             value={value.name}
             onChange={(e) => onChange({ name: e.target.value })}
             placeholder="My Wedding Template"
+            data-testid="creator-meta-name-input"
           />
         </label>
         <label className={styles.field}>
@@ -60,6 +61,7 @@ export default function TemplateMetaPanel({
             value={value.description}
             onChange={(e) => onChange({ description: e.target.value })}
             placeholder="템플릿 설명을 입력하세요."
+            data-testid="creator-meta-description-input"
           />
         </label>
         <div className={styles.inlineGrid}>
@@ -68,6 +70,7 @@ export default function TemplateMetaPanel({
             <select
               value={value.style}
               onChange={(e) => onChange({ style: e.target.value })}
+              data-testid="creator-meta-style-select"
             >
               {STYLE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -83,6 +86,7 @@ export default function TemplateMetaPanel({
               min={0}
               value={value.price}
               onChange={(e) => onChange({ price: Number(e.target.value) || 0 })}
+              data-testid="creator-meta-price-input"
             />
           </label>
         </div>
@@ -92,6 +96,7 @@ export default function TemplateMetaPanel({
             value={value.templateKeyCandidate}
             onChange={(e) => onChange({ templateKeyCandidate: e.target.value })}
             placeholder="my_wedding_style"
+            data-testid="creator-meta-key-input"
           />
         </label>
         <label className={styles.field}>
@@ -100,6 +105,7 @@ export default function TemplateMetaPanel({
             value={value.previewThumbnailUrl}
             onChange={(e) => onChange({ previewThumbnailUrl: e.target.value })}
             placeholder="https://.../thumbnail.jpg"
+            data-testid="creator-meta-thumbnail-url-input"
           />
         </label>
         <label className={styles.field}>
@@ -113,6 +119,7 @@ export default function TemplateMetaPanel({
               void onThumbnailUpload(file);
             }}
             disabled={uploadingThumbnail}
+            data-testid="creator-meta-thumbnail-file-input"
           />
           <span className={styles.helperText}>{uploadingThumbnail ? 'Uploading...' : 'JPG/PNG/WEBP up to 10MB'}</span>
         </label>

@@ -4,26 +4,36 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import {
+  approveAdminTemplateSubmission,
+  type AdminTemplateSubmission,
   deleteAdminTemplate,
   disableAdminTemplate,
   listAdminTemplates,
+  listAdminTemplateSubmissions,
+  rejectAdminTemplateSubmission,
 } from '@/src/lib/adminApi';
 import { calculateTemplateRevenue, type TemplateDefinition } from '@/src/templates/registry';
 import styles from '@/src/components/admin/AdminShell.module.css';
 
 export default function AdminTemplatesPage() {
   const [templates, setTemplates] = useState<TemplateDefinition[]>([]);
+  const [submissions, setSubmissions] = useState<AdminTemplateSubmission[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busyTemplateId, setBusyTemplateId] = useState<string | null>(null);
+  const [busySubmissionId, setBusySubmissionId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadTemplates() {
       try {
-        const nextTemplates = await listAdminTemplates();
+        const [nextTemplates, nextSubmissions] = await Promise.all([
+          listAdminTemplates(),
+          listAdminTemplateSubmissions(),
+        ]);
         if (!isMounted) return;
         setTemplates(nextTemplates);
+        setSubmissions(nextSubmissions);
       } catch (loadError) {
         if (!isMounted) return;
         setError(loadError instanceof Error ? loadError.message : '템플릿 목록을 불러오지 못했습니다.');
@@ -67,6 +77,40 @@ export default function AdminTemplatesPage() {
     }
   };
 
+  const handleApproveSubmission = async (submissionId: string) => {
+    setBusySubmissionId(submissionId);
+    setError(null);
+    try {
+      const approved = await approveAdminTemplateSubmission(submissionId);
+      setSubmissions((current) =>
+        current.map((submission) => (submission.id === submissionId ? approved : submission))
+      );
+      const nextTemplates = await listAdminTemplates();
+      setTemplates(nextTemplates);
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : '템플릿 승인에 실패했습니다.');
+    } finally {
+      setBusySubmissionId(null);
+    }
+  };
+
+  const handleRejectSubmission = async (submissionId: string) => {
+    setBusySubmissionId(submissionId);
+    setError(null);
+    try {
+      const rejected = await rejectAdminTemplateSubmission(submissionId);
+      setSubmissions((current) =>
+        current.map((submission) => (submission.id === submissionId ? rejected : submission))
+      );
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : '템플릿 반려에 실패했습니다.');
+    } finally {
+      setBusySubmissionId(null);
+    }
+  };
+
+  const pendingSubmissions = submissions.filter((submission) => submission.status === 'SUBMITTED');
+
   return (
     <>
       <div className={styles.topbar}>
@@ -82,6 +126,74 @@ export default function AdminTemplatesPage() {
       </div>
 
       {error && <p className={styles.error}>{error}</p>}
+
+      <section className={styles.section}>
+        <h2 className={styles.pageTitle}>Review Queue</h2>
+        <p className={styles.pageDescription}>Creator 검토 요청 상태(SUBMITTED) 템플릿을 심사합니다.</p>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>템플릿 이름</th>
+                <th>카테고리</th>
+                <th>Creator</th>
+                <th>요청일</th>
+                <th>상태</th>
+                <th>액션</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingSubmissions.map((submission) => (
+                <tr key={submission.id}>
+                  <td>
+                    <strong>{submission.name}</strong>
+                    <div className={styles.helperText}>{submission.templateKeyCandidate}</div>
+                  </td>
+                  <td>{submission.category}</td>
+                  <td>{submission.creator?.email || submission.creatorId}</td>
+                  <td>{submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : '-'}</td>
+                  <td>
+                    <span className={styles.pill}>{submission.status}</span>
+                  </td>
+                  <td>
+                    <div className={styles.actions}>
+                      <Link
+                        href={`/admin/template-submissions/${submission.id}`}
+                        className={`${styles.button} ${styles.secondaryButton}`}
+                      >
+                        Review
+                      </Link>
+                      <button
+                        type="button"
+                        className={`${styles.button} ${styles.secondaryButton}`}
+                        onClick={() => handleApproveSubmission(submission.id)}
+                        disabled={busySubmissionId === submission.id}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.button} ${styles.dangerButton}`}
+                        onClick={() => handleRejectSubmission(submission.id)}
+                        disabled={busySubmissionId === submission.id}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {pendingSubmissions.length === 0 && (
+                <tr>
+                  <td colSpan={6} className={styles.helperText}>
+                    검토 대기 중인 submission이 없습니다.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section className={styles.section}>
         <div className={styles.tableWrap}>
@@ -102,11 +214,8 @@ export default function AdminTemplatesPage() {
             <tbody>
               {templates.map((template) => {
                 const revenue = calculateTemplateRevenue(template.price, template.creatorShare);
-                const status = template.isDeleted
-                  ? 'Deleted'
-                  : template.isActive
-                    ? 'Active'
-                    : 'Disabled';
+                const statusSuffix = template.isDeleted ? ' / Deleted' : template.isActive ? '' : ' / Disabled';
+                const status = `${template.status}${statusSuffix}`;
 
                 return (
                   <tr key={template.id}>
