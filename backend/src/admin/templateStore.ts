@@ -90,6 +90,21 @@ function normalizeMarketplaceType(creatorId?: string): TemplateMarketplaceType {
   return creatorId?.trim() ? 'CREATOR' : 'SYSTEM';
 }
 
+function isUuidLike(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function normalizeCreatorId(value?: string): string | null {
+  const normalized = normalizeText(value || '');
+  if (!normalized) {
+    return null;
+  }
+  if (!isUuidLike(normalized)) {
+    throw new Error('INVALID_CREATOR_ID');
+  }
+  return normalized;
+}
+
 function slugify(value: string): string {
   return value
     .trim()
@@ -265,6 +280,33 @@ async function createUniqueSlug(baseName: string): Promise<string> {
   throw new Error('Failed to allocate unique template slug');
 }
 
+function logTemplateLookupByUuid(id: string) {
+  console.log('Template lookup by uuid:', id);
+}
+
+function logTemplateLookupBySlug(slug: string) {
+  console.log('Template lookup by slug:', slug);
+}
+
+async function findTemplateIdentityByIdentifier(identifier: string): Promise<{ id: string } | null> {
+  const normalized = normalizeText(identifier);
+  if (!normalized) {
+    return null;
+  }
+  if (isUuidLike(normalized)) {
+    logTemplateLookupByUuid(normalized);
+    return prisma.template.findUnique({
+      where: { id: normalized },
+      select: { id: true },
+    });
+  }
+  logTemplateLookupBySlug(normalized);
+  return prisma.template.findUnique({
+    where: { slug: normalized },
+    select: { id: true },
+  });
+}
+
 export function calculateRevenue(price: number, creatorShare: number) {
   const normalizedPrice = normalizeInteger(Number(price) || 0);
   const normalizedShare = clampNumber(Number(creatorShare) || 0, 0, 100);
@@ -400,11 +442,39 @@ export async function getTemplates(): Promise<TemplateDefinition[]> {
   return listTemplates();
 }
 
-export async function getTemplateById(identifier: string): Promise<TemplateDefinition | null> {
-  const row = await prisma.template.findFirst({
-    where: {
-      OR: [{ id: identifier }, { slug: identifier }],
+async function getTemplateByUuidInternal(id: string) {
+  return prisma.template.findUnique({
+    where: { id },
+    include: {
+      fields: {
+        orderBy: { sortOrder: 'asc' },
+      },
     },
+  });
+}
+
+export async function getTemplateById(id: string): Promise<TemplateDefinition | null> {
+  const normalized = normalizeText(id);
+  if (!normalized || !isUuidLike(normalized)) {
+    return null;
+  }
+  logTemplateLookupByUuid(normalized);
+  const row = await getTemplateByUuidInternal(normalized);
+  if (!row) {
+    return null;
+  }
+  const [resolved] = await withCreatorMetadata([mapTemplateRecord(row)]);
+  return resolved || null;
+}
+
+export async function getTemplateBySlug(slug: string): Promise<TemplateDefinition | null> {
+  const normalized = normalizeText(slug);
+  if (!normalized) {
+    return null;
+  }
+  logTemplateLookupBySlug(normalized);
+  const row = await prisma.template.findUnique({
+    where: { slug: normalized },
     include: {
       fields: {
         orderBy: { sortOrder: 'asc' },
@@ -418,23 +488,25 @@ export async function getTemplateById(identifier: string): Promise<TemplateDefin
   return resolved || null;
 }
 
-export async function getTemplateFields(identifier: string): Promise<TemplateFieldDefinition[]> {
-  const template = await prisma.template.findFirst({
-    where: {
-      OR: [{ id: identifier }, { slug: identifier }],
-    },
-    select: { id: true },
-  });
+export async function getTemplateByIdentifier(identifier: string): Promise<TemplateDefinition | null> {
+  const normalized = normalizeText(identifier);
+  if (!normalized) {
+    return null;
+  }
+  if (isUuidLike(normalized)) {
+    return getTemplateById(normalized);
+  }
+  return getTemplateBySlug(normalized);
+}
 
-  if (!template) {
+async function getTemplateFieldsByTemplateId(templateId: string): Promise<TemplateFieldDefinition[]> {
+  if (!templateId) {
     return [];
   }
-
   const fields = await prisma.templateField.findMany({
-    where: { templateId: template.id },
+    where: { templateId },
     orderBy: { sortOrder: 'asc' },
   });
-
   return fields.map((field) => ({
     id: field.id,
     templateId: field.templateId,
@@ -448,8 +520,20 @@ export async function getTemplateFields(identifier: string): Promise<TemplateFie
   }));
 }
 
+export async function getTemplateFieldsByIdentifier(identifier: string): Promise<TemplateFieldDefinition[]> {
+  const templateIdentity = await findTemplateIdentityByIdentifier(identifier);
+  if (!templateIdentity) {
+    return [];
+  }
+  return getTemplateFieldsByTemplateId(templateIdentity.id);
+}
+
+export async function getTemplateFields(identifier: string): Promise<TemplateFieldDefinition[]> {
+  return getTemplateFieldsByIdentifier(identifier);
+}
+
 export async function createTemplate(input: TemplateCreateInput): Promise<TemplateDefinition> {
-  const creatorId = normalizeText(input.creatorId || '');
+  const creatorId = normalizeCreatorId(input.creatorId || undefined);
   const slug = await createUniqueSlug(`${input.category}-${input.style}-${input.name}`);
   const normalizedThumbnail =
     normalizeText(input.thumbnailUrl || '') || normalizeText(input.previewThumbnailUrl || '') || null;
@@ -462,10 +546,10 @@ export async function createTemplate(input: TemplateCreateInput): Promise<Templa
       description: normalizeText(input.description),
       price: normalizeInteger(Number(input.price) || 0),
       creatorShare: clampNumber(Number(input.creatorShare) || 0, 0, 100),
-      creatorId: creatorId || null,
+      creatorId,
       component: normalizeText(input.component),
       templateKey: normalizeText(input.templateKey) || 'wedding_classic',
-      marketplaceType: normalizeMarketplaceType(creatorId),
+      marketplaceType: normalizeMarketplaceType(creatorId || undefined),
       status: input.status || 'PUBLISHED',
       studioConfig: input.studioConfig === undefined ? undefined : input.studioConfig,
       thumbnailUrl: normalizedThumbnail,
@@ -493,11 +577,7 @@ export async function updateTemplate(
   identifier: string,
   input: TemplateUpdateInput
 ): Promise<TemplateDefinition | null> {
-  const existing = await prisma.template.findFirst({
-    where: {
-      OR: [{ id: identifier }, { slug: identifier }],
-    },
-  });
+  const existing = await findTemplateIdentityByIdentifier(identifier);
 
   if (!existing) {
     return null;
@@ -524,9 +604,9 @@ export async function updateTemplate(
     payload.creatorShare = clampNumber(Number(input.creatorShare) || 0, 0, 100);
   }
   if (input.creatorId !== undefined) {
-    const creatorId = normalizeText(input.creatorId || '');
-    payload.creatorId = creatorId || null;
-    payload.marketplaceType = normalizeMarketplaceType(creatorId);
+    const creatorId = normalizeCreatorId(input.creatorId || undefined);
+    payload.creatorId = creatorId;
+    payload.marketplaceType = normalizeMarketplaceType(creatorId || undefined);
   }
   if (input.component !== undefined) {
     payload.component = normalizeText(input.component);

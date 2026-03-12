@@ -3,9 +3,9 @@ import crypto from 'crypto';
 import { InvitationStatus } from '@prisma/client';
 import {
   calculateRevenue,
-  getTemplateById,
+  getTemplateByIdentifier,
+  getTemplateFieldsByIdentifier,
   getLatestTemplateVersion,
-  getTemplateFields,
   listVisibleTemplatesBySort,
   recordTemplateView,
 } from '../admin/templateStore';
@@ -28,9 +28,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:identifier', async (req, res) => {
   try {
-    const template = await getTemplateById(req.params.id);
+    const template = await getTemplateByIdentifier(req.params.identifier);
     if (!template || !template.isActive || template.isDeleted || template.status !== 'PUBLISHED') {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
@@ -53,14 +53,14 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.get('/:id/fields', async (req, res) => {
+router.get('/:identifier/fields', async (req, res) => {
   try {
-    const template = await getTemplateById(req.params.id);
+    const template = await getTemplateByIdentifier(req.params.identifier);
     if (!template || !template.isActive || template.isDeleted || template.status !== 'PUBLISHED') {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
 
-    const fields = await getTemplateFields(req.params.id);
+    const fields = await getTemplateFieldsByIdentifier(req.params.identifier);
     const user = await getAuthUser(req);
     const guestToken = getGuestToken(req);
     await recordTemplateView({
@@ -80,9 +80,9 @@ router.get('/:id/fields', async (req, res) => {
   }
 });
 
-router.post('/:id/view', async (req, res) => {
+router.post('/:identifier/view', async (req, res) => {
   try {
-    const template = await getTemplateById(req.params.id);
+    const template = await getTemplateByIdentifier(req.params.identifier);
     if (!template || !template.isActive || template.isDeleted || template.status !== 'PUBLISHED') {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
@@ -103,9 +103,9 @@ router.post('/:id/view', async (req, res) => {
   }
 });
 
-router.post('/:id/clone', async (req, res) => {
+router.post('/:identifier/clone', async (req, res) => {
   try {
-    const template = await getTemplateById(req.params.id);
+    const template = await getTemplateByIdentifier(req.params.identifier);
     if (!template || !template.isActive || template.isDeleted || template.status !== 'PUBLISHED') {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }

@@ -6,7 +6,7 @@ import { requireAdminSession } from '../lib/adminSession';
 import {
   createTemplate,
   disableTemplate,
-  getTemplateById,
+  getTemplateByIdentifier,
   getTemplateStoreSummary,
   listTemplates,
   softDeleteTemplate,
@@ -299,7 +299,7 @@ router.get('/templates', async (_req, res) => {
 
 router.get('/templates/:id', async (req, res) => {
   try {
-    const template = await getTemplateById(req.params.id);
+    const template = await getTemplateByIdentifier(req.params.id);
     if (!template) {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
@@ -373,6 +373,9 @@ router.post('/templates', async (req, res) => {
     });
     return res.status(201).json(template);
   } catch (error) {
+    if (error instanceof Error && error.message === 'INVALID_CREATOR_ID') {
+      return res.status(400).json({ error: 'INVALID_CREATOR_ID' });
+    }
     console.error('Error creating admin template:', error);
     return res.status(500).json({ error: 'FAILED_TO_CREATE_TEMPLATE' });
   }
@@ -444,6 +447,9 @@ router.patch('/templates/:id', async (req, res) => {
     });
     return res.status(200).json(template);
   } catch (error) {
+    if (error instanceof Error && error.message === 'INVALID_CREATOR_ID') {
+      return res.status(400).json({ error: 'INVALID_CREATOR_ID' });
+    }
     console.error('Error updating admin template:', error);
     return res.status(500).json({ error: 'FAILED_TO_UPDATE_TEMPLATE' });
   }

@@ -93,12 +93,17 @@ async function resolveTemplateReference(value: unknown): Promise<{ id: string; t
   const key = normalizeText(value);
   if (!key) return null;
 
+  let lookupWhere: Prisma.TemplateWhereInput;
+  if (isUuidLike(key)) {
+    console.log('Template lookup by uuid:', key);
+    lookupWhere = { id: key, isDeleted: false, isActive: true };
+  } else {
+    console.log('Template lookup by slug:', key);
+    lookupWhere = { slug: key, isDeleted: false, isActive: true };
+  }
+
   const template = await prisma.template.findFirst({
-    where: {
-      OR: [{ id: key }, { slug: key }],
-      isDeleted: false,
-      isActive: true,
-    },
+    where: lookupWhere,
     select: {
       id: true,
       templateKey: true,

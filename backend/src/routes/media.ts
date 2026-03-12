@@ -245,6 +245,10 @@ async function canAccessTemplateMedia(userId: string, entityId: string): Promise
     return true;
   }
 
+  if (!isUuidLike(entityId)) {
+    return false;
+  }
+
   const template = await prisma.template.findFirst({
     where: {
       id: entityId,
