@@ -111,7 +111,7 @@ router.post('/logout', async (_req, res) => {
 router.get('/me', requireAdminSession, async (req, res) => {
   const session = getAdminSession(req);
   if (!session) {
-    return res.redirect('/admin/login');
+    return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
   }
 
   return res.status(200).json({

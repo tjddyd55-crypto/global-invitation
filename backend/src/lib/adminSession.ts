@@ -193,7 +193,7 @@ export function getAdminSession(req: Request): AdminSession | null {
 export function requireAdminSession(req: Request, res: Response, next: NextFunction) {
   const session = getAdminSession(req);
   if (!session) {
-    return res.redirect('/admin/login');
+    return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
   }
 
   res.locals.adminSession = session;
