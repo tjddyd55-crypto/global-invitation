@@ -1,4 +1,5 @@
 import { Prisma, TemplateStatus } from '@prisma/client';
+import { validate as uuidValidate } from 'uuid';
 import prisma from '../lib/prisma';
 
 export type TemplateCategory = 'wedding' | 'birthday' | 'funeral' | 'party' | 'message';
@@ -91,7 +92,7 @@ function normalizeMarketplaceType(creatorId?: string): TemplateMarketplaceType {
 }
 
 function isUuidLike(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return uuidValidate(value);
 }
 
 function normalizeCreatorId(value?: string): string | null {
@@ -229,24 +230,31 @@ async function withCreatorMetadata(templates: TemplateDefinition[]): Promise<Tem
     }));
   }
 
-  let creators: Array<{ id: string; nickname: string | null; email: string | null }> = [];
-  try {
-    creators = await prisma.$queryRaw<Array<{ id: string; nickname: string | null; email: string | null }>>(
-      Prisma.sql`
-        SELECT
-          id::text AS id,
-          nickname,
-          email
-        FROM users
-        WHERE id::text IN (${Prisma.join(creatorIds)})
-      `
-    );
-  } catch (error) {
-    console.error('Failed to fetch creator metadata, falling back to creator ids only:', error);
-    creators = [];
-  }
+  const creatorMap = new Map<string, CreatorProfile>();
+  await Promise.all(
+    creatorIds.map(async (creatorId) => {
+      let creator: CreatorProfile | null = null;
 
-  const creatorMap = new Map(creators.map((creator) => [creator.id, creator]));
+      try {
+        if (creatorId && uuidValidate(creatorId)) {
+          creator = await prisma.user.findUnique({
+            where: { id: creatorId },
+            select: {
+              id: true,
+              nickname: true,
+              email: true,
+            },
+          });
+        }
+      } catch (err) {
+        console.error('Creator lookup failed:', err);
+      }
+
+      if (creator) {
+        creatorMap.set(creator.id, creator);
+      }
+    })
+  );
 
   return templates.map((template) => {
     if (!template.creatorId) {
