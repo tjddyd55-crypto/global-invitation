@@ -2,37 +2,45 @@
 
 import { useI18n } from '../contexts/I18nContext';
 import type { Language } from '../i18n';
+import styles from './LanguageSelector.module.css';
 
-export default function LanguageSelector() {
+type LanguageSelectorProps = {
+  variant?: 'desktop' | 'mobile';
+  onChangeLanguage?: (lang: Language) => void;
+};
+
+const LANGUAGE_OPTIONS: Array<{ value: Language; label: string }> = [
+  { value: 'ko', label: '한국어' },
+  { value: 'en', label: 'English' },
+  { value: 'mn', label: 'Монгол' },
+];
+
+export default function LanguageSelector({
+  variant = 'desktop',
+  onChangeLanguage,
+}: LanguageSelectorProps) {
   const { language, setLanguage } = useI18n();
+  const isMobile = variant === 'mobile';
+
+  const handleChange = (nextLanguage: Language) => {
+    setLanguage(nextLanguage);
+    onChangeLanguage?.(nextLanguage);
+  };
 
   return (
-    <div style={{ 
-      position: 'fixed', 
-      top: '1rem', 
-      right: '1rem', 
-      zIndex: 1000,
-      padding: '0.5rem 0.6rem',
-      backgroundColor: '#fff',
-      border: '1px solid #ddd',
-      borderRadius: '4px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      minWidth: '6rem',
-    }}>
+    <div className={isMobile ? styles.mobileRoot : styles.desktopRoot}>
+      {isMobile && <span className={styles.mobileLabel}>Language</span>}
       <select
         value={language}
-        onChange={(e) => setLanguage(e.target.value as Language)}
-        style={{
-          padding: '0.25rem 0.5rem',
-          fontSize: '0.9rem',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          cursor: 'pointer',
-        }}
+        onChange={(e) => handleChange(e.target.value as Language)}
+        className={isMobile ? styles.mobileSelect : styles.desktopSelect}
+        aria-label="Language selector"
       >
-        <option value="en">English</option>
-        <option value="ko">한국어</option>
-        <option value="mn">Монгол</option>
+        {LANGUAGE_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
       </select>
     </div>
   );

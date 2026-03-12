@@ -44,6 +44,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .authLink {
@@ -86,6 +88,12 @@
 
 .mobilePanel {
   display: none;
+}
+
+.mobileLanguage {
+  padding: 6px 0 8px;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .mobileLogout {

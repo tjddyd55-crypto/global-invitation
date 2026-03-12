@@ -36,6 +36,8 @@ export type TemplateRendererComponent = ComponentType<any>;
 
 export interface TemplateDefinition {
   id: string;
+  slug?: string;
+  title?: string;
   name: string;
   category: TemplateCategory;
   style: TemplateStyle;
@@ -43,8 +45,11 @@ export interface TemplateDefinition {
   price: number;
   creatorShare: number;
   creatorId?: string;
+  creatorName?: string | null;
+  creatorDisplayId?: string | null;
   component: string;
   templateKey: string;
+  publicTemplateKey?: string;
   marketplaceType: TemplateMarketplaceType;
   status: TemplateLifecycleStatus;
   studioConfig?: Record<string, unknown> | null;
@@ -348,13 +353,21 @@ function normalizeRequestedTemplateId(templateId: string | null): string | null 
   return LEGACY_TEMPLATE_ALIASES[templateId] ?? templateId;
 }
 
+function matchesTemplateIdentifier(template: TemplateDefinition, identifier: string): boolean {
+  return (
+    template.id === identifier ||
+    template.slug === identifier ||
+    template.publicTemplateKey === identifier
+  );
+}
+
 export function getTemplateDefinitionById(
   templateId: string | null,
   templates: TemplateDefinition[] = getDefaultTemplateRegistry()
 ): TemplateDefinition | null {
   const normalizedId = normalizeRequestedTemplateId(templateId);
   if (!normalizedId) return null;
-  return templates.find((template) => template.id === normalizedId) ?? null;
+  return templates.find((template) => matchesTemplateIdentifier(template, normalizedId)) ?? null;
 }
 
 export function resolveTemplateKeyByTemplateId(

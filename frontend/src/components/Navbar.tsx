@@ -11,6 +11,7 @@ import {
   logoutCurrentSession,
   type AuthUser,
 } from '@/src/lib/auth';
+import LanguageSelector from '@/src/components/LanguageSelector';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
@@ -138,7 +139,10 @@ export default function Navbar() {
           </nav>
         </div>
 
-        <div className={styles.right}>{authMenu()}</div>
+        <div className={styles.right}>
+          <LanguageSelector />
+          {authMenu()}
+        </div>
 
         <button
           type="button"
@@ -161,6 +165,9 @@ export default function Navbar() {
           <Link href="/create" onClick={() => setMenuOpen(false)}>
             Create Invitation
           </Link>
+          <div className={styles.mobileLanguage}>
+            <LanguageSelector variant="mobile" />
+          </div>
           {!user && (
             <>
               <Link href="/login" onClick={() => setMenuOpen(false)} data-testid="login-button">

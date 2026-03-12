@@ -112,7 +112,6 @@ export default function TemplatesPage() {
       return isCategoryMatched && isStyleMatched;
     });
   }, [categoryFilter, styleFilter, templates]);
-  const discoveryTopTemplates = useMemo(() => filteredTemplates.slice(0, 3), [filteredTemplates]);
   const currentDiscovery = useMemo(
     () => DISCOVERY_OPTIONS.find((item) => item.value === sortOption) || DISCOVERY_OPTIONS[0],
     [sortOption]
@@ -149,7 +148,7 @@ export default function TemplatesPage() {
       <div className={styles.root}>
         <h1 className={styles.title}>템플릿 선택</h1>
         <p className={styles.subtitle}>
-          운영용 생성 흐름: 템플릿 선택 → 편집/저장 → 공개 → 공유
+          공개 템플릿 흐름: Creator 제작 → Admin 승인 → User 선택/사용
         </p>
         <section className={styles.discoverySection}>
           <div className={styles.discoveryHeader}>
@@ -170,18 +169,6 @@ export default function TemplatesPage() {
               >
                 {option.label}
               </button>
-            ))}
-          </div>
-          <div className={styles.discoveryTop}>
-            {discoveryTopTemplates.map((item, index) => (
-              <article key={`top-${item.id}`} className={styles.discoveryTopCard}>
-                <div className={styles.discoveryTopRank}>#{index + 1}</div>
-                <strong>{item.name}</strong>
-                <p>{item.description}</p>
-                <span>
-                  views {item.viewCount || 0} · clones {item.cloneCount || 0}
-                </span>
-              </article>
             ))}
           </div>
         </section>
@@ -247,16 +234,24 @@ export default function TemplatesPage() {
                   {CATEGORY_LABELS[card.category]} · {STYLE_LABELS[card.style]}
                 </span>
               </div>
-              <h2 className={styles.cardTitle}>{card.name}</h2>
+              <h2 className={styles.cardTitle}>{card.title || card.name}</h2>
+              <p className={styles.creatorMeta}>by {card.creatorName || 'Global Invitation'}</p>
               {card.marketplaceType === 'CREATOR' && (
                 <p className={styles.cardDesc}>Creator template</p>
               )}
               <p className={styles.cardDesc}>{card.description}</p>
               <div className={styles.cardStats}>
-                <span>조회수 {card.viewCount || 0}</span>
-                <span>클론 {card.cloneCount || 0}</span>
+                <span>
+                  {card.viewCount || 0} views • {card.cloneCount || 0} uses
+                </span>
               </div>
               <div className={styles.actions}>
+                <Link
+                  href={`/templates/${encodeURIComponent(card.publicTemplateKey || card.slug || card.id)}`}
+                  className={styles.detailLink}
+                >
+                  템플릿 상세 보기
+                </Link>
                 <button
                   type="button"
                   onClick={() => handleCreate(card)}

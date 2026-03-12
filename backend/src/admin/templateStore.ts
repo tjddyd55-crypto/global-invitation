@@ -22,6 +22,7 @@ export interface TemplateFieldDefinition {
 export interface TemplateDefinition {
   id: string;
   slug: string;
+  title: string;
   name: string;
   category: TemplateCategory;
   style: TemplateStyle;
@@ -29,8 +30,11 @@ export interface TemplateDefinition {
   price: number;
   creatorShare: number;
   creatorId?: string;
+  creatorName?: string | null;
+  creatorDisplayId?: string | null;
   component: string;
   templateKey: string;
+  publicTemplateKey?: string;
   marketplaceType: TemplateMarketplaceType;
   status: TemplateStatus;
   studioConfig?: Prisma.JsonValue | null;
@@ -134,6 +138,7 @@ function mapTemplateRecord(
   return {
     id: row.id,
     slug: row.slug,
+    title: row.name,
     name: row.name,
     category: row.category as TemplateCategory,
     style: row.style as TemplateStyle,
@@ -141,8 +146,11 @@ function mapTemplateRecord(
     price: row.price,
     creatorShare: row.creatorShare,
     creatorId: row.creatorId ?? undefined,
+    creatorName: null,
+    creatorDisplayId: row.creatorId ?? null,
     component: row.component,
     templateKey: row.templateKey,
+    publicTemplateKey: row.slug,
     marketplaceType: (row.marketplaceType as TemplateMarketplaceType) || 'SYSTEM',
     status: row.status,
     studioConfig: row.studioConfig ?? null,
@@ -165,6 +173,78 @@ function mapTemplateRecord(
       createdAt: field.createdAt.toISOString(),
     })),
   };
+}
+
+type CreatorProfile = {
+  id: string;
+  nickname: string | null;
+  email: string | null;
+};
+
+function resolveCreatorName(profile?: CreatorProfile): string {
+  if (!profile) {
+    return 'Unknown Creator';
+  }
+  const nickname = profile.nickname?.trim();
+  if (nickname) {
+    return nickname;
+  }
+  const emailPrefix = profile.email?.split('@')[0]?.trim();
+  return emailPrefix || 'Unknown Creator';
+}
+
+async function withCreatorMetadata(templates: TemplateDefinition[]): Promise<TemplateDefinition[]> {
+  if (templates.length === 0) {
+    return templates;
+  }
+
+  const creatorIds = Array.from(
+    new Set(
+      templates
+        .map((template) => template.creatorId)
+        .filter((creatorId): creatorId is string => Boolean(creatorId))
+    )
+  );
+
+  if (creatorIds.length === 0) {
+    return templates.map((template) => ({
+      ...template,
+      creatorName: 'Global Invitation',
+      creatorDisplayId: 'system',
+    }));
+  }
+
+  const creators = await prisma.user.findMany({
+    where: {
+      id: {
+        in: creatorIds,
+      },
+    },
+    select: {
+      id: true,
+      nickname: true,
+      email: true,
+    },
+  });
+
+  const creatorMap = new Map(creators.map((creator) => [creator.id, creator]));
+
+  return templates.map((template) => {
+    if (!template.creatorId) {
+      return {
+        ...template,
+        creatorName: 'Global Invitation',
+        creatorDisplayId: 'system',
+      };
+    }
+
+    const creatorProfile = creatorMap.get(template.creatorId);
+    return {
+      ...template,
+      creatorName: resolveCreatorName(creatorProfile),
+      creatorDisplayId: template.creatorId,
+    };
+  });
 }
 
 async function createUniqueSlug(baseName: string): Promise<string> {
@@ -203,7 +283,7 @@ export async function listTemplates(): Promise<TemplateDefinition[]> {
   const rows = await prisma.template.findMany({
     orderBy: { createdAt: 'desc' },
   });
-  return rows.map(mapTemplateRecord);
+  return withCreatorMetadata(rows.map(mapTemplateRecord));
 }
 
 export async function listVisibleTemplates(): Promise<TemplateDefinition[]> {
@@ -224,7 +304,7 @@ export async function listVisibleTemplatesBySort(options?: {
   });
   const mapped = rows.map(mapTemplateRecord);
   if (sort === 'newest') {
-    return mapped;
+    return withCreatorMetadata(mapped);
   }
 
   const templateIds = mapped.map((template) => template.id);
@@ -313,7 +393,7 @@ export async function listVisibleTemplatesBySort(options?: {
     return Date.parse(right.createdAt) - Date.parse(left.createdAt);
   });
 
-  return withStats;
+  return withCreatorMetadata(withStats);
 }
 
 export async function getTemplates(): Promise<TemplateDefinition[]> {
@@ -331,7 +411,11 @@ export async function getTemplateById(identifier: string): Promise<TemplateDefin
       },
     },
   });
-  return row ? mapTemplateRecord(row) : null;
+  if (!row) {
+    return null;
+  }
+  const [resolved] = await withCreatorMetadata([mapTemplateRecord(row)]);
+  return resolved || null;
 }
 
 export async function getTemplateFields(identifier: string): Promise<TemplateFieldDefinition[]> {
