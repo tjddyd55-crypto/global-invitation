@@ -229,38 +229,18 @@ async function withCreatorMetadata(templates: TemplateDefinition[]): Promise<Tem
     }));
   }
 
-  const validCreatorIds = creatorIds.filter((creatorId) => isUuidLike(creatorId));
-  const invalidCreatorIds = creatorIds.filter((creatorId) => !isUuidLike(creatorId));
-
-  if (invalidCreatorIds.length > 0) {
-    console.warn(
-      'Ignoring non-UUID template creator ids:',
-      invalidCreatorIds.slice(0, 10).join(', ')
-    );
-  }
-
-  if (validCreatorIds.length === 0) {
-    return templates.map((template) => ({
-      ...template,
-      creatorName: template.creatorId ? 'Unknown Creator' : 'Global Invitation',
-      creatorDisplayId: template.creatorId || 'system',
-    }));
-  }
-
   let creators: Array<{ id: string; nickname: string | null; email: string | null }> = [];
   try {
-    creators = await prisma.user.findMany({
-      where: {
-        id: {
-          in: validCreatorIds,
-        },
-      },
-      select: {
-        id: true,
-        nickname: true,
-        email: true,
-      },
-    });
+    creators = await prisma.$queryRaw<Array<{ id: string; nickname: string | null; email: string | null }>>(
+      Prisma.sql`
+        SELECT
+          id::text AS id,
+          nickname,
+          email
+        FROM users
+        WHERE id::text IN (${Prisma.join(creatorIds)})
+      `
+    );
   } catch (error) {
     console.error('Failed to fetch creator metadata, falling back to creator ids only:', error);
     creators = [];
