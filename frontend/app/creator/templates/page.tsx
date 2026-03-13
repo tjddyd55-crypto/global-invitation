@@ -3,17 +3,19 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
+  deleteMyTemplate,
   getCreatorDashboardSummary,
   listMyTemplates,
   listCreatorTemplateSubmissions,
+  submitMyTemplateForReview,
   submitCreatorTemplateSubmission,
   type CreatorDashboardSummary,
   type TemplateSubmission,
 } from '@/src/lib/creatorApi';
 import { fetchCurrentUser } from '@/src/lib/auth';
-import type { TemplateDefinition } from '@/src/templates/registry';
+import type { TemplateDefinition, TemplateLifecycleStatus } from '@/src/templates/registry';
 import styles from './creator.module.css';
 
 function resolveStatusBadgeClass(status: TemplateSubmission['status']): string {
@@ -30,6 +32,49 @@ function resolveStatusBadgeClass(status: TemplateSubmission['status']): string {
   }
 }
 
+type CreatorTemplateLifecycleStatus =
+  | 'DRAFT'
+  | 'PENDING_REVIEW'
+  | 'APPROVED'
+  | 'PUBLISHED'
+  | 'REJECTED'
+  | 'ARCHIVED';
+
+function resolveCreatorLifecycleStatus(template: TemplateDefinition): CreatorTemplateLifecycleStatus {
+  const lifecycle = template.lifecycleStatus;
+  if (lifecycle === 'CREATED') return 'DRAFT';
+  if (lifecycle === 'PENDING_REVIEW') return 'PENDING_REVIEW';
+  if (lifecycle === 'APPROVED') return 'APPROVED';
+  if (lifecycle === 'PUBLISHED') return 'PUBLISHED';
+  if (lifecycle === 'REJECTED') return 'REJECTED';
+  if (lifecycle === 'ARCHIVED') return 'ARCHIVED';
+
+  if (template.status === 'DRAFT') return 'DRAFT';
+  if (template.status === 'SUBMITTED') return 'PENDING_REVIEW';
+  if (template.status === 'APPROVED') return 'APPROVED';
+  if (template.status === 'PUBLISHED') return 'PUBLISHED';
+  if (template.status === 'REJECTED') return 'REJECTED';
+  return 'ARCHIVED';
+}
+
+function resolveTemplateLifecycleBadgeClass(status: CreatorTemplateLifecycleStatus): string {
+  switch (status) {
+    case 'DRAFT':
+      return `${styles.statusBadge} ${styles.lifecycleDraft}`;
+    case 'PENDING_REVIEW':
+      return `${styles.statusBadge} ${styles.lifecyclePendingReview}`;
+    case 'APPROVED':
+      return `${styles.statusBadge} ${styles.lifecycleApproved}`;
+    case 'PUBLISHED':
+      return `${styles.statusBadge} ${styles.lifecyclePublished}`;
+    case 'REJECTED':
+      return `${styles.statusBadge} ${styles.lifecycleRejected}`;
+    case 'ARCHIVED':
+    default:
+      return `${styles.statusBadge} ${styles.lifecycleArchived}`;
+  }
+}
+
 export default function CreatorTemplatesDashboardPage() {
   const router = useRouter();
   const [summary, setSummary] = useState<CreatorDashboardSummary | null>(null);
@@ -37,7 +82,51 @@ export default function CreatorTemplatesDashboardPage() {
   const [myTemplates, setMyTemplates] = useState<TemplateDefinition[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [resubmittingId, setResubmittingId] = useState<string | null>(null);
+  const [templateActionId, setTemplateActionId] = useState<string | null>(null);
   const [accessReady, setAccessReady] = useState(false);
+
+  const submissionById = useMemo(() => {
+    return new Map(submissions.map((submission) => [submission.id, submission]));
+  }, [submissions]);
+
+  const rejectedSubmissionByTemplateId = useMemo(() => {
+    const mapping = new Map<string, TemplateSubmission>();
+    submissions.forEach((submission) => {
+      if (submission.status === 'REJECTED' && submission.approvedTemplateId) {
+        mapping.set(submission.approvedTemplateId, submission);
+      }
+    });
+    return mapping;
+  }, [submissions]);
+
+  async function refreshCreatorData() {
+    const [nextSummary, nextSubmissions, nextTemplates] = await Promise.all([
+      getCreatorDashboardSummary(),
+      listCreatorTemplateSubmissions(),
+      listMyTemplates(),
+    ]);
+    setSummary(nextSummary);
+    setSubmissions(nextSubmissions);
+    setMyTemplates(nextTemplates);
+  }
+
+  function resolveTemplateReviewNote(template: TemplateDefinition): string | null {
+    const fromSourceSubmissionId = template.sourceSubmissionId
+      ? submissionById.get(template.sourceSubmissionId)
+      : null;
+    const sourceReviewNote = fromSourceSubmissionId?.reviewNote?.trim();
+    if (sourceReviewNote) {
+      return sourceReviewNote;
+    }
+
+    const fromTemplateMatch = rejectedSubmissionByTemplateId.get(template.id);
+    const matchedReviewNote = fromTemplateMatch?.reviewNote?.trim();
+    if (matchedReviewNote) {
+      return matchedReviewNote;
+    }
+
+    return null;
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -92,16 +181,57 @@ export default function CreatorTemplatesDashboardPage() {
     setResubmittingId(submission.id);
     setError(null);
     try {
-      const updated = await submitCreatorTemplateSubmission(submission.id);
-      setSubmissions((current) =>
-        current.map((item) => (item.id === submission.id ? updated : item))
-      );
-      const refreshedSummary = await getCreatorDashboardSummary();
-      setSummary(refreshedSummary);
+      await submitCreatorTemplateSubmission(submission.id);
+      await refreshCreatorData();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : '재제출에 실패했습니다.');
     } finally {
       setResubmittingId(null);
+    }
+  };
+
+  const handleSubmitTemplate = async (template: TemplateDefinition) => {
+    const lifecycleStatus = resolveCreatorLifecycleStatus(template);
+    if (lifecycleStatus !== 'DRAFT') {
+      return;
+    }
+
+    setTemplateActionId(template.id);
+    setError(null);
+    try {
+      await submitMyTemplateForReview(template.id);
+      await refreshCreatorData();
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : '템플릿 검토 요청에 실패했습니다.'
+      );
+    } finally {
+      setTemplateActionId(null);
+    }
+  };
+
+  const handleDeleteTemplate = async (template: TemplateDefinition) => {
+    const lifecycleStatus = resolveCreatorLifecycleStatus(template);
+    if (lifecycleStatus !== 'DRAFT') {
+      return;
+    }
+
+    const confirmed = window.confirm('DRAFT 템플릿을 삭제하시겠습니까?');
+    if (!confirmed) {
+      return;
+    }
+
+    setTemplateActionId(template.id);
+    setError(null);
+    try {
+      await deleteMyTemplate(template.id);
+      await refreshCreatorData();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : '템플릿 삭제에 실패했습니다.');
+    } finally {
+      setTemplateActionId(null);
     }
   };
 
@@ -190,25 +320,105 @@ export default function CreatorTemplatesDashboardPage() {
               <tr>
                 <th>Name</th>
                 <th>Status</th>
-                <th>Lifecycle</th>
+                <th>Review note</th>
                 <th>Updated</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {myTemplates.map((template) => (
-                <tr key={template.id}>
-                  <td>
-                    <strong>{template.name}</strong>
-                    <div className={styles.meta}>{template.templateKey}</div>
-                  </td>
-                  <td>{template.status}</td>
-                  <td>{template.lifecycleStatus || '-'}</td>
-                  <td>{template.updatedAt ? new Date(template.updatedAt).toLocaleString() : '-'}</td>
-                </tr>
-              ))}
+              {myTemplates.map((template) => {
+                const lifecycleStatus = resolveCreatorLifecycleStatus(template);
+                const reviewNote = resolveTemplateReviewNote(template);
+                const sourceStudioId = template.sourceSubmissionId || null;
+
+                return (
+                  <tr key={template.id}>
+                    <td>
+                      <strong>{template.name}</strong>
+                      <div className={styles.meta}>{template.templateKey}</div>
+                    </td>
+                    <td>
+                      <span className={resolveTemplateLifecycleBadgeClass(lifecycleStatus)}>
+                        {lifecycleStatus}
+                      </span>
+                      <div className={styles.meta}>DB: {template.status}</div>
+                    </td>
+                    <td>
+                      {reviewNote ? (
+                        <span className={styles.noteText}>{reviewNote}</span>
+                      ) : (
+                        <span className={styles.meta}>-</span>
+                      )}
+                    </td>
+                    <td>{template.updatedAt ? new Date(template.updatedAt).toLocaleString() : '-'}</td>
+                    <td>
+                      <div className={styles.tableActions}>
+                        {sourceStudioId ? (
+                          <Link
+                            className={`${styles.button} ${styles.buttonSecondary}`}
+                            href={`/creator/templates/${sourceStudioId}/studio`}
+                          >
+                            Open Studio
+                          </Link>
+                        ) : (
+                          <span className={styles.meta}>Studio 연결 없음</span>
+                        )}
+
+                        {lifecycleStatus === 'DRAFT' && (
+                          <>
+                            <button
+                              type="button"
+                              className={styles.button}
+                              onClick={() => void handleSubmitTemplate(template)}
+                              disabled={templateActionId === template.id}
+                            >
+                              {templateActionId === template.id ? 'Submitting...' : 'Submit for Review'}
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.button} ${styles.buttonSecondary}`}
+                              onClick={() => void handleDeleteTemplate(template)}
+                              disabled={templateActionId === template.id}
+                            >
+                              Delete Template
+                            </button>
+                          </>
+                        )}
+
+                        {lifecycleStatus === 'PENDING_REVIEW' && (
+                          <span className={styles.meta}>Review Pending</span>
+                        )}
+
+                        {lifecycleStatus === 'APPROVED' && (
+                          <button
+                            type="button"
+                            className={styles.button}
+                            disabled
+                            title="관리자만 publish 할 수 있습니다."
+                          >
+                            Publish Template (Admin)
+                          </button>
+                        )}
+
+                        {lifecycleStatus === 'PUBLISHED' && (
+                          <span className={styles.meta}>Live in Marketplace</span>
+                        )}
+
+                        {lifecycleStatus === 'REJECTED' && (
+                          <span className={styles.meta}>Rejected</span>
+                        )}
+
+                        {lifecycleStatus === 'ARCHIVED' && (
+                          <span className={styles.meta}>Archived</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {myTemplates.length === 0 && (
                 <tr>
-                  <td colSpan={4} className={styles.meta}>
+                  <td colSpan={5} className={styles.meta}>
                     소유한 템플릿이 없습니다.
                   </td>
                 </tr>

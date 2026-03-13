@@ -111,6 +111,77 @@ router.patch('/my/:identifier', async (req, res) => {
   }
 });
 
+router.post('/my/:identifier/submit', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    }
+    if (!isCreatorRole(user.role)) {
+      return res.status(403).json({ error: 'CREATOR_ROLE_REQUIRED' });
+    }
+
+    const template = await getTemplateByIdentifier(req.params.identifier);
+    if (!template) {
+      return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
+    }
+    if (template.creatorId !== user.id) {
+      return res.status(403).json({ error: 'FORBIDDEN_TEMPLATE_OWNER_ONLY' });
+    }
+    if (template.lifecycleStatus !== 'CREATED') {
+      return res.status(409).json({ error: 'ONLY_DRAFT_TEMPLATE_CAN_BE_SUBMITTED' });
+    }
+
+    const updated = await updateTemplate(req.params.identifier, {
+      status: 'SUBMITTED',
+      isActive: true,
+      isDeleted: false,
+    });
+    if (!updated) {
+      return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
+    }
+    return res.status(200).json(updated);
+  } catch (error) {
+    console.error('Error submitting creator template:', error);
+    return res.status(500).json({ error: 'FAILED_TO_SUBMIT_CREATOR_TEMPLATE' });
+  }
+});
+
+router.delete('/my/:identifier', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    }
+    if (!isCreatorRole(user.role)) {
+      return res.status(403).json({ error: 'CREATOR_ROLE_REQUIRED' });
+    }
+
+    const template = await getTemplateByIdentifier(req.params.identifier);
+    if (!template) {
+      return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
+    }
+    if (template.creatorId !== user.id) {
+      return res.status(403).json({ error: 'FORBIDDEN_TEMPLATE_OWNER_ONLY' });
+    }
+    if (template.lifecycleStatus !== 'CREATED') {
+      return res.status(409).json({ error: 'ONLY_DRAFT_TEMPLATE_CAN_BE_DELETED' });
+    }
+
+    const deleted = await updateTemplate(req.params.identifier, {
+      isActive: false,
+      isDeleted: true,
+    });
+    if (!deleted) {
+      return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
+    }
+    return res.status(200).json(deleted);
+  } catch (error) {
+    console.error('Error deleting creator template:', error);
+    return res.status(500).json({ error: 'FAILED_TO_DELETE_CREATOR_TEMPLATE' });
+  }
+});
+
 router.get('/:identifier', async (req, res) => {
   try {
     const template = await getTemplateByIdentifier(req.params.identifier);

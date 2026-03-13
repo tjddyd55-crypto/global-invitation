@@ -112,6 +112,36 @@
   color: #15803d;
 }
 
+.lifecycleDraft {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.lifecyclePendingReview {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.lifecycleApproved {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.lifecyclePublished {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.lifecycleRejected {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.lifecycleArchived {
+  background: #e5e7eb;
+  color: #374151;
+}
+
 .noteText {
   font-size: 0.84rem;
   color: #b45309;

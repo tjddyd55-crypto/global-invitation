@@ -160,6 +160,27 @@ export async function listMyTemplates() {
   return parseJsonOrThrow<TemplateDefinition[]>(response);
 }
 
+export async function submitMyTemplateForReview(templateId: string) {
+  const response = await fetch(
+    buildApiUrl(`/api/templates/my/${templateId}/submit`),
+    buildCreatorRequestInit({
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+  );
+  return parseJsonOrThrow<TemplateDefinition>(response);
+}
+
+export async function deleteMyTemplate(templateId: string) {
+  const response = await fetch(
+    buildApiUrl(`/api/templates/my/${templateId}`),
+    buildCreatorRequestInit({
+      method: 'DELETE',
+    })
+  );
+  return parseJsonOrThrow<TemplateDefinition>(response);
+}
+
 export async function getCreatorTemplateSubmission(id: string) {
   const response = await fetch(
     buildApiUrl(`/api/creator/template-submissions/${id}`),
