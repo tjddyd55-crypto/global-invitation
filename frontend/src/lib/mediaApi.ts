@@ -149,7 +149,11 @@ export function isValidImageUrl(url: string | null | undefined): boolean {
 }
 
 function normalizePublicUrl(url: string): string {
-  return (url || '').trim();
+  const normalized = (url || '').trim();
+  if (normalized.startsWith('http://')) {
+    return normalized.replace('http://', 'https://');
+  }
+  return normalized;
 }
 
 function resolveUploadTarget(options: UploadMediaOptions): ResolvedUploadTarget {

@@ -38,7 +38,13 @@ export default function AppImage({
   const [isLoading, setIsLoading] = useState(true);
 
   const safeAlt = useMemo(() => (alt || '').trim() || 'image', [alt]);
-  const normalizedSrc = useMemo(() => (src || '').trim(), [src]);
+  const normalizedSrc = useMemo(() => {
+    const normalized = (src || '').trim();
+    if (normalized.startsWith('http://')) {
+      return normalized.replace('http://', 'https://');
+    }
+    return normalized;
+  }, [src]);
   const canRenderImage = isValidImageUrl(normalizedSrc) && !hasError;
   const safeWidth = Number.isFinite(width) && (width || 0) > 0 ? (width as number) : 800;
   const safeHeight = Number.isFinite(height) && (height || 0) > 0 ? (height as number) : 600;

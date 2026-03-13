@@ -390,28 +390,8 @@ export async function fetchNavbarUser(options?: { useCache?: boolean }): Promise
     return appUser;
   }
 
-  const adminResponse = await fetch(buildApiUrl('/api/admin/me'), {
-    credentials: 'include',
-    cache: 'no-store',
-  });
-  if (!adminResponse.ok) {
-    setNavbarCache(null, AUTH_ME_CACHE_UNAUTH_TTL_MS);
-    return null;
-  }
-
-  const payload = (await adminResponse.json()) as { adminId?: string };
-  if (!payload?.adminId) {
-    setNavbarCache(null, AUTH_ME_CACHE_UNAUTH_TTL_MS);
-    return null;
-  }
-
-  const adminUser: AuthUser = {
-    id: payload.adminId,
-    email: null,
-    role: 'ADMIN',
-  };
-  setNavbarCache(adminUser);
-  return adminUser;
+  setNavbarCache(null, AUTH_ME_CACHE_UNAUTH_TTL_MS);
+  return null;
 }
 
 export async function logoutCurrentSession(): Promise<void> {

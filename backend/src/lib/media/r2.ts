@@ -29,7 +29,11 @@ export type HeadObjectResult = {
 };
 
 function normalizeBaseUrl(value: string): string {
-  return value.endsWith('/') ? value.slice(0, -1) : value;
+  const trimmed = value.trim();
+  const httpsNormalized = trimmed.startsWith('http://')
+    ? trimmed.replace('http://', 'https://')
+    : trimmed;
+  return httpsNormalized.endsWith('/') ? httpsNormalized.slice(0, -1) : httpsNormalized;
 }
 
 function isPlaceholder(value: string): boolean {

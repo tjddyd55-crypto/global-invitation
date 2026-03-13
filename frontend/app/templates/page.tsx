@@ -14,7 +14,6 @@ import {
   type TemplateCategory,
   type TemplateDefinition,
   type TemplateStyle,
-  listVisibleTemplateDefinitions,
 } from '@/src/templates/registry';
 import styles from './templates.module.css';
 
@@ -85,7 +84,7 @@ export default function TemplatesPage() {
   const [categoryFilter, setCategoryFilter] = useState<TemplateCategory | 'all'>('all');
   const [styleFilter, setStyleFilter] = useState<TemplateStyle | 'all'>('all');
   const [sortOption, setSortOption] = useState<TemplateSortOption>('newest');
-  const [templates, setTemplates] = useState<TemplateDefinition[]>(() => listVisibleTemplateDefinitions());
+  const [templates, setTemplates] = useState<TemplateDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
   const trackedTemplateIdsRef = useRef<Set<string>>(new Set());
@@ -96,7 +95,8 @@ export default function TemplatesPage() {
     async function loadTemplates() {
       const nextTemplates = await fetchVisibleTemplateDefinitions(sortOption);
       if (!isMounted) return;
-      setTemplates(nextTemplates);
+      // Temporary client guard to avoid exposing non-published templates from any unexpected source.
+      setTemplates(nextTemplates.filter((t) => t.status === 'PUBLISHED'));
       setLoading(false);
     }
 
@@ -108,11 +108,13 @@ export default function TemplatesPage() {
   }, [sortOption]);
 
   const filteredTemplates = useMemo(() => {
-    return templates.filter((item) => {
-      const isCategoryMatched = categoryFilter === 'all' || item.category === categoryFilter;
-      const isStyleMatched = styleFilter === 'all' || item.style === styleFilter;
-      return isCategoryMatched && isStyleMatched;
-    });
+    return templates
+      .filter((t) => t.status === 'PUBLISHED')
+      .filter((item) => {
+        const isCategoryMatched = categoryFilter === 'all' || item.category === categoryFilter;
+        const isStyleMatched = styleFilter === 'all' || item.style === styleFilter;
+        return isCategoryMatched && isStyleMatched;
+      });
   }, [categoryFilter, styleFilter, templates]);
   const currentDiscovery = useMemo(
     () => DISCOVERY_OPTIONS.find((item) => item.value === sortOption) || DISCOVERY_OPTIONS[0],
