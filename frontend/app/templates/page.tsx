@@ -150,7 +150,7 @@ export default function TemplatesPage() {
       <div className={styles.root}>
         <h1 className={styles.title}>템플릿 선택</h1>
         <p className={styles.subtitle}>
-          공개 템플릿 흐름: Creator 제작 → Admin 승인 → User 선택/사용
+          취향과 목적에 맞는 공개 템플릿을 선택해 바로 초대장을 시작하세요.
         </p>
         <section className={styles.discoverySection}>
           <div className={styles.discoveryHeader}>
@@ -238,9 +238,6 @@ export default function TemplatesPage() {
               </div>
               <h2 className={styles.cardTitle}>{card.title || card.name}</h2>
               <p className={styles.creatorMeta}>by {card.creatorName || 'Global Invitation'}</p>
-              {card.marketplaceType === 'CREATOR' && (
-                <p className={styles.cardDesc}>Creator template</p>
-              )}
               <p className={styles.cardDesc}>{card.description}</p>
               <div className={styles.cardStats}>
                 <span>

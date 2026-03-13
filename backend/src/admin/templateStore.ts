@@ -468,7 +468,13 @@ export async function listTemplatesForAdmin(options?: {
     where,
     orderBy: { createdAt: 'desc' },
   });
-  return withCreatorMetadata(rows.map(mapTemplateRecord));
+  const templates = await withCreatorMetadata(rows.map(mapTemplateRecord));
+  if (!requestedStatus) {
+    return templates;
+  }
+
+  // Guard against mixed lifecycle rows (e.g. archived + submitted) by final lifecycle filtering.
+  return templates.filter((template) => template.lifecycleStatus === requestedStatus);
 }
 
 export async function listVisibleTemplates(): Promise<TemplateDefinition[]> {
