@@ -2,9 +2,8 @@ import { buildApiUrl } from '@/src/lib/apiBase';
 import type { SupportedTemplateKey, TemplateDefinition } from '@/src/templates/registry';
 
 export type AdminSession = {
-  authenticated: true;
-  adminId: string;
-  expiresAt: number;
+  role: 'ADMIN';
+  email: string;
 };
 
 export type AdminDashboardSummary = {
@@ -141,15 +140,15 @@ function buildAdminRequestInit(init?: RequestInit): RequestInit {
   };
 }
 
-export async function loginAdmin(adminId: string, password: string) {
+export async function loginAdmin(email: string, password: string) {
   const response = await fetch(
     buildApiUrl('/api/admin/login'),
     buildAdminRequestInit({
       method: 'POST',
-      body: JSON.stringify({ id: adminId, password }),
+      body: JSON.stringify({ email, password }),
     })
   );
-  return parseJsonOrThrow<{ authenticated: true; adminId: string }>(response);
+  return parseJsonOrThrow<{ success: true; role: 'ADMIN'; email: string }>(response);
 }
 
 export async function logoutAdmin() {

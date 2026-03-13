@@ -76,7 +76,7 @@ export default function LoginPage() {
         if (!authenticated) {
           throw new Error('관리자 로그인에 실패했습니다.');
         }
-        router.replace('/admin/dashboard');
+        router.replace('/admin/templates');
         return;
       } catch {
         setError(loginError instanceof Error ? loginError.message : '로그인에 실패했습니다.');

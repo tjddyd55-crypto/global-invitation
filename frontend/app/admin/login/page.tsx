@@ -25,7 +25,7 @@ function buildAdminIdCandidates(input: string): string[] {
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [adminId, setAdminId] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      const adminIdCandidates = buildAdminIdCandidates(adminId);
+      const adminIdCandidates = buildAdminIdCandidates(email);
       let authenticated = false;
       let lastError: unknown = null;
 
@@ -56,7 +56,7 @@ export default function AdminLoginPage() {
           : new Error('관리자 로그인에 실패했습니다.');
       }
 
-      router.replace('/admin/dashboard');
+      router.replace('/admin/templates');
     } catch (submitError) {
       setError(
         submitError instanceof Error ? submitError.message : '관리자 로그인에 실패했습니다.'
@@ -75,12 +75,12 @@ export default function AdminLoginPage() {
         </p>
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label htmlFor="admin-id">Admin ID</label>
+            <label htmlFor="admin-id">Admin Email</label>
             <input
               id="admin-id"
               autoComplete="username"
-              value={adminId}
-              onChange={(event) => setAdminId(event.target.value)}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
           </div>

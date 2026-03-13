@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { getAdminSession, logoutAdmin, type AdminSession } from '@/src/lib/adminApi';
-import { fetchCurrentUser } from '@/src/lib/auth';
 import styles from './AdminShell.module.css';
 
 type AdminShellProps = {
@@ -39,13 +38,6 @@ export default function AdminShell({ children }: AdminShellProps) {
 
     async function loadSession() {
       try {
-        const currentUser = await fetchCurrentUser({ useCache: true }).catch(() => null);
-        if (currentUser && currentUser.role !== 'ADMIN') {
-          if (!isMounted) return;
-          router.replace('/');
-          return;
-        }
-
         const nextSession = await getAdminSession();
         if (!isMounted) return;
         setSession(nextSession);
@@ -108,7 +100,7 @@ export default function AdminShell({ children }: AdminShellProps) {
           ))}
         </nav>
         <div className={styles.sidebarFooter}>
-          <div>{session.adminId}</div>
+          <div>{session.email}</div>
           <button type="button" onClick={handleLogout} className={styles.logoutButton}>
             Logout
           </button>

@@ -19,8 +19,8 @@ import testLoginRouter from './routes/testLogin';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-if (!process.env.ADMIN_SESSION_SECRET?.trim()) {
-  throw new Error('ADMIN_SESSION_SECRET must be defined');
+if (!process.env.ADMIN_JWT_SECRET?.trim() && !process.env.ADMIN_SESSION_SECRET?.trim()) {
+  throw new Error('ADMIN_JWT_SECRET (or ADMIN_SESSION_SECRET) must be defined');
 }
 
 function resolveAllowedOrigins(): string[] {

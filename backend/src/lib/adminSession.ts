@@ -2,20 +2,22 @@ import crypto from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
 
 const ADMIN_SESSION_COOKIE = 'admin_session';
-const ADMIN_SESSION_TTL_HOURS = 12;
+const ADMIN_SESSION_TTL_HOURS = 24;
 const DEV_DEFAULT_ADMIN_ID = 'admin@naver.com';
 const DEV_DEFAULT_ADMIN_PASSWORD = 'admin!2345';
 
 export type AdminSession = {
+  role: 'ADMIN';
+  email: string;
   adminId: string;
   issuedAt: number;
   expiresAt: number;
 };
 
 type AdminCredentials = {
-  id: string;
+  email: string;
   password: string;
-  secret: string;
+  jwtSecret: string;
 };
 
 function isProduction(): boolean {
@@ -38,20 +40,24 @@ function resolveAdminPassword(): string {
   return isProduction() ? '' : DEV_DEFAULT_ADMIN_PASSWORD;
 }
 
-function resolveAdminSessionSecret(): string {
-  return process.env.ADMIN_SESSION_SECRET?.trim() || '';
+function resolveAdminJwtSecret(): string {
+  return (
+    process.env.ADMIN_JWT_SECRET?.trim() ||
+    process.env.ADMIN_SESSION_SECRET?.trim() ||
+    ''
+  );
 }
 
 function getAdminCredentials(): AdminCredentials | null {
-  const id = resolveAdminId();
+  const email = resolveAdminId();
   const password = resolveAdminPassword();
-  const secret = resolveAdminSessionSecret();
+  const jwtSecret = resolveAdminJwtSecret();
 
-  if (!id || !password || !secret) {
+  if (!email || !password || !jwtSecret) {
     return null;
   }
 
-  return { id, password, secret };
+  return { email, password, jwtSecret };
 }
 
 function base64UrlEncode(value: string): string {
@@ -88,48 +94,84 @@ function parseCookieValue(req: Request, cookieName: string): string | null {
   return decodeURIComponent(cookie.slice(cookieName.length + 1));
 }
 
-function buildSession(adminId: string): AdminSession {
+function buildSession(adminEmail: string): AdminSession {
   const now = Date.now();
   return {
-    adminId,
+    role: 'ADMIN',
+    email: adminEmail,
+    adminId: adminEmail,
     issuedAt: now,
     expiresAt: now + ADMIN_SESSION_TTL_HOURS * 60 * 60 * 1000,
   };
 }
 
-function serializeSession(session: AdminSession, secret: string): string {
-  const encodedPayload = base64UrlEncode(JSON.stringify(session));
-  const signature = sign(encodedPayload, secret);
-  return `${encodedPayload}.${signature}`;
+function buildJwtPayload(session: AdminSession): {
+  role: 'ADMIN';
+  email: string;
+  iat: number;
+  exp: number;
+} {
+  const iat = Math.floor(session.issuedAt / 1000);
+  const exp = Math.floor(session.expiresAt / 1000);
+  return {
+    role: 'ADMIN',
+    email: session.email,
+    iat,
+    exp,
+  };
 }
 
-function deserializeSession(token: string, secret: string): AdminSession | null {
-  const [encodedPayload, signature] = token.split('.');
-  if (!encodedPayload || !signature) {
+function serializeSessionJwt(session: AdminSession, secret: string): string {
+  const encodedHeader = base64UrlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const encodedPayload = base64UrlEncode(JSON.stringify(buildJwtPayload(session)));
+  const unsigned = `${encodedHeader}.${encodedPayload}`;
+  const signature = sign(unsigned, secret);
+  return `${unsigned}.${signature}`;
+}
+
+function deserializeSessionJwt(token: string, secret: string): AdminSession | null {
+  const [encodedHeader, encodedPayload, signature] = token.split('.');
+  if (!encodedHeader || !encodedPayload || !signature) {
     return null;
   }
 
-  const expectedSignature = sign(encodedPayload, secret);
+  const unsigned = `${encodedHeader}.${encodedPayload}`;
+  const expectedSignature = sign(unsigned, secret);
   if (!safeEqual(signature, expectedSignature)) {
     return null;
   }
 
   try {
-    const session = JSON.parse(base64UrlDecode(encodedPayload)) as Partial<AdminSession>;
+    const payload = JSON.parse(base64UrlDecode(encodedPayload)) as Partial<{
+      role: string;
+      email: string;
+      iat: number;
+      exp: number;
+    }>;
     if (
-      !session.adminId ||
-      typeof session.issuedAt !== 'number' ||
-      typeof session.expiresAt !== 'number'
+      payload.role !== 'ADMIN' ||
+      !payload.email ||
+      typeof payload.iat !== 'number' ||
+      typeof payload.exp !== 'number'
     ) {
       return null;
     }
-    if (session.expiresAt < Date.now()) {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (payload.exp <= nowSeconds) {
       return null;
     }
+
+    const expectedEmail = resolveAdminId();
+    if (!expectedEmail || payload.email.trim() !== expectedEmail.trim()) {
+      return null;
+    }
+
     return {
-      adminId: session.adminId,
-      issuedAt: session.issuedAt,
-      expiresAt: session.expiresAt,
+      role: 'ADMIN',
+      email: payload.email,
+      adminId: payload.email,
+      issuedAt: payload.iat * 1000,
+      expiresAt: payload.exp * 1000,
     };
   } catch {
     return null;
@@ -146,16 +188,19 @@ export function validateAdminCredentials(adminId: string, password: string): boo
     return false;
   }
 
-  return safeEqual(adminId.trim(), credentials.id) && safeEqual(password.trim(), credentials.password);
+  return (
+    safeEqual(adminId.trim(), credentials.email) &&
+    safeEqual(password.trim(), credentials.password)
+  );
 }
 
-export function setAdminSessionCookie(res: Response, adminId: string) {
+export function setAdminSessionCookie(res: Response, adminEmail: string) {
   const credentials = getAdminCredentials();
   if (!credentials) {
     throw new Error('Admin credentials are not configured.');
   }
 
-  const token = serializeSession(buildSession(adminId), credentials.secret);
+  const token = serializeSessionJwt(buildSession(adminEmail), credentials.jwtSecret);
   const secure = isProduction();
   res.cookie(ADMIN_SESSION_COOKIE, token, {
     httpOnly: true,
@@ -187,7 +232,7 @@ export function getAdminSession(req: Request): AdminSession | null {
     return null;
   }
 
-  return deserializeSession(token, credentials.secret);
+  return deserializeSessionJwt(token, credentials.jwtSecret);
 }
 
 export function requireAdminSession(req: Request, res: Response, next: NextFunction) {
@@ -196,6 +241,7 @@ export function requireAdminSession(req: Request, res: Response, next: NextFunct
     return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
   }
 
+  console.log('admin session verified', session.email);
   res.locals.adminSession = session;
   return next();
 }

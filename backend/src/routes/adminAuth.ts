@@ -91,21 +91,24 @@ router.post('/login', async (req, res) => {
       return res.status(503).json({ error: 'ADMIN_NOT_CONFIGURED' });
     }
 
-    const adminId =
-      typeof req.body?.id === 'string'
-        ? req.body.id
-        : typeof req.body?.adminId === 'string'
-          ? req.body.adminId
-          : '';
+    const adminEmail =
+      typeof req.body?.email === 'string'
+        ? req.body.email
+        : typeof req.body?.id === 'string'
+          ? req.body.id
+          : typeof req.body?.adminId === 'string'
+            ? req.body.adminId
+            : '';
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
 
-    if (!adminId.trim() || !password.trim()) {
+    if (!adminEmail.trim() || !password.trim()) {
       return res.status(400).json({ error: 'ADMIN_CREDENTIALS_REQUIRED' });
     }
+    console.log('admin login attempt', adminEmail.trim());
 
     const expectedAdminId = getResolvedAdminId();
     const expectedPassword = getResolvedAdminPassword();
-    const normalizedInputId = normalizeAdminId(adminId);
+    const normalizedInputId = normalizeAdminId(adminEmail);
     const acceptedAdminIds = buildAcceptedAdminIds(expectedAdminId);
 
     if (!acceptedAdminIds.has(normalizedInputId) || password.trim() !== expectedPassword) {
@@ -113,6 +116,7 @@ router.post('/login', async (req, res) => {
     }
 
     setAdminSessionCookie(res, expectedAdminId);
+    console.log('admin login success');
     await logAdminAction({
       adminId: expectedAdminId,
       action: 'admin_login',
@@ -127,8 +131,9 @@ router.post('/login', async (req, res) => {
     });
 
     return res.status(200).json({
-      authenticated: true,
-      adminId: expectedAdminId,
+      success: true,
+      role: 'ADMIN',
+      email: expectedAdminId,
     });
   } catch (error) {
     console.error('Error during admin login:', error);
@@ -147,10 +152,10 @@ router.get('/me', requireAdminSession, async (req, res) => {
     return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
   }
 
+  console.log('admin session verified');
   return res.status(200).json({
-    authenticated: true,
-    adminId: session.adminId,
-    expiresAt: session.expiresAt,
+    role: 'ADMIN',
+    email: session.email,
   });
 });
 
