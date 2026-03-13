@@ -3,7 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 const ADMIN_SESSION_COOKIE = 'admin_session';
 const ADMIN_SESSION_TTL_HOURS = 12;
-const DEV_DEFAULT_ADMIN_ID = 'admin';
+const DEV_DEFAULT_ADMIN_ID = 'admin@naver.com';
 const DEV_DEFAULT_ADMIN_PASSWORD = 'admin!2345';
 
 export type AdminSession = {
