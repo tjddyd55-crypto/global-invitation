@@ -21,6 +21,9 @@ export default function AdminTemplatesPage() {
   const [error, setError] = useState<string | null>(null);
   const [busyTemplateId, setBusyTemplateId] = useState<string | null>(null);
   const [busySubmissionId, setBusySubmissionId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<
+    'ALL' | 'CREATED' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED' | 'ARCHIVED'
+  >('ALL');
 
   useEffect(() => {
     let isMounted = true;
@@ -28,7 +31,7 @@ export default function AdminTemplatesPage() {
     async function loadTemplates() {
       try {
         const [nextTemplates, nextSubmissions] = await Promise.all([
-          listAdminTemplates(),
+          listAdminTemplates(statusFilter === 'ALL' ? undefined : statusFilter),
           listAdminTemplateSubmissions(),
         ]);
         if (!isMounted) return;
@@ -45,7 +48,7 @@ export default function AdminTemplatesPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [statusFilter]);
 
   const handleDisable = async (templateId: string) => {
     setBusyTemplateId(templateId);
@@ -196,6 +199,25 @@ export default function AdminTemplatesPage() {
       </section>
 
       <section className={styles.section}>
+        <div className={styles.topbar} style={{ marginBottom: 8 }}>
+          <div className={styles.pageDescription}>템플릿 상태 필터</div>
+          <select
+            value={statusFilter}
+            onChange={(event) =>
+              setStatusFilter(
+                event.target.value as 'ALL' | 'CREATED' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED' | 'ARCHIVED'
+              )
+            }
+          >
+            <option value="ALL">ALL</option>
+            <option value="CREATED">CREATED</option>
+            <option value="PENDING_REVIEW">PENDING_REVIEW</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="PUBLISHED">PUBLISHED</option>
+            <option value="REJECTED">REJECTED</option>
+            <option value="ARCHIVED">ARCHIVED</option>
+          </select>
+        </div>
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>

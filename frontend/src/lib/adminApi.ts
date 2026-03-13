@@ -173,8 +173,9 @@ export async function getAdminDashboardSummary() {
   return parseJsonOrThrow<AdminDashboardSummary>(response);
 }
 
-export async function listAdminTemplates() {
-  const response = await fetch(buildApiUrl('/api/admin/templates'), buildAdminRequestInit());
+export async function listAdminTemplates(status?: string) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  const response = await fetch(buildApiUrl(`/api/admin/templates${query}`), buildAdminRequestInit());
   return parseJsonOrThrow<TemplateDefinition[]>(response);
 }
 

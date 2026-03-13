@@ -1,6 +1,7 @@
 import { buildApiUrl } from '@/src/lib/apiBase';
 import { buildAuthHeaders } from '@/src/lib/auth';
 import type { CreatorStudioConfig } from '@/src/creator/studioConfig';
+import type { TemplateDefinition } from '@/src/templates/registry';
 
 export type TemplateSubmissionStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
 
@@ -149,6 +150,14 @@ export async function listCreatorTemplateSubmissions() {
     buildCreatorRequestInit()
   );
   return parseJsonOrThrow<TemplateSubmission[]>(response);
+}
+
+export async function listMyTemplates() {
+  const response = await fetch(
+    buildApiUrl('/api/templates/my'),
+    buildCreatorRequestInit()
+  );
+  return parseJsonOrThrow<TemplateDefinition[]>(response);
 }
 
 export async function getCreatorTemplateSubmission(id: string) {

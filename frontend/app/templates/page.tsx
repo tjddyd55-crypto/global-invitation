@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { cloneTemplateInvitation, trackTemplateView } from '@/src/lib/api';
 import { setGuestToken } from '@/src/lib/auth';
+import { isValidImageUrl } from '@/src/lib/mediaApi';
 import MarketingLayout from '@/src/components/MarketingLayout';
 import AppImage from '@/src/components/media/AppImage';
 import TemplatePreviewWrapper from '@/src/templates/TemplatePreviewWrapper';
@@ -219,7 +220,7 @@ export default function TemplatesPage() {
           {filteredTemplates.map((card) => (
             <article key={card.id} className={styles.card} data-testid="template-card">
               <div className={styles.thumbnail}>
-                {card.thumbnailUrl ? (
+                {card.thumbnailUrl && isValidImageUrl(card.thumbnailUrl) ? (
                   <AppImage
                     src={card.thumbnailUrl}
                     alt={`${card.name} template thumbnail`}

@@ -28,7 +28,15 @@ export type TemplateCategory =
   | 'business';
 export type TemplateStyle = 'korean' | 'japanese' | 'western' | 'traditional' | 'modern';
 export type TemplateMarketplaceType = 'SYSTEM' | 'CREATOR';
-export type TemplateLifecycleStatus = 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PUBLISHED';
+export type TemplateLifecycleStatus =
+  | 'CREATED'
+  | 'PENDING_REVIEW'
+  | 'APPROVED'
+  | 'PUBLISHED'
+  | 'REJECTED'
+  | 'ARCHIVED'
+  | 'DRAFT'
+  | 'SUBMITTED';
 
 export type TemplateEditorType = 'wedding' | 'funeral' | 'message';
 export type TemplateRegistryCategory = 'wedding' | 'funeral' | 'message';
@@ -52,6 +60,7 @@ export interface TemplateDefinition {
   publicTemplateKey?: string;
   marketplaceType: TemplateMarketplaceType;
   status: TemplateLifecycleStatus;
+  lifecycleStatus?: Exclude<TemplateLifecycleStatus, 'DRAFT' | 'SUBMITTED'>;
   studioConfig?: Record<string, unknown> | null;
   thumbnailUrl?: string | null;
   previewThumbnailUrl?: string | null;
@@ -59,6 +68,7 @@ export interface TemplateDefinition {
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
+  updatedAt?: string;
   viewCount?: number;
   cloneCount?: number;
   trendingScore?: number;
@@ -386,7 +396,7 @@ export async function fetchVisibleTemplateDefinitions(
   sort: 'newest' | 'popular' | 'trending' = 'newest'
 ): Promise<TemplateDefinition[]> {
   try {
-    const response = await fetch(buildApiUrl(`/api/templates?sort=${encodeURIComponent(sort)}`), {
+    const response = await fetch(buildApiUrl(`/api/templates/marketplace?sort=${encodeURIComponent(sort)}`), {
       cache: 'no-store',
     });
     if (!response.ok) {

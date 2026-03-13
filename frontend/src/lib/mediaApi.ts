@@ -5,7 +5,6 @@ import { buildAuthHeaders } from '@/src/lib/auth';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const MEDIA_BASE_URL = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || '').trim();
 
 export type UploadedMediaFile = {
   mediaId?: string;
@@ -123,16 +122,34 @@ function sanitizePathSegment(value: string): string {
 }
 
 export function isValidImageUrl(url: string | null | undefined): boolean {
-  if (!url) return false;
+  if (!url) {
+    return false;
+  }
+
   const normalized = String(url).trim();
-  return normalized.startsWith('https://');
+  if (!normalized) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+    if (parsed.protocol !== 'https:') {
+      return false;
+    }
+    if (!parsed.hostname || !parsed.hostname.includes('.')) {
+      return false;
+    }
+    if (!parsed.pathname || parsed.pathname === '/') {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function normalizePublicUrl(url: string): string {
-  if (!url) return '';
-  if (!MEDIA_BASE_URL) return url;
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `${MEDIA_BASE_URL.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
+  return (url || '').trim();
 }
 
 function resolveUploadTarget(options: UploadMediaOptions): ResolvedUploadTarget {

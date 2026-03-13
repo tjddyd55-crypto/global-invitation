@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   getCreatorDashboardSummary,
+  listMyTemplates,
   listCreatorTemplateSubmissions,
   submitCreatorTemplateSubmission,
   type CreatorDashboardSummary,
   type TemplateSubmission,
 } from '@/src/lib/creatorApi';
 import { fetchCurrentUser } from '@/src/lib/auth';
+import type { TemplateDefinition } from '@/src/templates/registry';
 import styles from './creator.module.css';
 
 function resolveStatusBadgeClass(status: TemplateSubmission['status']): string {
@@ -32,6 +34,7 @@ export default function CreatorTemplatesDashboardPage() {
   const router = useRouter();
   const [summary, setSummary] = useState<CreatorDashboardSummary | null>(null);
   const [submissions, setSubmissions] = useState<TemplateSubmission[]>([]);
+  const [myTemplates, setMyTemplates] = useState<TemplateDefinition[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [resubmittingId, setResubmittingId] = useState<string | null>(null);
   const [accessReady, setAccessReady] = useState(false);
@@ -47,13 +50,15 @@ export default function CreatorTemplatesDashboardPage() {
           return;
         }
 
-        const [nextSummary, nextSubmissions] = await Promise.all([
+        const [nextSummary, nextSubmissions, nextTemplates] = await Promise.all([
           getCreatorDashboardSummary(),
           listCreatorTemplateSubmissions(),
+          listMyTemplates(),
         ]);
         if (!isMounted) return;
         setSummary(nextSummary);
         setSubmissions(nextSubmissions);
+        setMyTemplates(nextTemplates);
         setAccessReady(true);
       } catch (loadError) {
         if (!isMounted) return;
@@ -176,6 +181,42 @@ export default function CreatorTemplatesDashboardPage() {
           </article>
         </section>
       )}
+
+      <section className={styles.section}>
+        <h2 className={styles.title} style={{ marginBottom: 12 }}>내 템플릿 (모든 상태)</h2>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Lifecycle</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {myTemplates.map((template) => (
+                <tr key={template.id}>
+                  <td>
+                    <strong>{template.name}</strong>
+                    <div className={styles.meta}>{template.templateKey}</div>
+                  </td>
+                  <td>{template.status}</td>
+                  <td>{template.lifecycleStatus || '-'}</td>
+                  <td>{template.updatedAt ? new Date(template.updatedAt).toLocaleString() : '-'}</td>
+                </tr>
+              ))}
+              {myTemplates.length === 0 && (
+                <tr>
+                  <td colSpan={4} className={styles.meta}>
+                    소유한 템플릿이 없습니다.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section className={styles.section}>
         <div className={styles.tableWrap}>

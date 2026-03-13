@@ -7,6 +7,32 @@ export type TemplateStyle = 'korean' | 'japanese' | 'western' | 'traditional' | 
 export type TemplateMarketplaceType = 'SYSTEM' | 'CREATOR';
 export type TemplateFieldType = 'text' | 'textarea' | 'date' | 'datetime' | 'number' | 'select';
 export type VisibleTemplateSort = 'newest' | 'popular' | 'trending';
+export type TemplateLifecycleStatus =
+  | 'CREATED'
+  | 'PENDING_REVIEW'
+  | 'APPROVED'
+  | 'PUBLISHED'
+  | 'REJECTED'
+  | 'ARCHIVED';
+
+const DB_STATUS_TO_LIFECYCLE_STATUS: Record<TemplateStatus, Exclude<TemplateLifecycleStatus, 'ARCHIVED'>> = {
+  DRAFT: 'CREATED',
+  SUBMITTED: 'PENDING_REVIEW',
+  APPROVED: 'APPROVED',
+  PUBLISHED: 'PUBLISHED',
+  REJECTED: 'REJECTED',
+};
+
+const LEGACY_STATUS_ALIASES: Record<string, TemplateLifecycleStatus> = {
+  DRAFT: 'CREATED',
+  SUBMITTED: 'PENDING_REVIEW',
+  CREATED: 'CREATED',
+  PENDING_REVIEW: 'PENDING_REVIEW',
+  APPROVED: 'APPROVED',
+  PUBLISHED: 'PUBLISHED',
+  REJECTED: 'REJECTED',
+  ARCHIVED: 'ARCHIVED',
+};
 
 export interface TemplateFieldDefinition {
   id: string;
@@ -38,6 +64,7 @@ export interface TemplateDefinition {
   publicTemplateKey?: string;
   marketplaceType: TemplateMarketplaceType;
   status: TemplateStatus;
+  lifecycleStatus: TemplateLifecycleStatus;
   studioConfig?: Prisma.JsonValue | null;
   thumbnailUrl?: string | null;
   previewThumbnailUrl?: string | null;
@@ -73,6 +100,65 @@ export type TemplateUpdateInput = Partial<TemplateCreateInput> & {
   isActive?: boolean;
   isDeleted?: boolean;
 };
+
+export function toTemplateLifecycleStatus(
+  status: TemplateStatus,
+  isActive: boolean,
+  isDeleted: boolean
+): TemplateLifecycleStatus {
+  if (!isActive || isDeleted) {
+    return 'ARCHIVED';
+  }
+  return DB_STATUS_TO_LIFECYCLE_STATUS[status] || 'CREATED';
+}
+
+export function normalizeTemplateLifecycleStatusInput(value: string): TemplateLifecycleStatus | null {
+  const normalized = normalizeText(value || '').toUpperCase();
+  if (!normalized) {
+    return null;
+  }
+  return LEGACY_STATUS_ALIASES[normalized] || null;
+}
+
+export function lifecycleStatusToDatabaseStatus(
+  status: TemplateLifecycleStatus
+): TemplateStatus | null {
+  switch (status) {
+    case 'CREATED':
+      return 'DRAFT';
+    case 'PENDING_REVIEW':
+      return 'SUBMITTED';
+    case 'APPROVED':
+      return 'APPROVED';
+    case 'PUBLISHED':
+      return 'PUBLISHED';
+    case 'REJECTED':
+      return 'REJECTED';
+    case 'ARCHIVED':
+      return null;
+    default:
+      return null;
+  }
+}
+
+const TEMPLATE_STATUS_TRANSITIONS: Record<TemplateLifecycleStatus, TemplateLifecycleStatus[]> = {
+  CREATED: ['PENDING_REVIEW'],
+  PENDING_REVIEW: ['APPROVED', 'REJECTED'],
+  APPROVED: ['PUBLISHED'],
+  PUBLISHED: ['ARCHIVED'],
+  REJECTED: [],
+  ARCHIVED: [],
+};
+
+export function isAllowedTemplateLifecycleTransition(
+  from: TemplateLifecycleStatus,
+  to: TemplateLifecycleStatus
+): boolean {
+  if (from === to) {
+    return true;
+  }
+  return TEMPLATE_STATUS_TRANSITIONS[from]?.includes(to) || false;
+}
 
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -169,6 +255,7 @@ function mapTemplateRecord(
     publicTemplateKey: row.slug,
     marketplaceType: (row.marketplaceType as TemplateMarketplaceType) || 'SYSTEM',
     status: row.status,
+    lifecycleStatus: toTemplateLifecycleStatus(row.status, row.isActive, row.isDeleted),
     studioConfig: row.studioConfig ?? null,
     thumbnailUrl: row.thumbnailUrl ?? null,
     previewThumbnailUrl: row.previewThumbnailUrl ?? null,
@@ -335,6 +422,50 @@ export function calculateRevenue(price: number, creatorShare: number) {
 
 export async function listTemplates(): Promise<TemplateDefinition[]> {
   const rows = await prisma.template.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
+  return withCreatorMetadata(rows.map(mapTemplateRecord));
+}
+
+export async function listTemplatesByCreator(creatorId: string): Promise<TemplateDefinition[]> {
+  const normalizedCreatorId = normalizeText(creatorId);
+  if (!normalizedCreatorId || !isUuidLike(normalizedCreatorId)) {
+    return [];
+  }
+
+  const rows = await prisma.template.findMany({
+    where: {
+      creatorId: normalizedCreatorId,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+  return withCreatorMetadata(rows.map(mapTemplateRecord));
+}
+
+export async function listTemplatesForAdmin(options?: {
+  status?: string;
+}): Promise<TemplateDefinition[]> {
+  const requestedStatus = options?.status ? normalizeTemplateLifecycleStatusInput(options.status) : null;
+  if (options?.status && !requestedStatus) {
+    return [];
+  }
+
+  let where: Prisma.TemplateWhereInput | undefined;
+  if (requestedStatus === 'ARCHIVED') {
+    where = {
+      OR: [{ isActive: false }, { isDeleted: true }],
+    };
+  } else if (requestedStatus) {
+    const dbStatus = lifecycleStatusToDatabaseStatus(requestedStatus);
+    if (dbStatus) {
+      where = { status: dbStatus };
+    }
+  }
+
+  const rows = await prisma.template.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
   });
   return withCreatorMetadata(rows.map(mapTemplateRecord));

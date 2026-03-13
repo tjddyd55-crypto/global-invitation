@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { cloneTemplateInvitation } from '@/src/lib/api';
 import { setGuestToken } from '@/src/lib/auth';
+import { isValidImageUrl } from '@/src/lib/mediaApi';
 import MarketingLayout from '@/src/components/MarketingLayout';
 import AppImage from '@/src/components/media/AppImage';
 import TemplatePreviewWrapper from '@/src/templates/TemplatePreviewWrapper';
@@ -88,7 +89,7 @@ export default function TemplateDetailPage() {
         {!loading && template && (
           <section className={styles.content}>
             <div className={styles.previewPanel}>
-              {template.thumbnailUrl ? (
+              {template.thumbnailUrl && isValidImageUrl(template.thumbnailUrl) ? (
                 <AppImage
                   src={template.thumbnailUrl}
                   alt={`${template.title || template.name} thumbnail`}

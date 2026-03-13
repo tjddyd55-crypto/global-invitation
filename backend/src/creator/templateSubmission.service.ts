@@ -572,18 +572,6 @@ export async function submitTemplateSubmission(
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    if (submission.approvedTemplateId) {
-      await tx.template.updateMany({
-        where: {
-          id: submission.approvedTemplateId,
-          isDeleted: false,
-        },
-        data: {
-          status: 'SUBMITTED',
-        },
-      });
-    }
-
     return tx.templateSubmission.update({
       where: { id: submission.id },
       data: {
@@ -1004,7 +992,7 @@ export async function approveTemplateSubmission(
         component,
         templateKey,
         marketplaceType: 'CREATOR',
-        status: 'PUBLISHED',
+        status: 'APPROVED',
         studioConfig: validation.normalized as Prisma.InputJsonValue,
         thumbnailUrl: submission.previewThumbnailUrl,
         previewThumbnailUrl: submission.previewThumbnailUrl,
@@ -1084,18 +1072,6 @@ export async function rejectTemplateSubmission(
     }
     if (submission.status !== 'SUBMITTED') {
       throw new TemplateSubmissionError(409, 'SUBMISSION_NOT_READY_FOR_REJECTION');
-    }
-
-    if (submission.approvedTemplateId) {
-      await tx.template.updateMany({
-        where: {
-          id: submission.approvedTemplateId,
-          isDeleted: false,
-        },
-        data: {
-          status: 'REJECTED',
-        },
-      });
     }
 
     const updated = await tx.templateSubmission.update({

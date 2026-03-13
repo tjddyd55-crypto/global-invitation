@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Request, type Response } from 'express';
 import crypto from 'crypto';
 import { InvitationStatus } from '@prisma/client';
 import {
@@ -6,8 +6,11 @@ import {
   getTemplateByIdentifier,
   getTemplateFieldsByIdentifier,
   getLatestTemplateVersion,
+  listTemplatesByCreator,
   listVisibleTemplatesBySort,
   recordTemplateView,
+  type TemplateUpdateInput,
+  updateTemplate,
 } from '../admin/templateStore';
 import prisma from '../lib/prisma';
 import { getAuthUser, getGuestToken } from '../lib/auth';
@@ -15,23 +18,103 @@ import { generateSlug } from '../utils/slug';
 
 const router = Router();
 
-router.get('/', async (req, res) => {
+function isMarketplaceVisibleTemplate(template: {
+  status?: string;
+  isActive?: boolean;
+  isDeleted?: boolean;
+}): boolean {
+  return template.status === 'PUBLISHED' && template.isActive === true && template.isDeleted !== true;
+}
+
+function isCreatorRole(role?: string | null): boolean {
+  return role === 'CREATOR';
+}
+
+async function listMarketplaceTemplates(req: Request, res: Response) {
   try {
     const sortQuery = typeof req.query?.sort === 'string' ? req.query.sort.toLowerCase() : 'newest';
     const sort: 'newest' | 'popular' | 'trending' =
       sortQuery === 'popular' || sortQuery === 'trending' ? sortQuery : 'newest';
     const templates = await listVisibleTemplatesBySort({ sort });
-    return res.status(200).json(templates);
+    const visibleTemplates = templates.filter(isMarketplaceVisibleTemplate);
+    return res.status(200).json(visibleTemplates);
   } catch (error) {
     console.error('Error listing public templates:', error);
     return res.status(500).json({ error: 'FAILED_TO_LIST_PUBLIC_TEMPLATES' });
+  }
+}
+
+router.get('/', listMarketplaceTemplates);
+router.get('/marketplace', listMarketplaceTemplates);
+
+router.get('/my', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    }
+    if (!isCreatorRole(user.role)) {
+      return res.status(403).json({ error: 'CREATOR_ROLE_REQUIRED' });
+    }
+
+    const templates = await listTemplatesByCreator(user.id);
+    return res.status(200).json(templates);
+  } catch (error) {
+    console.error('Error listing creator templates:', error);
+    return res.status(500).json({ error: 'FAILED_TO_LIST_CREATOR_TEMPLATES' });
+  }
+});
+
+router.patch('/my/:identifier', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    }
+    if (!isCreatorRole(user.role)) {
+      return res.status(403).json({ error: 'CREATOR_ROLE_REQUIRED' });
+    }
+
+    const template = await getTemplateByIdentifier(req.params.identifier);
+    if (!template) {
+      return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
+    }
+    if (template.creatorId !== user.id) {
+      return res.status(403).json({ error: 'FORBIDDEN_TEMPLATE_OWNER_ONLY' });
+    }
+    if (req.body?.status !== undefined) {
+      return res.status(403).json({ error: 'ONLY_ADMIN_CAN_CHANGE_TEMPLATE_STATUS' });
+    }
+    if (req.body?.creatorId !== undefined) {
+      return res.status(403).json({ error: 'CREATOR_ID_CANNOT_BE_CHANGED' });
+    }
+
+    const payload: TemplateUpdateInput = {};
+    if (typeof req.body?.name === 'string') payload.name = req.body.name.trim();
+    if (typeof req.body?.description === 'string') payload.description = req.body.description.trim();
+    if (req.body?.price !== undefined) payload.price = Number(req.body.price) || 0;
+    if (req.body?.creatorShare !== undefined) payload.creatorShare = Number(req.body.creatorShare) || 0;
+    if (typeof req.body?.thumbnailUrl === 'string') payload.thumbnailUrl = req.body.thumbnailUrl.trim();
+    if (typeof req.body?.previewThumbnailUrl === 'string') {
+      payload.previewThumbnailUrl = req.body.previewThumbnailUrl.trim();
+    }
+    if (req.body?.studioConfig !== undefined) payload.studioConfig = req.body.studioConfig;
+
+    const updated = await updateTemplate(req.params.identifier, payload);
+    if (!updated) {
+      return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
+    }
+    return res.status(200).json(updated);
+  } catch (error) {
+    console.error('Error updating creator template:', error);
+    return res.status(500).json({ error: 'FAILED_TO_UPDATE_CREATOR_TEMPLATE' });
   }
 });
 
 router.get('/:identifier', async (req, res) => {
   try {
     const template = await getTemplateByIdentifier(req.params.identifier);
-    if (!template || !template.isActive || template.isDeleted || template.status !== 'PUBLISHED') {
+    if (!template || !isMarketplaceVisibleTemplate(template)) {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
     const user = await getAuthUser(req);
@@ -56,7 +139,7 @@ router.get('/:identifier', async (req, res) => {
 router.get('/:identifier/fields', async (req, res) => {
   try {
     const template = await getTemplateByIdentifier(req.params.identifier);
-    if (!template || !template.isActive || template.isDeleted || template.status !== 'PUBLISHED') {
+    if (!template || !isMarketplaceVisibleTemplate(template)) {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
 
@@ -83,7 +166,7 @@ router.get('/:identifier/fields', async (req, res) => {
 router.post('/:identifier/view', async (req, res) => {
   try {
     const template = await getTemplateByIdentifier(req.params.identifier);
-    if (!template || !template.isActive || template.isDeleted || template.status !== 'PUBLISHED') {
+    if (!template || !isMarketplaceVisibleTemplate(template)) {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
     const user = await getAuthUser(req);
@@ -106,7 +189,7 @@ router.post('/:identifier/view', async (req, res) => {
 router.post('/:identifier/clone', async (req, res) => {
   try {
     const template = await getTemplateByIdentifier(req.params.identifier);
-    if (!template || !template.isActive || template.isDeleted || template.status !== 'PUBLISHED') {
+    if (!template || !isMarketplaceVisibleTemplate(template)) {
       return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
     }
     const latestVersion = await getLatestTemplateVersion(template.id);

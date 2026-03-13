@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { Prisma, type TemplateStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { getInvitationAnalyticsSummary } from '../analytics/invitationAnalytics';
 import { requireAdminSession } from '../lib/adminSession';
@@ -8,10 +8,16 @@ import {
   disableTemplate,
   getTemplateByIdentifier,
   getTemplateStoreSummary,
+  isAllowedTemplateLifecycleTransition,
+  lifecycleStatusToDatabaseStatus,
   listTemplates,
+  listTemplatesForAdmin,
+  normalizeTemplateLifecycleStatusInput,
   softDeleteTemplate,
+  toTemplateLifecycleStatus,
   updateTemplate,
   type TemplateCategory,
+  type TemplateLifecycleStatus,
   type TemplateStyle,
 } from '../admin/templateStore';
 import { isValidTemplateKey, resolveTemplateComponentByKey } from '../admin/templateRegistry';
@@ -28,7 +34,16 @@ const TEMPLATE_STYLES = new Set<TemplateStyle>([
   'traditional',
   'modern',
 ]);
-const TEMPLATE_STATUSES = new Set(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'PUBLISHED']);
+const TEMPLATE_STATUSES = new Set([
+  'DRAFT',
+  'SUBMITTED',
+  'APPROVED',
+  'REJECTED',
+  'PUBLISHED',
+  'CREATED',
+  'PENDING_REVIEW',
+  'ARCHIVED',
+]);
 
 router.use(requireAdminSession);
 
@@ -55,8 +70,12 @@ function validateStyle(value: string): value is TemplateStyle {
   return TEMPLATE_STYLES.has(value as TemplateStyle);
 }
 
-function validateTemplateStatus(value: string): value is 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PUBLISHED' {
+function validateTemplateStatus(value: string): boolean {
   return TEMPLATE_STATUSES.has(value);
+}
+
+function resolveTemplateLifecycleStatusFromBody(statusValue: string): TemplateLifecycleStatus | null {
+  return normalizeTemplateLifecycleStatusInput(statusValue);
 }
 
 function escapeCsvCell(value: unknown): string {
@@ -287,9 +306,15 @@ router.delete('/rsvp/:id', async (req, res) => {
   }
 });
 
-router.get('/templates', async (_req, res) => {
+router.get('/templates', async (req, res) => {
   try {
-    const templates = await listTemplates();
+    const statusFilter = typeof req.query?.status === 'string' ? req.query.status : undefined;
+    if (statusFilter && !normalizeTemplateLifecycleStatusInput(statusFilter)) {
+      return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
+    }
+    const templates = statusFilter
+      ? await listTemplatesForAdmin({ status: statusFilter })
+      : await listTemplates();
     return res.status(200).json(templates);
   } catch (error) {
     console.error('Error listing admin templates:', error);
@@ -336,7 +361,16 @@ router.post('/templates', async (req, res) => {
     if (statusText && !validateTemplateStatus(statusText)) {
       return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
     }
-    const status = statusText ? (statusText as TemplateStatus) : undefined;
+    const lifecycleStatus = statusText ? resolveTemplateLifecycleStatusFromBody(statusText) : null;
+    if (statusText && !lifecycleStatus) {
+      return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
+    }
+    if (lifecycleStatus === 'ARCHIVED') {
+      return res.status(400).json({ error: 'INVALID_TEMPLATE_INITIAL_STATUS' });
+    }
+    const status = lifecycleStatus
+      ? lifecycleStatusToDatabaseStatus(lifecycleStatus)
+      : null;
 
     const component = resolveTemplateComponentByKey(templateKey);
     if (!component) {
@@ -353,7 +387,7 @@ router.post('/templates', async (req, res) => {
       creatorId: creatorId || undefined,
       component,
       templateKey,
-      status,
+      status: status || undefined,
       previewThumbnailUrl: thumbnailUrl || undefined,
     });
     await logAdminAction({
@@ -384,6 +418,11 @@ router.post('/templates', async (req, res) => {
 router.patch('/templates/:id', async (req, res) => {
   try {
     const adminId = String(res.locals.adminSession?.adminId || 'unknown-admin');
+    const existing = await getTemplateByIdentifier(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
+    }
+
     const payload: Record<string, unknown> = {};
 
     if (typeof req.body?.name === 'string') payload.name = normalizeText(req.body.name);
@@ -407,7 +446,34 @@ router.patch('/templates/:id', async (req, res) => {
       if (!validateTemplateStatus(status)) {
         return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
       }
-      payload.status = status;
+
+      const nextLifecycleStatus = resolveTemplateLifecycleStatusFromBody(status);
+      if (!nextLifecycleStatus) {
+        return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
+      }
+
+      const currentLifecycleStatus = toTemplateLifecycleStatus(
+        existing.status,
+        existing.isActive,
+        existing.isDeleted
+      );
+      if (!isAllowedTemplateLifecycleTransition(currentLifecycleStatus, nextLifecycleStatus)) {
+        return res.status(409).json({
+          error: 'INVALID_TEMPLATE_STATUS_TRANSITION',
+          from: currentLifecycleStatus,
+          to: nextLifecycleStatus,
+        });
+      }
+
+      if (nextLifecycleStatus === 'ARCHIVED') {
+        payload.isActive = false;
+      } else {
+        const dbStatus = lifecycleStatusToDatabaseStatus(nextLifecycleStatus);
+        if (!dbStatus) {
+          return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
+        }
+        payload.status = dbStatus;
+      }
     }
     if (typeof req.body?.category === 'string') {
       const category = normalizeText(req.body.category);
