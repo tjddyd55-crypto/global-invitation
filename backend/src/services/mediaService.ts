@@ -1,6 +1,6 @@
-import { validate as uuidValidate } from 'uuid';
 import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
+import { isUuid } from '../lib/isUuid';
 import {
   buildMediaObjectKey,
   parseMediaObjectKey,
@@ -127,7 +127,7 @@ async function resolveOwnedInvitationId(userId: string, identifier: string): Pro
   if (!normalized) throw new Error('INVITATION_ID_REQUIRED');
 
   const invitation = await prisma.invitation.findFirst({
-    where: uuidValidate(normalized)
+    where: isUuid(normalized)
       ? {
           userId,
           OR: [{ id: normalized }, { slug: normalized }],
@@ -148,7 +148,7 @@ async function resolveOwnedInvitationId(userId: string, identifier: string): Pro
 
 async function resolveOwnedTemplateId(user: MediaAuthUser, templateId: string): Promise<string> {
   const normalized = normalizeText(templateId);
-  if (!normalized || !uuidValidate(normalized)) {
+  if (!normalized || !isUuid(normalized)) {
     throw new Error('TEMPLATE_ID_REQUIRED');
   }
   if (!isCreatorRole(user.role)) {

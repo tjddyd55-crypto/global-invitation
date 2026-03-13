@@ -1,6 +1,6 @@
 import { Prisma, TemplateStatus } from '@prisma/client';
-import { validate as uuidValidate } from 'uuid';
 import prisma from '../lib/prisma';
+import { isUuid } from '../lib/isUuid';
 
 export type TemplateCategory = 'wedding' | 'birthday' | 'funeral' | 'party' | 'message';
 export type TemplateStyle = 'korean' | 'japanese' | 'western' | 'traditional' | 'modern';
@@ -92,7 +92,7 @@ function normalizeMarketplaceType(creatorId?: string): TemplateMarketplaceType {
 }
 
 function isUuidLike(value: string): boolean {
-  return uuidValidate(value);
+  return isUuid(value);
 }
 
 function normalizeCreatorId(value?: string): string | null {
@@ -236,7 +236,7 @@ async function withCreatorMetadata(templates: TemplateDefinition[]): Promise<Tem
       let creator: CreatorProfile | null = null;
 
       try {
-        if (creatorId && uuidValidate(creatorId)) {
+        if (creatorId && isUuid(creatorId)) {
           creator = await prisma.user.findUnique({
             where: { id: creatorId },
             select: {
