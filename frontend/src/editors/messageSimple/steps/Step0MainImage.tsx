@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import AppImage from '@/src/components/media/AppImage';
 import { deleteMediaFile, uploadMediaImage } from '@/src/lib/mediaApi';
 import styles from '../messageSimpleEditor.module.css';
 
@@ -72,7 +73,7 @@ export default function Step0MainImage({ heroImage, onChange }: Step0MainImagePr
         <div className={styles.uploaderBody}>
           {heroImage ? (
             <div className={styles.uploaderPreview}>
-              <img src={heroImage} alt="main preview" />
+              <AppImage src={heroImage} alt="main preview" />
             </div>
           ) : (
             <div className={styles.uploaderPlaceholder}>이미지를 선택하세요.</div>

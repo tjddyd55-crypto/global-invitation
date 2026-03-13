@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { cloneTemplateInvitation, trackTemplateView } from '@/src/lib/api';
 import { setGuestToken } from '@/src/lib/auth';
 import MarketingLayout from '@/src/components/MarketingLayout';
+import AppImage from '@/src/components/media/AppImage';
 import TemplatePreviewWrapper from '@/src/templates/TemplatePreviewWrapper';
 import {
   fetchVisibleTemplateDefinitions,
@@ -219,7 +220,7 @@ export default function TemplatesPage() {
             <article key={card.id} className={styles.card} data-testid="template-card">
               <div className={styles.thumbnail}>
                 {card.thumbnailUrl ? (
-                  <img
+                  <AppImage
                     src={card.thumbnailUrl}
                     alt={`${card.name} template thumbnail`}
                     className={styles.thumbnailImage}

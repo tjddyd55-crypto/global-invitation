@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { cloneTemplateInvitation } from '@/src/lib/api';
 import { setGuestToken } from '@/src/lib/auth';
 import MarketingLayout from '@/src/components/MarketingLayout';
+import AppImage from '@/src/components/media/AppImage';
 import TemplatePreviewWrapper from '@/src/templates/TemplatePreviewWrapper';
 import { fetchTemplateDefinitionById, type TemplateDefinition } from '@/src/templates/registry';
 import styles from './template-detail.module.css';
@@ -88,7 +89,7 @@ export default function TemplateDetailPage() {
           <section className={styles.content}>
             <div className={styles.previewPanel}>
               {template.thumbnailUrl ? (
-                <img
+                <AppImage
                   src={template.thumbnailUrl}
                   alt={`${template.title || template.name} thumbnail`}
                   className={styles.thumbnailImage}

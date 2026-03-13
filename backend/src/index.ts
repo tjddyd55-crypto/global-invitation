@@ -24,10 +24,16 @@ if (!process.env.ADMIN_SESSION_SECRET?.trim()) {
 }
 
 function resolveAllowedOrigins(): string[] {
+  const listFromEnv = (process.env.FRONTEND_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
   const configuredOrigins = [
     process.env.FRONTEND_URL,
+    process.env.FRONTEND_PREVIEW_URL,
     process.env.NEXT_PUBLIC_SITE_URL,
     'http://localhost:3000',
+    ...listFromEnv,
   ]
     .filter((value): value is string => Boolean(value?.trim()))
     .map((value) => value.trim());
@@ -49,6 +55,7 @@ app.use(
   })
 );
 app.use(express.json());
+// Legacy fallback for pre-R2 records only. New uploads use direct-to-R2.
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Health check endpoint

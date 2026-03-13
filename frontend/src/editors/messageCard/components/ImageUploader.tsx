@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
+import AppImage from '@/src/components/media/AppImage';
 import { deleteMediaFile, uploadMediaImage, type MediaUploadAssetType } from '@/src/lib/mediaApi';
 import styles from '../messageCardEditor.module.css';
 
@@ -87,7 +88,7 @@ export default function ImageUploader({
       <div className={styles.uploaderBody}>
         {value ? (
           <div className={styles.uploaderPreview}>
-            <img src={value} alt={`${label} preview`} />
+            <AppImage src={value} alt={`${label} preview`} />
           </div>
         ) : (
           <div className={styles.uploaderPlaceholder}>이미지를 선택하세요.</div>

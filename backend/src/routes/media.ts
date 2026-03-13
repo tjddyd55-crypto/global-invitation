@@ -3,6 +3,7 @@ import multer from 'multer';
 import prisma from '../lib/prisma';
 import { getAuthUser } from '../lib/auth';
 import { buildPublicFileUrl } from '../lib/storage/r2Client';
+import { parseMediaObjectKey } from '../lib/media/keys';
 import {
   completeDirectUpload,
   createDirectUploadPresign,
@@ -12,6 +13,7 @@ import {
   type MediaAssetType,
   type MediaContext,
 } from '../storage/mediaStorage';
+import { confirmMediaUpload, createMediaPresign, markMediaDeletedByObjectKey } from '../services/mediaService';
 
 const router = Router();
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -405,6 +407,41 @@ router.post('/presign', async (req, res) => {
       return res.status(401).json({ error: 'AUTH_REQUIRED' });
     }
 
+    const scope = normalizeText(req.body?.scope);
+    if (scope) {
+      const result = await createMediaPresign(
+        {
+          scope: scope as
+            | 'invitationHero'
+            | 'invitationGallery'
+            | 'templateCover'
+            | 'templateAsset'
+            | 'common',
+          invitationId: normalizeText(req.body?.invitationId),
+          templateId: normalizeText(req.body?.templateId),
+          filename: normalizeText(req.body?.filename) || undefined,
+          contentType: normalizeText(req.body?.contentType),
+          size: Number(req.body?.size),
+          expiresInSeconds: Number(req.body?.expiresIn || req.body?.expiresInSeconds || 3600),
+        },
+        {
+          id: user.id,
+          role: String(user.role || ''),
+        }
+      );
+
+      return res.status(200).json({
+        objectKey: result.objectKey,
+        uploadUrl: result.uploadUrl,
+        publicUrl: result.publicUrl,
+        expiresIn: result.expiresIn,
+        usage: result.usage,
+        // legacy response compatibility
+        fileKey: result.objectKey,
+        url: result.publicUrl,
+      });
+    }
+
     const contentType = normalizeText(req.body?.contentType).toLowerCase();
     if (!contentType || !ALLOWED_IMAGE_TYPES.has(contentType)) {
       return res.status(400).json({ error: 'UNSUPPORTED_MEDIA_TYPE' });
@@ -433,6 +470,21 @@ router.post('/presign', async (req, res) => {
       fileKey: signed.fileKey,
     });
   } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message === 'INVITATION_ID_REQUIRED' ||
+        error.message === 'TEMPLATE_ID_REQUIRED' ||
+        error.message === 'INVALID_MEDIA_SIZE' ||
+        error.message === 'INVALID_MEDIA_SCOPE')
+    ) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error instanceof Error && (error.message === 'FILE_TOO_LARGE' || error.message === 'UNSUPPORTED_MEDIA_TYPE')) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error instanceof Error && error.message === 'UNAUTHORIZED_MEDIA_ACCESS') {
+      return res.status(401).json({ error: error.message });
+    }
     if (error instanceof Error && error.message === 'INVALID_MEDIA_FOLDER') {
       return res.status(400).json({ error: 'INVALID_MEDIA_FOLDER' });
     }
@@ -441,6 +493,78 @@ router.post('/presign', async (req, res) => {
     }
     console.error('Error creating media presign:', error);
     return res.status(500).json({ error: 'FAILED_TO_CREATE_PRESIGNED_UPLOAD' });
+  }
+});
+
+router.post('/confirm', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'AUTH_REQUIRED' });
+    }
+
+    const confirmed = await confirmMediaUpload(
+      {
+        objectKey: normalizeText(req.body?.objectKey || req.body?.fileKey),
+        publicUrl: normalizeText(req.body?.publicUrl || req.body?.url),
+        contentType: normalizeText(req.body?.contentType || req.body?.mimeType),
+        size: req.body?.size ?? req.body?.fileSize,
+        width: req.body?.width,
+        height: req.body?.height,
+        usage: normalizeText(req.body?.usage) as
+          | 'INVITATION_HERO'
+          | 'INVITATION_GALLERY'
+          | 'TEMPLATE_COVER'
+          | 'TEMPLATE_ASSET'
+          | 'COMMON'
+          | undefined,
+        invitationId: normalizeText(req.body?.invitationId),
+        templateId: normalizeText(req.body?.templateId),
+      },
+      {
+        id: user.id,
+        role: String(user.role || ''),
+      }
+    );
+
+    return res.status(200).json({
+      mediaId: confirmed.mediaId,
+      objectKey: confirmed.objectKey,
+      publicUrl: confirmed.publicUrl,
+      mimeType: confirmed.mimeType,
+      size: confirmed.fileSize,
+      width: confirmed.width,
+      height: confirmed.height,
+      usage: confirmed.usage,
+      // legacy response compatibility
+      url: confirmed.publicUrl,
+      fileKey: confirmed.objectKey,
+      fileSize: confirmed.fileSize,
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message === 'OBJECT_KEY_REQUIRED' ||
+        error.message === 'INVALID_MEDIA_OBJECT_KEY' ||
+        error.message === 'INVALID_PUBLIC_URL' ||
+        error.message === 'INVALID_MEDIA_SIZE')
+    ) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error instanceof Error && (error.message === 'FILE_TOO_LARGE' || error.message === 'UNSUPPORTED_MEDIA_TYPE')) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error instanceof Error && error.message === 'UNAUTHORIZED_MEDIA_ACCESS') {
+      return res.status(401).json({ error: error.message });
+    }
+    if (error instanceof Error && error.message === 'MEDIA_OBJECT_NOT_FOUND') {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error instanceof Error && error.message === 'R2_STORAGE_NOT_CONFIGURED') {
+      return res.status(503).json({ error: 'R2_STORAGE_NOT_CONFIGURED' });
+    }
+    console.error('Error confirming media upload:', error);
+    return res.status(500).json({ error: 'FAILED_TO_CONFIRM_MEDIA_UPLOAD' });
   }
 });
 
@@ -507,6 +631,7 @@ router.delete('/', async (req, res) => {
     if (!key) {
       return res.status(400).json({ error: 'INVALID_MEDIA_URL' });
     }
+    const parsedKey = parseMediaObjectKey(key);
 
     const canDelete = await canDeleteByStorageKey({
       userId: user.id,
@@ -518,6 +643,14 @@ router.delete('/', async (req, res) => {
     }
 
     await deleteImageByUrl(fileUrl);
+    if (parsedKey) {
+      await markMediaDeletedByObjectKey({
+        objectKey: key,
+        userId: user.id,
+      }).catch((error) => {
+        console.warn('Failed to mark media file as deleted:', error);
+      });
+    }
 
     return res.status(200).json({ success: true });
   } catch (deleteError) {

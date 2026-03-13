@@ -67,6 +67,7 @@ model User {
   magicLinkTokens      MagicLinkToken[]
   authSessions         AuthSession[]
   mediaFiles           MediaFile[]
+  createdMediaFiles    MediaFile[] @relation("MediaFileCreatedBy")
 
   @@map("users")
 }
@@ -154,15 +155,27 @@ model InvitationView {
 model MediaFile {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ownerId   String   @map("owner_id") @db.Uuid
+  ownerType String?  @map("owner_type")
+  ownerRefId String? @map("owner_ref_id")
+  usage     String?
+  objectKey String?  @unique @map("object_key")
+  publicUrl String?  @map("public_url")
   url       String
   fileName  String   @map("file_name")
   mimeType  String   @map("mime_type")
   fileSize  Int      @map("file_size")
+  width     Int?
+  height    Int?
+  createdBy String?  @map("created_by") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  creator User? @relation("MediaFileCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@index([ownerId])
+  @@index([ownerType, ownerRefId])
+  @@index([usage, createdAt])
   @@map("media_files")
 }
 

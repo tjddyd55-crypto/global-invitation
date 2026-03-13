@@ -5,25 +5,62 @@ import { buildAuthHeaders } from '@/src/lib/auth';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const IS_E2E_MODE = process.env.NEXT_PUBLIC_E2E_TEST_MODE === 'true';
+const MEDIA_BASE_URL = (process.env.NEXT_PUBLIC_MEDIA_BASE_URL || '').trim();
 
 export type UploadedMediaFile = {
+  mediaId?: string;
+  objectKey: string;
+  publicUrl: string;
   url: string;
   fileKey: string;
-  thumbnailUrl?: string;
-  thumbnailKey?: string;
   mimeType: string;
   fileSize: number;
+  width?: number | null;
+  height?: number | null;
+  usage?: 'INVITATION_HERO' | 'INVITATION_GALLERY' | 'TEMPLATE_COVER' | 'TEMPLATE_ASSET' | 'COMMON';
 };
 
 export type MediaUploadContext = 'invitation' | 'template' | 'user';
 export type MediaUploadAssetType = 'asset' | 'thumbnail' | 'hero' | 'gallery';
+type MediaUploadScope = 'invitationHero' | 'invitationGallery' | 'templateCover' | 'templateAsset' | 'common';
+type MediaUsage = 'INVITATION_HERO' | 'INVITATION_GALLERY' | 'TEMPLATE_COVER' | 'TEMPLATE_ASSET' | 'COMMON';
 
 type UploadMediaOptions = {
   context?: MediaUploadContext;
   entityId?: string;
   assetType?: MediaUploadAssetType;
   onProgress?: (value: number) => void;
+};
+
+type ResolvedUploadTarget = {
+  scope: MediaUploadScope;
+  usage: MediaUsage;
+  invitationId?: string;
+  templateId?: string;
+};
+
+type PresignResponse = {
+  objectKey?: string;
+  fileKey?: string;
+  uploadUrl: string;
+  publicUrl?: string;
+  url?: string;
+  expiresIn?: number;
+  usage?: MediaUsage;
+};
+
+type ConfirmResponse = {
+  mediaId?: string;
+  objectKey?: string;
+  fileKey?: string;
+  publicUrl?: string;
+  url?: string;
+  mimeType?: string;
+  size?: number;
+  fileSize?: number;
+  width?: number | null;
+  height?: number | null;
+  usage?: MediaUsage;
 };
 
 function validateImageFile(file: File) {
@@ -85,63 +122,120 @@ function sanitizePathSegment(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, '').trim();
 }
 
-function withOptionalE2EPrefix(folder: string): string {
-  return IS_E2E_MODE ? `e2e/${folder}` : folder;
+export function isValidImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const normalized = String(url).trim();
+  return normalized.startsWith('https://');
 }
 
-function resolveUploadFolder(options: UploadMediaOptions): string {
+function normalizePublicUrl(url: string): string {
+  if (!url) return '';
+  if (!MEDIA_BASE_URL) return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${MEDIA_BASE_URL.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`;
+}
+
+function resolveUploadTarget(options: UploadMediaOptions): ResolvedUploadTarget {
   const context = options.context || 'user';
   const assetType = options.assetType || 'asset';
   const entityId = sanitizePathSegment(options.entityId || '');
 
   if (context === 'invitation') {
     if (!entityId) throw new Error('INVALID_MEDIA_PATH');
-    return withOptionalE2EPrefix(`invitations/${entityId}/${assetType === 'hero' ? 'hero' : 'gallery'}`);
+    if (assetType === 'hero') {
+      return {
+        scope: 'invitationHero',
+        usage: 'INVITATION_HERO',
+        invitationId: entityId,
+      };
+    }
+    return {
+      scope: 'invitationGallery',
+      usage: 'INVITATION_GALLERY',
+      invitationId: entityId,
+    };
   }
 
   if (context === 'template') {
     if (!entityId) throw new Error('INVALID_MEDIA_PATH');
     if (assetType === 'thumbnail') {
-      return withOptionalE2EPrefix(`templates/thumbnails/${entityId}`);
+      return {
+        scope: 'templateCover',
+        usage: 'TEMPLATE_COVER',
+        templateId: entityId,
+      };
     }
-    return withOptionalE2EPrefix(`creator/self/${entityId}/assets`);
+    return {
+      scope: 'templateAsset',
+      usage: 'TEMPLATE_ASSET',
+      templateId: entityId,
+    };
   }
 
-  return withOptionalE2EPrefix('users/self');
+  return {
+    scope: 'common',
+    usage: 'COMMON',
+  };
 }
 
 type ApiFailure = {
   status: number;
   errorCode: string;
+  stage: 'PRESIGN' | 'UPLOAD' | 'CONFIRM' | 'DELETE';
 };
 
-function normalizeApiFailure(status: number, payload: { error?: string } | null): ApiFailure {
+function normalizeApiFailure(
+  stage: ApiFailure['stage'],
+  status: number,
+  payload: { error?: string } | null
+): ApiFailure {
   return {
     status,
     errorCode: payload?.error || 'UNKNOWN_ERROR',
+    stage,
   };
 }
 
 function throwFriendlyUploadError(failure: ApiFailure): never {
+  if (failure.stage === 'PRESIGN') {
+    if (failure.errorCode === 'AUTH_REQUIRED') {
+      throw new Error('이미지 업로드는 로그인 후 사용할 수 있습니다.');
+    }
+    if (failure.errorCode === 'UNAUTHORIZED_MEDIA_ACCESS') {
+      throw new Error('해당 초대장/템플릿에 업로드 권한이 없습니다.');
+    }
+    if (failure.errorCode === 'FILE_TOO_LARGE') {
+      throw new Error('이미지 크기는 10MB를 초과할 수 없습니다.');
+    }
+    if (failure.errorCode === 'R2_STORAGE_NOT_CONFIGURED') {
+      throw new Error('이미지 저장소가 아직 설정되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+    }
+    if (failure.errorCode === 'UNSUPPORTED_MEDIA_TYPE') {
+      throw new Error('JPG, PNG, WEBP 이미지만 업로드할 수 있습니다.');
+    }
+    throw new Error('presign 요청에 실패했습니다.');
+  }
+
+  if (failure.stage === 'CONFIRM') {
+    if (failure.errorCode === 'MEDIA_OBJECT_NOT_FOUND') {
+      throw new Error('업로드된 파일을 스토리지에서 찾지 못했습니다. 다시 업로드해 주세요.');
+    }
+    if (failure.errorCode === 'UNAUTHORIZED_MEDIA_ACCESS') {
+      throw new Error('업로드 완료 처리 권한이 없습니다.');
+    }
+    if (failure.errorCode === 'R2_STORAGE_NOT_CONFIGURED') {
+      throw new Error('이미지 저장소가 아직 설정되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+    }
+    throw new Error('업로드 완료 처리(confirm)에 실패했습니다.');
+  }
+
   if (failure.errorCode === 'AUTH_REQUIRED') {
-    throw new Error('이미지 업로드는 로그인 후 사용할 수 있습니다.');
+    throw new Error('요청을 처리하려면 로그인이 필요합니다.');
   }
-  if (failure.errorCode === 'FILE_TOO_LARGE') {
-    throw new Error('이미지 크기는 10MB를 초과할 수 없습니다.');
-  }
-  if (failure.errorCode === 'R2_STORAGE_NOT_CONFIGURED') {
-    throw new Error('이미지 저장소가 아직 설정되지 않았습니다. 잠시 후 다시 시도해 주세요.');
-  }
-  if (failure.errorCode === 'UNSUPPORTED_MEDIA_TYPE' || failure.errorCode === 'INVALID_MEDIA_FILE') {
-    throw new Error('JPG, PNG, WEBP 이미지만 업로드할 수 있습니다.');
-  }
-  if (failure.errorCode === 'INVALID_MEDIA_PATH' || failure.errorCode === 'INVALID_MEDIA_FOLDER') {
-    throw new Error('이미지 업로드 경로가 올바르지 않습니다.');
-  }
-  throw new Error('이미지 업로드에 실패했습니다.');
+  throw new Error('요청 처리에 실패했습니다.');
 }
 
-async function requestPresignedUpload(folder: string, file: File): Promise<{ uploadUrl: string; fileKey: string }> {
+async function requestPresignedUpload(target: ResolvedUploadTarget, file: File): Promise<PresignResponse> {
   const response = await fetch(buildApiUrl('/api/media/presign'), {
     method: 'POST',
     credentials: 'include',
@@ -150,17 +244,21 @@ async function requestPresignedUpload(folder: string, file: File): Promise<{ upl
       ...buildAuthHeaders(),
     },
     body: JSON.stringify({
-      folder,
+      scope: target.scope,
+      invitationId: target.invitationId,
+      templateId: target.templateId,
+      filename: file.name,
       contentType: file.type,
+      size: file.size,
     }),
   });
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw normalizeApiFailure(response.status, payload);
+    throw normalizeApiFailure('PRESIGN', response.status, payload);
   }
 
-  return response.json() as Promise<{ uploadUrl: string; fileKey: string }>;
+  return response.json() as Promise<PresignResponse>;
 }
 
 async function uploadToR2Direct(
@@ -188,94 +286,83 @@ async function uploadToR2Direct(
         resolve();
         return;
       }
-      reject(new Error(`DIRECT_UPLOAD_FAILED:${xhr.status}`));
+      reject(new Error(`UPLOAD_FAILED:${xhr.status}`));
     };
-    xhr.onerror = () => reject(new Error('DIRECT_UPLOAD_NETWORK_ERROR'));
-    xhr.onabort = () => reject(new Error('DIRECT_UPLOAD_ABORTED'));
+    xhr.onerror = () => reject(new Error('UPLOAD_NETWORK_ERROR'));
+    xhr.onabort = () => reject(new Error('UPLOAD_ABORTED'));
     xhr.send(file);
   });
 }
 
-async function completeDirectUpload(fileKey: string): Promise<UploadedMediaFile> {
-  const response = await fetch(buildApiUrl('/api/media/complete'), {
+async function confirmDirectUpload(params: {
+  target: ResolvedUploadTarget;
+  objectKey: string;
+  publicUrl: string;
+  file: File;
+}): Promise<ConfirmResponse> {
+  const response = await fetch(buildApiUrl('/api/media/confirm'), {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...buildAuthHeaders(),
     },
-    body: JSON.stringify({ fileKey }),
+    body: JSON.stringify({
+      objectKey: params.objectKey,
+      publicUrl: params.publicUrl,
+      contentType: params.file.type,
+      size: params.file.size,
+      usage: params.target.usage,
+      invitationId: params.target.invitationId,
+      templateId: params.target.templateId,
+    }),
   });
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw normalizeApiFailure(response.status, payload);
+    throw normalizeApiFailure('CONFIRM', response.status, payload);
   }
 
-  return response.json() as Promise<UploadedMediaFile>;
+  return response.json() as Promise<ConfirmResponse>;
 }
 
-async function uploadWithFolder(
-  file: File,
-  folder: string,
-  onProgress?: (value: number) => void
-): Promise<UploadedMediaFile> {
-  const presigned = await requestPresignedUpload(folder, file);
-  await uploadToR2Direct(presigned.uploadUrl, file, onProgress);
-  const completed = await completeDirectUpload(presigned.fileKey);
-  onProgress?.(100);
-  return completed;
+function normalizeUploadedMedia(confirm: ConfirmResponse): UploadedMediaFile {
+  const objectKey = (confirm.objectKey || confirm.fileKey || '').trim();
+  const publicUrl = normalizePublicUrl((confirm.publicUrl || confirm.url || '').trim());
+  const mimeType = (confirm.mimeType || '').trim();
+  const fileSize = Number(confirm.fileSize ?? confirm.size ?? 0);
+
+  if (
+    !objectKey ||
+    !publicUrl ||
+    !isValidImageUrl(publicUrl) ||
+    !mimeType ||
+    !Number.isFinite(fileSize) ||
+    fileSize <= 0
+  ) {
+    throw new Error('CONFIRM_RESPONSE_INVALID');
+  }
+
+  return {
+    mediaId: confirm.mediaId,
+    objectKey,
+    publicUrl,
+    url: publicUrl,
+    fileKey: objectKey,
+    mimeType,
+    fileSize,
+    width: confirm.width ?? null,
+    height: confirm.height ?? null,
+    usage: confirm.usage,
+  };
 }
 
-async function uploadViaBackend(file: File, options: UploadMediaOptions): Promise<UploadedMediaFile> {
-  const payload = new FormData();
-  payload.append('file', file);
-  if (options.context) {
-    payload.append('context', options.context);
-  }
-  if (options.entityId) {
-    payload.append('entityId', options.entityId);
-  }
-  if (options.assetType) {
-    payload.append('assetType', options.assetType);
-  }
-
-  const response = await fetch(buildApiUrl('/api/media/upload'), {
-    method: 'POST',
-    credentials: 'include',
-    headers: buildAuthHeaders(),
-    body: payload,
-  });
-
-  if (!response.ok) {
-    const payloadError = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw normalizeApiFailure(response.status, payloadError);
-  }
-
-  return response.json() as Promise<UploadedMediaFile>;
-}
-
-async function uploadViaBackendWithFallback(file: File, resolved: UploadMediaOptions): Promise<UploadedMediaFile> {
-  try {
-    return await uploadViaBackend(file, resolved);
-  } catch (error) {
-    const failure = error as ApiFailure;
-    if (resolved.context === 'invitation' && failure.errorCode === 'UNAUTHORIZED_MEDIA_ACCESS') {
-      return uploadViaBackend(file, {
-        context: 'user',
-        assetType: resolved.assetType || 'asset',
-      });
-    }
-    throw error;
-  }
-}
-
-function isDirectUploadTransportError(error: unknown): boolean {
+function isUploadTransportError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   return (
-    error.message.startsWith('DIRECT_UPLOAD_') ||
-    error.message === 'Failed to fetch' ||
-    error.message === 'NetworkError when attempting to fetch resource.'
+    error.message.startsWith('UPLOAD_FAILED:') ||
+    error.message === 'UPLOAD_NETWORK_ERROR' ||
+    error.message === 'UPLOAD_ABORTED'
   );
 }
 
@@ -286,68 +373,47 @@ export async function uploadMediaImage(file: File, options?: UploadMediaOptions)
     ...resolveDefaultUploadOptions(),
     ...(options || {}),
   };
+  const target = resolveUploadTarget(resolved);
+
+  let presigned: PresignResponse;
+  try {
+    presigned = await requestPresignedUpload(target, file);
+  } catch (error) {
+    const failure = error as ApiFailure;
+    if (typeof failure.errorCode === 'string') {
+      throwFriendlyUploadError(failure);
+    }
+    throw new Error('presign 요청에 실패했습니다.');
+  }
+
+  const uploadUrl = presigned.uploadUrl;
+  const objectKey = (presigned.objectKey || presigned.fileKey || '').trim();
+  const publicUrl = normalizePublicUrl((presigned.publicUrl || presigned.url || '').trim());
+  if (!uploadUrl || !objectKey || !publicUrl) {
+    throw new Error('presign 응답이 올바르지 않습니다.');
+  }
 
   try {
-    const folder = resolveUploadFolder(resolved);
-    return await uploadWithFolder(file, folder, resolved.onProgress);
+    await uploadToR2Direct(uploadUrl, file, resolved.onProgress);
+    const confirmed = await confirmDirectUpload({
+      target,
+      objectKey,
+      publicUrl,
+      file,
+    });
+    resolved.onProgress?.(100);
+    return normalizeUploadedMedia(confirmed);
   } catch (error) {
-    const failure = error as ApiFailure | Error;
-
-    if (isDirectUploadTransportError(error)) {
-      try {
-        const uploaded = await uploadViaBackendWithFallback(file, resolved);
-        resolved.onProgress?.(100);
-        return uploaded;
-      } catch (legacyError) {
-        const legacyFailure = legacyError as ApiFailure | Error;
-        if (typeof (legacyFailure as ApiFailure).errorCode === 'string') {
-          throwFriendlyUploadError(legacyFailure as ApiFailure);
-        }
-        throw legacyFailure;
-      }
+    if (isUploadTransportError(error)) {
+      throw new Error('R2 업로드(브라우저 PUT)에 실패했습니다.');
     }
-
-    if (
-      resolved.context === 'invitation' &&
-      typeof (failure as ApiFailure).errorCode === 'string' &&
-      (failure as ApiFailure).errorCode === 'UNAUTHORIZED_MEDIA_ACCESS'
-    ) {
-      try {
-        const fallbackFolder = resolveUploadFolder({
-          context: 'user',
-          assetType: resolved.assetType || 'asset',
-        });
-        return await uploadWithFolder(file, fallbackFolder, resolved.onProgress);
-      } catch (fallbackError) {
-        const fallbackFailure = fallbackError as ApiFailure | Error;
-        if (isDirectUploadTransportError(fallbackError)) {
-          try {
-            const uploaded = await uploadViaBackendWithFallback(file, resolved);
-            resolved.onProgress?.(100);
-            return uploaded;
-          } catch (legacyError) {
-            const legacyFailure = legacyError as ApiFailure | Error;
-            if (typeof (legacyFailure as ApiFailure).errorCode === 'string') {
-              throwFriendlyUploadError(legacyFailure as ApiFailure);
-            }
-            throw legacyFailure;
-          }
-        }
-        if (typeof (fallbackFailure as ApiFailure).errorCode === 'string') {
-          throwFriendlyUploadError(fallbackFailure as ApiFailure);
-        }
-        throw fallbackFailure;
-      }
+    const failure = error as ApiFailure;
+    if (typeof failure.errorCode === 'string') {
+      throwFriendlyUploadError(failure);
     }
-
-    if (typeof (failure as ApiFailure).errorCode === 'string') {
-      throwFriendlyUploadError(failure as ApiFailure);
+    if (error instanceof Error && error.message === 'CONFIRM_RESPONSE_INVALID') {
+      throw new Error('업로드 완료 응답이 올바르지 않습니다.');
     }
-
-    if (failure instanceof Error && failure.message === 'INVALID_MEDIA_PATH') {
-      throw new Error('이미지 업로드 경로가 올바르지 않습니다.');
-    }
-
     throw new Error('이미지 업로드에 실패했습니다.');
   }
 }
@@ -365,11 +431,15 @@ export async function deleteMediaFile(fileUrl: string) {
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    if (payload?.error === 'AUTH_REQUIRED') {
+    const failure = normalizeApiFailure('DELETE', response.status, payload);
+    if (failure.errorCode === 'AUTH_REQUIRED') {
       throw new Error('이미지 삭제는 로그인 후 사용할 수 있습니다.');
     }
-    if (payload?.error === 'R2_STORAGE_NOT_CONFIGURED') {
+    if (failure.errorCode === 'R2_STORAGE_NOT_CONFIGURED') {
       throw new Error('이미지 저장소가 아직 설정되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+    }
+    if (failure.errorCode === 'UNAUTHORIZED_MEDIA_ACCESS') {
+      throw new Error('이미지 삭제 권한이 없습니다.');
     }
     throw new Error('이미지 삭제에 실패했습니다.');
   }

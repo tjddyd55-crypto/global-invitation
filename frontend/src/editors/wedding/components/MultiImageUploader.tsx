@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
+import AppImage from '@/src/components/media/AppImage';
 import { deleteMediaFile, uploadMediaImage } from '@/src/lib/mediaApi';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorImage } from '../state/weddingEditor.types';
@@ -227,7 +228,7 @@ export default function MultiImageUploader({
           <ul className={styles.galleryList}>
             {images.map((image, index) => (
               <li key={image.id} className={styles.galleryItem}>
-                <img src={image.url} alt={image.name || `gallery-${index + 1}`} />
+                <AppImage src={image.url} alt={image.name || `gallery-${index + 1}`} />
                 <div className={styles.galleryControls}>
                   <button
                     type="button"
