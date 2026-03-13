@@ -9,6 +9,23 @@ import { loginWithPassword, setStoredSession } from '@/src/lib/auth';
 import { loginAdmin } from '@/src/lib/adminApi';
 import styles from './login.module.css';
 
+function buildAdminIdCandidates(input: string): string[] {
+  const normalized = input.trim();
+  if (!normalized) return [];
+
+  const candidates: string[] = [normalized];
+  if (normalized.includes('@')) {
+    const localPart = normalized.split('@')[0]?.trim();
+    if (localPart) {
+      candidates.push(localPart);
+    }
+  } else {
+    candidates.push(`${normalized}@naver.com`);
+  }
+
+  return Array.from(new Set(candidates));
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -45,7 +62,20 @@ export default function LoginPage() {
       router.replace('/templates');
     } catch (loginError) {
       try {
-        await loginAdmin(email.trim(), password);
+        const adminIdCandidates = buildAdminIdCandidates(email);
+        let authenticated = false;
+        for (const candidate of adminIdCandidates) {
+          try {
+            await loginAdmin(candidate, password);
+            authenticated = true;
+            break;
+          } catch {
+            // Try next candidate.
+          }
+        }
+        if (!authenticated) {
+          throw new Error('관리자 로그인에 실패했습니다.');
+        }
         router.replace('/admin/dashboard');
         return;
       } catch {

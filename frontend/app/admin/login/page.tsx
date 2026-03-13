@@ -6,6 +6,23 @@ import { useRouter } from 'next/navigation';
 import { loginAdmin } from '@/src/lib/adminApi';
 import styles from '@/src/components/admin/AdminShell.module.css';
 
+function buildAdminIdCandidates(input: string): string[] {
+  const normalized = input.trim();
+  if (!normalized) return [];
+
+  const candidates: string[] = [normalized];
+  if (normalized.includes('@')) {
+    const localPart = normalized.split('@')[0]?.trim();
+    if (localPart) {
+      candidates.push(localPart);
+    }
+  } else {
+    candidates.push(`${normalized}@naver.com`);
+  }
+
+  return Array.from(new Set(candidates));
+}
+
 export default function AdminLoginPage() {
   const router = useRouter();
   const [adminId, setAdminId] = useState('');
@@ -19,7 +36,26 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      await loginAdmin(adminId, password);
+      const adminIdCandidates = buildAdminIdCandidates(adminId);
+      let authenticated = false;
+      let lastError: unknown = null;
+
+      for (const candidate of adminIdCandidates) {
+        try {
+          await loginAdmin(candidate, password);
+          authenticated = true;
+          break;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      if (!authenticated) {
+        throw lastError instanceof Error
+          ? lastError
+          : new Error('관리자 로그인에 실패했습니다.');
+      }
+
       router.replace('/admin/dashboard');
     } catch (submitError) {
       setError(
