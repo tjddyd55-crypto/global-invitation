@@ -2,6 +2,9 @@
   "name": "global-invitation-backend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20"
+  },
   "scripts": {
     "dev": "node --max-old-space-size=2048 ./node_modules/tsx/dist/cli.mjs watch src/index.ts",
     "start": "prisma migrate deploy && node dist/index.js",
