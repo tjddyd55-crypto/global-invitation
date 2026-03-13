@@ -15,6 +15,37 @@ const LOGIN_WINDOW_MS = 60_000;
 const LOGIN_MAX_ATTEMPTS = 5;
 const loginAttemptsByIp = new Map<string, number[]>();
 
+function normalizeAdminId(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function resolveAdminIdAliasesFromEnv(): string[] {
+  return (process.env.ADMIN_ID_ALIASES || '')
+    .split(',')
+    .map((value) => normalizeAdminId(value))
+    .filter(Boolean);
+}
+
+function buildAcceptedAdminIds(expectedAdminId: string): Set<string> {
+  const normalizedExpected = normalizeAdminId(expectedAdminId);
+  const accepted = new Set<string>([normalizedExpected]);
+
+  // Backward compatibility: allow "admin" <-> "admin@naver.com" transition.
+  if (normalizedExpected.includes('@')) {
+    const localPart = normalizedExpected.split('@')[0]?.trim();
+    if (localPart) {
+      accepted.add(localPart);
+    }
+  } else {
+    accepted.add(`${normalizedExpected}@naver.com`);
+  }
+
+  resolveAdminIdAliasesFromEnv().forEach((alias) => {
+    accepted.add(alias);
+  });
+  return accepted;
+}
+
 function resolveClientIp(req: Request): string {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string' && forwarded.trim()) {
@@ -74,8 +105,10 @@ router.post('/login', async (req, res) => {
 
     const expectedAdminId = getResolvedAdminId();
     const expectedPassword = getResolvedAdminPassword();
+    const normalizedInputId = normalizeAdminId(adminId);
+    const acceptedAdminIds = buildAcceptedAdminIds(expectedAdminId);
 
-    if (adminId.trim() !== expectedAdminId || password.trim() !== expectedPassword) {
+    if (!acceptedAdminIds.has(normalizedInputId) || password.trim() !== expectedPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -95,7 +128,7 @@ router.post('/login', async (req, res) => {
 
     return res.status(200).json({
       authenticated: true,
-      adminId: adminId.trim(),
+      adminId: expectedAdminId,
     });
   } catch (error) {
     console.error('Error during admin login:', error);
