@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MarketingLayout from '@/src/components/MarketingLayout';
 import { loginWithPassword, setStoredSession } from '@/src/lib/auth';
+import { loginAdmin } from '@/src/lib/adminApi';
 import styles from './login.module.css';
 
 export default function LoginPage() {
@@ -43,7 +44,13 @@ export default function LoginPage() {
       }
       router.replace('/templates');
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : '로그인에 실패했습니다.');
+      try {
+        await loginAdmin(email.trim(), password);
+        router.replace('/admin/dashboard');
+        return;
+      } catch {
+        setError(loginError instanceof Error ? loginError.message : '로그인에 실패했습니다.');
+      }
     } finally {
       setSubmitting(false);
     }
