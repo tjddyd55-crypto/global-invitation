@@ -2,6 +2,7 @@
 
 import type { Invitation } from '@/src/models/invitation';
 import { buildApiUrl } from '@/src/lib/apiBase';
+import { buildAdminApiUrl } from '@/src/lib/adminApi';
 const SESSION_STORAGE_KEY = 'auth_session_v1';
 const GUEST_TOKEN_KEY = 'guest_token_v1';
 const LAST_DRAFT_KEY = 'last_draft_slug_v1';
@@ -403,7 +404,7 @@ export async function logoutCurrentSession(): Promise<void> {
         ...buildAuthHeaders(),
       },
     }),
-    fetch(buildApiUrl('/api/admin/logout'), {
+    fetch(buildAdminApiUrl('/api/admin/logout'), {
       method: 'POST',
       credentials: 'include',
     }),

@@ -1,26 +1,54 @@
 import { getApiBaseUrl, normalizeApiBaseUrl } from '@/src/lib/apiBase';
 import type { SupportedTemplateKey, TemplateDefinition } from '@/src/templates/registry';
 
-/**
- * Admin API must hit the real backend host when the Next app is on a different origin
- * (e.g. Railway frontend → Railway API). Set on the frontend service:
- *   NEXT_PUBLIC_ADMIN_API_BASE_URL=https://backend-production-xxxx.up.railway.app
- * If unset, falls back to NEXT_PUBLIC_API_BASE_URL / NEXT_PUBLIC_BACKEND_URL / NEXT_PUBLIC_API_URL.
- */
-function getAdminApiBaseUrl(): string {
-  const dedicated = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.trim();
-  if (dedicated) {
-    return normalizeApiBaseUrl(dedicated);
-  }
-  return getApiBaseUrl();
+export const ADMIN_API_BASE_URL_ERROR = 'ADMIN API BASE URL NOT SET';
+
+let adminApiBaseDebugLogged = false;
+
+function isAbsoluteHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim());
 }
 
-export function buildAdminApiUrl(path: string): string {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const base = getAdminApiBaseUrl();
-  if (!base) {
-    return normalizedPath;
+/**
+ * Admin API must use an absolute backend origin (never same-origin `/api/...` on the Next host).
+ *
+ * Railway frontend: set
+ *   NEXT_PUBLIC_ADMIN_API_BASE_URL=https://backend-production-xxxx.up.railway.app
+ * Local: set NEXT_PUBLIC_ADMIN_API_BASE_URL or NEXT_PUBLIC_API_BASE_URL to e.g. http://localhost:3001
+ */
+export function getAdminApiBaseUrl(): string {
+  const dedicated = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.trim();
+  if (dedicated) {
+    const normalized = normalizeApiBaseUrl(dedicated);
+    if (!isAbsoluteHttpUrl(normalized)) {
+      throw new Error(ADMIN_API_BASE_URL_ERROR);
+    }
+    if (!adminApiBaseDebugLogged) {
+      adminApiBaseDebugLogged = true;
+      // eslint-disable-next-line no-console -- intentional deploy/debug aid for admin routing
+      console.log('ADMIN API BASE:', normalized);
+    }
+    return normalized;
   }
+
+  const shared = getApiBaseUrl().trim();
+  if (shared && isAbsoluteHttpUrl(shared)) {
+    const normalized = normalizeApiBaseUrl(shared);
+    if (!adminApiBaseDebugLogged) {
+      adminApiBaseDebugLogged = true;
+      // eslint-disable-next-line no-console -- intentional deploy/debug aid for admin routing
+      console.log('ADMIN API BASE:', normalized);
+    }
+    return normalized;
+  }
+
+  throw new Error(ADMIN_API_BASE_URL_ERROR);
+}
+
+/** Always returns an absolute URL; all admin fetches must use this (never raw `/api/admin/...`). */
+export function buildAdminApiUrl(path: string): string {
+  const base = getAdminApiBaseUrl();
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${base}${normalizedPath}`;
 }
 
