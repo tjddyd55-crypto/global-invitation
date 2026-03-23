@@ -115,6 +115,10 @@ export default function CreatorTemplatesDashboardPage() {
   }
 
   function resolveTemplateReviewNote(template: TemplateDefinition): string | null {
+    const adminReject = template.adminRejectReason?.trim();
+    if (adminReject) {
+      return adminReject;
+    }
     const fromSourceSubmissionId = template.sourceSubmissionId
       ? submissionById.get(template.sourceSubmissionId)
       : null;

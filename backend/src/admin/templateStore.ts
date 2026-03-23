@@ -64,6 +64,7 @@ export interface TemplateDefinition {
   creatorShare: number;
   creatorId?: string;
   creatorName?: string | null;
+  creatorEmail?: string | null;
   creatorDisplayId?: string | null;
   component: string;
   templateKey: string;
@@ -74,6 +75,7 @@ export interface TemplateDefinition {
   studioConfig?: Prisma.JsonValue | null;
   thumbnailUrl?: string | null;
   previewThumbnailUrl?: string | null;
+  adminRejectReason?: string | null;
   sourceSubmissionId?: string | null;
   isActive: boolean;
   isDeleted: boolean;
@@ -105,6 +107,7 @@ export type TemplateCreateInput = {
 export type TemplateUpdateInput = Partial<TemplateCreateInput> & {
   isActive?: boolean;
   isDeleted?: boolean;
+  adminRejectReason?: string | null;
 };
 
 export function toTemplateLifecycleStatus(
@@ -234,6 +237,7 @@ function mapTemplateRecord(
     studioConfig?: Prisma.JsonValue | null;
     thumbnailUrl?: string | null;
     previewThumbnailUrl?: string | null;
+    adminRejectReason?: string | null;
     sourceSubmissionId?: string | null;
     isActive: boolean;
     isDeleted: boolean;
@@ -274,6 +278,7 @@ function mapTemplateRecord(
     studioConfig: row.studioConfig ?? null,
     thumbnailUrl: row.thumbnailUrl ?? null,
     previewThumbnailUrl: row.previewThumbnailUrl ?? null,
+    adminRejectReason: row.adminRejectReason ?? null,
     sourceSubmissionId: row.sourceSubmissionId ?? null,
     isActive: row.isActive,
     isDeleted: row.isDeleted,
@@ -328,6 +333,7 @@ async function withCreatorMetadata(templates: TemplateDefinition[]): Promise<Tem
     return templates.map((template) => ({
       ...template,
       creatorName: 'Global Invitation',
+      creatorEmail: null,
       creatorDisplayId: 'system',
     }));
   }
@@ -363,6 +369,7 @@ async function withCreatorMetadata(templates: TemplateDefinition[]): Promise<Tem
       return {
         ...template,
         creatorName: 'Global Invitation',
+        creatorEmail: null,
         creatorDisplayId: 'system',
       };
     }
@@ -371,6 +378,7 @@ async function withCreatorMetadata(templates: TemplateDefinition[]): Promise<Tem
     return {
       ...template,
       creatorName: resolveCreatorName(creatorProfile),
+      creatorEmail: creatorProfile?.email?.trim() || null,
       creatorDisplayId: template.creatorId,
     };
   });
@@ -821,6 +829,12 @@ export async function updateTemplate(
   }
   if (input.isDeleted !== undefined) {
     payload.isDeleted = Boolean(input.isDeleted);
+  }
+  if (input.adminRejectReason !== undefined) {
+    payload.adminRejectReason =
+      input.adminRejectReason === null || input.adminRejectReason === ''
+        ? null
+        : normalizeText(String(input.adminRejectReason));
   }
 
   const row = await prisma.template.update({

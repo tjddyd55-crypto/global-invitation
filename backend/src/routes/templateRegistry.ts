@@ -14,6 +14,8 @@ import {
 } from '../admin/templateStore';
 import prisma from '../lib/prisma';
 import { getAuthUser, getGuestToken } from '../lib/auth';
+import { getAdminSession } from '../lib/adminSession';
+import { buildTemplatePreviewSampleData } from '../admin/templatePreviewSampleData';
 import { generateSlug } from '../utils/slug';
 
 const router = Router();
@@ -147,6 +149,41 @@ router.post('/my/:identifier/submit', async (req, res) => {
   } catch (error) {
     console.error('Error submitting creator template:', error);
     return res.status(500).json({ error: 'FAILED_TO_SUBMIT_CREATOR_TEMPLATE' });
+  }
+});
+
+/**
+ * 템플릿 실제 UI 미리보기용 메타 + 샘플 데이터.
+ * - 마켓 노출 템플릿: 누구나
+ * - 비공개 템플릿: 관리자 세션 필요
+ */
+router.get('/:identifier/preview', async (req, res) => {
+  try {
+    const template = await getTemplateByIdentifier(req.params.identifier);
+    if (!template) {
+      return res.status(404).json({ error: 'TEMPLATE_NOT_FOUND' });
+    }
+
+    const adminSession = getAdminSession(req);
+    const isAdmin =
+      adminSession?.role === 'ADMIN' || adminSession?.role === 'SUPER_ADMIN';
+    const visible = isMarketplaceVisibleTemplate(template);
+
+    if (!visible && !isAdmin) {
+      return res.status(403).json({ error: 'TEMPLATE_PREVIEW_FORBIDDEN' });
+    }
+
+    const modeRaw = typeof req.query?.mode === 'string' ? req.query.mode.toLowerCase() : '';
+    const isReal = modeRaw === 'real';
+
+    return res.status(200).json({
+      template,
+      previewMode: isReal ? 'real' : 'sample',
+      sampleData: isReal ? null : buildTemplatePreviewSampleData(template),
+    });
+  } catch (error) {
+    console.error('Error building template preview bundle:', error);
+    return res.status(500).json({ error: 'FAILED_TO_BUILD_TEMPLATE_PREVIEW' });
   }
 });
 

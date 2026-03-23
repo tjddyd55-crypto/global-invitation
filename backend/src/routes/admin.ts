@@ -496,6 +496,17 @@ router.patch('/templates/:id', async (req, res) => {
         payload.isActive = true;
         payload.isDeleted = false;
       }
+
+      if (nextLifecycleStatus === 'REJECTED') {
+        const rejectRaw = req.body?.rejectReason ?? req.body?.reviewNote;
+        const rejectReason = typeof rejectRaw === 'string' ? normalizeText(rejectRaw) : '';
+        if (!rejectReason) {
+          return res.status(400).json({ error: 'REJECT_REASON_REQUIRED' });
+        }
+        payload.adminRejectReason = rejectReason;
+      } else if (nextLifecycleStatus !== currentLifecycleStatus) {
+        payload.adminRejectReason = null;
+      }
     }
     if (typeof req.body?.category === 'string') {
       const category = normalizeText(req.body.category);

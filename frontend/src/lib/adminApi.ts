@@ -241,6 +241,26 @@ export async function getAdminTemplate(templateId: string) {
   return parseJsonOrThrow<TemplateDefinition>(response);
 }
 
+export type AdminTemplatePreviewBundle = {
+  template: TemplateDefinition;
+  previewMode: 'sample' | 'real';
+  sampleData: Record<string, unknown> | null;
+};
+
+/** 공개/관리자 미리보기 번들 (비공개 템플릿은 관리자 쿠키 필요). */
+export async function fetchAdminTemplatePreviewBundle(
+  identifier: string,
+  options?: { mode?: 'sample' | 'real' }
+) {
+  const encoded = encodeURIComponent(identifier);
+  const query = options?.mode === 'real' ? '?mode=real' : '';
+  const response = await fetch(
+    buildAdminApiUrl(`/api/templates/${encoded}/preview${query}`),
+    buildAdminRequestInit()
+  );
+  return parseJsonOrThrow<AdminTemplatePreviewBundle>(response);
+}
+
 export async function createAdminTemplate(payload: AdminTemplatePayload) {
   const response = await fetch(
     buildAdminApiUrl('/api/admin/templates'),
@@ -263,13 +283,21 @@ export async function updateAdminTemplate(templateId: string, payload: Partial<A
   return parseJsonOrThrow<TemplateDefinition>(response);
 }
 
-/** 관리자 전용 라이프사이클 변경 (전이 검증은 백엔드). */
-export async function updateTemplateStatus(templateId: string, lifecycleStatus: string) {
+/** 관리자 전용 라이프사이클 변경 (전이 검증은 백엔드). REJECTED 시 rejectReason 필수. */
+export async function updateTemplateStatus(
+  templateId: string,
+  lifecycleStatus: string,
+  options?: { rejectReason?: string }
+) {
+  const body: Record<string, string> = { lifecycleStatus };
+  if (options?.rejectReason !== undefined) {
+    body.rejectReason = options.rejectReason;
+  }
   const response = await fetch(
     buildAdminApiUrl(`/api/admin/templates/${templateId}`),
     buildAdminRequestInit({
       method: 'PATCH',
-      body: JSON.stringify({ lifecycleStatus }),
+      body: JSON.stringify(body),
     })
   );
   return parseJsonOrThrow<TemplateDefinition>(response);

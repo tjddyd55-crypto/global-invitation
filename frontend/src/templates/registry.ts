@@ -55,6 +55,7 @@ export interface TemplateDefinition {
   creatorShare: number;
   creatorId?: string;
   creatorName?: string | null;
+  creatorEmail?: string | null;
   creatorDisplayId?: string | null;
   component: string;
   templateKey: string;
@@ -65,6 +66,8 @@ export interface TemplateDefinition {
   studioConfig?: Record<string, unknown> | null;
   thumbnailUrl?: string | null;
   previewThumbnailUrl?: string | null;
+  /** 관리자 템플릿 반려 시 사유 */
+  adminRejectReason?: string | null;
   sourceSubmissionId?: string | null;
   isActive: boolean;
   isDeleted: boolean;

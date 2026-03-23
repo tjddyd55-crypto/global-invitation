@@ -305,6 +305,8 @@ model Template {
   studioConfig    Json?    @map("studio_config") @db.JsonB
   thumbnailUrl    String?  @map("thumbnail_url")
   previewThumbnailUrl String? @map("preview_thumbnail_url")
+  /// 관리자가 템플릿을 REJECTED로 돌릴 때 필수로 남기는 사유 (크리에이터 피드백)
+  adminRejectReason String? @map("admin_reject_reason")
   sourceSubmissionId String? @map("source_submission_id") @db.Uuid
   isActive        Boolean  @default(true) @map("is_active")
   isDeleted       Boolean  @default(false) @map("is_deleted")
