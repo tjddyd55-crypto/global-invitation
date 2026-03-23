@@ -478,7 +478,14 @@ export default function AdminTemplatesPage() {
             <iframe
               title="Template preview"
               src={`/admin/templates/${previewTemplateId}/preview?embed=1`}
-              style={{ flex: 1, width: '100%', border: 'none', minHeight: 0 }}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                background: '#fff',
+                flex: 1,
+                minHeight: 0,
+              }}
             />
           </div>
         </div>

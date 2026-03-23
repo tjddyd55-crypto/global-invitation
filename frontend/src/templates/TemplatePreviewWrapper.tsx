@@ -3,10 +3,14 @@
 import type { TemplatePreviewData } from '@/src/templates/previewData';
 import { getTemplatePreviewData, getTemplateRegistryEntry } from '@/src/templates/registry';
 
+/** `phone`: 모바일 폭(420px) 기준 중앙 정렬 — 관리자 미리보기/iframe용 */
+const PHONE_PREVIEW_MAX_WIDTH_PX = 420;
+
 type TemplatePreviewWrapperProps = {
   templateKey: string;
   sampleData?: TemplatePreviewData;
   studioConfig?: unknown;
+  variant?: 'default' | 'phone';
 };
 
 function resolvePreviewScale(templateKey: string) {
@@ -58,7 +62,12 @@ function buildPreviewProps(templateKey: string, data: unknown, studioConfig?: un
   }
 }
 
-export default function TemplatePreviewWrapper({ templateKey, sampleData, studioConfig }: TemplatePreviewWrapperProps) {
+export default function TemplatePreviewWrapper({
+  templateKey,
+  sampleData,
+  studioConfig,
+  variant = 'default',
+}: TemplatePreviewWrapperProps) {
   const entry = getTemplateRegistryEntry(templateKey);
   const previewData = sampleData ?? getTemplatePreviewData(templateKey);
 
@@ -69,11 +78,15 @@ export default function TemplatePreviewWrapper({ templateKey, sampleData, studio
   const Renderer = entry.renderer;
   const scale = resolvePreviewScale(templateKey);
 
+  const isPhone = variant === 'phone';
+
   return (
     <div
       style={{
         width: '100%',
         height: '100%',
+        maxWidth: isPhone ? PHONE_PREVIEW_MAX_WIDTH_PX : undefined,
+        margin: isPhone ? '0 auto' : undefined,
         overflow: 'hidden',
         background: '#ffffff',
       }}
