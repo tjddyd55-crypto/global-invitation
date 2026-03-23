@@ -4,7 +4,7 @@ const RAW_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   '';
 
-function normalizeBaseUrl(value: string): string {
+export function normalizeApiBaseUrl(value: string): string {
   return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
@@ -15,7 +15,7 @@ function normalizeBaseUrl(value: string): string {
  * - "localhost fallback" 금지
  */
 export function getApiBaseUrl(): string {
-  return normalizeBaseUrl(RAW_API_BASE_URL);
+  return normalizeApiBaseUrl(RAW_API_BASE_URL);
 }
 
 export function buildApiUrl(path: string): string {

@@ -5,8 +5,10 @@ import {
   getResolvedAdminId,
   getResolvedAdminPassword,
   isAdminConfigured,
+  isAnyAdminPortalConfigured,
   requireAdminSession,
   setAdminSessionCookie,
+  validateSuperAdminCredentials,
 } from '../lib/adminSession';
 import { logAdminAction } from '../admin/adminAuditLog';
 
@@ -87,7 +89,7 @@ router.post('/login', async (req, res) => {
       return res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
     }
 
-    if (!isAdminConfigured()) {
+    if (!isAnyAdminPortalConfigured()) {
       return res.status(503).json({ error: 'ADMIN_NOT_CONFIGURED' });
     }
 
@@ -106,16 +108,45 @@ router.post('/login', async (req, res) => {
     }
     console.log('admin login attempt', adminEmail.trim());
 
+    const normalizedInputId = normalizeAdminId(adminEmail);
+    const superEmailRaw = process.env.SUPER_ADMIN_EMAIL?.trim() || '';
+
+    if (superEmailRaw && validateSuperAdminCredentials(adminEmail, password)) {
+      setAdminSessionCookie(res, superEmailRaw, 'SUPER_ADMIN');
+      console.log('super admin login success');
+      await logAdminAction({
+        adminId: superEmailRaw,
+        action: 'super_admin_login',
+        targetType: 'admin',
+        targetId: superEmailRaw,
+        payload: {
+          ip,
+          userAgent: req.headers['user-agent'] || null,
+        },
+      }).catch((error) => {
+        console.warn('Failed to write super admin login audit log:', error);
+      });
+
+      return res.status(200).json({
+        success: true,
+        role: 'SUPER_ADMIN',
+        email: superEmailRaw,
+      });
+    }
+
+    if (!isAdminConfigured()) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
     const expectedAdminId = getResolvedAdminId();
     const expectedPassword = getResolvedAdminPassword();
-    const normalizedInputId = normalizeAdminId(adminEmail);
     const acceptedAdminIds = buildAcceptedAdminIds(expectedAdminId);
 
     if (!acceptedAdminIds.has(normalizedInputId) || password.trim() !== expectedPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    setAdminSessionCookie(res, expectedAdminId);
+    setAdminSessionCookie(res, expectedAdminId, 'ADMIN');
     console.log('admin login success');
     await logAdminAction({
       adminId: expectedAdminId,
@@ -154,7 +185,7 @@ router.get('/me', requireAdminSession, async (req, res) => {
 
   console.log('admin session verified');
   return res.status(200).json({
-    role: 'ADMIN',
+    role: session.role,
     email: session.email,
   });
 });

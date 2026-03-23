@@ -55,6 +55,7 @@ model User {
   passwordHash String? @map("password_hash")
   role      UserRole @default(USER)
   isCreator Boolean  @default(false) @map("is_creator")
+  countryCode String? @map("country_code")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   invitations         Invitation[]
@@ -68,6 +69,8 @@ model User {
   authSessions         AuthSession[]
   mediaFiles           MediaFile[]
   createdMediaFiles    MediaFile[] @relation("MediaFileCreatedBy")
+  creditWallet         UserCreditWallet?
+  creditTransactions   CreditTransaction[]
 
   @@map("users")
 }
@@ -232,6 +235,57 @@ model AdminAuditLog {
   @@index([adminId, createdAt])
   @@index([action, createdAt])
   @@map("admin_audit_logs")
+}
+
+model CreditPolicy {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key       String   @unique
+  cost      Int
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("credit_policies")
+}
+
+model CreditPackage {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  credits    Int
+  priceCents Int      @default(0) @map("price_cents")
+  active     Boolean  @default(true)
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([sortOrder])
+  @@map("credit_packages")
+}
+
+model UserCreditWallet {
+  userId    String   @id @map("user_id") @db.Uuid
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_credit_wallets")
+}
+
+model CreditTransaction {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  amount        Int
+  type          String
+  reason        String?
+  beforeBalance Int      @map("before_balance")
+  afterBalance  Int      @map("after_balance")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("credit_transactions")
 }
 
 model Template {

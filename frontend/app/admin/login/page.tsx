@@ -40,9 +40,11 @@ export default function AdminLoginPage() {
       let authenticated = false;
       let lastError: unknown = null;
 
+      let nextRole: 'ADMIN' | 'SUPER_ADMIN' | null = null;
       for (const candidate of adminIdCandidates) {
         try {
-          await loginAdmin(candidate, password);
+          const res = await loginAdmin(candidate, password);
+          nextRole = res.role;
           authenticated = true;
           break;
         } catch (error) {
@@ -56,7 +58,7 @@ export default function AdminLoginPage() {
           : new Error('관리자 로그인에 실패했습니다.');
       }
 
-      router.replace('/admin/templates');
+      router.replace(nextRole === 'SUPER_ADMIN' ? '/admin/super/credit-policies' : '/admin/templates');
     } catch (submitError) {
       setError(
         submitError instanceof Error ? submitError.message : '관리자 로그인에 실패했습니다.'

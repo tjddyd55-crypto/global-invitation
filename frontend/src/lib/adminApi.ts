@@ -1,8 +1,33 @@
-import { buildApiUrl } from '@/src/lib/apiBase';
+import { getApiBaseUrl, normalizeApiBaseUrl } from '@/src/lib/apiBase';
 import type { SupportedTemplateKey, TemplateDefinition } from '@/src/templates/registry';
 
+/**
+ * Admin API must hit the real backend host when the Next app is on a different origin
+ * (e.g. Railway frontend → Railway API). Set on the frontend service:
+ *   NEXT_PUBLIC_ADMIN_API_BASE_URL=https://backend-production-xxxx.up.railway.app
+ * If unset, falls back to NEXT_PUBLIC_API_BASE_URL / NEXT_PUBLIC_BACKEND_URL / NEXT_PUBLIC_API_URL.
+ */
+function getAdminApiBaseUrl(): string {
+  const dedicated = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.trim();
+  if (dedicated) {
+    return normalizeApiBaseUrl(dedicated);
+  }
+  return getApiBaseUrl();
+}
+
+export function buildAdminApiUrl(path: string): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const base = getAdminApiBaseUrl();
+  if (!base) {
+    return normalizedPath;
+  }
+  return `${base}${normalizedPath}`;
+}
+
+export type AdminRole = 'ADMIN' | 'SUPER_ADMIN';
+
 export type AdminSession = {
-  role: 'ADMIN';
+  role: AdminRole;
   email: string;
 };
 
@@ -128,32 +153,37 @@ async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-function buildAdminRequestInit(init?: RequestInit): RequestInit {
+/**
+ * Admin API calls are cross-origin in production; cookies only attach when
+ * credentials: 'include' is set and the backend uses SameSite=None + CORS credentials.
+ */
+export function buildAdminRequestInit(init?: RequestInit): RequestInit {
+  const { credentials: _c, cache: _cache, headers: incomingHeaders, ...rest } = init || {};
   return {
-    credentials: 'include',
+    ...rest,
     cache: 'no-store',
-    ...init,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(init?.headers || {}),
+      ...(incomingHeaders || {}),
     },
   };
 }
 
 export async function loginAdmin(email: string, password: string) {
   const response = await fetch(
-    buildApiUrl('/api/admin/login'),
+    buildAdminApiUrl('/api/admin/login'),
     buildAdminRequestInit({
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
   );
-  return parseJsonOrThrow<{ success: true; role: 'ADMIN'; email: string }>(response);
+  return parseJsonOrThrow<{ success: true; role: AdminRole; email: string }>(response);
 }
 
 export async function logoutAdmin() {
   const response = await fetch(
-    buildApiUrl('/api/admin/logout'),
+    buildAdminApiUrl('/api/admin/logout'),
     buildAdminRequestInit({
       method: 'POST',
       body: JSON.stringify({}),
@@ -163,29 +193,29 @@ export async function logoutAdmin() {
 }
 
 export async function getAdminSession() {
-  const response = await fetch(buildApiUrl('/api/admin/me'), buildAdminRequestInit());
+  const response = await fetch(buildAdminApiUrl('/api/admin/me'), buildAdminRequestInit());
   return parseJsonOrThrow<AdminSession>(response);
 }
 
 export async function getAdminDashboardSummary() {
-  const response = await fetch(buildApiUrl('/api/admin/dashboard'), buildAdminRequestInit());
+  const response = await fetch(buildAdminApiUrl('/api/admin/dashboard'), buildAdminRequestInit());
   return parseJsonOrThrow<AdminDashboardSummary>(response);
 }
 
 export async function listAdminTemplates(status?: string) {
   const query = status ? `?status=${encodeURIComponent(status)}` : '';
-  const response = await fetch(buildApiUrl(`/api/admin/templates${query}`), buildAdminRequestInit());
+  const response = await fetch(buildAdminApiUrl(`/api/admin/templates${query}`), buildAdminRequestInit());
   return parseJsonOrThrow<TemplateDefinition[]>(response);
 }
 
 export async function getAdminTemplate(templateId: string) {
-  const response = await fetch(buildApiUrl(`/api/admin/templates/${templateId}`), buildAdminRequestInit());
+  const response = await fetch(buildAdminApiUrl(`/api/admin/templates/${templateId}`), buildAdminRequestInit());
   return parseJsonOrThrow<TemplateDefinition>(response);
 }
 
 export async function createAdminTemplate(payload: AdminTemplatePayload) {
   const response = await fetch(
-    buildApiUrl('/api/admin/templates'),
+    buildAdminApiUrl('/api/admin/templates'),
     buildAdminRequestInit({
       method: 'POST',
       body: JSON.stringify(payload),
@@ -196,7 +226,7 @@ export async function createAdminTemplate(payload: AdminTemplatePayload) {
 
 export async function updateAdminTemplate(templateId: string, payload: Partial<AdminTemplatePayload>) {
   const response = await fetch(
-    buildApiUrl(`/api/admin/templates/${templateId}`),
+    buildAdminApiUrl(`/api/admin/templates/${templateId}`),
     buildAdminRequestInit({
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -207,7 +237,7 @@ export async function updateAdminTemplate(templateId: string, payload: Partial<A
 
 export async function disableAdminTemplate(templateId: string) {
   const response = await fetch(
-    buildApiUrl(`/api/admin/templates/${templateId}/disable`),
+    buildAdminApiUrl(`/api/admin/templates/${templateId}/disable`),
     buildAdminRequestInit({
       method: 'POST',
       body: JSON.stringify({}),
@@ -218,7 +248,7 @@ export async function disableAdminTemplate(templateId: string) {
 
 export async function deleteAdminTemplate(templateId: string) {
   const response = await fetch(
-    buildApiUrl(`/api/admin/templates/${templateId}/delete`),
+    buildAdminApiUrl(`/api/admin/templates/${templateId}/delete`),
     buildAdminRequestInit({
       method: 'POST',
       body: JSON.stringify({}),
@@ -243,7 +273,7 @@ export async function getAdminInvitationGuestList(
   }
   const query = params.toString();
   const response = await fetch(
-    buildApiUrl(`/api/rsvp/${invitationId}${query ? `?${query}` : ''}`),
+    buildAdminApiUrl(`/api/rsvp/${invitationId}${query ? `?${query}` : ''}`),
     buildAdminRequestInit()
   );
   return parseJsonOrThrow<AdminInvitationGuestList>(response);
@@ -251,7 +281,7 @@ export async function getAdminInvitationGuestList(
 
 export async function exportAdminInvitationGuestCsv(invitationId: string) {
   const response = await fetch(
-    buildApiUrl(`/api/admin/invitations/${invitationId}/rsvp/export`),
+    buildAdminApiUrl(`/api/admin/invitations/${invitationId}/rsvp/export`),
     buildAdminRequestInit({
       method: 'GET',
       headers: {},
@@ -274,7 +304,7 @@ export async function exportAdminInvitationGuestCsv(invitationId: string) {
 
 export async function deleteAdminRsvp(rsvpId: string) {
   const response = await fetch(
-    buildApiUrl(`/api/admin/rsvp/${rsvpId}`),
+    buildAdminApiUrl(`/api/admin/rsvp/${rsvpId}`),
     buildAdminRequestInit({
       method: 'DELETE',
     })
@@ -284,7 +314,7 @@ export async function deleteAdminRsvp(rsvpId: string) {
 
 export async function updateAdminRsvpVisibility(rsvpId: string, isHidden: boolean) {
   const response = await fetch(
-    buildApiUrl(`/api/admin/rsvp/${rsvpId}`),
+    buildAdminApiUrl(`/api/admin/rsvp/${rsvpId}`),
     buildAdminRequestInit({
       method: 'PATCH',
       body: JSON.stringify({ isHidden }),
@@ -298,20 +328,20 @@ export async function updateAdminRsvpVisibility(rsvpId: string, isHidden: boolea
 
 export async function getInvitationAnalytics(invitationId: string) {
   const response = await fetch(
-    buildApiUrl(`/api/admin/invitations/${invitationId}/analytics`),
+    buildAdminApiUrl(`/api/admin/invitations/${invitationId}/analytics`),
     buildAdminRequestInit()
   );
   return parseJsonOrThrow<InvitationAnalyticsSummary>(response);
 }
 
 export async function listAdminTemplateSubmissions() {
-  const response = await fetch(buildApiUrl('/api/admin/template-submissions'), buildAdminRequestInit());
+  const response = await fetch(buildAdminApiUrl('/api/admin/template-submissions'), buildAdminRequestInit());
   return parseJsonOrThrow<AdminTemplateSubmission[]>(response);
 }
 
 export async function getAdminTemplateSubmission(submissionId: string) {
   const response = await fetch(
-    buildApiUrl(`/api/admin/template-submissions/${submissionId}`),
+    buildAdminApiUrl(`/api/admin/template-submissions/${submissionId}`),
     buildAdminRequestInit()
   );
   return parseJsonOrThrow<AdminTemplateSubmission>(response);
@@ -322,7 +352,7 @@ export async function approveAdminTemplateSubmission(
   payload?: { reviewNote?: string; creatorShare?: number }
 ) {
   const response = await fetch(
-    buildApiUrl(`/api/admin/template-submissions/${submissionId}/approve`),
+    buildAdminApiUrl(`/api/admin/template-submissions/${submissionId}/approve`),
     buildAdminRequestInit({
       method: 'POST',
       body: JSON.stringify(payload || {}),
@@ -333,7 +363,7 @@ export async function approveAdminTemplateSubmission(
 
 export async function rejectAdminTemplateSubmission(submissionId: string, payload?: { reviewNote?: string }) {
   const response = await fetch(
-    buildApiUrl(`/api/admin/template-submissions/${submissionId}/reject`),
+    buildAdminApiUrl(`/api/admin/template-submissions/${submissionId}/reject`),
     buildAdminRequestInit({
       method: 'POST',
       body: JSON.stringify(payload || {}),

@@ -6,8 +6,10 @@ const ADMIN_SESSION_TTL_HOURS = 24;
 const DEV_DEFAULT_ADMIN_ID = 'admin@naver.com';
 const DEV_DEFAULT_ADMIN_PASSWORD = 'admin!2345';
 
+export type AdminRole = 'ADMIN' | 'SUPER_ADMIN';
+
 export type AdminSession = {
-  role: 'ADMIN';
+  role: AdminRole;
   email: string;
   adminId: string;
   issuedAt: number;
@@ -22,6 +24,40 @@ type AdminCredentials = {
 
 function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
+}
+
+/**
+ * Cross-origin admin UI (e.g. Vercel/Railway frontend → Railway API) requires
+ * SameSite=None; Secure. Browsers ignore third-party cookies with SameSite=Lax.
+ * Local HTTP dev keeps Lax + non-secure cookies so admin login still works.
+ *
+ * Never set `domain` on this cookie: it must be host-only for the API host so
+ * the browser sends it on credentialed fetches to the backend origin.
+ */
+function resolveAdminSessionCookieOptions(): {
+  httpOnly: true;
+  secure: boolean;
+  sameSite: 'none' | 'lax';
+  maxAge: number;
+  path: '/';
+} {
+  const maxAge = ADMIN_SESSION_TTL_HOURS * 60 * 60 * 1000;
+  if (isProduction()) {
+    return {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge,
+      path: '/',
+    };
+  }
+  return {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+    maxAge,
+    path: '/',
+  };
 }
 
 function resolveAdminId(): string {
@@ -46,6 +82,34 @@ function resolveAdminJwtSecret(): string {
     process.env.ADMIN_SESSION_SECRET?.trim() ||
     ''
   );
+}
+
+function normalizeAdminId(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function resolveSuperAdminEmail(): string {
+  return process.env.SUPER_ADMIN_EMAIL?.trim() || '';
+}
+
+function resolveSuperAdminPassword(): string {
+  return process.env.SUPER_ADMIN_PASSWORD?.trim() || '';
+}
+
+export function isSuperAdminConfigured(): boolean {
+  const email = resolveSuperAdminEmail();
+  const password = resolveSuperAdminPassword();
+  const secret = resolveAdminJwtSecret();
+  return Boolean(email && password && secret);
+}
+
+export function validateSuperAdminCredentials(adminId: string, password: string): boolean {
+  const email = resolveSuperAdminEmail();
+  const expectedPassword = resolveSuperAdminPassword();
+  if (!email || !expectedPassword) {
+    return false;
+  }
+  return normalizeAdminId(adminId) === normalizeAdminId(email) && safeEqual(password.trim(), expectedPassword);
 }
 
 function getAdminCredentials(): AdminCredentials | null {
@@ -94,10 +158,10 @@ function parseCookieValue(req: Request, cookieName: string): string | null {
   return decodeURIComponent(cookie.slice(cookieName.length + 1));
 }
 
-function buildSession(adminEmail: string): AdminSession {
+function buildSession(adminEmail: string, role: AdminRole): AdminSession {
   const now = Date.now();
   return {
-    role: 'ADMIN',
+    role,
     email: adminEmail,
     adminId: adminEmail,
     issuedAt: now,
@@ -106,7 +170,7 @@ function buildSession(adminEmail: string): AdminSession {
 }
 
 function buildJwtPayload(session: AdminSession): {
-  role: 'ADMIN';
+  role: AdminRole;
   email: string;
   iat: number;
   exp: number;
@@ -114,7 +178,7 @@ function buildJwtPayload(session: AdminSession): {
   const iat = Math.floor(session.issuedAt / 1000);
   const exp = Math.floor(session.expiresAt / 1000);
   return {
-    role: 'ADMIN',
+    role: session.role,
     email: session.email,
     iat,
     exp,
@@ -148,12 +212,8 @@ function deserializeSessionJwt(token: string, secret: string): AdminSession | nu
       iat: number;
       exp: number;
     }>;
-    if (
-      payload.role !== 'ADMIN' ||
-      !payload.email ||
-      typeof payload.iat !== 'number' ||
-      typeof payload.exp !== 'number'
-    ) {
+    const role: AdminRole = payload.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'ADMIN';
+    if (!payload.email || typeof payload.iat !== 'number' || typeof payload.exp !== 'number') {
       return null;
     }
     const nowSeconds = Math.floor(Date.now() / 1000);
@@ -161,8 +221,24 @@ function deserializeSessionJwt(token: string, secret: string): AdminSession | nu
       return null;
     }
 
+    const emailNorm = normalizeAdminId(payload.email);
+
+    if (role === 'SUPER_ADMIN') {
+      const superEmail = resolveSuperAdminEmail();
+      if (!superEmail || emailNorm !== normalizeAdminId(superEmail)) {
+        return null;
+      }
+      return {
+        role: 'SUPER_ADMIN',
+        email: payload.email,
+        adminId: payload.email,
+        issuedAt: payload.iat * 1000,
+        expiresAt: payload.exp * 1000,
+      };
+    }
+
     const expectedEmail = resolveAdminId();
-    if (!expectedEmail || payload.email.trim() !== expectedEmail.trim()) {
+    if (!expectedEmail || emailNorm !== normalizeAdminId(expectedEmail)) {
       return null;
     }
 
@@ -182,6 +258,10 @@ export function isAdminConfigured(): boolean {
   return Boolean(getAdminCredentials());
 }
 
+export function isAnyAdminPortalConfigured(): boolean {
+  return isAdminConfigured() || isSuperAdminConfigured();
+}
+
 export function validateAdminCredentials(adminId: string, password: string): boolean {
   const credentials = getAdminCredentials();
   if (!credentials) {
@@ -194,36 +274,30 @@ export function validateAdminCredentials(adminId: string, password: string): boo
   );
 }
 
-export function setAdminSessionCookie(res: Response, adminEmail: string) {
-  const credentials = getAdminCredentials();
-  if (!credentials) {
-    throw new Error('Admin credentials are not configured.');
+export function setAdminSessionCookie(res: Response, adminEmail: string, role: AdminRole = 'ADMIN') {
+  const jwtSecret = resolveAdminJwtSecret();
+  if (!jwtSecret) {
+    throw new Error('Admin JWT secret is not configured.');
   }
 
-  const token = serializeSessionJwt(buildSession(adminEmail), credentials.jwtSecret);
-  const secure = isProduction();
-  res.cookie(ADMIN_SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure,
-    maxAge: ADMIN_SESSION_TTL_HOURS * 60 * 60 * 1000,
-    path: '/',
-  });
+  const token = serializeSessionJwt(buildSession(adminEmail, role), jwtSecret);
+  res.cookie(ADMIN_SESSION_COOKIE, token, resolveAdminSessionCookieOptions());
+  console.log('Set-Cookie sent');
 }
 
 export function clearAdminSessionCookie(res: Response) {
-  const secure = isProduction();
+  const { httpOnly, secure, sameSite, path } = resolveAdminSessionCookieOptions();
   res.clearCookie(ADMIN_SESSION_COOKIE, {
-    httpOnly: true,
-    sameSite: 'lax',
+    httpOnly,
+    sameSite,
     secure,
-    path: '/',
+    path,
   });
 }
 
 export function getAdminSession(req: Request): AdminSession | null {
-  const credentials = getAdminCredentials();
-  if (!credentials) {
+  const jwtSecret = resolveAdminJwtSecret();
+  if (!jwtSecret) {
     return null;
   }
 
@@ -232,16 +306,30 @@ export function getAdminSession(req: Request): AdminSession | null {
     return null;
   }
 
-  return deserializeSessionJwt(token, credentials.jwtSecret);
+  return deserializeSessionJwt(token, jwtSecret);
 }
 
 export function requireAdminSession(req: Request, res: Response, next: NextFunction) {
   const session = getAdminSession(req);
-  if (!session) {
+  if (!session || (session.role !== 'ADMIN' && session.role !== 'SUPER_ADMIN')) {
+    console.log('Incoming cookies:', req.headers.cookie ?? '(none)');
     return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
   }
 
   console.log('admin session verified', session.email);
+  res.locals.adminSession = session;
+  return next();
+}
+
+export function requireSuperAdminSession(req: Request, res: Response, next: NextFunction) {
+  const session = getAdminSession(req);
+  if (!session) {
+    console.log('Incoming cookies:', req.headers.cookie ?? '(none)');
+    return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
+  }
+  if (session.role !== 'SUPER_ADMIN') {
+    return res.status(403).json({ error: 'SUPER_ADMIN_REQUIRED' });
+  }
   res.locals.adminSession = session;
   return next();
 }

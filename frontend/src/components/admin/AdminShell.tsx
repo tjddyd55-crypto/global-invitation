@@ -20,6 +20,8 @@ const ADMIN_NAV_ITEMS = [
   { href: '/admin/system', label: 'System' },
 ];
 
+const SUPER_NAV_ITEM = { href: '/admin/super/credit-policies', label: 'Super Admin' } as const;
+
 export default function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -58,14 +60,21 @@ export default function AdminShell({ children }: AdminShellProps) {
     };
   }, [isLoginPage, router]);
 
-  const navItems = useMemo(
-    () =>
-      ADMIN_NAV_ITEMS.map((item) => ({
-        ...item,
-        isActive: pathname === item.href || pathname.startsWith(`${item.href}/`),
-      })),
-    [pathname]
-  );
+  const navItems = useMemo(() => {
+    const base = ADMIN_NAV_ITEMS.map((item) => ({
+      ...item,
+      isActive: pathname === item.href || pathname.startsWith(`${item.href}/`),
+    }));
+    if (session?.role === 'SUPER_ADMIN') {
+      const superItem = {
+        ...SUPER_NAV_ITEM,
+        isActive:
+          pathname === SUPER_NAV_ITEM.href || pathname.startsWith(`${SUPER_NAV_ITEM.href}/`),
+      };
+      return [...base, superItem];
+    }
+    return base;
+  }, [pathname, session?.role]);
 
   if (isLoginPage) {
     return <>{children}</>;
