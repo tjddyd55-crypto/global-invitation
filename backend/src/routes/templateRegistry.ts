@@ -85,6 +85,9 @@ router.patch('/my/:identifier', async (req, res) => {
     if (req.body?.status !== undefined) {
       return res.status(403).json({ error: 'ONLY_ADMIN_CAN_CHANGE_TEMPLATE_STATUS' });
     }
+    if (req.body?.lifecycleStatus !== undefined) {
+      return res.status(403).json({ error: 'ONLY_ADMIN_CAN_CHANGE_TEMPLATE_STATUS' });
+    }
     if (req.body?.creatorId !== undefined) {
       return res.status(403).json({ error: 'CREATOR_ID_CANNOT_BE_CHANGED' });
     }

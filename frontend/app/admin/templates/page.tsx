@@ -7,10 +7,10 @@ import {
   approveAdminTemplateSubmission,
   type AdminTemplateSubmission,
   deleteAdminTemplate,
-  disableAdminTemplate,
   listAdminTemplates,
   listAdminTemplateSubmissions,
   rejectAdminTemplateSubmission,
+  updateTemplateStatus,
 } from '@/src/lib/adminApi';
 import { calculateTemplateRevenue, type TemplateDefinition } from '@/src/templates/registry';
 import styles from '@/src/components/admin/AdminShell.module.css';
@@ -22,7 +22,14 @@ export default function AdminTemplatesPage() {
   const [busyTemplateId, setBusyTemplateId] = useState<string | null>(null);
   const [busySubmissionId, setBusySubmissionId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<
-    'ALL' | 'CREATED' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED' | 'ARCHIVED'
+    | 'ALL'
+    | 'CREATED'
+    | 'PENDING_REVIEW'
+    | 'APPROVED'
+    | 'PUBLISHED'
+    | 'DISABLED'
+    | 'REJECTED'
+    | 'ARCHIVED'
   >('ALL');
 
   useEffect(() => {
@@ -50,16 +57,16 @@ export default function AdminTemplatesPage() {
     };
   }, [statusFilter]);
 
-  const handleDisable = async (templateId: string) => {
+  const handleStatusChange = async (templateId: string, newStatus: string) => {
     setBusyTemplateId(templateId);
     setError(null);
     try {
-      const updated = await disableAdminTemplate(templateId);
-      setTemplates((current) =>
-        current.map((template) => (template.id === templateId ? updated : template))
-      );
+      const updated = await updateTemplateStatus(templateId, newStatus);
+      setTemplates((current) => current.map((t) => (t.id === templateId ? updated : t)));
     } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : '템플릿 비활성화에 실패했습니다.');
+      setError(
+        actionError instanceof Error ? actionError.message : '템플릿 상태 변경에 실패했습니다.'
+      );
     } finally {
       setBusyTemplateId(null);
     }
@@ -205,7 +212,15 @@ export default function AdminTemplatesPage() {
             value={statusFilter}
             onChange={(event) =>
               setStatusFilter(
-                event.target.value as 'ALL' | 'CREATED' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'REJECTED' | 'ARCHIVED'
+                event.target.value as
+                  | 'ALL'
+                  | 'CREATED'
+                  | 'PENDING_REVIEW'
+                  | 'APPROVED'
+                  | 'PUBLISHED'
+                  | 'DISABLED'
+                  | 'REJECTED'
+                  | 'ARCHIVED'
               )
             }
           >
@@ -214,6 +229,7 @@ export default function AdminTemplatesPage() {
             <option value="PENDING_REVIEW">PENDING_REVIEW</option>
             <option value="APPROVED">APPROVED</option>
             <option value="PUBLISHED">PUBLISHED</option>
+            <option value="DISABLED">DISABLED</option>
             <option value="REJECTED">REJECTED</option>
             <option value="ARCHIVED">ARCHIVED</option>
           </select>
@@ -236,8 +252,9 @@ export default function AdminTemplatesPage() {
             <tbody>
               {templates.map((template) => {
                 const revenue = calculateTemplateRevenue(template.price, template.creatorShare);
-                const statusSuffix = template.isDeleted ? ' / Deleted' : template.isActive ? '' : ' / Disabled';
-                const status = `${template.status}${statusSuffix}`;
+                const lifecycle =
+                  template.lifecycleStatus ??
+                  (template.status as TemplateDefinition['lifecycleStatus'] | undefined);
 
                 return (
                   <tr key={template.id}>
@@ -253,7 +270,24 @@ export default function AdminTemplatesPage() {
                       {template.creatorShare}% / ${revenue.creatorEarnings.toFixed(2)}
                     </td>
                     <td>
-                      <span className={styles.pill}>{status}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <span className={styles.pill}>{lifecycle || template.status}</span>
+                        <select
+                          value={lifecycle || 'CREATED'}
+                          onChange={(e) => void handleStatusChange(template.id, e.target.value)}
+                          disabled={busyTemplateId === template.id}
+                          className="rounded border border-neutral-300 px-2 py-1 text-sm"
+                          aria-label="Template lifecycle status"
+                        >
+                          <option value="CREATED">CREATED</option>
+                          <option value="PENDING_REVIEW">PENDING_REVIEW</option>
+                          <option value="APPROVED">APPROVED</option>
+                          <option value="PUBLISHED">PUBLISHED</option>
+                          <option value="DISABLED">DISABLED</option>
+                          <option value="ARCHIVED">ARCHIVED</option>
+                          <option value="REJECTED">REJECTED</option>
+                        </select>
+                      </div>
                     </td>
                     <td>{new Date(template.createdAt).toLocaleDateString()}</td>
                     <td>
@@ -267,10 +301,37 @@ export default function AdminTemplatesPage() {
                         <button
                           type="button"
                           className={`${styles.button} ${styles.secondaryButton}`}
-                          onClick={() => handleDisable(template.id)}
-                          disabled={busyTemplateId === template.id || !template.isActive}
+                          onClick={() => void handleStatusChange(template.id, 'PUBLISHED')}
+                          disabled={
+                            busyTemplateId === template.id ||
+                            (lifecycle !== 'APPROVED' && lifecycle !== 'DISABLED')
+                          }
+                          title="APPROVED 또는 DISABLED에서만 공개 가능"
                         >
-                          Disable
+                          Publish
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.button} ${styles.secondaryButton}`}
+                          onClick={() => void handleStatusChange(template.id, 'DISABLED')}
+                          disabled={
+                            busyTemplateId === template.id || lifecycle !== 'PUBLISHED'
+                          }
+                          title="마켓 일시 비활성 (PUBLISHED만)"
+                        >
+                          Pause
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.button} ${styles.dangerButton}`}
+                          onClick={() => void handleStatusChange(template.id, 'ARCHIVED')}
+                          disabled={
+                            busyTemplateId === template.id ||
+                            (lifecycle !== 'PUBLISHED' && lifecycle !== 'DISABLED')
+                          }
+                          title="숨김(소프트 아카이브)"
+                        >
+                          Hide
                         </button>
                         <button
                           type="button"

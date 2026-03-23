@@ -12,10 +12,15 @@ export type TemplateLifecycleStatus =
   | 'PENDING_REVIEW'
   | 'APPROVED'
   | 'PUBLISHED'
+  | 'DISABLED'
   | 'REJECTED'
   | 'ARCHIVED';
 
-const DB_STATUS_TO_LIFECYCLE_STATUS: Record<TemplateStatus, Exclude<TemplateLifecycleStatus, 'ARCHIVED'>> = {
+/** DB `TemplateStatus`만으로 표현되는 활성 라이프사이클 (ARCHIVED/DISABLED 제외) */
+const DB_STATUS_TO_LIFECYCLE_STATUS: Record<
+  TemplateStatus,
+  Exclude<TemplateLifecycleStatus, 'ARCHIVED' | 'DISABLED'>
+> = {
   DRAFT: 'CREATED',
   SUBMITTED: 'PENDING_REVIEW',
   APPROVED: 'APPROVED',
@@ -32,6 +37,7 @@ const LEGACY_STATUS_ALIASES: Record<string, TemplateLifecycleStatus> = {
   PUBLISHED: 'PUBLISHED',
   REJECTED: 'REJECTED',
   ARCHIVED: 'ARCHIVED',
+  DISABLED: 'DISABLED',
 };
 
 export interface TemplateFieldDefinition {
@@ -106,7 +112,13 @@ export function toTemplateLifecycleStatus(
   isActive: boolean,
   isDeleted: boolean
 ): TemplateLifecycleStatus {
-  if (!isActive || isDeleted) {
+  if (isDeleted) {
+    return 'ARCHIVED';
+  }
+  if (status === 'PUBLISHED' && !isActive) {
+    return 'DISABLED';
+  }
+  if (!isActive) {
     return 'ARCHIVED';
   }
   return DB_STATUS_TO_LIFECYCLE_STATUS[status] || 'CREATED';
@@ -134,6 +146,8 @@ export function lifecycleStatusToDatabaseStatus(
       return 'PUBLISHED';
     case 'REJECTED':
       return 'REJECTED';
+    case 'DISABLED':
+      return null;
     case 'ARCHIVED':
       return null;
     default:
@@ -145,8 +159,9 @@ const TEMPLATE_STATUS_TRANSITIONS: Record<TemplateLifecycleStatus, TemplateLifec
   CREATED: ['PENDING_REVIEW'],
   PENDING_REVIEW: ['APPROVED', 'REJECTED'],
   APPROVED: ['PUBLISHED'],
-  PUBLISHED: ['ARCHIVED'],
-  REJECTED: [],
+  PUBLISHED: ['ARCHIVED', 'DISABLED'],
+  DISABLED: ['PUBLISHED', 'ARCHIVED'],
+  REJECTED: ['PENDING_REVIEW'],
   ARCHIVED: [],
 };
 
@@ -453,9 +468,32 @@ export async function listTemplatesForAdmin(options?: {
   }
 
   let where: Prisma.TemplateWhereInput | undefined;
-  if (requestedStatus === 'ARCHIVED') {
+  if (requestedStatus === 'DISABLED') {
     where = {
-      OR: [{ isActive: false }, { isDeleted: true }],
+      status: 'PUBLISHED',
+      isActive: false,
+      isDeleted: false,
+    };
+  } else if (requestedStatus === 'PUBLISHED') {
+    where = {
+      status: 'PUBLISHED',
+      isActive: true,
+      isDeleted: false,
+    };
+  } else if (requestedStatus === 'ARCHIVED') {
+    where = {
+      AND: [
+        {
+          OR: [{ isDeleted: true }, { isActive: false }],
+        },
+        {
+          NOT: {
+            status: 'PUBLISHED',
+            isActive: false,
+            isDeleted: false,
+          },
+        },
+      ],
     };
   } else if (requestedStatus) {
     const dbStatus = lifecycleStatusToDatabaseStatus(requestedStatus);

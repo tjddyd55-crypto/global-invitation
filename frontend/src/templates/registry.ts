@@ -33,6 +33,7 @@ export type TemplateLifecycleStatus =
   | 'PENDING_REVIEW'
   | 'APPROVED'
   | 'PUBLISHED'
+  | 'DISABLED'
   | 'REJECTED'
   | 'ARCHIVED'
   | 'DRAFT'

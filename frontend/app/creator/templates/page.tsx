@@ -37,6 +37,7 @@ type CreatorTemplateLifecycleStatus =
   | 'PENDING_REVIEW'
   | 'APPROVED'
   | 'PUBLISHED'
+  | 'DISABLED'
   | 'REJECTED'
   | 'ARCHIVED';
 
@@ -46,6 +47,7 @@ function resolveCreatorLifecycleStatus(template: TemplateDefinition): CreatorTem
   if (lifecycle === 'PENDING_REVIEW') return 'PENDING_REVIEW';
   if (lifecycle === 'APPROVED') return 'APPROVED';
   if (lifecycle === 'PUBLISHED') return 'PUBLISHED';
+  if (lifecycle === 'DISABLED') return 'DISABLED';
   if (lifecycle === 'REJECTED') return 'REJECTED';
   if (lifecycle === 'ARCHIVED') return 'ARCHIVED';
 
@@ -67,6 +69,8 @@ function resolveTemplateLifecycleBadgeClass(status: CreatorTemplateLifecycleStat
       return `${styles.statusBadge} ${styles.lifecycleApproved}`;
     case 'PUBLISHED':
       return `${styles.statusBadge} ${styles.lifecyclePublished}`;
+    case 'DISABLED':
+      return `${styles.statusBadge} ${styles.lifecycleDisabled}`;
     case 'REJECTED':
       return `${styles.statusBadge} ${styles.lifecycleRejected}`;
     case 'ARCHIVED':
@@ -402,6 +406,12 @@ export default function CreatorTemplatesDashboardPage() {
 
                         {lifecycleStatus === 'PUBLISHED' && (
                           <span className={styles.meta}>Live in Marketplace</span>
+                        )}
+
+                        {lifecycleStatus === 'DISABLED' && (
+                          <span className={styles.meta}>
+                            마켓 일시 비활성(관리자). 승인 상태는 유지됩니다.
+                          </span>
                         )}
 
                         {lifecycleStatus === 'REJECTED' && (

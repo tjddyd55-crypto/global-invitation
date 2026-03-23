@@ -43,6 +43,7 @@ const TEMPLATE_STATUSES = new Set([
   'CREATED',
   'PENDING_REVIEW',
   'ARCHIVED',
+  'DISABLED',
 ]);
 
 router.use(requireAdminSession);
@@ -441,13 +442,21 @@ router.patch('/templates/:id', async (req, res) => {
       payload.templateKey = templateKey;
       payload.component = component;
     }
-    if (typeof req.body?.status === 'string') {
-      const status = normalizeText(req.body.status).toUpperCase();
-      if (!validateTemplateStatus(status)) {
+    const lifecycleRaw =
+      typeof req.body?.lifecycleStatus === 'string'
+        ? normalizeText(req.body.lifecycleStatus)
+        : typeof req.body?.status === 'string'
+          ? normalizeText(req.body.status)
+          : '';
+    const hasLifecycleInput = Boolean(lifecycleRaw);
+
+    if (lifecycleRaw) {
+      const statusUpper = lifecycleRaw.toUpperCase();
+      if (!validateTemplateStatus(statusUpper)) {
         return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
       }
 
-      const nextLifecycleStatus = resolveTemplateLifecycleStatusFromBody(status);
+      const nextLifecycleStatus = resolveTemplateLifecycleStatusFromBody(statusUpper);
       if (!nextLifecycleStatus) {
         return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
       }
@@ -467,12 +476,25 @@ router.patch('/templates/:id', async (req, res) => {
 
       if (nextLifecycleStatus === 'ARCHIVED') {
         payload.isActive = false;
+        payload.isDeleted = true;
+      } else if (nextLifecycleStatus === 'DISABLED') {
+        if (existing.status !== 'PUBLISHED') {
+          return res.status(400).json({ error: 'DISABLED_REQUIRES_PUBLISHED_STATUS' });
+        }
+        payload.isActive = false;
+        payload.isDeleted = false;
+      } else if (nextLifecycleStatus === 'PUBLISHED') {
+        payload.status = 'PUBLISHED';
+        payload.isActive = true;
+        payload.isDeleted = false;
       } else {
         const dbStatus = lifecycleStatusToDatabaseStatus(nextLifecycleStatus);
         if (!dbStatus) {
           return res.status(400).json({ error: 'INVALID_TEMPLATE_STATUS' });
         }
         payload.status = dbStatus;
+        payload.isActive = true;
+        payload.isDeleted = false;
       }
     }
     if (typeof req.body?.category === 'string') {
@@ -495,8 +517,12 @@ router.patch('/templates/:id', async (req, res) => {
     if (req.body?.thumbnailUrl !== undefined || req.body?.previewThumbnailUrl !== undefined) {
       payload.previewThumbnailUrl = normalizeText(req.body?.thumbnailUrl || req.body?.previewThumbnailUrl);
     }
-    if (req.body?.isActive !== undefined) payload.isActive = Boolean(req.body.isActive);
-    if (req.body?.isDeleted !== undefined) payload.isDeleted = Boolean(req.body.isDeleted);
+    if (req.body?.isActive !== undefined && !hasLifecycleInput) {
+      payload.isActive = Boolean(req.body.isActive);
+    }
+    if (req.body?.isDeleted !== undefined && !hasLifecycleInput) {
+      payload.isDeleted = Boolean(req.body.isDeleted);
+    }
 
     const template = await updateTemplate(req.params.id, payload);
     if (!template) {

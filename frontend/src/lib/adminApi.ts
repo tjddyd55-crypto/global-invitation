@@ -263,6 +263,18 @@ export async function updateAdminTemplate(templateId: string, payload: Partial<A
   return parseJsonOrThrow<TemplateDefinition>(response);
 }
 
+/** 관리자 전용 라이프사이클 변경 (전이 검증은 백엔드). */
+export async function updateTemplateStatus(templateId: string, lifecycleStatus: string) {
+  const response = await fetch(
+    buildAdminApiUrl(`/api/admin/templates/${templateId}`),
+    buildAdminRequestInit({
+      method: 'PATCH',
+      body: JSON.stringify({ lifecycleStatus }),
+    })
+  );
+  return parseJsonOrThrow<TemplateDefinition>(response);
+}
+
 export async function disableAdminTemplate(templateId: string) {
   const response = await fetch(
     buildAdminApiUrl(`/api/admin/templates/${templateId}/disable`),
