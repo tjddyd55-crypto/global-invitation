@@ -56,6 +56,16 @@ export default function TemplatePreviewPage() {
       const bundle = await fetchAdminTemplatePreviewBundle(id, {
         mode: mode === 'real' ? 'real' : undefined,
       });
+      // eslint-disable-next-line no-console -- 운영자 디버그: 미리보기 번들 형태 확인
+      console.log('preview bundle', bundle);
+
+      if (!bundle || !bundle.template) {
+        setTemplate(null);
+        setPreviewData(null);
+        setError('Preview data not found');
+        return;
+      }
+
       setTemplate(bundle.template);
 
       if (mode === 'real') {
@@ -68,16 +78,21 @@ export default function TemplatePreviewPage() {
         return;
       }
 
-      const merged =
-        bundle.sampleData && Object.keys(bundle.sampleData).length > 0
-          ? mergeAdminPreviewSample(bundle.template, bundle.sampleData)
-          : null;
-      if (!merged) {
+      let merged: TemplatePreviewData | null = null;
+      try {
+        merged = mergeAdminPreviewSample(bundle.template, bundle.sampleData ?? {});
+      } catch {
+        merged = null;
+      }
+      const registryFallback = getTemplatePreviewData(bundle.template.templateKey);
+      const samplePreview = merged ?? registryFallback;
+
+      if (!samplePreview) {
         setPreviewData(null);
         setError('이 templateKey는 미리보기 레지스트리에 없습니다.');
         return;
       }
-      setPreviewData(merged);
+      setPreviewData(samplePreview);
     },
     [id]
   );

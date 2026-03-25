@@ -52,34 +52,43 @@ function isMessageBrandedBase(base: TemplatePreviewData): base is MessageBranded
   );
 }
 
-function weddingish(template: TemplateDefinition): boolean {
-  return template.category === 'wedding' || template.templateKey.startsWith('creator_wedding');
+function weddingish(template: TemplateDefinition | null | undefined): boolean {
+  const key = template?.templateKey ?? '';
+  return template?.category === 'wedding' || key.startsWith('creator_wedding');
 }
 
-function funeralish(template: TemplateDefinition): boolean {
-  return template.category === 'funeral' || template.templateKey.startsWith('creator_funeral');
+function funeralish(template: TemplateDefinition | null | undefined): boolean {
+  const key = template?.templateKey ?? '';
+  return template?.category === 'funeral' || key.startsWith('creator_funeral');
 }
 
-function messageish(template: TemplateDefinition): boolean {
-  return template.category === 'message' || template.templateKey.startsWith('creator_message');
+function messageish(template: TemplateDefinition | null | undefined): boolean {
+  const key = template?.templateKey ?? '';
+  return template?.category === 'message' || key.startsWith('creator_message');
 }
 
 /**
  * API에서 내려준 플랫 sampleData를 레지스트리 기본 preview에 합쳐 실제 렌더러에 넣을 수 있는 형태로 만듭니다.
  */
 export function mergeAdminPreviewSample(
-  template: TemplateDefinition,
-  sampleData: Record<string, unknown>
+  template: TemplateDefinition | null | undefined,
+  sampleData: Record<string, unknown> | null | undefined
 ): TemplatePreviewData | null {
-  const base = getTemplatePreviewData(template.templateKey);
+  const templateKey = template?.templateKey?.trim() ?? '';
+  if (!template || !templateKey) {
+    return null;
+  }
+
+  const data = sampleData ?? {};
+  const base = getTemplatePreviewData(templateKey);
   if (!base) {
     return null;
   }
 
   if (weddingish(template) && isWeddingLikeBase(base)) {
     const b = structuredClone(base);
-    const groomName = str(sampleData.groomName);
-    const brideName = str(sampleData.brideName);
+    const groomName = str(data?.groomName);
+    const brideName = str(data?.brideName);
     if (groomName) {
       b.groom = { ...b.groom, name: groomName };
     }
@@ -89,7 +98,7 @@ export function mergeAdminPreviewSample(
     if (groomName && brideName) {
       b.coupleNames = `${groomName} ♥ ${brideName}`;
     }
-    const dateStr = str(sampleData.date);
+    const dateStr = str(data?.date);
     if (dateStr) {
       const d = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T17:00:00`);
       if (!Number.isNaN(d.getTime())) {
@@ -97,11 +106,11 @@ export function mergeAdminPreviewSample(
         b.weddingDateTime = d.toLocaleString('ko-KR', { dateStyle: 'long', timeStyle: 'short' });
       }
     }
-    const loc = str(sampleData.location);
+    const loc = str(data?.location);
     if (loc) {
       b.venueName = loc;
     }
-    const msg = str(sampleData.message);
+    const msg = str(data?.message);
     if (msg) {
       b.introQuote = msg;
       b.introText = [msg];
@@ -111,24 +120,24 @@ export function mergeAdminPreviewSample(
 
   if (funeralish(template) && isFuneralBase(base)) {
     const b = structuredClone(base);
-    const deceased = str(sampleData.deceasedName);
+    const deceased = str(data?.deceasedName);
     if (deceased) {
       b.deceasedName = deceased;
     }
-    const chief = str(sampleData.chiefMourner);
+    const chief = str(data?.chiefMourner);
     if (chief) {
       b.chiefMourner = chief;
     }
-    const dateStr = str(sampleData.date);
+    const dateStr = str(data?.date);
     if (dateStr) {
       b.deathDate = dateStr;
-      b.schedule = { ...b.schedule, funeralDate: dateStr.includes('T') ? dateStr : `${dateStr}T09:00:00` };
+      b.schedule = { ...(b.schedule ?? {}), funeralDate: dateStr.includes('T') ? dateStr : `${dateStr}T09:00:00` };
     }
-    const loc = str(sampleData.location);
+    const loc = str(data?.location);
     if (loc) {
-      b.funeralHall = { ...b.funeralHall, name: loc };
+      b.funeralHall = { ...(b.funeralHall ?? {}), name: loc };
     }
-    const msg = str(sampleData.message);
+    const msg = str(data?.message);
     if (msg) {
       b.message = msg;
     }
@@ -138,29 +147,29 @@ export function mergeAdminPreviewSample(
   if (messageish(template)) {
     if (isMessageSimpleBase(base)) {
       const b = structuredClone(base);
-      const msg = str(sampleData.message);
+      const msg = str(data?.message);
       if (msg) b.message = msg;
-      const title = str(sampleData.title);
+      const title = str(data?.title);
       if (title) b.title = title;
-      const subtitle = str(sampleData.subtitle);
+      const subtitle = str(data?.subtitle);
       if (subtitle) b.subtitle = subtitle;
       return b;
     }
     if (isMessageThankYouBase(base)) {
       const b = structuredClone(base);
-      const msg = str(sampleData.message);
+      const msg = str(data?.message);
       if (msg) b.description = msg;
-      const title = str(sampleData.title);
+      const title = str(data?.title);
       if (title) b.title = title;
-      const subtitle = str(sampleData.subtitle);
+      const subtitle = str(data?.subtitle);
       if (subtitle) b.subtitle = subtitle;
       return b;
     }
     if (isMessageBrandedBase(base)) {
       const b = structuredClone(base);
-      const msg = str(sampleData.message);
+      const msg = str(data?.message);
       if (msg) b.message = msg;
-      const title = str(sampleData.title);
+      const title = str(data?.title);
       if (title) b.title = title;
       return b;
     }

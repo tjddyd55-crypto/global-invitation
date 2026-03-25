@@ -6,9 +6,16 @@ import { getTemplatePreviewData, getTemplateRegistryEntry } from '@/src/template
 /** `phone`: 모바일 폭(420px) 기준 중앙 정렬 — 관리자 미리보기/iframe용 */
 const PHONE_PREVIEW_MAX_WIDTH_PX = 420;
 
+function safeStudioConfig(studioConfig: unknown): object {
+  if (studioConfig && typeof studioConfig === 'object' && !Array.isArray(studioConfig)) {
+    return studioConfig as object;
+  }
+  return {};
+}
+
 type TemplatePreviewWrapperProps = {
   templateKey: string;
-  sampleData?: TemplatePreviewData;
+  sampleData?: TemplatePreviewData | null;
   studioConfig?: unknown;
   variant?: 'default' | 'phone';
 };
@@ -26,11 +33,12 @@ function isCreatorTemplateKey(templateKey: string): boolean {
 }
 
 function buildPreviewProps(templateKey: string, data: unknown, studioConfig?: unknown) {
+  const safeConfig = safeStudioConfig(studioConfig);
   const baseProps = {
     data,
     runtimeData: data,
     previewMode: true,
-    studioConfig,
+    studioConfig: safeConfig,
   };
 
   switch (templateKey) {
@@ -68,16 +76,22 @@ export default function TemplatePreviewWrapper({
   studioConfig,
   variant = 'default',
 }: TemplatePreviewWrapperProps) {
-  const entry = getTemplateRegistryEntry(templateKey);
-  const previewData = sampleData ?? getTemplatePreviewData(templateKey);
-
-  if (!entry || !previewData) {
-    return null;
+  const key = typeof templateKey === 'string' ? templateKey.trim() : '';
+  if (!key) {
+    return <div>Template not found</div>;
   }
 
-  const Renderer = entry.renderer;
-  const scale = resolvePreviewScale(templateKey);
+  const entry = getTemplateRegistryEntry(key);
+  const Renderer = entry?.renderer;
+  if (!Renderer) {
+    return <div>Unknown template: {key}</div>;
+  }
 
+  const registryDefault = getTemplatePreviewData(key);
+  const previewData = (sampleData ?? registryDefault ?? {}) as TemplatePreviewData;
+  const safeConfig = safeStudioConfig(studioConfig);
+
+  const scale = resolvePreviewScale(key);
   const isPhone = variant === 'phone';
 
   return (
@@ -100,7 +114,7 @@ export default function TemplatePreviewWrapper({
           pointerEvents: 'none',
         }}
       >
-        <Renderer {...buildPreviewProps(templateKey, previewData, studioConfig)} />
+        <Renderer {...buildPreviewProps(key, previewData, safeConfig)} />
       </div>
     </div>
   );

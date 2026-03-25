@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { cdnImageSrc } from '@/src/lib/image';
 import { isValidImageUrl } from '@/src/lib/mediaApi';
 import styles from './AppImage.module.css';
+
+const PLACEHOLDER_SRC = '/images/placeholder.png';
 
 type AppImageProps = {
   src?: string | null;
@@ -33,6 +35,7 @@ export default function AppImage({
   loading,
 }: AppImageProps) {
   const [hasError, setHasError] = useState(false);
+  const [usingPlaceholder, setUsingPlaceholder] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const safeAlt = useMemo(() => (alt || '').trim() || 'image', [alt]);
@@ -49,6 +52,14 @@ export default function AppImage({
   const canRenderImage = isValidImageUrl(normalizedSrc) && !hasError;
   const safeWidth = Number.isFinite(width) && (width || 0) > 0 ? (width as number) : 800;
   const safeHeight = Number.isFinite(height) && (height || 0) > 0 ? (height as number) : 600;
+
+  useEffect(() => {
+    setUsingPlaceholder(false);
+    setHasError(false);
+    setIsLoading(true);
+  }, [normalizedSrc]);
+
+  const imgSrc = usingPlaceholder ? PLACEHOLDER_SRC : normalizedSrc;
 
   if (!canRenderImage) {
     return (
@@ -71,7 +82,7 @@ export default function AppImage({
       {/* native img: explicit loading + fetchPriority for LCP when priority */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={normalizedSrc}
+        src={imgSrc}
         alt={safeAlt}
         width={safeWidth}
         height={safeHeight}
@@ -87,6 +98,10 @@ export default function AppImage({
           setIsLoading(false);
         }}
         onError={() => {
+          if (!usingPlaceholder) {
+            setUsingPlaceholder(true);
+            return;
+          }
           setHasError(true);
           setIsLoading(false);
         }}
