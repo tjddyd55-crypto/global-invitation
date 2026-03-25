@@ -140,3 +140,75 @@ export async function deleteFilesByPrefix(prefix: string): Promise<number> {
 
   return deletedCount;
 }
+
+/** Prefix 아래의 모든 객체 키를 페이지 단위로 수집 (삭제 대기 큐 적재용) */
+export async function listAllObjectKeysUnderPrefix(prefix: string): Promise<string[]> {
+  const config = resolveR2Config();
+  const keys: string[] = [];
+  let continuationToken: string | undefined;
+
+  do {
+    const listed = await r2Client.send(
+      new ListObjectsV2Command({
+        Bucket: config.bucketName,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+
+    for (const item of listed.Contents || []) {
+      if (item.Key) {
+        keys.push(item.Key);
+      }
+    }
+
+    continuationToken = listed.IsTruncated ? listed.NextContinuationToken : undefined;
+  } while (continuationToken);
+
+  return keys;
+}
+
+export async function deleteStaleObjectsUnderPrefix(params: {
+  prefix: string;
+  olderThan: Date;
+  onEachDelete?: (key: string) => void;
+}): Promise<number> {
+  const config = resolveR2Config();
+  let continuationToken: string | undefined;
+  let deletedCount = 0;
+
+  do {
+    const listed = await r2Client.send(
+      new ListObjectsV2Command({
+        Bucket: config.bucketName,
+        Prefix: params.prefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+
+    const staleKeys = (listed.Contents || [])
+      .filter((item) => item.Key && item.LastModified && item.LastModified < params.olderThan)
+      .map((item) => item.Key as string);
+
+    for (let index = 0; index < staleKeys.length; index += DELETE_BATCH_SIZE) {
+      const batch = staleKeys.slice(index, index + DELETE_BATCH_SIZE);
+      if (batch.length === 0) continue;
+
+      const result = await r2Client.send(
+        new DeleteObjectsCommand({
+          Bucket: config.bucketName,
+          Delete: {
+            Objects: batch.map((key) => ({ Key: key })),
+            Quiet: true,
+          },
+        })
+      );
+      deletedCount += result.Deleted?.length || 0;
+      batch.forEach((key) => params.onEachDelete?.(key));
+    }
+
+    continuationToken = listed.IsTruncated ? listed.NextContinuationToken : undefined;
+  } while (continuationToken);
+
+  return deletedCount;
+}

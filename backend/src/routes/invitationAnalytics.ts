@@ -25,8 +25,8 @@ router.post('/:slug/view', async (req, res) => {
       return res.status(400).json({ error: 'INVITATION_SLUG_REQUIRED' });
     }
 
-    const invitation = await prisma.invitation.findUnique({
-      where: { slug },
+    const invitation = await prisma.invitation.findFirst({
+      where: { slug, isDeleted: false },
       select: {
         id: true,
         isPublished: true,

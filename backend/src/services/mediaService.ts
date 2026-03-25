@@ -3,17 +3,17 @@ import prisma from '../lib/prisma';
 import { isUuid } from '../lib/isUuid';
 import {
   buildMediaObjectKey,
+  parseInvitationOptimizedOriginalKey,
   parseMediaObjectKey,
   usageFromScope,
   type MediaScope,
   type MediaUsage,
+  type ParsedMediaObjectKey,
 } from '../lib/media/keys';
-import {
-  buildPublicMediaUrl,
-  createPresignedUploadUrl,
-  headObject,
-  type HeadObjectResult,
-} from '../lib/media/r2';
+import { prepareInvitationOptimizedUploads } from '../lib/imageProcessor';
+import { buildCanonicalPublicUrl } from '../lib/mediaKeyBuilder';
+import { createPresignedUploadUrl, headObject, type HeadObjectResult } from '../lib/media/r2';
+import { readFileBuffer, uploadFile } from '../lib/storage/uploadToR2';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -130,10 +130,12 @@ async function resolveOwnedInvitationId(userId: string, identifier: string): Pro
     where: isUuid(normalized)
       ? {
           userId,
+          isDeleted: false,
           OR: [{ id: normalized }, { slug: normalized }],
         }
       : {
           userId,
+          isDeleted: false,
           slug: normalized,
         },
     select: {
@@ -230,6 +232,7 @@ async function upsertInvitationMediaReference(params: {
     where: {
       id: params.invitationId,
       userId: params.userId,
+      isDeleted: false,
     },
     select: {
       id: true,
@@ -314,6 +317,12 @@ export async function createMediaPresign(
   const contentType = ensureAllowedContentType(input.contentType);
   const size = ensureAllowedSize(input.size);
 
+  if (scope === 'invitationHero' || scope === 'invitationGallery') {
+    if (contentType !== 'image/jpeg') {
+      throw new Error('UNSUPPORTED_MEDIA_TYPE');
+    }
+  }
+
   let objectKey: string;
 
   if (scope === 'invitationHero' || scope === 'invitationGallery') {
@@ -346,6 +355,8 @@ export async function createMediaPresign(
     expiresInSeconds: input.expiresInSeconds,
   });
 
+  const publicUrl = buildCanonicalPublicUrl(objectKey);
+  console.log('[R2_UPLOAD]', { key: objectKey, url: publicUrl });
   console.info('[media.presign]', {
     userId: user.id,
     scope,
@@ -357,7 +368,7 @@ export async function createMediaPresign(
   return {
     objectKey,
     uploadUrl: presigned.uploadUrl,
-    publicUrl: buildPublicMediaUrl(objectKey),
+    publicUrl,
     expiresIn: presigned.expiresIn,
     usage: usageFromScope(scope),
   };
@@ -370,6 +381,102 @@ export async function confirmMediaUpload(
   const objectKey = normalizeText(input.objectKey).replace(/^\/+/, '');
   if (!objectKey) {
     throw new Error('OBJECT_KEY_REQUIRED');
+  }
+
+  const optimizedOriginal = parseInvitationOptimizedOriginalKey(objectKey);
+  if (optimizedOriginal) {
+    const parsed: ParsedMediaObjectKey =
+      optimizedOriginal.kind === 'hero'
+        ? { scope: 'invitationHero', invitationId: optimizedOriginal.invitationId }
+        : { scope: 'invitationGallery', invitationId: optimizedOriginal.invitationId };
+
+    const owner = resolveOwnerFromParsedObjectKey(parsed);
+
+    const resolvedInvitationId = await resolveOwnedInvitationId(user.id, parsed.invitationId);
+    if (resolvedInvitationId !== parsed.invitationId) {
+      throw new Error('INVALID_MEDIA_OBJECT_KEY');
+    }
+    if (input.invitationId && normalizeText(input.invitationId) !== resolvedInvitationId) {
+      throw new Error('INVALID_MEDIA_OBJECT_KEY');
+    }
+
+    const objectState = await headObject(objectKey);
+    if (!objectState.exists) {
+      throw new Error('MEDIA_OBJECT_NOT_FOUND');
+    }
+
+    const effectiveMeta = resolveEffectiveMeta(input, objectState);
+    const originalPublicUrl = buildCanonicalPublicUrl(objectKey);
+    const requestPublicUrl = normalizeText(input.publicUrl).split('?')[0];
+    if (requestPublicUrl && requestPublicUrl !== originalPublicUrl) {
+      throw new Error('INVALID_PUBLIC_URL');
+    }
+
+    const buffer = await readFileBuffer(objectKey);
+    const plan = await prepareInvitationOptimizedUploads(buffer, optimizedOriginal.basePrefix);
+
+    for (const item of plan.uploads) {
+      await uploadFile(item.buffer, item.key, item.contentType);
+    }
+
+    const primaryKey = plan.primaryObjectKey;
+    const publicUrl = buildCanonicalPublicUrl(primaryKey);
+    const usage = usageFromScope(parsed.scope);
+    const width = plan.width;
+    const height = plan.height;
+
+    const media = await prisma.mediaFile.create({
+      data: {
+        ownerId: user.id,
+        ownerType: owner.ownerType,
+        ownerRefId: owner.ownerRefId,
+        usage,
+        objectKey: primaryKey,
+        publicUrl,
+        url: publicUrl,
+        fileName: resolveFileNameFromObjectKey(primaryKey),
+        mimeType: 'image/webp',
+        fileSize: plan.primaryFileSize,
+        width,
+        height,
+        createdBy: user.id,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (parsed.scope === 'invitationHero' || parsed.scope === 'invitationGallery') {
+      await upsertInvitationMediaReference({
+        invitationId: parsed.invitationId,
+        userId: user.id,
+        scope: parsed.scope,
+        publicUrl,
+      });
+    }
+
+    console.info('[media.confirm.success]', {
+      userId: user.id,
+      objectKey: primaryKey,
+      originalKey: objectKey,
+      usage,
+      ownerType: owner.ownerType,
+      ownerRefId: owner.ownerRefId,
+      contentType: effectiveMeta.contentType,
+      size: effectiveMeta.fileSize,
+    });
+
+    return {
+      mediaId: media.id,
+      objectKey: primaryKey,
+      publicUrl,
+      mimeType: 'image/webp',
+      fileSize: plan.primaryFileSize,
+      width,
+      height,
+      usage,
+    };
   }
 
   const parsed = parseMediaObjectKey(objectKey);
@@ -405,8 +512,8 @@ export async function confirmMediaUpload(
   }
 
   const effectiveMeta = resolveEffectiveMeta(input, objectState);
-  const publicUrl = buildPublicMediaUrl(objectKey);
-  const requestPublicUrl = normalizeText(input.publicUrl);
+  const publicUrl = buildCanonicalPublicUrl(objectKey);
+  const requestPublicUrl = normalizeText(input.publicUrl).split('?')[0];
   if (requestPublicUrl && requestPublicUrl !== publicUrl) {
     throw new Error('INVALID_PUBLIC_URL');
   }

@@ -5,6 +5,7 @@ import type { MessageThankYouInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { formatDateTime } from '@/src/lib/i18n/format';
+import { cdnImageSrc } from '@/src/lib/image';
 
 type MessageThankYouCardProps = {
   data: MessageThankYouInvitationData;
@@ -39,7 +40,13 @@ export default function MessageThankYouCard({
     <div className={`${styles.page} ${isDark ? styles.pageDark : ''}`}>
       <div className={styles.card}>
         <div className={styles.hero}>
-          <img className={styles.heroImage} src={data.coverImage} alt={data.title} />
+          <img
+            className={styles.heroImage}
+            src={cdnImageSrc(data.coverImage)}
+            alt={data.title}
+            loading="eager"
+            fetchPriority="high"
+          />
           <div className={styles.heroOverlay}>
             <div className={styles.title}>{data.title}</div>
             {data.subtitle && <div className={styles.subtitle}>{data.subtitle}</div>}

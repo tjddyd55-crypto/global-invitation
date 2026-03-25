@@ -12,6 +12,7 @@ type ImageUploaderProps = {
   onChange: (url: string) => void;
   onClear?: () => void;
   uploadAssetType?: MediaUploadAssetType;
+  priority?: boolean;
 };
 
 function revokeIfObjectUrl(url?: string) {
@@ -27,6 +28,7 @@ export default function ImageUploader({
   onChange,
   onClear,
   uploadAssetType = 'gallery',
+  priority,
 }: ImageUploaderProps) {
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
@@ -86,7 +88,7 @@ export default function ImageUploader({
       <div className={styles.uploaderBody}>
         {value ? (
           <div className={styles.uploaderPreview}>
-            <AppImage src={value} alt={`${label} preview`} />
+            <AppImage src={value} alt={`${label} preview`} priority={priority} />
           </div>
         ) : (
           <div className={styles.uploaderPlaceholder}>이미지를 선택하세요.</div>

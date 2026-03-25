@@ -16,6 +16,7 @@ import templateSubmissionsRouter from './routes/templateSubmissions';
 import adminTemplateSubmissionsRouter from './routes/adminTemplateSubmissions';
 import adminSuperRouter from './routes/adminSuper';
 import testLoginRouter from './routes/testLogin';
+import { startCleanupWorker } from './workers/cleanupWorker';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -97,4 +98,5 @@ app.use('/api/test-login', testLoginRouter);
 // Start server
 app.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
+  startCleanupWorker();
 });

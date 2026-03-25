@@ -13,6 +13,7 @@ import {
   updateTemplateStatus,
 } from '@/src/lib/adminApi';
 import { calculateTemplateRevenue, type TemplateDefinition } from '@/src/templates/registry';
+import { cdnImageSrc } from '@/src/lib/image';
 import styles from '@/src/components/admin/AdminShell.module.css';
 
 function TemplateListThumb({ template }: { template: TemplateDefinition }) {
@@ -43,10 +44,11 @@ function TemplateListThumb({ template }: { template: TemplateDefinition }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- 관리자 썸네일은 임의 원격 URL(R2 등)
     <img
-      src={src}
+      src={cdnImageSrc(src)}
       alt=""
       width={80}
       height={80}
+      loading="lazy"
       style={{
         width: 80,
         height: 80,

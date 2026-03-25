@@ -14,6 +14,8 @@ type ImageUploaderProps = {
   required?: boolean;
   uploadAssetType?: MediaUploadAssetType;
   inputTestId?: string;
+  /** LCP: 대표(히어로) 미리보기에만 사용 */
+  priority?: boolean;
 };
 
 function revokeIfObjectUrl(url?: string) {
@@ -31,6 +33,7 @@ export default function ImageUploader({
   required,
   uploadAssetType = 'gallery',
   inputTestId,
+  priority,
 }: ImageUploaderProps) {
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
@@ -92,7 +95,7 @@ export default function ImageUploader({
       <div className={styles.uploaderBody}>
         {value ? (
           <div className={styles.uploaderPreview}>
-            <AppImage src={value} alt={`${label} preview`} />
+            <AppImage src={value} alt={`${label} preview`} priority={priority} />
           </div>
         ) : (
           <div className={styles.uploaderPlaceholder}>이미지를 선택하세요.</div>

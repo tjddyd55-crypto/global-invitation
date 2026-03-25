@@ -5,6 +5,7 @@ import { TEMPLATES, type Template } from '@/src/constants/templates';
 import TemplatePreviewModal from './TemplatePreviewModal';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { getTemplateName, getTemplateDescription, getTagName } from '@/src/utils/templateI18n';
+import { cdnImageSrc } from '@/src/lib/image';
 
 type SortOption = 'recommended' | 'newest' | 'price_low';
 
@@ -339,9 +340,10 @@ export default function TemplateGalleryModal({ onSelect, onClose }: TemplateGall
                 >
                   {template.thumbnail ? (
                     <img
-                      src={template.thumbnail}
+                      src={cdnImageSrc(template.thumbnail)}
                       alt={getTemplateName(template, t)}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}

@@ -102,6 +102,7 @@ model Invitation {
   paidAt      DateTime?        @map("paid_at") @db.Timestamptz(6)
   publishedAt DateTime?        @map("published_at") @db.Timestamptz(6)
   rsvpDeadline DateTime?       @map("rsvp_deadline") @db.Timestamptz(6)
+  isDeleted   Boolean         @default(false) @map("is_deleted")
   createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -115,7 +116,21 @@ model Invitation {
   @@index([ownerId])
   @@index([guestToken])
   @@index([templateId])
+  @@index([isDeleted])
   @@map("invitations")
+}
+
+model CleanupJob {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  resourceType String   @map("resource_type")
+  resourceId   String   @map("resource_id")
+  r2Key        String   @map("r2_key")
+  scheduledAt  DateTime @map("scheduled_at") @db.Timestamptz(6)
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([status, scheduledAt])
+  @@map("cleanup_jobs")
 }
 
 model RSVP {

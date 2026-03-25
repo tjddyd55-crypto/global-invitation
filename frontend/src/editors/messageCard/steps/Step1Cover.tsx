@@ -23,6 +23,7 @@ export default function Step1Cover({ coverImage, onChange }: Step1CoverProps) {
         onClear={() => onChange('')}
         uploadAssetType="hero"
         required
+        priority
       />
     </section>
   );

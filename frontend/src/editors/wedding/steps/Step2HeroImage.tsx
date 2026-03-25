@@ -25,6 +25,7 @@ export default function Step2HeroImage({ value, onChange }: Step2HeroImageProps)
         uploadAssetType="hero"
         inputTestId="hero-upload-input"
         required
+        priority
       />
       <label className={styles.field}>
         <span className={styles.fieldLabel}>오버레이 문구 (선택)</span>

@@ -1,7 +1,7 @@
 'use client';
 
-import Image from 'next/image';
 import { useMemo, useState, type CSSProperties } from 'react';
+import { cdnImageSrc } from '@/src/lib/image';
 import { isValidImageUrl } from '@/src/lib/mediaApi';
 import styles from './AppImage.module.css';
 
@@ -15,7 +15,6 @@ type AppImageProps = {
   style?: CSSProperties;
   priority?: boolean;
   loading?: 'lazy' | 'eager';
-  sizes?: string;
 };
 
 function joinClassNames(...names: Array<string | undefined>): string {
@@ -32,7 +31,6 @@ export default function AppImage({
   style,
   priority,
   loading,
-  sizes,
 }: AppImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,10 +38,13 @@ export default function AppImage({
   const safeAlt = useMemo(() => (alt || '').trim() || 'image', [alt]);
   const normalizedSrc = useMemo(() => {
     const normalized = (src || '').trim();
-    if (normalized.startsWith('http://')) {
-      return normalized.replace('http://', 'https://');
+    if (!normalized) {
+      return '';
     }
-    return normalized;
+    if (normalized.startsWith('blob:') || normalized.startsWith('data:')) {
+      return normalized;
+    }
+    return cdnImageSrc(normalized) || normalized.replace(/^http:\/\//i, 'https://');
   }, [src]);
   const canRenderImage = isValidImageUrl(normalizedSrc) && !hasError;
   const safeWidth = Number.isFinite(width) && (width || 0) > 0 ? (width as number) : 800;
@@ -59,19 +60,24 @@ export default function AppImage({
     );
   }
 
+  const resolvedLoading = priority ? 'eager' : (loading ?? 'lazy');
+  const resolvedFetchPriority = priority ? 'high' : 'auto';
+
   return (
     <div className={styles.frame} style={{ width, height }}>
       {isLoading && (
         <div className={joinClassNames(styles.overlay, fallbackClassName)} />
       )}
-      <Image
+      {/* native img: explicit loading + fetchPriority for LCP when priority */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={normalizedSrc}
         alt={safeAlt}
         width={safeWidth}
         height={safeHeight}
-        loading={priority ? undefined : (loading ?? 'lazy')}
-        priority={priority}
-        sizes={sizes || '100vw'}
+        loading={resolvedLoading}
+        // narrow type for React 18; attribute supported by browsers
+        fetchPriority={resolvedFetchPriority as 'high' | 'low' | 'auto'}
         className={className}
         style={{
           objectFit: 'cover',

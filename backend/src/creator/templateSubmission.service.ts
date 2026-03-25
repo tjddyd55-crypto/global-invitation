@@ -1,5 +1,6 @@
 import { Prisma, TemplateSubmissionStatus } from '@prisma/client';
 import prisma from '../lib/prisma';
+import { copySubmissionPreviewToCanonicalTemplateThumbnail } from '../lib/media/copyCanonicalTemplateThumbnail';
 import {
   isActiveCreatorCategory,
   isCreatorTemplateCategory,
@@ -933,7 +934,7 @@ export async function approveTemplateSubmission(
   const explicitCreatorShare =
     input.creatorShare !== undefined ? clampNumber(Number(input.creatorShare) || 0, 0, 100) : undefined;
 
-  return prisma.$transaction(async (tx) => {
+  const transactionResult = await prisma.$transaction(async (tx) => {
     const submission = await tx.templateSubmission.findUnique({
       where: { id: submissionId },
       include: {
@@ -1039,11 +1040,32 @@ export async function approveTemplateSubmission(
       },
     });
 
-    return toDto(updated as SubmissionWithRelations);
+    return {
+      dto: toDto(updated as SubmissionWithRelations),
+      templateId: template.id,
+      previewUrl: submission.previewThumbnailUrl,
+    };
   }, {
     maxWait: 10_000,
     timeout: 20_000,
   });
+
+  const canonical = await copySubmissionPreviewToCanonicalTemplateThumbnail(
+    transactionResult.templateId,
+    transactionResult.previewUrl
+  );
+  if (canonical) {
+    await prisma.template.update({
+      where: { id: transactionResult.templateId },
+      data: { thumbnailUrl: canonical, previewThumbnailUrl: canonical },
+    });
+    await prisma.templateVersion.updateMany({
+      where: { templateId: transactionResult.templateId, versionNumber: 1 },
+      data: { thumbnailUrl: canonical },
+    });
+  }
+
+  return transactionResult.dto;
 }
 
 export async function rejectTemplateSubmission(

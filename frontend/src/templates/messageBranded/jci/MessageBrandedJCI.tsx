@@ -4,6 +4,7 @@ import styles from './MessageBrandedJCI.module.css';
 import type { MessageBrandedInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
+import { cdnImageSrc } from '@/src/lib/image';
 
 type MessageBrandedJCIProps = {
   data: MessageBrandedInvitationData;
@@ -29,15 +30,22 @@ export default function MessageBrandedJCI({
       <header className={styles.header}>
         <img
           className={styles.logo}
-          src={data.brand.logo}
+          src={cdnImageSrc(data.brand.logo)}
           alt={`${data.brand.name} ${t(I18N_KEYS.messageBranded.logoAlt)}`}
+          loading="lazy"
         />
       </header>
 
       <main className={styles.main}>
         <div className={styles.container}>
           <div className={styles.hero}>
-            <img className={styles.heroImage} src={data.heroImage} alt={t(I18N_KEYS.messageBranded.heroImageAlt)} />
+            <img
+              className={styles.heroImage}
+              src={cdnImageSrc(data.heroImage)}
+              alt={t(I18N_KEYS.messageBranded.heroImageAlt)}
+              loading="eager"
+              fetchPriority="high"
+            />
           </div>
           <div>
             <div className={styles.title}>{data.title}</div>

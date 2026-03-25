@@ -142,8 +142,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: validationError });
     }
 
-    const invitation = await prisma.invitation.findUnique({
-      where: { slug: invitationSlug },
+    const invitation = await prisma.invitation.findFirst({
+      where: { slug: invitationSlug, isDeleted: false },
       select: {
         id: true,
         isPublished: true,
@@ -244,6 +244,7 @@ router.patch('/:id', async (req, res) => {
           select: {
             id: true,
             isPublished: true,
+            isDeleted: true,
             data: true,
             rsvpDeadline: true,
           },
@@ -253,6 +254,10 @@ router.patch('/:id', async (req, res) => {
 
     if (!existing) {
       return res.status(404).json({ error: 'RSVP_NOT_FOUND' });
+    }
+
+    if (existing.invitation.isDeleted) {
+      return res.status(404).json({ error: 'INVITATION_NOT_FOUND' });
     }
 
     if (payload.guestName !== existing.guestName) {
@@ -318,8 +323,8 @@ router.get('/:invitationId', async (req, res) => {
       return res.status(400).json({ error: 'INVALID_ATTENDANCE_FILTER' });
     }
 
-    const invitation = await prisma.invitation.findUnique({
-      where: { id: invitationId },
+    const invitation = await prisma.invitation.findFirst({
+      where: { id: invitationId, isDeleted: false },
       select: {
         id: true,
         slug: true,

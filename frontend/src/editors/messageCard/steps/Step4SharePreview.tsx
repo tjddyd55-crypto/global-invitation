@@ -1,6 +1,7 @@
 'use client';
 
 import MessageThankYouCard from '@/src/templates/messageThankYou/MessageThankYouCard';
+import { cdnImageSrc } from '@/src/lib/image';
 import styles from '../messageCardEditor.module.css';
 import type { MessageCardData } from '@/src/models/messageCard';
 
@@ -24,7 +25,7 @@ export default function Step4SharePreview({ data, ogTitle, ogDescription, ogImag
         </div>
         <div className={styles.ogCard}>
           <div className={styles.ogImage}>
-            {ogImage ? <img src={ogImage} alt="OG preview" /> : <span>이미지 없음</span>}
+            {ogImage ? <img src={cdnImageSrc(ogImage)} alt="OG preview" loading="lazy" /> : <span>이미지 없음</span>}
           </div>
           <div className={styles.ogBody}>
             <div className={styles.ogTitle}>{ogTitle || 'OG 제목 미입력'}</div>

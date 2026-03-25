@@ -4,6 +4,7 @@ import styles from './MessageSimpleCard.module.css';
 import type { MessageSimpleInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
+import { cdnImageSrc } from '@/src/lib/image';
 
 type MessageSimpleCardProps = {
   data: MessageSimpleInvitationData;
@@ -29,7 +30,13 @@ export default function MessageSimpleCard({
     <div className={styles.page}>
       <div className={styles.card}>
         <div className={styles.hero}>
-          <img className={styles.heroImage} src={data.heroImage} alt={t(I18N_KEYS.message.heroImageAlt)} />
+          <img
+            className={styles.heroImage}
+            src={cdnImageSrc(data.heroImage)}
+            alt={t(I18N_KEYS.message.heroImageAlt)}
+            loading="eager"
+            fetchPriority="high"
+          />
         </div>
 
         <div className={styles.textBlock}>

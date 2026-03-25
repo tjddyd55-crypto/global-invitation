@@ -6,6 +6,7 @@ import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { formatDate, formatDateTime } from '@/src/lib/i18n/format';
+import { cdnImageSrc } from '@/src/lib/image';
 
 type FuneralClassicInvitationProps = {
   data: FuneralInvitationData;
@@ -71,7 +72,13 @@ export default function FuneralClassicInvitation({
     <div className={styles.page}>
       <section className={styles.hero}>
         {data.heroImage && (
-          <img className={styles.heroImage} src={data.heroImage} alt={t(I18N_KEYS.funeral.heroImageAlt)} />
+          <img
+            className={styles.heroImage}
+            src={cdnImageSrc(data.heroImage)}
+            alt={t(I18N_KEYS.funeral.heroImageAlt)}
+            loading="eager"
+            fetchPriority="high"
+          />
         )}
         <div className={styles.heroTitle}>{t(I18N_KEYS.funeral.heroTitle)}</div>
         <div className={styles.heroName}>

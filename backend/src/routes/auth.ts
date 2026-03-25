@@ -320,6 +320,7 @@ router.post('/verify', async (req, res) => {
         where: {
           guestToken: mergeGuestToken,
           userId: null,
+          isDeleted: false,
         },
         data: {
           ownerType: 'USER',

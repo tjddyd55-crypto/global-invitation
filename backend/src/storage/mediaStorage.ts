@@ -1,6 +1,11 @@
 import crypto from 'crypto';
 import sharp from 'sharp';
-import { buildPublicFileUrl, resolveKeyFromPublicUrl } from '../lib/storage/r2Client';
+import {
+  buildCanonicalPublicUrl,
+  buildR2Key,
+  buildR2ThumbnailCompanionKey,
+} from '../lib/mediaKeyBuilder';
+import { resolveKeyFromPublicUrl } from '../lib/storage/r2Client';
 import {
   createPresignedUploadUrl,
   deleteFile,
@@ -25,7 +30,7 @@ export type UploadImageParams = {
 export type UploadImageResult = {
   url: string;
   key: string;
-  mimeType: 'image/webp';
+  mimeType: 'image/webp' | 'image/jpeg';
   fileSize: number;
   thumbnailUrl?: string;
   thumbnailKey?: string;
@@ -82,7 +87,6 @@ function buildStorageKey(params: {
   const entityId = sanitizePathSegment(params.entityId);
   const userId = sanitizePathSegment(params.userId);
   const creatorId = sanitizePathSegment(params.creatorId || params.userId);
-  const thumbnailFileName = `${entityId}.webp`;
 
   if (!entityId || !userId || !creatorId) {
     throw new Error('INVALID_MEDIA_PATH');
@@ -90,19 +94,20 @@ function buildStorageKey(params: {
 
   if (params.context === 'invitation') {
     if (params.assetType === 'hero') {
-      return `invitations/${entityId}/hero/${fileName}`;
+      return buildR2Key({ type: 'invitation', id: entityId, filename: `hero-${fileName}` });
     }
-    return `invitations/${entityId}/gallery/${fileName}`;
+    return buildR2Key({ type: 'invitation', id: entityId, filename: `gallery-${fileName}` });
   }
 
   if (params.context === 'template') {
     if (params.assetType === 'thumbnail') {
-      return `templates/thumbnails/${thumbnailFileName}`;
+      return buildR2Key({ type: 'thumbnail', id: entityId, filename: 'x' });
     }
-    return `creator/${creatorId}/${entityId}/assets/${fileName}`;
+    return buildR2Key({ type: 'template', id: entityId, filename: `asset-${fileName}` });
   }
 
-  return `users/${userId}/${fileName}`;
+  const tempId = crypto.randomBytes(16).toString('hex');
+  return buildR2Key({ type: 'temp', id: userId, filename: `user-${fileName}` });
 }
 
 function normalizeFolder(folder: string): string {
@@ -197,6 +202,13 @@ function extractBaseName(fileName: string): string {
 
 function resolveThumbnailKeyForOriginalKey(key: string): string {
   const segments = key.split('/').filter(Boolean);
+  if (segments[0] === 'invitation' && segments[1] === 'thumbnails') {
+    const file = segments[2] || '';
+    if (file.endsWith('.jpg')) {
+      const base = file.replace(/\.jpg$/i, '');
+      return buildR2ThumbnailCompanionKey(base);
+    }
+  }
   if (segments[0] === 'templates' && segments[1] === 'thumbnails') {
     const fileName = segments[2] || '';
     const baseName = fileName.replace(/\.webp$/i, '');
@@ -204,7 +216,7 @@ function resolveThumbnailKeyForOriginalKey(key: string): string {
   }
 
   const fileName = segments[segments.length - 1] || '';
-  const baseName = fileName.replace(/\.webp$/i, '');
+  const baseName = fileName.replace(/\.webp$/i, '').replace(/\.jpg$/i, '');
   const dir = segments.slice(0, -1).join('/');
   return `${dir}/thumb_${baseName}.webp`;
 }
@@ -216,6 +228,15 @@ function resolveRelatedDeleteKeys(key: string): string[] {
   const fileName = segments[segments.length - 1] || '';
   const dir = segments.slice(0, -1).join('/');
   const related = new Set<string>([key]);
+
+  if (segments[0] === 'invitation' && segments[1] === 'thumbnails' && fileName.endsWith('.jpg')) {
+    if (fileName.startsWith('thumb_')) {
+      related.add(`${dir}/${fileName.replace(/^thumb_/, '')}`);
+    } else {
+      related.add(`${dir}/thumb_${fileName}`);
+    }
+    return Array.from(related);
+  }
 
   if (fileName.endsWith('.webp')) {
     if (fileName.startsWith('thumb_')) {
@@ -235,22 +256,168 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
     throw new Error('INVALID_MEDIA_PATH');
   }
 
-  const fileName = segments[segments.length - 1] || '';
-  const baseName = extractBaseName(fileName);
-
   const prefix = hasE2EPrefix ? `${E2E_MEDIA_PREFIX}/` : '';
+
+  const tempTagged = normalizedPath.match(
+    /^invitation\/temp\/(inv-hero|inv-gallery|tpl-thumb|tpl-asset|usr-asset)###([^#]+)###([^/]+)\.upload$/
+  );
+  if (tempTagged) {
+    const kind = tempTagged[1];
+    const entityId = sanitizePathSegment(tempTagged[2]);
+    const uploadTok = tempTagged[3].replace(/[^a-zA-Z0-9_-]/g, '') || crypto.randomUUID();
+    const token = `${Math.floor(Date.now() / 1000)}-${uploadTok.slice(0, 12)}`;
+    if (!entityId) {
+      throw new Error('INVALID_MEDIA_PATH');
+    }
+
+    if (kind === 'inv-hero') {
+      const originalKey = buildR2Key({ type: 'invitation', id: entityId, filename: `hero-${token}.webp` });
+      const thumbnailKey = buildR2Key({
+        type: 'invitation',
+        id: entityId,
+        filename: `thumb_hero-${token}.webp`,
+      });
+      return { originalKey: `${prefix}${originalKey}`, thumbnailKey: `${prefix}${thumbnailKey}`, assetType: 'hero' };
+    }
+    if (kind === 'inv-gallery') {
+      const originalKey = buildR2Key({
+        type: 'invitation',
+        id: entityId,
+        filename: `gallery-${token}.webp`,
+      });
+      const thumbnailKey = buildR2Key({
+        type: 'invitation',
+        id: entityId,
+        filename: `thumb_gallery-${token}.webp`,
+      });
+      return {
+        originalKey: `${prefix}${originalKey}`,
+        thumbnailKey: `${prefix}${thumbnailKey}`,
+        assetType: 'gallery',
+      };
+    }
+    if (kind === 'tpl-thumb') {
+      const originalKey = buildR2Key({ type: 'thumbnail', id: entityId, filename: 'x' });
+      const thumbnailKey = buildR2ThumbnailCompanionKey(entityId);
+      return {
+        originalKey: `${prefix}${originalKey}`,
+        thumbnailKey: `${prefix}${thumbnailKey}`,
+        assetType: 'thumbnail',
+      };
+    }
+    if (kind === 'tpl-asset') {
+      const originalKey = buildR2Key({ type: 'template', id: entityId, filename: `asset-${token}.webp` });
+      const thumbnailKey = buildR2Key({
+        type: 'template',
+        id: entityId,
+        filename: `thumb_asset-${token}.webp`,
+      });
+      return {
+        originalKey: `${prefix}${originalKey}`,
+        thumbnailKey: `${prefix}${thumbnailKey}`,
+        assetType: 'asset',
+      };
+    }
+    const originalKey = buildR2Key({
+      type: 'temp',
+      id: entityId,
+      filename: `user-${token}.webp`,
+    });
+    const thumbnailKey = buildR2Key({
+      type: 'temp',
+      id: entityId,
+      filename: `thumb_user-${token}.webp`,
+    });
+    return {
+      originalKey: `${prefix}${originalKey}`,
+      thumbnailKey: `${prefix}${thumbnailKey}`,
+      assetType: 'asset',
+    };
+  }
+
   if (segments[0] === 'templates' && segments[1] === 'thumbnails' && segments.length >= 4) {
     const entityId = sanitizePathSegment(segments[2] || '');
     if (!entityId) {
       throw new Error('INVALID_MEDIA_PATH');
     }
+    const originalKey = buildR2Key({ type: 'thumbnail', id: entityId, filename: 'x' });
+    const thumbnailKey = buildR2ThumbnailCompanionKey(entityId);
     return {
-      originalKey: `${prefix}templates/thumbnails/${entityId}.webp`,
-      thumbnailKey: `${prefix}templates/thumbnails/thumb_${entityId}.webp`,
+      originalKey: `${prefix}${originalKey}`,
+      thumbnailKey: `${prefix}${thumbnailKey}`,
       assetType: 'thumbnail',
     };
   }
 
+  if (
+    segments[0] === 'invitations' &&
+    segments.length === 4 &&
+    (segments[2] === 'hero' || segments[2] === 'gallery')
+  ) {
+    const invitationId = sanitizePathSegment(segments[1] || '');
+    const kind = segments[2];
+    const token = extractBaseName(segments[3] || '');
+    if (!invitationId) {
+      throw new Error('INVALID_MEDIA_PATH');
+    }
+    const role = kind === 'hero' ? 'hero' : 'gallery';
+    const originalKey = buildR2Key({
+      type: 'invitation',
+      id: invitationId,
+      filename: `${role}-${token}.webp`,
+    });
+    const thumbnailKey = buildR2Key({
+      type: 'invitation',
+      id: invitationId,
+      filename: `thumb_${role}-${token}.webp`,
+    });
+    return {
+      originalKey: `${prefix}${originalKey}`,
+      thumbnailKey: `${prefix}${thumbnailKey}`,
+      assetType: kind === 'hero' ? 'hero' : 'gallery',
+    };
+  }
+
+  if (segments[0] === 'creator' && segments[3] === 'assets' && segments.length === 5) {
+    const entityId = sanitizePathSegment(segments[2] || '');
+    const token = extractBaseName(segments[4] || '');
+    if (!entityId) {
+      throw new Error('INVALID_MEDIA_PATH');
+    }
+    const originalKey = buildR2Key({ type: 'template', id: entityId, filename: `asset-${token}.webp` });
+    const thumbnailKey = buildR2Key({
+      type: 'template',
+      id: entityId,
+      filename: `thumb_asset-${token}.webp`,
+    });
+    return {
+      originalKey: `${prefix}${originalKey}`,
+      thumbnailKey: `${prefix}${thumbnailKey}`,
+      assetType: 'asset',
+    };
+  }
+
+  if (segments[0] === 'users' && segments.length === 3) {
+    const userId = sanitizePathSegment(segments[1] || '');
+    const token = extractBaseName(segments[2] || '');
+    if (!userId) {
+      throw new Error('INVALID_MEDIA_PATH');
+    }
+    const originalKey = buildR2Key({ type: 'temp', id: userId, filename: `user-${token}.webp` });
+    const thumbnailKey = buildR2Key({
+      type: 'temp',
+      id: userId,
+      filename: `thumb_user-${token}.webp`,
+    });
+    return {
+      originalKey: `${prefix}${originalKey}`,
+      thumbnailKey: `${prefix}${thumbnailKey}`,
+      assetType: 'asset',
+    };
+  }
+
+  const fileName = segments[segments.length - 1] || '';
+  const baseName = extractBaseName(fileName);
   const folder = segments.slice(0, -1).join('/');
   const assetType = resolveAssetTypeFromFolder(folder);
   return {
@@ -285,12 +452,51 @@ async function optimizeToWebp(buffer: Buffer, widthLimit: number, quality: numbe
   }
 }
 
+async function optimizeToJpeg(buffer: Buffer, widthLimit: number, quality: number): Promise<Buffer> {
+  try {
+    const image = sharp(buffer, { failOn: 'none', limitInputPixels: SHARP_LIMIT_INPUT_PIXELS }).rotate();
+    const metadata = await image.metadata();
+    if (!metadata.width || !metadata.height) {
+      throw new Error('INVALID_IMAGE_FILE');
+    }
+    if (metadata.width > widthLimit) {
+      return image
+        .resize({ width: widthLimit, withoutEnlargement: true })
+        .jpeg({ quality, mozjpeg: true })
+        .toBuffer();
+    }
+    return image.jpeg({ quality, mozjpeg: true }).toBuffer();
+  } catch (_error) {
+    throw new Error('INVALID_IMAGE_FILE');
+  }
+}
+
 export async function uploadImage(params: UploadImageParams): Promise<UploadImageResult> {
   const assetType = params.assetType || 'asset';
-  const optimized = await optimizeToWebp(params.fileBuffer, MAX_IMAGE_WIDTH, getWebpQuality(assetType));
   const key = buildStorageKey(params);
   const thumbnailKey = resolveThumbnailKeyForOriginalKey(key);
   const thumbnailWidth = getThumbnailWidth(assetType);
+
+  if (params.context === 'template' && assetType === 'thumbnail') {
+    const optimized = await optimizeToJpeg(params.fileBuffer, MAX_IMAGE_WIDTH, 88);
+    const thumbnail = await optimizeToJpeg(
+      params.fileBuffer,
+      Math.min(MAX_IMAGE_WIDTH, thumbnailWidth),
+      82
+    );
+    const url = await uploadFile(optimized, key, 'image/jpeg');
+    const thumbnailUrl = await uploadFile(thumbnail, thumbnailKey, 'image/jpeg');
+    return {
+      url,
+      key,
+      mimeType: 'image/jpeg',
+      fileSize: optimized.byteLength,
+      thumbnailUrl,
+      thumbnailKey,
+    };
+  }
+
+  const optimized = await optimizeToWebp(params.fileBuffer, MAX_IMAGE_WIDTH, getWebpQuality(assetType));
   const thumbnail = await optimizeToWebp(
     params.fileBuffer,
     Math.min(MAX_IMAGE_WIDTH, thumbnailWidth),
@@ -310,20 +516,30 @@ export async function uploadImage(params: UploadImageParams): Promise<UploadImag
 }
 
 export async function createDirectUploadPresign(params: {
-  folder: string;
+  folder?: string;
+  fileKey?: string;
   contentType: string;
 }): Promise<{ uploadUrl: string; fileKey: string }> {
-  const { normalizedPath, hasE2EPrefix } = normalizePathWithOptionalE2EPrefix(params.folder);
-  resolveAssetTypeFromFolder(params.folder);
-  const folderWithPrefix = applyE2EPrefix(normalizedPath, hasE2EPrefix);
-  const fileKey = `${folderWithPrefix}/${crypto.randomUUID()}.upload`;
+  let rawKey: string;
+  if (params.fileKey) {
+    const { normalizedPath, hasE2EPrefix } = normalizePathWithOptionalE2EPrefix(params.fileKey);
+    rawKey = applyE2EPrefix(normalizedPath, hasE2EPrefix);
+  } else if (params.folder) {
+    const { normalizedPath, hasE2EPrefix } = normalizePathWithOptionalE2EPrefix(params.folder);
+    resolveAssetTypeFromFolder(params.folder);
+    const folderWithPrefix = applyE2EPrefix(normalizedPath, hasE2EPrefix);
+    rawKey = `${folderWithPrefix}/${crypto.randomUUID()}.upload`;
+  } else {
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+
   const uploadUrl = await createPresignedUploadUrl({
-    key: fileKey,
+    key: rawKey,
     contentType: params.contentType,
   });
   return {
     uploadUrl,
-    fileKey,
+    fileKey: rawKey,
   };
 }
 
@@ -332,37 +548,64 @@ export async function completeDirectUpload(fileKey: string): Promise<UploadImage
   const { originalKey, thumbnailKey, assetType } = resolveDirectUploadTarget(fileKey);
   const thumbnailWidth = getThumbnailWidth(assetType);
   const quality = getWebpQuality(assetType);
+  let fileSize = 0;
 
-  const [optimized, thumbnail] = await Promise.all([
-    optimizeToWebp(sourceBuffer, MAX_IMAGE_WIDTH, quality),
-    optimizeToWebp(sourceBuffer, Math.min(MAX_IMAGE_WIDTH, thumbnailWidth), quality),
-  ]);
-
-  await Promise.all([
-    uploadFile(optimized, originalKey, 'image/webp'),
-    uploadFile(thumbnail, thumbnailKey, 'image/webp'),
-  ]);
+  if (assetType === 'thumbnail') {
+    const optimized = await optimizeToJpeg(sourceBuffer, MAX_IMAGE_WIDTH, 88);
+    const thumbnail = await optimizeToJpeg(sourceBuffer, Math.min(MAX_IMAGE_WIDTH, thumbnailWidth), 82);
+    fileSize = optimized.byteLength;
+    await Promise.all([
+      uploadFile(optimized, originalKey, 'image/jpeg'),
+      uploadFile(thumbnail, thumbnailKey, 'image/jpeg'),
+    ]);
+  } else {
+    const optimized = await optimizeToWebp(sourceBuffer, MAX_IMAGE_WIDTH, quality);
+    const thumbnail = await optimizeToWebp(sourceBuffer, Math.min(MAX_IMAGE_WIDTH, thumbnailWidth), quality);
+    fileSize = optimized.byteLength;
+    await Promise.all([
+      uploadFile(optimized, originalKey, 'image/webp'),
+      uploadFile(thumbnail, thumbnailKey, 'image/webp'),
+    ]);
+  }
 
   if (fileKey !== originalKey) {
     await deleteFile(fileKey).catch(() => undefined);
   }
 
+  const publicMain = buildCanonicalPublicUrl(originalKey);
+  const publicThumb = buildCanonicalPublicUrl(thumbnailKey);
+  console.log('[R2_UPLOAD]', { key: originalKey, url: publicMain });
+
   return {
-    url: buildPublicFileUrl(originalKey),
+    url: publicMain,
     key: originalKey,
-    mimeType: 'image/webp',
-    fileSize: optimized.byteLength,
-    thumbnailUrl: buildPublicFileUrl(thumbnailKey),
+    mimeType: assetType === 'thumbnail' ? 'image/jpeg' : 'image/webp',
+    fileSize,
+    thumbnailUrl: publicThumb,
     thumbnailKey,
   };
+}
+
+function resolveInvitationOptimizedAssetPrefixFromKey(key: string): string | null {
+  const segments = key.split('/').filter(Boolean);
+  if (segments[0] !== 'invitation') return null;
+  if (segments[1] !== 'hero' && segments[1] !== 'gallery') return null;
+  if (segments.length < 4) return null;
+  return segments.slice(0, 4).join('/');
 }
 
 export async function deleteImageByUrl(fileUrl: string): Promise<boolean> {
   const normalized = fileUrl.trim();
   if (!normalized) return false;
 
-  const key = resolveKeyFromPublicUrl(normalized);
+  const key = resolveKeyFromPublicUrl(normalized.split('?')[0]);
   if (!key) return false;
+
+  const assetPrefix = resolveInvitationOptimizedAssetPrefixFromKey(key);
+  if (assetPrefix) {
+    await deleteStoragePrefix(`${assetPrefix}/`);
+    return true;
+  }
 
   const keys = resolveRelatedDeleteKeys(key);
   await Promise.all(keys.map((targetKey) => deleteFile(targetKey).catch(() => undefined)));
@@ -370,7 +613,7 @@ export async function deleteImageByUrl(fileUrl: string): Promise<boolean> {
 }
 
 export function resolveStorageKeyFromUrl(fileUrl: string): string | null {
-  return resolveKeyFromPublicUrl(fileUrl);
+  return resolveKeyFromPublicUrl(fileUrl.split('?')[0]);
 }
 
 export async function deleteStoragePrefix(prefix: string): Promise<number> {

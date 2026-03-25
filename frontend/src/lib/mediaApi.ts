@@ -2,6 +2,8 @@
 
 import { buildApiUrl } from '@/src/lib/apiBase';
 import { buildAuthHeaders } from '@/src/lib/auth';
+import { cdnImageSrc } from '@/src/lib/image';
+import { compressImage } from '@/src/lib/imageCompression';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -131,15 +133,24 @@ export function isValidImageUrl(url: string | null | undefined): boolean {
     return false;
   }
 
+  if (normalized.startsWith('blob:') || normalized.startsWith('data:image')) {
+    return true;
+  }
+
   try {
-    const parsed = new URL(normalized);
+    const httpsUrl = normalized.startsWith('http://') ? normalized.replace('http://', 'https://') : normalized;
+    const parsed = new URL(httpsUrl);
     if (parsed.protocol !== 'https:') {
       return false;
     }
-    if (!parsed.hostname || !parsed.hostname.includes('.')) {
+    if (!parsed.pathname || parsed.pathname === '/') {
       return false;
     }
-    if (!parsed.pathname || parsed.pathname === '/') {
+    const base = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.trim().replace(/\/+$/, '');
+    if (base && httpsUrl.startsWith(base)) {
+      return true;
+    }
+    if (!parsed.hostname || !parsed.hostname.includes('.')) {
       return false;
     }
     return true;
@@ -349,7 +360,8 @@ async function confirmDirectUpload(params: {
 
 function normalizeUploadedMedia(confirm: ConfirmResponse): UploadedMediaFile {
   const objectKey = (confirm.objectKey || confirm.fileKey || '').trim();
-  const publicUrl = normalizePublicUrl((confirm.publicUrl || confirm.url || '').trim());
+  const rawUrl = normalizePublicUrl((confirm.publicUrl || confirm.url || '').trim());
+  const publicUrl = normalizePublicUrl(cdnImageSrc(rawUrl) || rawUrl);
   const mimeType = (confirm.mimeType || '').trim();
   const fileSize = Number(confirm.fileSize ?? confirm.size ?? 0);
 
@@ -389,6 +401,8 @@ function isUploadTransportError(error: unknown): boolean {
 
 export async function uploadMediaImage(file: File, options?: UploadMediaOptions): Promise<UploadedMediaFile> {
   validateImageFile(file);
+  const fileToUpload = await compressImage(file);
+  validateImageFile(fileToUpload);
 
   const resolved = {
     ...resolveDefaultUploadOptions(),
@@ -398,7 +412,7 @@ export async function uploadMediaImage(file: File, options?: UploadMediaOptions)
 
   let presigned: PresignResponse;
   try {
-    presigned = await requestPresignedUpload(target, file);
+    presigned = await requestPresignedUpload(target, fileToUpload);
   } catch (error) {
     const failure = error as ApiFailure;
     if (typeof failure.errorCode === 'string') {
@@ -415,12 +429,12 @@ export async function uploadMediaImage(file: File, options?: UploadMediaOptions)
   }
 
   try {
-    await uploadToR2Direct(uploadUrl, file, resolved.onProgress);
+    await uploadToR2Direct(uploadUrl, fileToUpload, resolved.onProgress);
     const confirmed = await confirmDirectUpload({
       target,
       objectKey,
       publicUrl,
-      file,
+      file: fileToUpload,
     });
     resolved.onProgress?.(100);
     return normalizeUploadedMedia(confirmed);

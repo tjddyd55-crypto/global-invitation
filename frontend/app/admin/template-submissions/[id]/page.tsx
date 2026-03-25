@@ -11,6 +11,7 @@ import {
 } from '@/src/lib/adminApi';
 import TemplatePreviewWrapper from '@/src/templates/TemplatePreviewWrapper';
 import styles from '@/src/components/admin/AdminShell.module.css';
+import { cdnImageSrc } from '@/src/lib/image';
 
 function buildPreviewTemplateKey(submission: AdminTemplateSubmission): string {
   if (submission.approvedTemplate?.templateKey) {
@@ -140,7 +141,12 @@ export default function AdminTemplateSubmissionDetailPage() {
           <div className={styles.metricLabel}>Thumbnail</div>
           {item.previewThumbnailUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.previewThumbnailUrl} alt={item.name} style={{ width: '100%', borderRadius: 12 }} />
+            <img
+              src={cdnImageSrc(item.previewThumbnailUrl)}
+              alt={item.name}
+              loading="lazy"
+              style={{ width: '100%', borderRadius: 12 }}
+            />
           ) : (
             <p className={styles.helperText}>썸네일 없음</p>
           )}

@@ -29,9 +29,8 @@ export function resolveR2Config(): R2Config {
   const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim() || '';
   const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim() || '';
   const bucketName = process.env.R2_BUCKET_NAME?.trim() || '';
-  const publicUrl = normalizeBaseUrl(
-    process.env.R2_PUBLIC_BASE_URL?.trim() || process.env.R2_PUBLIC_URL?.trim() || ''
-  );
+  const publicUrlRaw = process.env.R2_PUBLIC_BASE_URL?.trim() || '';
+  const publicUrl = publicUrlRaw ? normalizeBaseUrl(publicUrlRaw) : '';
   const region = process.env.R2_REGION?.trim() || 'auto';
   const endpoint =
     process.env.R2_ENDPOINT?.trim() || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '');

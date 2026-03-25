@@ -15,6 +15,7 @@ import styles from './WeddingClassicInvitation.module.css';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
+import { cdnImageSrc } from '@/src/lib/image';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import DisabledPlaceholder from './DisabledPlaceholder';
 
@@ -176,7 +177,13 @@ export default function WeddingClassicInvitation({
 
       {/* 1. Hero – Contract: title fallback, 누락 시 빈 문자열 허용 */}
       <section className={styles.hero}>
-        <img className={styles.heroImage} src={r.heroImage ?? ''} alt={t(I18N_KEYS.weddingClassic.heroImageAlt)} />
+        <img
+          className={styles.heroImage}
+          src={cdnImageSrc(r.heroImage ?? '')}
+          alt={t(I18N_KEYS.weddingClassic.heroImageAlt)}
+          loading="eager"
+          fetchPriority="high"
+        />
         <div className={styles.heroOverlay}>
           <div className={styles.heroTitle}>{r.heroTitle ?? ''}</div>
           {r.heroOverlayText ? <div className={styles.heroOverlayText}>{r.heroOverlayText}</div> : null}
@@ -245,7 +252,13 @@ export default function WeddingClassicInvitation({
           <h2>{t(I18N_KEYS.weddingClassic.galleryTitle)}</h2>
           <div className={styles.galleryGrid}>
             {galleryImages.map((image) => (
-              <img key={image} className={styles.galleryImage} src={image} alt={t(I18N_KEYS.weddingClassic.galleryImageAlt)} />
+              <img
+                key={image}
+                className={styles.galleryImage}
+                src={cdnImageSrc(image)}
+                alt={t(I18N_KEYS.weddingClassic.galleryImageAlt)}
+                loading="lazy"
+              />
             ))}
           </div>
         </section>
@@ -357,7 +370,12 @@ export default function WeddingClassicInvitation({
           <div className={styles.coupleGrid}>
             {r?.groom ? (
               <div className={styles.coupleCard}>
-                <img className={styles.coupleImage} src={r.groom?.image ?? ''} alt={r.groom?.name ?? ''} />
+                <img
+                  className={styles.coupleImage}
+                  src={cdnImageSrc(r.groom?.image ?? '')}
+                  alt={r.groom?.name ?? ''}
+                  loading="lazy"
+                />
                 <div className={styles.coupleName}>{r.groom?.name ?? ''}</div>
                 <div className={styles.contactLine}>📞 {r.groom?.phone ?? ''}</div>
                 <div className={styles.coupleParents}>{r.groom?.parentsText ?? ''}</div>
@@ -365,7 +383,12 @@ export default function WeddingClassicInvitation({
             ) : null}
             {r?.bride ? (
               <div className={styles.coupleCard}>
-                <img className={styles.coupleImage} src={r.bride?.image ?? ''} alt={r.bride?.name ?? ''} />
+                <img
+                  className={styles.coupleImage}
+                  src={cdnImageSrc(r.bride?.image ?? '')}
+                  alt={r.bride?.name ?? ''}
+                  loading="lazy"
+                />
                 <div className={styles.coupleName}>{r.bride?.name ?? ''}</div>
                 <div className={styles.contactLine}>📞 {r.bride?.phone ?? ''}</div>
                 <div className={styles.coupleParents}>{r.bride?.parentsText ?? ''}</div>

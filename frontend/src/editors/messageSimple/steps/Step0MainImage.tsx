@@ -73,7 +73,7 @@ export default function Step0MainImage({ heroImage, onChange }: Step0MainImagePr
         <div className={styles.uploaderBody}>
           {heroImage ? (
             <div className={styles.uploaderPreview}>
-              <AppImage src={heroImage} alt="main preview" />
+              <AppImage src={heroImage} alt="main preview" priority />
             </div>
           ) : (
             <div className={styles.uploaderPlaceholder}>이미지를 선택하세요.</div>

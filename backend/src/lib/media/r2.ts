@@ -42,9 +42,10 @@ function isPlaceholder(value: string): boolean {
 }
 
 function normalizePublicBaseUrl(): string {
-  const fromPreferred = process.env.R2_PUBLIC_BASE_URL?.trim() || '';
-  const fromLegacy = process.env.R2_PUBLIC_URL?.trim() || '';
-  const resolved = fromPreferred || fromLegacy;
+  const resolved = process.env.R2_PUBLIC_BASE_URL?.trim() || '';
+  if (!resolved) {
+    throw new Error('R2_STORAGE_NOT_CONFIGURED');
+  }
   return normalizeBaseUrl(resolved);
 }
 

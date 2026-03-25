@@ -4,6 +4,7 @@ import ImageUploader from '../components/ImageUploader';
 import styles from '../weddingEditor.module.css';
 import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
 import type { WeddingClassicData } from '@/src/templates/weddingClassic/data';
+import { cdnImageSrc } from '@/src/lib/image';
 import type { WeddingEditorShare } from '../state/weddingEditor.types';
 
 type Step9SharePreviewProps = {
@@ -66,7 +67,7 @@ export default function Step9SharePreview({
           />
           <div className={styles.ogPreviewCard}>
             <div className={styles.ogPreviewImage}>
-              {ogImage ? <img src={ogImage} alt="OG preview" /> : <span>이미지 없음</span>}
+              {ogImage ? <img src={cdnImageSrc(ogImage)} alt="OG preview" loading="lazy" /> : <span>이미지 없음</span>}
             </div>
             <div className={styles.ogPreviewBody}>
               <div className={styles.ogPreviewTitle}>{previewShare.ogTitle || 'OG 제목 미입력'}</div>

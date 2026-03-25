@@ -88,9 +88,10 @@ router.get('/dashboard', async (_req, res) => {
   try {
     const [templateSummary, totalInvitationsCreated, invitationsCreatedToday] = await Promise.all([
       getTemplateStoreSummary(),
-      prisma.invitation.count(),
+      prisma.invitation.count({ where: { isDeleted: false } }),
       prisma.invitation.count({
         where: {
+          isDeleted: false,
           createdAt: {
             gte: new Date(new Date().setHours(0, 0, 0, 0)),
           },
@@ -120,8 +121,8 @@ router.get('/invitations/:id/rsvp/export', async (req, res) => {
       return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
     }
 
-    const invitation = await prisma.invitation.findUnique({
-      where: { id: invitationId },
+    const invitation = await prisma.invitation.findFirst({
+      where: { id: invitationId, isDeleted: false },
       select: {
         id: true,
         slug: true,
@@ -178,8 +179,8 @@ router.get('/invitations/:id/analytics', async (req, res) => {
       return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
     }
 
-    const invitation = await prisma.invitation.findUnique({
-      where: { id: invitationId },
+    const invitation = await prisma.invitation.findFirst({
+      where: { id: invitationId, isDeleted: false },
       select: {
         id: true,
         slug: true,

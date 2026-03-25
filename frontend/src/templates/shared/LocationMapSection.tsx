@@ -1,4 +1,5 @@
 import styles from './LocationMapSection.module.css';
+import { cdnImageSrc } from '@/src/lib/image';
 
 type LocationNavLabels = {
   tmap?: string;
@@ -49,7 +50,7 @@ export default function LocationMapSection({
         <h2>{title}</h2>
         {address && <div>{address}</div>}
       </div>
-      {mapImage && <img className={styles.mapImage} src={mapImage} alt={mapImageAlt} />}
+      {mapImage && <img className={styles.mapImage} src={cdnImageSrc(mapImage)} alt={mapImageAlt} loading="lazy" />}
       {hasNavButtons && (
         <div className={styles.navButtons}>
           {navItems.map((item) => (

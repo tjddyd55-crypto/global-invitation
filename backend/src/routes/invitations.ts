@@ -4,7 +4,7 @@ import { InvitationStatus, Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { generateSlug } from '../utils/slug';
 import { createToken, getAuthUser, getGuestToken } from '../lib/auth';
-import { cleanupInvitationMedia } from '../storage/mediaCleanup';
+import { collectInvitationCleanupR2Keys } from '../storage/mediaCleanup';
 
 const router = Router();
 const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
@@ -117,7 +117,10 @@ async function findInvitationByIdentifier(identifier: string) {
   const normalized = normalizeText(identifier);
   if (!normalized) return null;
   return prisma.invitation.findFirst({
-    where: isUuidLike(normalized) ? { OR: [{ id: normalized }, { slug: normalized }] } : { slug: normalized },
+    where: {
+      isDeleted: false,
+      ...(isUuidLike(normalized) ? { OR: [{ id: normalized }, { slug: normalized }] } : { slug: normalized }),
+    },
   });
 }
 
@@ -404,6 +407,7 @@ router.get('/', async (req, res) => {
       const invitations = await prisma.invitation.findMany({
         where: {
           guestToken,
+          isDeleted: false,
           status,
         },
         orderBy: { updatedAt: 'desc' },
@@ -511,6 +515,7 @@ router.get('/share/:slug', async (req, res) => {
     const invitation = await prisma.invitation.findFirst({
       where: {
         shareSlug,
+        isDeleted: false,
         status: InvitationStatus.PUBLISHED,
       },
       select: {
@@ -668,8 +673,8 @@ router.get('/:id', async (req, res) => {
       guestToken,
     });
 
-    const refreshed = await prisma.invitation.findUnique({
-      where: { id: invitation.id },
+    const refreshed = await prisma.invitation.findFirst({
+      where: { id: invitation.id, isDeleted: false },
       select: {
         id: true,
         userId: true,
@@ -780,22 +785,43 @@ router.delete('/:id', async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    await prisma.invitation.delete({
-      where: { id: existing.id },
+    const r2Keys = await collectInvitationCleanupR2Keys({
+      invitationId: existing.id,
+      dataJson: existing.dataJson,
+      data: existing.data,
     });
 
-    let mediaDeletedCount = 0;
-    try {
-      mediaDeletedCount = await cleanupInvitationMedia(existing.id);
-    } catch (cleanupError) {
-      console.warn('Failed to cleanup invitation media:', cleanupError);
-    }
+    await prisma.$transaction(async (tx) => {
+      await tx.invitation.update({
+        where: { id: existing.id },
+        data: { isDeleted: true },
+      });
+      await tx.mediaFile.updateMany({
+        where: {
+          ownerType: 'INVITATION',
+          ownerRefId: existing.id,
+          deletedAt: null,
+        },
+        data: { deletedAt: new Date() },
+      });
+      if (r2Keys.length > 0) {
+        const scheduledAt = new Date();
+        await tx.cleanupJob.createMany({
+          data: r2Keys.map((r2Key) => ({
+            resourceType: 'INVITATION',
+            resourceId: existing.id,
+            r2Key,
+            scheduledAt,
+          })),
+        });
+      }
+    });
 
     return res.status(200).json({
       success: true,
       id: existing.id,
       slug: existing.slug,
-      mediaDeletedCount,
+      cleanupJobsEnqueued: r2Keys.length,
     });
   } catch (error) {
     console.error('Error deleting invitation:', error);
