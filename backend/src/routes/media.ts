@@ -148,13 +148,13 @@ function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): F
 
   const head = segments[0];
 
-  if (head === 'invitations' && segments.length === 3) {
+  if (head === 'invitation' && segments.length === 3) {
     const invitationId = normalizeFolderSegment(segments[1]);
     const mediaType = normalizeFolderSegment(segments[2]);
     if (mediaType !== 'hero' && mediaType !== 'gallery') {
       throw new Error('INVALID_MEDIA_FOLDER');
     }
-    const resolvedFolder = `invitations/${invitationId}/${mediaType}`;
+    const resolvedFolder = `invitation/${invitationId}/${mediaType}`;
     const tag = mediaType === 'hero' ? 'inv-hero' : 'inv-gallery';
     const presignBase = `invitation/temp/${tag}###${invitationId}###${crypto.randomUUID()}.upload`;
     return {
@@ -165,13 +165,56 @@ function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): F
     };
   }
 
+  if (head === 'invitations' && segments.length === 3) {
+    const invitationId = normalizeFolderSegment(segments[1]);
+    const mediaType = normalizeFolderSegment(segments[2]);
+    if (mediaType !== 'hero' && mediaType !== 'gallery') {
+      throw new Error('INVALID_MEDIA_FOLDER');
+    }
+    const resolvedFolder = `invitation/${invitationId}/${mediaType}`;
+    const tag = mediaType === 'hero' ? 'inv-hero' : 'inv-gallery';
+    const presignBase = `invitation/temp/${tag}###${invitationId}###${crypto.randomUUID()}.upload`;
+    return {
+      folder: applyE2EPrefix(resolvedFolder, hasE2EPrefix),
+      presignKey: applyE2EPrefix(presignBase, hasE2EPrefix),
+      context: 'invitation',
+      entityId: invitationId,
+    };
+  }
+
+  if (head === 'template' && segments.length === 3) {
+    const templateId = normalizeFolderSegment(segments[1]);
+    const section = normalizeFolderSegment(segments[2]);
+    if (section === 'thumbnail') {
+      const resolvedFolder = `template/${templateId}/thumbnail`;
+      const presignBase = `invitation/temp/tpl-thumb###${templateId}###${crypto.randomUUID()}.upload`;
+      return {
+        folder: applyE2EPrefix(resolvedFolder, hasE2EPrefix),
+        presignKey: applyE2EPrefix(presignBase, hasE2EPrefix),
+        context: 'template',
+        entityId: templateId,
+      };
+    }
+    if (section === 'gallery') {
+      const resolvedFolder = `template/${templateId}/gallery`;
+      const presignBase = `invitation/temp/tpl-asset###${templateId}###${crypto.randomUUID()}.upload`;
+      return {
+        folder: applyE2EPrefix(resolvedFolder, hasE2EPrefix),
+        presignKey: applyE2EPrefix(presignBase, hasE2EPrefix),
+        context: 'template',
+        entityId: templateId,
+      };
+    }
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+
   if (head === 'templates' && segments.length === 3) {
     const category = normalizeFolderSegment(segments[1]);
     const entityId = normalizeFolderSegment(segments[2]);
     if (category !== 'thumbnails') {
       throw new Error('INVALID_MEDIA_FOLDER');
     }
-    const resolvedFolder = `templates/thumbnails/${entityId}`;
+    const resolvedFolder = `template/${entityId}/thumbnail`;
     const presignBase = `invitation/temp/tpl-thumb###${entityId}###${crypto.randomUUID()}.upload`;
     return {
       folder: applyE2EPrefix(resolvedFolder, hasE2EPrefix),
@@ -189,7 +232,7 @@ function resolveFolderAuthorizationTarget(rawFolder: unknown, userId: string): F
       throw new Error('INVALID_MEDIA_FOLDER');
     }
     const creatorId = creatorIdRaw === 'self' ? userId : creatorIdRaw;
-    const resolvedFolder = `creator/${creatorId}/${entityId}/assets`;
+    const resolvedFolder = `template/${entityId}/gallery`;
     const presignBase = `invitation/temp/tpl-asset###${entityId}###${crypto.randomUUID()}.upload`;
     return {
       folder: applyE2EPrefix(resolvedFolder, hasE2EPrefix),
@@ -313,6 +356,12 @@ async function canDeleteByStorageKey(params: {
     return segments[1] === params.userId;
   }
 
+  if (segments[0] === 'template' && segments.length >= 2) {
+    if (!params.isCreator) return false;
+    const templateId = segments[1] || '';
+    return canAccessTemplateMedia(params.userId, templateId);
+  }
+
   if (segments[0] === 'invitations') {
     const invitationId = segments[1] || '';
     return canAccessInvitationMedia(params.userId, invitationId);
@@ -343,6 +392,19 @@ async function canDeleteByStorageKey(params: {
   }
 
   if (segments[0] === 'invitation') {
+    if (
+      segments.length >= 3 &&
+      segments[1] &&
+      (segments[2] === 'hero' || segments[2] === 'gallery') &&
+      segments[1] !== 'temp' &&
+      segments[1] !== 'hero' &&
+      segments[1] !== 'gallery' &&
+      segments[1] !== 'invitations' &&
+      segments[1] !== 'templates'
+    ) {
+      const invitationId = segments[1] || '';
+      return canAccessInvitationMedia(params.userId, invitationId);
+    }
     if (segments[1] === 'hero' || segments[1] === 'gallery') {
       const invitationId = segments[2] || '';
       return canAccessInvitationMedia(params.userId, invitationId);
@@ -476,6 +538,7 @@ router.post('/presign', async (req, res) => {
             | 'invitationHero'
             | 'invitationGallery'
             | 'templateCover'
+            | 'templateHero'
             | 'templateAsset'
             | 'common',
           invitationId: normalizeText(req.body?.invitationId),

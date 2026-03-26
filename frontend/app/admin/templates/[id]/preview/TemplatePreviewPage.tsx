@@ -39,6 +39,8 @@ export default function TemplatePreviewPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [template, setTemplate] = useState<TemplateDefinition | null>(null);
+  /** 번들 최상위 studioConfig와 DB template.studioConfig 중 명시적으로 내려온 값 보존 */
+  const [bundleStudioConfig, setBundleStudioConfig] = useState<unknown>(undefined);
   const [previewData, setPreviewData] = useState<TemplatePreviewData | null | undefined>(undefined);
   const [previewMode, setPreviewMode] = useState<'sample' | 'real'>('sample');
   const [busyAction, setBusyAction] = useState<string | null>(null);
@@ -61,12 +63,14 @@ export default function TemplatePreviewPage() {
 
       if (!bundle || !bundle.template) {
         setTemplate(null);
+        setBundleStudioConfig(undefined);
         setPreviewData(null);
         setError('Preview data not found');
         return;
       }
 
       setTemplate(bundle.template);
+      setBundleStudioConfig(bundle.studioConfig ?? bundle.template.studioConfig ?? undefined);
 
       if (mode === 'real') {
         setPreviewData(undefined);
@@ -80,7 +84,11 @@ export default function TemplatePreviewPage() {
 
       let merged: TemplatePreviewData | null = null;
       try {
-        merged = mergeAdminPreviewSample(bundle.template, bundle.sampleData ?? {});
+        merged = mergeAdminPreviewSample(
+          bundle.template,
+          bundle.sampleData ?? {},
+          bundle.studioConfig ?? bundle.template.studioConfig ?? null
+        );
       } catch {
         merged = null;
       }
@@ -181,8 +189,8 @@ export default function TemplatePreviewPage() {
     <TemplatePreviewWrapper
       variant="phone"
       templateKey={template.templateKey}
-      sampleData={previewMode === 'real' ? undefined : previewData ?? undefined}
-      studioConfig={template.studioConfig ?? undefined}
+      data={previewMode === 'sample' ? previewData ?? undefined : undefined}
+      studioConfig={bundleStudioConfig ?? template.studioConfig ?? undefined}
     />
   );
 

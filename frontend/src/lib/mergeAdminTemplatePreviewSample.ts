@@ -5,6 +5,7 @@ import type {
   MessageThankYouInvitationData,
   WeddingInvitationData,
 } from '@/src/invitation/schemas';
+import { applyStudioConfigToPreviewData } from '@/src/lib/studioPreviewMediaMerge';
 import type { TemplatePreviewData } from '@/src/templates/previewData';
 import type { TemplateDefinition } from '@/src/templates/registry';
 import { getTemplatePreviewData } from '@/src/templates/registry';
@@ -72,7 +73,8 @@ function messageish(template: TemplateDefinition | null | undefined): boolean {
  */
 export function mergeAdminPreviewSample(
   template: TemplateDefinition | null | undefined,
-  sampleData: Record<string, unknown> | null | undefined
+  sampleData: Record<string, unknown> | null | undefined,
+  studioConfig?: Record<string, unknown> | null
 ): TemplatePreviewData | null {
   const templateKey = template?.templateKey?.trim() ?? '';
   if (!template || !templateKey) {
@@ -84,6 +86,8 @@ export function mergeAdminPreviewSample(
   if (!base) {
     return null;
   }
+
+  const resolvedStudioConfig = studioConfig ?? template.studioConfig ?? null;
 
   if (weddingish(template) && isWeddingLikeBase(base)) {
     const b = structuredClone(base);
@@ -115,7 +119,7 @@ export function mergeAdminPreviewSample(
       b.introQuote = msg;
       b.introText = [msg];
     }
-    return b;
+    return applyStudioConfigToPreviewData(b, resolvedStudioConfig);
   }
 
   if (funeralish(template) && isFuneralBase(base)) {
@@ -141,7 +145,7 @@ export function mergeAdminPreviewSample(
     if (msg) {
       b.message = msg;
     }
-    return b;
+    return applyStudioConfigToPreviewData(b, resolvedStudioConfig);
   }
 
   if (messageish(template)) {
@@ -153,7 +157,7 @@ export function mergeAdminPreviewSample(
       if (title) b.title = title;
       const subtitle = str(data?.subtitle);
       if (subtitle) b.subtitle = subtitle;
-      return b;
+      return applyStudioConfigToPreviewData(b, resolvedStudioConfig);
     }
     if (isMessageThankYouBase(base)) {
       const b = structuredClone(base);
@@ -163,7 +167,7 @@ export function mergeAdminPreviewSample(
       if (title) b.title = title;
       const subtitle = str(data?.subtitle);
       if (subtitle) b.subtitle = subtitle;
-      return b;
+      return applyStudioConfigToPreviewData(b, resolvedStudioConfig);
     }
     if (isMessageBrandedBase(base)) {
       const b = structuredClone(base);
@@ -171,9 +175,9 @@ export function mergeAdminPreviewSample(
       if (msg) b.message = msg;
       const title = str(data?.title);
       if (title) b.title = title;
-      return b;
+      return applyStudioConfigToPreviewData(b, resolvedStudioConfig);
     }
   }
 
-  return structuredClone(base) as TemplatePreviewData;
+  return applyStudioConfigToPreviewData(structuredClone(base) as TemplatePreviewData, resolvedStudioConfig);
 }

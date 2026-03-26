@@ -16,9 +16,11 @@
 .heroImage {
   width: 100%;
   max-width: 420px;
+  aspect-ratio: 16 / 9;
   margin: 0 auto 1.5rem;
   border-radius: 12px;
   display: block;
+  object-fit: cover;
 }
 
 .heroTitle {

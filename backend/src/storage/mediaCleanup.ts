@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { resolveKeyFromPublicUrl } from '../lib/storage/r2Client';
 import { deleteFile, listAllObjectKeysUnderPrefix } from '../lib/storage/uploadToR2';
+import { invitationEntityPrefix, templateEntityPrefix } from '../lib/media/keys';
 import { deleteImageByUrl, deleteStoragePrefix, sanitizePathSegment } from './mediaStorage';
 
 type TemplateMediaCleanupInput = {
@@ -49,9 +50,11 @@ export async function collectInvitationCleanupR2Keys(params: {
   const normalizedId = sanitizePathSegment(params.invitationId);
   const unique = new Set<string>();
 
+  const entityPrefix = normalizedId.length > 0 ? invitationEntityPrefix(normalizedId) : '';
   const prefixes =
     normalizedId.length > 0
       ? [
+          entityPrefix,
           `invitation/invitations/${normalizedId}/`,
           `invitation/hero/${normalizedId}/`,
           `invitation/gallery/${normalizedId}/`,
@@ -104,6 +107,8 @@ export async function cleanupInvitationMedia(invitationId: string): Promise<numb
     return 0;
   }
   let n = 0;
+  const canonicalPrefix = invitationEntityPrefix(normalizedId).replace(/\/$/, '');
+  n += await deleteStoragePrefix(canonicalPrefix);
   n += await deleteStoragePrefix(`invitation/invitations/${normalizedId}`);
   n += await deleteStoragePrefix(`invitation/hero/${normalizedId}`);
   n += await deleteStoragePrefix(`invitation/gallery/${normalizedId}`);
@@ -118,6 +123,8 @@ export async function cleanupTemplateMedia(input: TemplateMediaCleanupInput): Pr
 
   let deletedCount = 0;
   if (templateId) {
+    const canonicalTplPrefix = templateEntityPrefix(templateId).replace(/\/$/, '');
+    deletedCount += await deleteStoragePrefix(canonicalTplPrefix);
     deletedCount += await deleteStoragePrefix(`invitation/templates/${templateId}`);
     deletedCount += await deleteStoragePrefix(`invitation/thumbnails/${templateId}`);
     await deleteFile(`invitation/thumbnails/${templateId}.jpg`).catch(() => undefined);

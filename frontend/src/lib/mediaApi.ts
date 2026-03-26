@@ -18,13 +18,31 @@ export type UploadedMediaFile = {
   fileSize: number;
   width?: number | null;
   height?: number | null;
-  usage?: 'INVITATION_HERO' | 'INVITATION_GALLERY' | 'TEMPLATE_COVER' | 'TEMPLATE_ASSET' | 'COMMON';
+  usage?:
+    | 'INVITATION_HERO'
+    | 'INVITATION_GALLERY'
+    | 'TEMPLATE_COVER'
+    | 'TEMPLATE_HERO'
+    | 'TEMPLATE_ASSET'
+    | 'COMMON';
 };
 
 export type MediaUploadContext = 'invitation' | 'template' | 'user';
 export type MediaUploadAssetType = 'asset' | 'thumbnail' | 'hero' | 'gallery';
-type MediaUploadScope = 'invitationHero' | 'invitationGallery' | 'templateCover' | 'templateAsset' | 'common';
-type MediaUsage = 'INVITATION_HERO' | 'INVITATION_GALLERY' | 'TEMPLATE_COVER' | 'TEMPLATE_ASSET' | 'COMMON';
+type MediaUploadScope =
+  | 'invitationHero'
+  | 'invitationGallery'
+  | 'templateCover'
+  | 'templateHero'
+  | 'templateAsset'
+  | 'common';
+type MediaUsage =
+  | 'INVITATION_HERO'
+  | 'INVITATION_GALLERY'
+  | 'TEMPLATE_COVER'
+  | 'TEMPLATE_HERO'
+  | 'TEMPLATE_ASSET'
+  | 'COMMON';
 
 type UploadMediaOptions = {
   context?: MediaUploadContext;
@@ -194,6 +212,13 @@ function resolveUploadTarget(options: UploadMediaOptions): ResolvedUploadTarget 
       return {
         scope: 'templateCover',
         usage: 'TEMPLATE_COVER',
+        templateId: entityId,
+      };
+    }
+    if (assetType === 'hero') {
+      return {
+        scope: 'templateHero',
+        usage: 'TEMPLATE_HERO',
         templateId: entityId,
       };
     }

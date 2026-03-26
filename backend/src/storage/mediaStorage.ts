@@ -1,10 +1,7 @@
 import crypto from 'crypto';
 import sharp from 'sharp';
-import {
-  buildCanonicalPublicUrl,
-  buildR2Key,
-  buildR2ThumbnailCompanionKey,
-} from '../lib/mediaKeyBuilder';
+import { parseInvitationOptimizedOriginalKey } from '../lib/media/keys';
+import { buildCanonicalPublicUrl, buildR2Key } from '../lib/mediaKeyBuilder';
 import { resolveKeyFromPublicUrl } from '../lib/storage/r2Client';
 import {
   createPresignedUploadUrl,
@@ -86,28 +83,35 @@ function buildStorageKey(params: {
   const fileName = buildUniqueFileName();
   const entityId = sanitizePathSegment(params.entityId);
   const userId = sanitizePathSegment(params.userId);
-  const creatorId = sanitizePathSegment(params.creatorId || params.userId);
-
-  if (!entityId || !userId || !creatorId) {
-    throw new Error('INVALID_MEDIA_PATH');
-  }
 
   if (params.context === 'invitation') {
-    if (params.assetType === 'hero') {
-      return buildR2Key({ type: 'invitation', id: entityId, filename: `hero-${fileName}` });
+    if (!entityId) {
+      throw new Error('INVALID_MEDIA_PATH');
     }
-    return buildR2Key({ type: 'invitation', id: entityId, filename: `gallery-${fileName}` });
+    if (params.assetType === 'hero') {
+      return `invitation/${entityId}/hero/${fileName}`;
+    }
+    return `invitation/${entityId}/gallery/${fileName}`;
   }
 
   if (params.context === 'template') {
-    if (params.assetType === 'thumbnail') {
-      return buildR2Key({ type: 'thumbnail', id: entityId, filename: 'x' });
+    if (!entityId) {
+      throw new Error('INVALID_MEDIA_PATH');
     }
-    return buildR2Key({ type: 'template', id: entityId, filename: `asset-${fileName}` });
+    if (params.assetType === 'thumbnail') {
+      return `template/${entityId}/thumbnail/main.jpg`;
+    }
+    if (params.assetType === 'hero') {
+      return `template/${entityId}/hero/${fileName}`;
+    }
+    return `template/${entityId}/gallery/${fileName}`;
   }
 
+  if (!userId) {
+    throw new Error('INVALID_MEDIA_PATH');
+  }
   const tempId = crypto.randomBytes(16).toString('hex');
-  return buildR2Key({ type: 'temp', id: userId, filename: `user-${fileName}` });
+  return buildR2Key({ type: 'temp', id: tempId, filename: `user-${fileName}` });
 }
 
 function normalizeFolder(folder: string): string {
@@ -164,6 +168,19 @@ function resolveAssetTypeFromFolder(folder: string): MediaAssetType {
     throw new Error('INVALID_MEDIA_FOLDER');
   }
 
+  if (segments[0] === 'invitation' && segments.length === 3) {
+    if (segments[2] === 'hero') return 'hero';
+    if (segments[2] === 'gallery') return 'gallery';
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+
+  if (segments[0] === 'template' && segments.length === 3) {
+    if (segments[2] === 'thumbnail') return 'thumbnail';
+    if (segments[2] === 'gallery') return 'asset';
+    if (segments[2] === 'hero') return 'hero';
+    throw new Error('INVALID_MEDIA_FOLDER');
+  }
+
   if (segments[0] === 'invitations' && segments.length === 3) {
     if (segments[2] === 'hero') return 'hero';
     if (segments[2] === 'gallery') return 'gallery';
@@ -202,22 +219,33 @@ function extractBaseName(fileName: string): string {
 
 function resolveThumbnailKeyForOriginalKey(key: string): string {
   const segments = key.split('/').filter(Boolean);
+  const fileName = segments[segments.length - 1] || '';
+  const dir = segments.slice(0, -1).join('/');
+
+  if (segments[0] === 'invitation' && segments[2] === 'hero' && fileName.toLowerCase() === 'original.jpg') {
+    return `${segments.slice(0, 3).join('/')}/thumb.jpg`;
+  }
+  if (segments[0] === 'template' && segments[2] === 'hero' && fileName.toLowerCase() === 'original.jpg') {
+    return `${segments.slice(0, 3).join('/')}/thumb.jpg`;
+  }
+  if (segments[0] === 'template' && segments[2] === 'thumbnail' && fileName.toLowerCase() === 'main.jpg') {
+    return `${segments.slice(0, 3).join('/')}/thumb.jpg`;
+  }
+
   if (segments[0] === 'invitation' && segments[1] === 'thumbnails') {
     const file = segments[2] || '';
     if (file.endsWith('.jpg')) {
       const base = file.replace(/\.jpg$/i, '');
-      return buildR2ThumbnailCompanionKey(base);
+      return `invitation/thumbnails/thumb_${base}.jpg`;
     }
   }
   if (segments[0] === 'templates' && segments[1] === 'thumbnails') {
-    const fileName = segments[2] || '';
-    const baseName = fileName.replace(/\.webp$/i, '');
+    const fn = segments[2] || '';
+    const baseName = fn.replace(/\.webp$/i, '');
     return `templates/thumbnails/thumb_${baseName}.webp`;
   }
 
-  const fileName = segments[segments.length - 1] || '';
   const baseName = fileName.replace(/\.webp$/i, '').replace(/\.jpg$/i, '');
-  const dir = segments.slice(0, -1).join('/');
   return `${dir}/thumb_${baseName}.webp`;
 }
 
@@ -229,6 +257,25 @@ function resolveRelatedDeleteKeys(key: string): string[] {
   const dir = segments.slice(0, -1).join('/');
   const related = new Set<string>([key]);
 
+  const fnLower = fileName.toLowerCase();
+  if (
+    (segments[0] === 'invitation' || segments[0] === 'template') &&
+    (segments[2] === 'hero' || segments[2] === 'gallery') &&
+    (fnLower === 'original.jpg' || fnLower === 'thumb.jpg')
+  ) {
+    const heroDir = segments.slice(0, 3).join('/');
+    related.add(`${heroDir}/original.jpg`);
+    related.add(`${heroDir}/thumb.jpg`);
+    return Array.from(related);
+  }
+
+  if (segments[0] === 'template' && segments[2] === 'thumbnail' && (fnLower === 'main.jpg' || fnLower === 'thumb.jpg')) {
+    const tdir = segments.slice(0, 3).join('/');
+    related.add(`${tdir}/main.jpg`);
+    related.add(`${tdir}/thumb.jpg`);
+    return Array.from(related);
+  }
+
   if (segments[0] === 'invitation' && segments[1] === 'thumbnails' && fileName.endsWith('.jpg')) {
     if (fileName.startsWith('thumb_')) {
       related.add(`${dir}/${fileName.replace(/^thumb_/, '')}`);
@@ -239,6 +286,18 @@ function resolveRelatedDeleteKeys(key: string): string[] {
   }
 
   if (fileName.endsWith('.webp')) {
+    if (fileName.startsWith('thumb_')) {
+      related.add(`${dir}/${fileName.replace(/^thumb_/, '')}`);
+    } else {
+      related.add(`${dir}/thumb_${fileName}`);
+    }
+  }
+
+  if (
+    (segments[0] === 'invitation' || segments[0] === 'template') &&
+    segments[2] === 'gallery' &&
+    fileName.toLowerCase().endsWith('.jpg')
+  ) {
     if (fileName.startsWith('thumb_')) {
       related.add(`${dir}/${fileName.replace(/^thumb_/, '')}`);
     } else {
@@ -271,25 +330,13 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
     }
 
     if (kind === 'inv-hero') {
-      const originalKey = buildR2Key({ type: 'invitation', id: entityId, filename: `hero-${token}.webp` });
-      const thumbnailKey = buildR2Key({
-        type: 'invitation',
-        id: entityId,
-        filename: `thumb_hero-${token}.webp`,
-      });
+      const originalKey = `invitation/${entityId}/hero/${token}.webp`;
+      const thumbnailKey = `invitation/${entityId}/hero/thumb_${token}.webp`;
       return { originalKey: `${prefix}${originalKey}`, thumbnailKey: `${prefix}${thumbnailKey}`, assetType: 'hero' };
     }
     if (kind === 'inv-gallery') {
-      const originalKey = buildR2Key({
-        type: 'invitation',
-        id: entityId,
-        filename: `gallery-${token}.webp`,
-      });
-      const thumbnailKey = buildR2Key({
-        type: 'invitation',
-        id: entityId,
-        filename: `thumb_gallery-${token}.webp`,
-      });
+      const originalKey = `invitation/${entityId}/gallery/${token}.webp`;
+      const thumbnailKey = `invitation/${entityId}/gallery/thumb_${token}.webp`;
       return {
         originalKey: `${prefix}${originalKey}`,
         thumbnailKey: `${prefix}${thumbnailKey}`,
@@ -297,8 +344,8 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
       };
     }
     if (kind === 'tpl-thumb') {
-      const originalKey = buildR2Key({ type: 'thumbnail', id: entityId, filename: 'x' });
-      const thumbnailKey = buildR2ThumbnailCompanionKey(entityId);
+      const originalKey = `template/${entityId}/thumbnail/main.jpg`;
+      const thumbnailKey = `template/${entityId}/thumbnail/thumb.jpg`;
       return {
         originalKey: `${prefix}${originalKey}`,
         thumbnailKey: `${prefix}${thumbnailKey}`,
@@ -306,26 +353,23 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
       };
     }
     if (kind === 'tpl-asset') {
-      const originalKey = buildR2Key({ type: 'template', id: entityId, filename: `asset-${token}.webp` });
-      const thumbnailKey = buildR2Key({
-        type: 'template',
-        id: entityId,
-        filename: `thumb_asset-${token}.webp`,
-      });
+      const originalKey = `template/${entityId}/gallery/${token}.webp`;
+      const thumbnailKey = `template/${entityId}/gallery/thumb_${token}.webp`;
       return {
         originalKey: `${prefix}${originalKey}`,
         thumbnailKey: `${prefix}${thumbnailKey}`,
         assetType: 'asset',
       };
     }
+    const sessionId = crypto.randomBytes(16).toString('hex');
     const originalKey = buildR2Key({
       type: 'temp',
-      id: entityId,
+      id: sessionId,
       filename: `user-${token}.webp`,
     });
     const thumbnailKey = buildR2Key({
       type: 'temp',
-      id: entityId,
+      id: sessionId,
       filename: `thumb_user-${token}.webp`,
     });
     return {
@@ -340,12 +384,33 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
     if (!entityId) {
       throw new Error('INVALID_MEDIA_PATH');
     }
-    const originalKey = buildR2Key({ type: 'thumbnail', id: entityId, filename: 'x' });
-    const thumbnailKey = buildR2ThumbnailCompanionKey(entityId);
+    const originalKey = `template/${entityId}/thumbnail/main.jpg`;
+    const thumbnailKey = `template/${entityId}/thumbnail/thumb.jpg`;
     return {
       originalKey: `${prefix}${originalKey}`,
       thumbnailKey: `${prefix}${thumbnailKey}`,
       assetType: 'thumbnail',
+    };
+  }
+
+  if (
+    segments[0] === 'invitation' &&
+    segments.length === 4 &&
+    (segments[2] === 'hero' || segments[2] === 'gallery')
+  ) {
+    const invitationId = sanitizePathSegment(segments[1] || '');
+    const kind = segments[2];
+    const token = extractBaseName(segments[3] || '');
+    if (!invitationId) {
+      throw new Error('INVALID_MEDIA_PATH');
+    }
+    const folder = kind === 'hero' ? 'hero' : 'gallery';
+    const originalKey = `invitation/${invitationId}/${folder}/${token}.webp`;
+    const thumbnailKey = `invitation/${invitationId}/${folder}/thumb_${token}.webp`;
+    return {
+      originalKey: `${prefix}${originalKey}`,
+      thumbnailKey: `${prefix}${thumbnailKey}`,
+      assetType: kind === 'hero' ? 'hero' : 'gallery',
     };
   }
 
@@ -360,17 +425,9 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
     if (!invitationId) {
       throw new Error('INVALID_MEDIA_PATH');
     }
-    const role = kind === 'hero' ? 'hero' : 'gallery';
-    const originalKey = buildR2Key({
-      type: 'invitation',
-      id: invitationId,
-      filename: `${role}-${token}.webp`,
-    });
-    const thumbnailKey = buildR2Key({
-      type: 'invitation',
-      id: invitationId,
-      filename: `thumb_${role}-${token}.webp`,
-    });
+    const folder = kind === 'hero' ? 'hero' : 'gallery';
+    const originalKey = `invitation/${invitationId}/${folder}/${token}.webp`;
+    const thumbnailKey = `invitation/${invitationId}/${folder}/thumb_${token}.webp`;
     return {
       originalKey: `${prefix}${originalKey}`,
       thumbnailKey: `${prefix}${thumbnailKey}`,
@@ -384,12 +441,8 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
     if (!entityId) {
       throw new Error('INVALID_MEDIA_PATH');
     }
-    const originalKey = buildR2Key({ type: 'template', id: entityId, filename: `asset-${token}.webp` });
-    const thumbnailKey = buildR2Key({
-      type: 'template',
-      id: entityId,
-      filename: `thumb_asset-${token}.webp`,
-    });
+    const originalKey = `template/${entityId}/gallery/${token}.webp`;
+    const thumbnailKey = `template/${entityId}/gallery/thumb_${token}.webp`;
     return {
       originalKey: `${prefix}${originalKey}`,
       thumbnailKey: `${prefix}${thumbnailKey}`,
@@ -403,10 +456,11 @@ function resolveDirectUploadTarget(fileKey: string): ResolvedDirectUploadTarget 
     if (!userId) {
       throw new Error('INVALID_MEDIA_PATH');
     }
-    const originalKey = buildR2Key({ type: 'temp', id: userId, filename: `user-${token}.webp` });
+    const sessionId = crypto.randomBytes(16).toString('hex');
+    const originalKey = buildR2Key({ type: 'temp', id: sessionId, filename: `user-${token}.webp` });
     const thumbnailKey = buildR2Key({
       type: 'temp',
-      id: userId,
+      id: sessionId,
       filename: `thumb_user-${token}.webp`,
     });
     return {
@@ -586,14 +640,6 @@ export async function completeDirectUpload(fileKey: string): Promise<UploadImage
   };
 }
 
-function resolveInvitationOptimizedAssetPrefixFromKey(key: string): string | null {
-  const segments = key.split('/').filter(Boolean);
-  if (segments[0] !== 'invitation') return null;
-  if (segments[1] !== 'hero' && segments[1] !== 'gallery') return null;
-  if (segments.length < 4) return null;
-  return segments.slice(0, 4).join('/');
-}
-
 export async function deleteImageByUrl(fileUrl: string): Promise<boolean> {
   const normalized = fileUrl.trim();
   if (!normalized) return false;
@@ -601,9 +647,9 @@ export async function deleteImageByUrl(fileUrl: string): Promise<boolean> {
   const key = resolveKeyFromPublicUrl(normalized.split('?')[0]);
   if (!key) return false;
 
-  const assetPrefix = resolveInvitationOptimizedAssetPrefixFromKey(key);
-  if (assetPrefix) {
-    await deleteStoragePrefix(`${assetPrefix}/`);
+  const optimized = parseInvitationOptimizedOriginalKey(key);
+  if (optimized) {
+    await deleteStoragePrefix(`${optimized.basePrefix}/`);
     return true;
   }
 

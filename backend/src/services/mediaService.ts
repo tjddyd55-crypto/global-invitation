@@ -21,6 +21,7 @@ const SUPPORTED_SCOPES = new Set<MediaScope>([
   'invitationHero',
   'invitationGallery',
   'templateCover',
+  'templateHero',
   'templateAsset',
   'common',
 ]);
@@ -192,7 +193,7 @@ function resolveOwnerFromParsedObjectKey(parsed: NonNullable<ReturnType<typeof p
       ownerRefId: parsed.invitationId,
     };
   }
-  if (parsed.scope === 'templateCover' || parsed.scope === 'templateAsset') {
+  if (parsed.scope === 'templateCover' || parsed.scope === 'templateAsset' || parsed.scope === 'templateHero') {
     return {
       ownerType: 'TEMPLATE',
       ownerRefId: parsed.templateId,
@@ -273,6 +274,49 @@ async function upsertInvitationMediaReference(params: {
   });
 }
 
+async function upsertTemplateHeroInStudioConfig(params: { templateId: string; userId: string; publicUrl: string }) {
+  const [submission, templateRow] = await Promise.all([
+    prisma.templateSubmission.findFirst({
+      where: {
+        id: params.templateId,
+        creatorId: params.userId,
+      },
+      select: { studioConfig: true },
+    }),
+    prisma.template.findFirst({
+      where: {
+        id: params.templateId,
+        creatorId: params.userId,
+      },
+      select: { studioConfig: true },
+    }),
+  ]);
+
+  const mergeConfig = (existing: unknown): Prisma.InputJsonValue => {
+    const base =
+      existing && typeof existing === 'object' && !Array.isArray(existing)
+        ? { ...(existing as Record<string, unknown>) }
+        : {};
+    base.heroImage = params.publicUrl;
+    return base as Prisma.InputJsonValue;
+  };
+
+  await Promise.all([
+    submission
+      ? prisma.templateSubmission.updateMany({
+          where: { id: params.templateId, creatorId: params.userId },
+          data: { studioConfig: mergeConfig(submission.studioConfig) },
+        })
+      : Promise.resolve({ count: 0 }),
+    templateRow
+      ? prisma.template.updateMany({
+          where: { id: params.templateId, creatorId: params.userId },
+          data: { studioConfig: mergeConfig(templateRow.studioConfig) },
+        })
+      : Promise.resolve({ count: 0 }),
+  ]);
+}
+
 async function upsertTemplateMediaReference(params: {
   templateId: string;
   userId: string;
@@ -317,7 +361,7 @@ export async function createMediaPresign(
   const contentType = ensureAllowedContentType(input.contentType);
   const size = ensureAllowedSize(input.size);
 
-  if (scope === 'invitationHero' || scope === 'invitationGallery') {
+  if (scope === 'invitationHero' || scope === 'invitationGallery' || scope === 'templateHero') {
     if (contentType !== 'image/jpeg') {
       throw new Error('UNSUPPORTED_MEDIA_TYPE');
     }
@@ -496,7 +540,7 @@ export async function confirmMediaUpload(
     }
   }
 
-  if (parsed.scope === 'templateCover' || parsed.scope === 'templateAsset') {
+  if (parsed.scope === 'templateCover' || parsed.scope === 'templateAsset' || parsed.scope === 'templateHero') {
     const templateId = await resolveOwnedTemplateId(user, parsed.templateId);
     if (templateId !== parsed.templateId) {
       throw new Error('INVALID_MEDIA_OBJECT_KEY');
@@ -558,6 +602,14 @@ export async function confirmMediaUpload(
       templateId: parsed.templateId,
       userId: user.id,
       scope: parsed.scope,
+      publicUrl,
+    });
+  }
+
+  if (parsed.scope === 'templateHero') {
+    await upsertTemplateHeroInStudioConfig({
+      templateId: parsed.templateId,
+      userId: user.id,
       publicUrl,
     });
   }

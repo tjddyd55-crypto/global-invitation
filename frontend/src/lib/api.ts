@@ -1,4 +1,4 @@
-﻿import type { Invitation } from '@/src/models/invitation';
+import type { Invitation } from '@/src/models/invitation';
 import { buildAuthHeaders, ensureGuestToken } from '@/src/lib/auth';
 import { buildApiUrl, buildRequestInit } from '@/src/lib/apiBase';
 import { syncGuestTokenFromResponse } from '@/src/lib/guestToken';
@@ -304,4 +304,96 @@ export async function getSharedInvitationBySlug(shareSlug: string): Promise<Invi
     throw new Error('Failed to fetch shared invitation');
   }
   return response.json();
+}
+
+export type TemplateSearchHit = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  templateKey: string;
+};
+
+export async function fetchTemplateSearchSuggestions(query: string): Promise<TemplateSearchHit[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const response = await fetch(
+    buildApiUrl(`/api/templates/search?q=${encodeURIComponent(q)}`),
+    buildRequestInit({ cache: 'no-store' })
+  );
+  if (!response.ok) {
+    return [];
+  }
+  const data = (await response.json()) as unknown;
+  return Array.isArray(data) ? (data as TemplateSearchHit[]) : [];
+}
+
+export type HubNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  linkPath: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export async function fetchHubNotifications(): Promise<HubNotification[]> {
+  const response = await fetch(
+    buildApiUrl('/api/notifications'),
+    buildRequestInit({
+      headers: buildAuthHeaders(),
+      cache: 'no-store',
+    })
+  );
+  if (response.status === 401) {
+    return [];
+  }
+  if (!response.ok) {
+    return [];
+  }
+  const data = (await response.json()) as unknown;
+  return Array.isArray(data) ? (data as HubNotification[]) : [];
+}
+
+export async function markHubNotificationRead(notificationId: string): Promise<boolean> {
+  const response = await fetch(
+    buildApiUrl(`/api/notifications/${encodeURIComponent(notificationId)}/read`),
+    buildRequestInit({
+      method: 'PATCH',
+      headers: buildAuthHeaders(),
+      cache: 'no-store',
+    })
+  );
+  return response.ok;
+}
+
+export async function markAllHubNotificationsRead(): Promise<boolean> {
+  const response = await fetch(
+    buildApiUrl('/api/notifications/read-all'),
+    buildRequestInit({
+      method: 'PATCH',
+      headers: buildAuthHeaders(),
+      cache: 'no-store',
+    })
+  );
+  return response.ok;
+}
+
+export async function fetchRecentInvitationsForHub(): Promise<InvitationSummary[]> {
+  const response = await fetch(
+    buildApiUrl('/api/invitations/recent'),
+    buildRequestInit({
+      headers: buildAuthHeaders(),
+      cache: 'no-store',
+    })
+  );
+  if (response.status === 401) {
+    return [];
+  }
+  if (!response.ok) {
+    return [];
+  }
+  const data = (await response.json()) as unknown;
+  return Array.isArray(data) ? (data as InvitationSummary[]) : [];
 }

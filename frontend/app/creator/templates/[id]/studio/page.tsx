@@ -56,6 +56,10 @@ export default function CreatorTemplateStudioPage() {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [studioHeroImage, setStudioHeroImage] = useState<string | undefined>(undefined);
+  const [studioGalleryImages, setStudioGalleryImages] = useState<string[]>([]);
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
   const [accessReady, setAccessReady] = useState(false);
 
   useEffect(() => {
@@ -82,6 +86,8 @@ export default function CreatorTemplateStudioPage() {
           setThemeConfig(baseConfig.theme);
           setSectionsConfig(baseConfig.sections);
           setSectionOrder(baseConfig.sectionOrder);
+          setStudioHeroImage(baseConfig.heroImage);
+          setStudioGalleryImages(baseConfig.galleryImages ?? []);
         }
       } catch (loadError) {
         if (!isMounted) return;
@@ -112,8 +118,10 @@ export default function CreatorTemplateStudioPage() {
       theme: themeConfig,
       sections: sectionsConfig,
       sectionOrder,
+      ...(studioHeroImage ? { heroImage: studioHeroImage } : {}),
+      ...(studioGalleryImages.length > 0 ? { galleryImages: studioGalleryImages } : {}),
     };
-  }, [activeCategory, sectionOrder, sectionsConfig, themeConfig]);
+  }, [activeCategory, sectionOrder, sectionsConfig, themeConfig, studioGalleryImages, studioHeroImage]);
 
   const canSubmit = Boolean(
     submission &&
@@ -235,6 +243,46 @@ export default function CreatorTemplateStudioPage() {
     }
   };
 
+  const handleHeroUpload = async (file: File) => {
+    setUploadingHero(true);
+    setError(null);
+    try {
+      const uploaded = await uploadMediaImage(file, {
+        context: 'template',
+        entityId: submission.id,
+        assetType: 'hero',
+      });
+      setStudioHeroImage(uploaded.url);
+      setSuccess('Hero image uploaded');
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : '히어로 이미지 업로드에 실패했습니다.');
+    } finally {
+      setUploadingHero(false);
+    }
+  };
+
+  const handleGalleryAdd = async (files: FileList) => {
+    setUploadingGallery(true);
+    setError(null);
+    try {
+      const additions: string[] = [];
+      for (const file of Array.from(files)) {
+        const uploaded = await uploadMediaImage(file, {
+          context: 'template',
+          entityId: submission.id,
+          assetType: 'gallery',
+        });
+        additions.push(uploaded.url);
+      }
+      setStudioGalleryImages((current) => [...current, ...additions]);
+      setSuccess('Gallery images uploaded');
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : '갤러리 업로드에 실패했습니다.');
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
   return (
     <TemplateCreatorShell
       title={`Studio: ${metaValue.name || 'Untitled'}`}
@@ -285,6 +333,14 @@ export default function CreatorTemplateStudioPage() {
             sectionOrder={sectionOrder}
             onSectionsChange={setSectionsConfig}
             onSectionOrderChange={setSectionOrder}
+            heroImageUrl={studioHeroImage}
+            galleryImageUrls={studioGalleryImages}
+            heroUploading={uploadingHero}
+            galleryUploading={uploadingGallery}
+            onPickHero={(file) => void handleHeroUpload(file)}
+            onAddGallery={(list) => void handleGalleryAdd(list)}
+            onRemoveGalleryUrl={(url) => setStudioGalleryImages((prev) => prev.filter((u) => u !== url))}
+            onClearHero={() => setStudioHeroImage(undefined)}
           />
           <ThemeConfigPanel value={themeConfig} onChange={setThemeConfig} />
         </>

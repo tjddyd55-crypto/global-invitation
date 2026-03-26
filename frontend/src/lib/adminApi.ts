@@ -243,6 +243,8 @@ export async function getAdminTemplate(templateId: string) {
 
 export type AdminTemplatePreviewBundle = {
   template: TemplateDefinition;
+  /** 템플릿 레코드와 동일; 클라이언트 계약상 최상위로도 내려줍니다. */
+  studioConfig?: Record<string, unknown> | null;
   previewMode: 'sample' | 'real';
   sampleData: Record<string, unknown> | null;
 };

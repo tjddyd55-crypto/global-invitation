@@ -55,6 +55,9 @@ export type CreatorStudioConfig = {
   theme: CreatorThemeConfig;
   sections: CreatorSectionMap;
   sectionOrder: string[];
+  /** 스튜디오에서 업로드한 대표 이미지 (미리보기·템플릿 샘플 병합용) */
+  heroImage?: string;
+  galleryImages?: string[];
 };
 
 export const CREATOR_ACTIVE_CATEGORIES: CreatorActiveCategory[] = ['wedding', 'funeral', 'message'];
@@ -204,10 +207,22 @@ export function parseStudioConfig(value: unknown): CreatorStudioConfig | null {
   const normalizedOrder = sectionOrderInput.filter((section) => allowed.has(section));
   const missing = base.sectionOrder.filter((section) => !normalizedOrder.includes(section));
 
+  const heroImage =
+    typeof value.heroImage === 'string' && value.heroImage.trim() ? value.heroImage.trim() : undefined;
+  const galleryRaw = value.galleryImages;
+  const galleryImages =
+    Array.isArray(galleryRaw) && galleryRaw.length > 0
+      ? galleryRaw
+          .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+          .map((u) => u.trim())
+      : undefined;
+
   return {
     category: categoryValue,
     theme: mergedTheme,
     sections: mergedSections,
     sectionOrder: [...normalizedOrder, ...missing],
+    ...(heroImage ? { heroImage } : {}),
+    ...(galleryImages && galleryImages.length > 0 ? { galleryImages } : {}),
   };
 }

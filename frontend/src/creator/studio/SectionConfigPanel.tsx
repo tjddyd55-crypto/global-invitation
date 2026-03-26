@@ -8,6 +8,7 @@ import type {
 } from '@/src/creator/studioConfig';
 import { CREATOR_CATEGORY_SECTIONS } from '@/src/creator/studioConfig';
 import { useI18n } from '@/src/contexts/I18nContext';
+import { cdnImageSrc } from '@/src/lib/image';
 import { getStudioSectionLabel } from './sectionLabels';
 import styles from './TemplateCreatorStudio.module.css';
 
@@ -17,6 +18,14 @@ type SectionConfigPanelProps = {
   sectionOrder: string[];
   onSectionsChange: (next: CreatorSectionMap) => void;
   onSectionOrderChange: (next: string[]) => void;
+  heroImageUrl?: string;
+  galleryImageUrls?: string[];
+  heroUploading?: boolean;
+  galleryUploading?: boolean;
+  onPickHero?: (file: File) => void;
+  onAddGallery?: (files: FileList) => void;
+  onRemoveGalleryUrl?: (url: string) => void;
+  onClearHero?: () => void;
 };
 
 function parseOrder(value: string, fallback: number): number {
@@ -30,6 +39,14 @@ export default function SectionConfigPanel({
   sectionOrder,
   onSectionsChange,
   onSectionOrderChange,
+  heroImageUrl,
+  galleryImageUrls = [],
+  heroUploading = false,
+  galleryUploading = false,
+  onPickHero,
+  onAddGallery,
+  onRemoveGalleryUrl,
+  onClearHero,
 }: SectionConfigPanelProps) {
   const { language } = useI18n();
   const sectionKeys = CREATOR_CATEGORY_SECTIONS[category];
@@ -205,6 +222,94 @@ export default function SectionConfigPanel({
                   </label>
                 </div>
               )}
+              {sectionKey === 'hero' && onPickHero ? (
+                <div className={styles.stack} style={{ marginTop: 8 }}>
+                  <span className={styles.helperText}>Hero preview image (saved in studioConfig.heroImage)</span>
+                  {heroImageUrl ? (
+                    <img
+                      src={cdnImageSrc(heroImageUrl)}
+                      alt=""
+                      style={{ maxWidth: '100%', maxHeight: 140, borderRadius: 8, objectFit: 'cover' }}
+                    />
+                  ) : null}
+                  <div className={styles.buttonRow}>
+                    <label className={`${styles.button} ${styles.buttonSecondary}`} style={{ cursor: 'pointer' }}>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        style={{ display: 'none' }}
+                        disabled={heroUploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = '';
+                          if (file) onPickHero(file);
+                        }}
+                      />
+                      {heroUploading ? 'Uploading…' : 'Upload hero'}
+                    </label>
+                    {heroImageUrl && onClearHero ? (
+                      <button type="button" className={styles.button} onClick={onClearHero} disabled={heroUploading}>
+                        Clear hero
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+              {sectionKey === 'gallery' && onAddGallery ? (
+                <div className={styles.stack} style={{ marginTop: 8 }}>
+                  <span className={styles.helperText}>Gallery (saved in studioConfig.galleryImages)</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {galleryImageUrls.map((url) => (
+                      <div key={url} style={{ position: 'relative' }}>
+                        <img
+                          src={cdnImageSrc(url)}
+                          alt=""
+                          style={{ width: 72, height: 72, borderRadius: 8, objectFit: 'cover', display: 'block' }}
+                        />
+                        {onRemoveGalleryUrl ? (
+                          <button
+                            type="button"
+                            aria-label="Remove gallery image"
+                            onClick={() => onRemoveGalleryUrl(url)}
+                            disabled={galleryUploading}
+                            style={{
+                              position: 'absolute',
+                              top: 2,
+                              right: 2,
+                              width: 22,
+                              height: 22,
+                              borderRadius: 4,
+                              border: 'none',
+                              background: 'rgba(0,0,0,0.55)',
+                              color: '#fff',
+                              cursor: 'pointer',
+                              lineHeight: 1,
+                              fontSize: 14,
+                            }}
+                          >
+                            ×
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                  <label className={`${styles.button} ${styles.buttonSecondary}`} style={{ cursor: 'pointer' }}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      style={{ display: 'none' }}
+                      disabled={galleryUploading}
+                      onChange={(e) => {
+                        const list = e.target.files;
+                        e.target.value = '';
+                        if (list?.length) onAddGallery(list);
+                      }}
+                    />
+                    {galleryUploading ? 'Uploading…' : 'Add gallery images'}
+                  </label>
+                </div>
+              ) : null}
               {sectionKey === 'location' && (
                 <div className={styles.inlineGrid}>
                   <label className={styles.field}>

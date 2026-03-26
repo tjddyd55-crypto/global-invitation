@@ -71,8 +71,28 @@ model User {
   createdMediaFiles    MediaFile[] @relation("MediaFileCreatedBy")
   creditWallet         UserCreditWallet?
   creditTransactions   CreditTransaction[]
+  notifications        Notification[]
 
   @@map("users")
+}
+
+model Notification {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  type       String    @map("type")
+  title      String
+  body       String?
+  linkPath   String?   @map("link_path")
+  readAt     DateTime? @map("read_at") @db.Timestamptz(6)
+  metadata   Json?     @map("metadata") @db.JsonB
+  dedupeKey  String?   @map("dedupe_key")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, dedupeKey, createdAt])
+  @@map("notifications")
 }
 
 model Invitation {

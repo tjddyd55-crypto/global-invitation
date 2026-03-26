@@ -30,6 +30,9 @@ router.post('/:slug/view', async (req, res) => {
       select: {
         id: true,
         isPublished: true,
+        userId: true,
+        shareSlug: true,
+        title: true,
       },
     });
 
@@ -80,6 +83,37 @@ router.post('/:slug/view', async (req, res) => {
         countryCode: resolveCountryCode(req),
       },
     });
+
+    if (invitation.userId) {
+      const dedupeKey = `${invitation.id}:INVITATION_VIEW`;
+      const since = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const recent = await prisma.notification.findFirst({
+        where: {
+          userId: invitation.userId,
+          dedupeKey,
+          createdAt: { gte: since },
+        },
+        select: { id: true },
+      });
+
+      if (!recent) {
+        try {
+          await prisma.notification.create({
+            data: {
+              userId: invitation.userId,
+              type: 'INVITATION_VIEW',
+              title: '초대장 방문',
+              body: '공개 초대장에 새 방문이 기록되었습니다.',
+              linkPath: invitation.shareSlug ? `/i/${invitation.shareSlug}` : `/editor/${invitation.id}`,
+              dedupeKey,
+              metadata: { invitationId: invitation.id },
+            },
+          });
+        } catch (notifyError) {
+          console.warn('Failed to create view notification:', notifyError);
+        }
+      }
+    }
 
     return res.status(201).json({ success: true, deduped: false });
   } catch (error) {

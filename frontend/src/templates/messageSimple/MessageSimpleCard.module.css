@@ -17,14 +17,17 @@
 
 .hero {
   width: 100%;
+  aspect-ratio: 16 / 9;
   border-radius: 18px;
   overflow: hidden;
   background: #e6e1da;
+  position: relative;
 }
 
 .heroImage {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 

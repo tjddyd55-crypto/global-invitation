@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+import { applyStudioConfigToPreviewData } from '@/src/lib/studioPreviewMediaMerge';
 import type { TemplatePreviewData } from '@/src/templates/previewData';
 import { getTemplatePreviewData, getTemplateRegistryEntry } from '@/src/templates/registry';
 
@@ -15,6 +17,8 @@ function safeStudioConfig(studioConfig: unknown): object {
 
 type TemplatePreviewWrapperProps = {
   templateKey: string;
+  /** `sampleData`보다 우선합니다(관리자 미리보기 등 병합 결과). */
+  data?: TemplatePreviewData | null;
   sampleData?: TemplatePreviewData | null;
   studioConfig?: unknown;
   variant?: 'default' | 'phone';
@@ -72,6 +76,7 @@ function buildPreviewProps(templateKey: string, data: unknown, studioConfig?: un
 
 export default function TemplatePreviewWrapper({
   templateKey,
+  data,
   sampleData,
   studioConfig,
   variant = 'default',
@@ -88,8 +93,28 @@ export default function TemplatePreviewWrapper({
   }
 
   const registryDefault = getTemplatePreviewData(key);
-  const previewData = (sampleData ?? registryDefault ?? {}) as TemplatePreviewData;
-  const safeConfig = safeStudioConfig(studioConfig);
+
+  const mergedBase = useMemo(
+    () =>
+      ({
+        ...(registryDefault ?? {}),
+        ...(sampleData ?? {}),
+        ...(data ?? {}),
+      }) as TemplatePreviewData,
+    [registryDefault, sampleData, data]
+  );
+
+  const finalData = useMemo(() => {
+    const fd = applyStudioConfigToPreviewData(mergedBase, studioConfig);
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console -- preview 데이터 파이프라인 확인용
+      console.log('[TemplatePreview] FINAL DATA', key, {
+        heroImage: (fd as Record<string, unknown>).heroImage,
+        galleryImages: (fd as Record<string, unknown>).galleryImages,
+      });
+    }
+    return fd;
+  }, [mergedBase, studioConfig, key]);
 
   const scale = resolvePreviewScale(key);
   const isPhone = variant === 'phone';
@@ -114,7 +139,7 @@ export default function TemplatePreviewWrapper({
           pointerEvents: 'none',
         }}
       >
-        <Renderer {...buildPreviewProps(key, previewData, safeConfig)} />
+        <Renderer {...buildPreviewProps(key, finalData, studioConfig)} />
       </div>
     </div>
   );

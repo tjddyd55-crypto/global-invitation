@@ -1,8 +1,9 @@
 /**
- * R2 객체 키는 항상 `invitation/` 접두사 아래에 둔다 (region path·무작위 루트 금지).
+ * 비엔티티 임시 업로드만 `invitation/temp/...` 를 사용합니다.
+ * 초대장·템플릿 본문 경로는 `lib/media/keys.ts` 의 entity 규칙을 사용합니다.
  */
 
-export type R2KeyType = 'template' | 'invitation' | 'thumbnail' | 'temp';
+export type R2KeyType = 'temp';
 
 function sanitizeId(id: string): string {
   const normalized = id.trim().replace(/[^a-zA-Z0-9_-]/g, '');
@@ -23,44 +24,21 @@ function sanitizeFilename(filename: string): string {
   return base;
 }
 
-export function buildR2Key(params: {
-  type: R2KeyType;
-  id: string;
-  filename: string;
-}): string {
+/** presign 직전 스테이징 등: `invitation/temp/{session}/{file}` */
+export function buildR2Key(params: { type: 'temp'; id: string; filename: string }): string {
   const id = sanitizeId(params.id);
-
-  switch (params.type) {
-    case 'template': {
-      const filename = sanitizeFilename(params.filename);
-      return `invitation/templates/${id}/${filename}`;
-    }
-    case 'invitation': {
-      const filename = sanitizeFilename(params.filename);
-      return `invitation/invitations/${id}/${filename}`;
-    }
-    case 'thumbnail':
-      return `invitation/thumbnails/${id}.jpg`;
-    case 'temp': {
-      const filename = sanitizeFilename(params.filename);
-      return `invitation/temp/${id}-${filename}`;
-    }
-    default:
-      throw new Error('INVALID_R2_TYPE');
-  }
+  const filename = sanitizeFilename(params.filename);
+  return `invitation/temp/${id}/${filename}`;
 }
 
-/** 템플릿 썸네일 보조(작은 이미지) — 메인 `invitation/thumbnails/{id}.jpg` 와 쌍 */
+/** @deprecated 구버전 `invitation/thumbnails/thumb_{id}.jpg` — 신규는 `template/{id}/thumbnail/thumb.jpg` */
 export function buildR2ThumbnailCompanionKey(entityId: string): string {
   const id = sanitizeId(entityId);
   return `invitation/thumbnails/thumb_${id}.jpg`;
 }
 
 export function mapScopeToType(scope: string): R2KeyType {
-  const s = scope.toLowerCase();
-  if (s.includes('thumbnail')) return 'thumbnail';
-  if (s.includes('template')) return 'template';
-  if (s.includes('invitation')) return 'invitation';
+  void scope;
   return 'temp';
 }
 

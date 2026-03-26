@@ -435,6 +435,38 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/invitations/recent — 헤더 퀵 액세스용 (로그인 사용자만)
+router.get('/recent', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const invitations = await prisma.invitation.findMany({
+      where: { userId: user.id, isDeleted: false },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        slug: true,
+        shareSlug: true,
+        title: true,
+        templateKey: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        publishedAt: true,
+      },
+    });
+
+    return res.status(200).json(invitations);
+  } catch (error) {
+    console.error('Error listing recent invitations:', error);
+    return res.status(500).json({ error: 'Failed to list recent invitations' });
+  }
+});
+
 // POST /api/invitations/guest - Create invitation for guest session
 router.post('/guest', async (req, res) => {
   try {

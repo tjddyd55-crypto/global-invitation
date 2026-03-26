@@ -49,6 +49,43 @@ async function listMarketplaceTemplates(req: Request, res: Response) {
 router.get('/', listMarketplaceTemplates);
 router.get('/marketplace', listMarketplaceTemplates);
 
+router.get('/search', async (req, res) => {
+  try {
+    const raw = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (!raw) {
+      return res.status(200).json([]);
+    }
+
+    const templates = await prisma.template.findMany({
+      where: {
+        status: 'PUBLISHED',
+        isActive: true,
+        isDeleted: false,
+        OR: [
+          { name: { contains: raw, mode: 'insensitive' } },
+          { description: { contains: raw, mode: 'insensitive' } },
+          { slug: { contains: raw, mode: 'insensitive' } },
+          { templateKey: { contains: raw, mode: 'insensitive' } },
+        ],
+      },
+      take: 10,
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        description: true,
+        templateKey: true,
+      },
+    });
+
+    return res.status(200).json(templates);
+  } catch (error) {
+    console.error('Error searching templates:', error);
+    return res.status(500).json({ error: 'TEMPLATE_SEARCH_FAILED' });
+  }
+});
+
 router.get('/my', async (req, res) => {
   try {
     const user = await getAuthUser(req);
@@ -178,6 +215,7 @@ router.get('/:identifier/preview', async (req, res) => {
 
     return res.status(200).json({
       template,
+      studioConfig: template.studioConfig ?? null,
       previewMode: isReal ? 'real' : 'sample',
       sampleData: isReal ? null : buildTemplatePreviewSampleData(template),
     });

@@ -82,7 +82,7 @@ export async function prepareInvitationOptimizedUploads(
 
   const uploads: InvitationVariantUpload[] = [
     { key: `${prefix}/original.webp`, buffer: originalWebp, contentType: 'image/webp' },
-    { key: `${prefix}/small.jpg`, buffer: smallJpeg, contentType: 'image/jpeg' },
+    { key: `${prefix}/thumb.jpg`, buffer: smallJpeg, contentType: 'image/jpeg' },
     { key: `${prefix}/small.webp`, buffer: smallWebp, contentType: 'image/webp' },
     { key: `${prefix}/medium.jpg`, buffer: mediumJpeg, contentType: 'image/jpeg' },
     { key: `${prefix}/medium.webp`, buffer: mediumWebp, contentType: 'image/webp' },

@@ -146,6 +146,9 @@ router.post('/', async (req, res) => {
       where: { slug: invitationSlug, isDeleted: false },
       select: {
         id: true,
+        slug: true,
+        userId: true,
+        title: true,
         isPublished: true,
         data: true,
         rsvpDeadline: true,
@@ -209,6 +212,24 @@ router.post('/', async (req, res) => {
         createdAt: true,
       },
     });
+
+    const isNew = !existing;
+    if (isNew && invitation.userId) {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: invitation.userId,
+            type: 'RSVP_NEW',
+            title: '새 RSVP 응답',
+            body: `${payload.guestName}님이 ${payload.attendance}로 응답했습니다.`,
+            linkPath: `/editor/${invitation.id}`,
+            metadata: { invitationId: invitation.id, rsvpId: rsvp.id },
+          },
+        });
+      } catch (notifyError) {
+        console.warn('Failed to create RSVP notification:', notifyError);
+      }
+    }
 
     return res.status(existing ? 200 : 201).json({
       success: true,

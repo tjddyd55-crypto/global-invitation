@@ -19,6 +19,9 @@ import { cdnImageSrc } from '@/src/lib/image';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import DisabledPlaceholder from './DisabledPlaceholder';
 
+/** 빈 히어로 URL 시 broken icon 방지 (레지스트리 기본과 동일 자산) */
+const WEDDING_HERO_PREVIEW_FALLBACK = '/images/wedding/classic/hero.jpg';
+
 /** localStorage 키: invitation_rsvp_${slug}. 서버/API 호출 없음. */
 const RSVP_STORAGE_PREFIX = 'invitation_rsvp_';
 function getRsvpStorageKey(slug: string): string {
@@ -140,10 +143,11 @@ export default function WeddingClassicInvitation({
   if (!data) return null;
 
   const r = data;
+  const heroImage = (typeof r.heroImage === 'string' && r.heroImage.trim() ? r.heroImage : '') || WEDDING_HERO_PREVIEW_FALLBACK;
+  const galleryImages = Array.isArray(r.galleryImages) ? r.galleryImages : [];
   const hasEventSummary = Boolean(r?.weddingDateTime ?? r?.venueName);
   const hasLocation = Boolean(r?.address);
   const hasProgram = Boolean(r?.weddingDate);
-  const galleryImages = safeArray(r?.galleryImages);
   const hasGallery = Array.isArray(galleryImages) && galleryImages.length > 0;
   const introText = safeArray(r?.introText);
   const hasSpecialNotes = introText.length > 0 || Boolean(r?.introQuote);
@@ -179,7 +183,7 @@ export default function WeddingClassicInvitation({
       <section className={styles.hero}>
         <img
           className={styles.heroImage}
-          src={cdnImageSrc(r.heroImage ?? '')}
+          src={cdnImageSrc(heroImage)}
           alt={t(I18N_KEYS.weddingClassic.heroImageAlt)}
           loading="eager"
           fetchPriority="high"
