@@ -4,7 +4,6 @@ import Link from 'next/link';
 import styles from './MarketingLayout.module.css';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
-import Navbar from '@/src/components/Navbar';
 
 type MarketingLayoutProps = {
   children: React.ReactNode;
@@ -15,8 +14,6 @@ export default function MarketingLayout({ children }: MarketingLayoutProps) {
 
   return (
     <div className={styles.page}>
-      <Navbar />
-
       <main className={styles.main}>{children}</main>
 
       <footer className={styles.footer}>

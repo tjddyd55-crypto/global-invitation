@@ -2,11 +2,16 @@
 /* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import MarketingLayout from '@/src/components/MarketingLayout';
 import { loginWithPassword, setStoredSession } from '@/src/lib/auth';
 import { loginAdmin } from '@/src/lib/adminApi';
+import {
+  consumeStoredLoginRedirect,
+  LOGIN_REDIRECT_STORAGE_KEY,
+  resolveLoginRedirectForStorage,
+} from '@/src/lib/loginRedirect';
 import styles from './login.module.css';
 
 function buildAdminIdCandidates(input: string): string[] {
@@ -26,12 +31,22 @@ function buildAdminIdCandidates(input: string): string[] {
   return Array.from(new Set(candidates));
 }
 
-export default function LoginPage() {
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const redirect = resolveLoginRedirectForStorage(
+      searchParams.get('redirect'),
+      typeof document !== 'undefined' ? document.referrer : '',
+      typeof window !== 'undefined' ? window.location.origin : ''
+    );
+    sessionStorage.setItem(LOGIN_REDIRECT_STORAGE_KEY, redirect);
+  }, [searchParams]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,15 +66,8 @@ export default function LoginPage() {
         user: result.user,
       });
 
-      if (result.user.role === 'CREATOR') {
-        router.replace('/creator/dashboard');
-        return;
-      }
-      if (result.user.role === 'ADMIN') {
-        router.replace('/admin');
-        return;
-      }
-      router.replace('/templates');
+      const redirectTo = consumeStoredLoginRedirect();
+      router.replace(redirectTo);
     } catch (loginError) {
       try {
         const adminIdCandidates = buildAdminIdCandidates(email);
@@ -76,7 +84,8 @@ export default function LoginPage() {
         if (!authenticated) {
           throw new Error('관리자 로그인에 실패했습니다.');
         }
-        router.replace('/admin/templates');
+        const redirectTo = consumeStoredLoginRedirect();
+        router.replace(redirectTo === '/' ? '/admin/templates' : redirectTo);
         return;
       } catch {
         setError(loginError instanceof Error ? loginError.message : '로그인에 실패했습니다.');
@@ -131,5 +140,23 @@ export default function LoginPage() {
         </div>
       </div>
     </MarketingLayout>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <MarketingLayout>
+          <div className={styles.page}>
+            <div className={styles.card}>
+              <p className={styles.subtitle}>로딩 중...</p>
+            </div>
+          </div>
+        </MarketingLayout>
+      }
+    >
+      <LoginPageInner />
+    </Suspense>
   );
 }

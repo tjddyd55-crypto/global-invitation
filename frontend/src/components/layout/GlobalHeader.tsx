@@ -11,12 +11,15 @@ import {
   logoutCurrentSession,
   type AuthUser,
 } from '@/src/lib/auth';
+import { buildLoginHref } from '@/src/lib/loginRedirect';
 import LanguageSelector from '@/src/components/LanguageSelector';
-import styles from './Navbar.module.css';
+import styles from '@/src/components/Navbar.module.css';
 
-export default function Navbar() {
+export default function GlobalHeader() {
   const pathname = usePathname();
   const router = useRouter();
+  const loginHref = buildLoginHref(pathname || '/');
+
   const [menuOpen, setMenuOpen] = useState(false);
   const initialCachedUser = getCachedNavbarUserSnapshot();
   const [loadingAuth, setLoadingAuth] = useState(initialCachedUser === undefined);
@@ -50,7 +53,20 @@ export default function Navbar() {
     router.replace('/');
   };
 
-  const authMenu = () => {
+  const mainNav = (
+    <>
+      <Link href="/">홈</Link>
+      <Link href="/templates">템플릿</Link>
+      <Link href="/create">초대장 만들기</Link>
+      <Link href="/my-invitations">내 초대장</Link>
+      <Link href="/creator/dashboard" data-testid="creator-dashboard-link">
+        크리에이터
+      </Link>
+      <Link href="/admin/templates">관리자</Link>
+    </>
+  );
+
+  const authControls = () => {
     if (loadingAuth) {
       return <span className={styles.loading}>인증 확인 중...</span>;
     }
@@ -58,7 +74,7 @@ export default function Navbar() {
     if (!user) {
       return (
         <>
-          <Link href="/login" className={styles.authLink} data-testid="login-button">
+          <Link href={loginHref} className={styles.authLink} data-testid="login-button">
             로그인
           </Link>
           <Link href="/signup" className={styles.authLinkPrimary} data-testid="signup-button">
@@ -68,60 +84,15 @@ export default function Navbar() {
       );
     }
 
-    if (user.role === 'CREATOR') {
-      return (
-        <>
-          <Link
-            href="/creator/dashboard"
-            className={styles.authLink}
-            data-testid="creator-dashboard-link"
-          >
-            Creator Dashboard
-          </Link>
-          <button
-            type="button"
-            className={styles.logoutButton}
-            onClick={() => void handleLogout()}
-            data-testid="logout-button"
-          >
-            로그아웃
-          </button>
-        </>
-      );
-    }
-
-    if (user.role === 'ADMIN') {
-      return (
-        <>
-          <Link href="/admin" className={styles.authLink}>
-            Admin
-          </Link>
-          <button
-            type="button"
-            className={styles.logoutButton}
-            onClick={() => void handleLogout()}
-            data-testid="logout-button"
-          >
-            로그아웃
-          </button>
-        </>
-      );
-    }
-
     return (
-      <>
-        <Link href="/dashboard" className={styles.authLink}>
-          내 대시보드
-        </Link>
-        <button
-          type="button"
-          className={styles.logoutButton}
-          onClick={() => void handleLogout()}
-          data-testid="logout-button"
-        >
-          로그아웃
-        </button>
-      </>
+      <button
+        type="button"
+        className={styles.logoutButton}
+        onClick={() => void handleLogout()}
+        data-testid="logout-button"
+      >
+        로그아웃
+      </button>
     );
   };
 
@@ -132,16 +103,12 @@ export default function Navbar() {
           <Link href="/" className={styles.brand}>
             Global Invitation
           </Link>
-          <nav className={styles.desktopMenu}>
-            <Link href="/">Home</Link>
-            <Link href="/templates">템플릿</Link>
-            <Link href="/create">초대장 만들기</Link>
-          </nav>
+          <nav className={styles.desktopMenu}>{mainNav}</nav>
         </div>
 
         <div className={styles.right}>
           <LanguageSelector />
-          {authMenu()}
+          {authControls()}
         </div>
 
         <button
@@ -157,45 +124,39 @@ export default function Navbar() {
       {menuOpen && (
         <div className={styles.mobilePanel}>
           <Link href="/" onClick={() => setMenuOpen(false)}>
-            Home
+            홈
           </Link>
           <Link href="/templates" onClick={() => setMenuOpen(false)}>
-            Templates
+            템플릿
           </Link>
           <Link href="/create" onClick={() => setMenuOpen(false)}>
-            Create Invitation
+            초대장 만들기
+          </Link>
+          <Link href="/my-invitations" onClick={() => setMenuOpen(false)}>
+            내 초대장
+          </Link>
+          <Link
+            href="/creator/dashboard"
+            onClick={() => setMenuOpen(false)}
+            data-testid="creator-dashboard-link"
+          >
+            크리에이터
+          </Link>
+          <Link href="/admin/templates" onClick={() => setMenuOpen(false)}>
+            관리자
           </Link>
           <div className={styles.mobileLanguage}>
             <LanguageSelector variant="mobile" />
           </div>
           {!user && (
             <>
-              <Link href="/login" onClick={() => setMenuOpen(false)} data-testid="login-button">
-                Login
+              <Link href={loginHref} onClick={() => setMenuOpen(false)} data-testid="login-button">
+                로그인
               </Link>
               <Link href="/signup" onClick={() => setMenuOpen(false)} data-testid="signup-button">
-                Creator Signup
+                크리에이터 시작하기
               </Link>
             </>
-          )}
-          {user?.role === 'USER' && (
-            <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
-              Dashboard
-            </Link>
-          )}
-          {user?.role === 'CREATOR' && (
-            <Link
-              href="/creator/dashboard"
-              onClick={() => setMenuOpen(false)}
-              data-testid="creator-dashboard-link"
-            >
-              Creator Dashboard
-            </Link>
-          )}
-          {user?.role === 'ADMIN' && (
-            <Link href="/admin" onClick={() => setMenuOpen(false)}>
-              Admin
-            </Link>
           )}
           {user && (
             <button
@@ -204,7 +165,7 @@ export default function Navbar() {
               onClick={() => void handleLogout()}
               data-testid="logout-button"
             >
-              Logout
+              로그아웃
             </button>
           )}
         </div>

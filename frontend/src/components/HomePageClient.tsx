@@ -4,7 +4,6 @@ import Link from 'next/link';
 import styles from './HomePageClient.module.css';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
-import Navbar from '@/src/components/Navbar';
 
 type Translate = (key: string) => string;
 
@@ -81,7 +80,6 @@ export default function HomePageClient() {
 
   return (
     <div>
-      <Navbar />
       <HeroSection t={t} />
       <FeaturesSection t={t} />
       <PricingSummarySection t={t} />
