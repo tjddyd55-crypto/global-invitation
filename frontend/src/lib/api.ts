@@ -1,6 +1,7 @@
-import type { Invitation } from '@/src/models/invitation';
-import { buildAuthHeaders, getGuestToken } from '@/src/lib/auth';
-import { buildApiUrl } from '@/src/lib/apiBase';
+﻿import type { Invitation } from '@/src/models/invitation';
+import { buildAuthHeaders, ensureGuestToken } from '@/src/lib/auth';
+import { buildApiUrl, buildRequestInit } from '@/src/lib/apiBase';
+import { syncGuestTokenFromResponse } from '@/src/lib/guestToken';
 
 export type { Invitation };
 
@@ -47,27 +48,29 @@ export interface InvitationSummary {
 // Create invitation
 export async function createInvitation(templateKey?: string, guestToken?: string): Promise<CreateInvitationResponse> {
   try {
-    const response = await fetch(buildApiUrl('/api/invitations'), {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...buildAuthHeaders(),
-      },
-      body: templateKey
-        ? JSON.stringify({ templateKey, guestToken: guestToken || getGuestToken() })
-        : JSON.stringify({ guestToken: guestToken || getGuestToken() }),
-    });
+    const gt = guestToken || ensureGuestToken();
+    const response = await fetch(
+      buildApiUrl('/api/invitations'),
+      buildRequestInit({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...buildAuthHeaders(),
+        },
+        body: templateKey ? JSON.stringify({ templateKey, guestToken: gt }) : JSON.stringify({ guestToken: gt }),
+      })
+    );
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
       throw new Error(`Failed to create invitation: ${response.status} ${errorText}`);
     }
 
+    syncGuestTokenFromResponse(response);
     return response.json();
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.');
+      throw new Error('諛깆뿏???쒕쾭???곌껐?????놁뒿?덈떎. ?쒕쾭媛 ?ㅽ뻾 以묒씤吏 ?뺤씤?섏꽭??');
     }
     throw error;
   }
@@ -75,10 +78,12 @@ export async function createInvitation(templateKey?: string, guestToken?: string
 
 // Get invitation by slug
 export async function getInvitation(slug: string): Promise<Invitation> {
-  const response = await fetch(buildApiUrl(`/api/invitations/${encodeURIComponent(slug)}`), {
-    credentials: 'include',
-    headers: buildAuthHeaders(),
-  });
+  const response = await fetch(
+    buildApiUrl(`/api/invitations/${encodeURIComponent(slug)}`),
+    buildRequestInit({
+      headers: buildAuthHeaders(),
+    })
+  );
 
   if (response.status === 404) {
     throw new Error('Invitation not found');
@@ -104,15 +109,17 @@ export async function updateInvitation(
     status?: string;
   }
 ): Promise<Invitation> {
-  const response = await fetch(buildApiUrl(`/api/invitations/${encodeURIComponent(slug)}`), {
-    method: 'PUT',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildAuthHeaders(),
-    },
-    body: JSON.stringify(data),
-  });
+  const response = await fetch(
+    buildApiUrl(`/api/invitations/${encodeURIComponent(slug)}`),
+    buildRequestInit({
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...buildAuthHeaders(),
+      },
+      body: JSON.stringify(data),
+    })
+  );
 
   if (response.status === 404) {
     throw new Error('Invitation not found');
@@ -126,10 +133,12 @@ export async function updateInvitation(
 }
 
 export async function listMyInvitations(): Promise<InvitationSummary[]> {
-  const response = await fetch(buildApiUrl('/api/invitations?owner=me'), {
-    credentials: 'include',
-    headers: buildAuthHeaders(),
-  });
+  const response = await fetch(
+    buildApiUrl('/api/invitations?owner=me'),
+    buildRequestInit({
+      headers: buildAuthHeaders(),
+    })
+  );
 
   if (response.status === 401) {
     throw new Error('Unauthorized');
@@ -143,9 +152,7 @@ export async function listMyInvitations(): Promise<InvitationSummary[]> {
 export async function listGuestInvitations(guestToken: string): Promise<InvitationSummary[]> {
   const response = await fetch(
     buildApiUrl(`/api/invitations?guestToken=${encodeURIComponent(guestToken)}&status=draft&limit=20`),
-    {
-      credentials: 'include',
-    }
+    buildRequestInit({})
   );
 
   if (!response.ok) {
@@ -155,47 +162,55 @@ export async function listGuestInvitations(guestToken: string): Promise<Invitati
 }
 
 export async function createGuestInvitation(templateId?: string): Promise<GuestInvitationCreateResponse> {
-  const response = await fetch(buildApiUrl('/api/invitations/guest'), {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildAuthHeaders(),
-    },
-    body: JSON.stringify(templateId ? { templateId } : {}),
-  });
+  const response = await fetch(
+    buildApiUrl('/api/invitations/guest'),
+    buildRequestInit({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...buildAuthHeaders(),
+      },
+      body: JSON.stringify(templateId ? { templateId } : {}),
+    })
+  );
 
   if (!response.ok) {
     throw new Error('Failed to create guest invitation');
   }
+  syncGuestTokenFromResponse(response);
   return response.json();
 }
 
 export async function cloneTemplateInvitation(templateId: string): Promise<TemplateCloneResponse> {
-  const response = await fetch(buildApiUrl(`/api/templates/${encodeURIComponent(templateId)}/clone`), {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      ...buildAuthHeaders(),
-    },
-  });
+  const response = await fetch(
+    buildApiUrl(`/api/templates/${encodeURIComponent(templateId)}/clone`),
+    buildRequestInit({
+      method: 'POST',
+      headers: {
+        ...buildAuthHeaders(),
+      },
+    })
+  );
 
   if (!response.ok) {
     throw new Error('Failed to clone template');
   }
+  syncGuestTokenFromResponse(response);
   return response.json();
 }
 
 export async function trackTemplateView(templateId: string): Promise<void> {
   try {
-    await fetch(buildApiUrl(`/api/templates/${encodeURIComponent(templateId)}/view`), {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        ...buildAuthHeaders(),
-      },
-      keepalive: true,
-    });
+    await fetch(
+      buildApiUrl(`/api/templates/${encodeURIComponent(templateId)}/view`),
+      buildRequestInit({
+        method: 'POST',
+        headers: {
+          ...buildAuthHeaders(),
+        },
+        keepalive: true,
+      })
+    );
   } catch {
     // Analytics failure should not block template browsing.
   }
@@ -203,10 +218,12 @@ export async function trackTemplateView(templateId: string): Promise<void> {
 
 export async function getInvitationForEditor(identifier: string, token?: string | null): Promise<Invitation> {
   const query = token ? `?token=${encodeURIComponent(token)}` : '';
-  const response = await fetch(buildApiUrl(`/api/invitations/${encodeURIComponent(identifier)}${query}`), {
-    credentials: 'include',
-    headers: buildAuthHeaders(),
-  });
+  const response = await fetch(
+    buildApiUrl(`/api/invitations/${encodeURIComponent(identifier)}${query}`),
+    buildRequestInit({
+      headers: buildAuthHeaders(),
+    })
+  );
 
   if (response.status === 403) {
     throw new Error('FORBIDDEN');
@@ -225,18 +242,20 @@ export async function saveInvitationDraftById(
   payload: Record<string, unknown>,
   token?: string | null
 ): Promise<Invitation> {
-  const response = await fetch(buildApiUrl(`/api/invitations/${encodeURIComponent(id)}`), {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildAuthHeaders(),
-    },
-    body: JSON.stringify({
-      ...payload,
-      token: token || undefined,
-    }),
-  });
+  const response = await fetch(
+    buildApiUrl(`/api/invitations/${encodeURIComponent(id)}`),
+    buildRequestInit({
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...buildAuthHeaders(),
+      },
+      body: JSON.stringify({
+        ...payload,
+        token: token || undefined,
+      }),
+    })
+  );
 
   if (response.status === 403) {
     throw new Error('FORBIDDEN');
@@ -248,17 +267,19 @@ export async function saveInvitationDraftById(
 }
 
 export async function publishInvitationById(id: string, token?: string | null): Promise<PublishInvitationResponse> {
-  const response = await fetch(buildApiUrl(`/api/invitations/${encodeURIComponent(id)}/publish`), {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildAuthHeaders(),
-    },
-    body: JSON.stringify({
-      token: token || undefined,
-    }),
-  });
+  const response = await fetch(
+    buildApiUrl(`/api/invitations/${encodeURIComponent(id)}/publish`),
+    buildRequestInit({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...buildAuthHeaders(),
+      },
+      body: JSON.stringify({
+        token: token || undefined,
+      }),
+    })
+  );
 
   if (response.status === 403) {
     throw new Error('FORBIDDEN');
@@ -270,9 +291,12 @@ export async function publishInvitationById(id: string, token?: string | null): 
 }
 
 export async function getSharedInvitationBySlug(shareSlug: string): Promise<Invitation & { shareUrl?: string }> {
-  const response = await fetch(buildApiUrl(`/api/invitations/share/${encodeURIComponent(shareSlug)}`), {
-    cache: 'no-store',
-  });
+  const response = await fetch(
+    buildApiUrl(`/api/invitations/share/${encodeURIComponent(shareSlug)}`),
+    buildRequestInit({
+      cache: 'no-store',
+    })
+  );
   if (response.status === 404) {
     throw new Error('Invitation not found');
   }

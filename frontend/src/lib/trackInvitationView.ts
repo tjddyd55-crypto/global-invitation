@@ -1,6 +1,6 @@
 'use client';
 
-import { buildApiUrl } from '@/src/lib/apiBase';
+import { buildApiUrl, buildRequestInit } from '@/src/lib/apiBase';
 
 const INVITATION_ANALYTICS_SESSION_KEY = 'global_invitation_analytics_session_id';
 
@@ -35,16 +35,19 @@ export function trackInvitationView(slug: string) {
 
   const sessionId = getInvitationAnalyticsSessionId();
 
-  void fetch(buildApiUrl(`/api/invitations/${encodeURIComponent(slug)}/view`), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      sessionId,
-    }),
-    keepalive: true,
-  }).catch(() => {
+  void fetch(
+    buildApiUrl(`/api/invitations/${encodeURIComponent(slug)}/view`),
+    buildRequestInit({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sessionId,
+      }),
+      keepalive: true,
+    })
+  ).catch(() => {
     // Analytics failures must never affect invitation rendering.
   });
 }

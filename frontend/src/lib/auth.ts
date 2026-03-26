@@ -216,12 +216,12 @@ export function getSessionToken(): string | null {
 export function buildAuthHeaders(): HeadersInit {
   const headers: HeadersInit = {};
   const token = getSessionToken();
-  const guestToken = getGuestToken();
+  const guestToken = ensureGuestToken();
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
   if (guestToken) {
-    headers['X-Guest-Token'] = guestToken;
+    headers['x-guest-token'] = guestToken;
   }
   return headers;
 }

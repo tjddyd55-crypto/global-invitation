@@ -1,4 +1,4 @@
-import { buildApiUrl, getApiBaseUrl } from '@/src/lib/apiBase';
+import { buildApiUrl, buildRequestInit, getApiBaseUrl } from '@/src/lib/apiBase';
 
 export type EventType = 'invitation_view' | 'share_click' | 'editor_open' | 'preview_open';
 export type TemplateType = 'wedding' | 'funeral' | 'message' | 'branded';
@@ -18,13 +18,16 @@ export async function logEvent(payload: EventPayload): Promise<boolean> {
   if (!apiBaseUrl) return false;
 
   try {
-    const response = await fetch(buildApiUrl('/api/events'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(
+      buildApiUrl('/api/events'),
+      buildRequestInit({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+    );
 
     if (!response.ok) {
       console.warn('[events] Failed to log event', response.status);

@@ -17,6 +17,8 @@ import adminTemplateSubmissionsRouter from './routes/adminTemplateSubmissions';
 import adminSuperRouter from './routes/adminSuper';
 import testLoginRouter from './routes/testLogin';
 import { startCleanupWorker } from './workers/cleanupWorker';
+import { attachGuestSession } from './middleware/guestSessionMiddleware';
+import { guestRateLimit } from './middleware/guestRateLimit';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -25,49 +27,63 @@ if (!process.env.ADMIN_JWT_SECRET?.trim() && !process.env.ADMIN_SESSION_SECRET?.
   throw new Error('ADMIN_JWT_SECRET (or ADMIN_SESSION_SECRET) must be defined');
 }
 
-/** Primary credentialed-CORS frontend (Railway). Always allow; extend via env. */
-const RAILWAY_FRONTEND_PRODUCTION = 'https://frontend-production-54bf.up.railway.app';
+const listFromEnv = (process.env.FRONTEND_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
 
-function resolveAllowedOrigins(): string[] {
-  const listFromEnv = (process.env.FRONTEND_ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const configuredOrigins = [
-    RAILWAY_FRONTEND_PRODUCTION,
-    process.env.FRONTEND_URL,
-    process.env.FRONTEND_PREVIEW_URL,
-    process.env.NEXT_PUBLIC_SITE_URL,
-    'http://localhost:3000',
-    ...listFromEnv,
-  ]
-    .filter((value): value is string => Boolean(value?.trim()))
-    .map((value) => value.trim());
-
-  return Array.from(new Set(configuredOrigins));
-}
-
-// Middleware
-const corsAllowedOrigins = resolveAllowedOrigins();
-
-app.use(
-  cors({
-    // Explicit allow-list (includes https://frontend-production-54bf.up.railway.app + env + localhost).
-    origin: (origin, callback) => {
-      if (!origin || corsAllowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      console.warn('CORS rejected origin:', origin, 'allowed:', corsAllowedOrigins);
-      return callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  })
+const allowedOrigins = Array.from(
+  new Set(
+    [
+      process.env.FRONTEND_URL,
+      process.env.FRONTEND_PREVIEW_URL,
+      process.env.NEXT_PUBLIC_SITE_URL,
+      'https://frontend-production-54bf.up.railway.app',
+      'http://localhost:3000',
+      ...listFromEnv,
+    ]
+      .filter((value): value is string => Boolean(value?.trim()))
+      .map((value) => value.trim())
+  )
 );
+
+const corsOptions: cors.CorsOptions = {
+  origin(origin, callback) {
+    if (!origin) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn('[CORS BLOCKED]', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-guest-token', 'X-Guest-Token', 'X-Requested-With'],
+  exposedHeaders: ['x-guest-token'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 // Legacy fallback for pre-R2 records only. New uploads use direct-to-R2.
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    console.log('[REQUEST]', {
+      path: req.path,
+      guestToken: req.headers['x-guest-token'],
+      origin: req.headers.origin,
+    });
+  }
+  next();
+});
+
+app.use('/api', attachGuestSession);
+app.use('/api', guestRateLimit);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

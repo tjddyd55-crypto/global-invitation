@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
-import { buildApiUrl } from '@/src/lib/apiBase';
+import { buildApiUrl, buildRequestInit } from '@/src/lib/apiBase';
+import { syncGuestTokenFromResponse } from '@/src/lib/guestToken';
 import type { TemplatePreviewData } from '@/src/templates/previewData';
 import {
   funeralPreviewData,
@@ -400,12 +401,14 @@ export async function fetchVisibleTemplateDefinitions(
   sort: 'newest' | 'popular' | 'trending' = 'newest'
 ): Promise<TemplateDefinition[]> {
   try {
-    const response = await fetch(buildApiUrl(`/api/templates/marketplace?sort=${encodeURIComponent(sort)}`), {
-      cache: 'no-store',
-    });
+    const response = await fetch(
+      buildApiUrl(`/api/templates/marketplace?sort=${encodeURIComponent(sort)}`),
+      buildRequestInit({ cache: 'no-store' })
+    );
     if (!response.ok) {
       return listVisibleTemplateDefinitions();
     }
+    syncGuestTokenFromResponse(response);
     const templates = (await response.json()) as TemplateDefinition[];
     return listVisibleTemplateDefinitions(templates);
   } catch {
@@ -420,14 +423,16 @@ export async function fetchTemplateDefinitionById(templateId: string): Promise<T
       return null;
     }
 
-    const response = await fetch(buildApiUrl(`/api/templates/${normalizedId}`), {
-      cache: 'no-store',
-    });
+    const response = await fetch(
+      buildApiUrl(`/api/templates/${normalizedId}`),
+      buildRequestInit({ cache: 'no-store' })
+    );
 
     if (!response.ok) {
       return getTemplateDefinitionById(normalizedId);
     }
 
+    syncGuestTokenFromResponse(response);
     const template = (await response.json()) as TemplateDefinition;
     return isTemplateVisible(template) ? template : null;
   } catch {

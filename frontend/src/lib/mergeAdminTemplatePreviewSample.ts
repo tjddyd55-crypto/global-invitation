@@ -90,10 +90,10 @@ export function mergeAdminPreviewSample(
     const groomName = str(data?.groomName);
     const brideName = str(data?.brideName);
     if (groomName) {
-      b.groom = { ...b.groom, name: groomName };
+      b.groom = { ...(b.groom ?? {}), name: groomName };
     }
     if (brideName) {
-      b.bride = { ...b.bride, name: brideName };
+      b.bride = { ...(b.bride ?? {}), name: brideName };
     }
     if (groomName && brideName) {
       b.coupleNames = `${groomName} ♥ ${brideName}`;
