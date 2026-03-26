@@ -1,0 +1,338 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.brand {
+  flex-shrink: 0;
+  text-decoration: none;
+  color: #0f172a;
+  font-weight: 750;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.brand:hover {
+  color: #1e3a8a;
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.navLink {
+  text-decoration: none;
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.navLink:hover {
+  color: #0f172a;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.searchForm {
+  flex: 1;
+  max-width: 280px;
+  min-width: 120px;
+}
+
+.searchInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  background: #f8fafc;
+  color: #0f172a;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.searchInput::placeholder {
+  color: #94a3b8;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.searchWrap {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.authLink {
+  text-decoration: none;
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.authLink:hover {
+  color: #0f172a;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.authPrimary {
+  text-decoration: none;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.authPrimary:hover {
+  filter: brightness(1.05);
+}
+
+.authPrimary:active {
+  transform: scale(0.98);
+}
+
+.loading {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.profileWrap {
+  position: relative;
+}
+
+.profileButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 2px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(145deg, #e0e7ff 0%, #ddd6fe 100%);
+  color: #3730a3;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.profileButton:hover {
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+}
+
+.profileButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.45);
+}
+
+.dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(260px, calc(100vw - 32px));
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.06);
+  padding: 8px 0;
+  animation: dropIn 0.14s ease-out;
+}
+
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownEmail {
+  padding: 10px 14px 8px;
+  font-size: 0.8rem;
+  color: #64748b;
+  word-break: break-all;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  margin-bottom: 4px;
+}
+
+.dropdownLink {
+  display: block;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  color: #334155;
+  text-decoration: none;
+  transition: background 0.12s ease;
+}
+
+.dropdownLink:hover {
+  background: #f1f5f9;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: rgba(15, 23, 42, 0.08);
+  margin: 6px 0;
+}
+
+.logoutBtn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  color: #b45309;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.logoutBtn:hover {
+  background: #fffbeb;
+}
+
+.mobileToggle {
+  display: none;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  padding: 8px 12px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.mobilePanel {
+  display: none;
+}
+
+.mobileSectionLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  padding: 8px 16px 4px;
+}
+
+.fallbackBar {
+  height: 60px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 960px) {
+  .center {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .right {
+    display: none;
+  }
+
+  .mobileToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .shell {
+    flex-wrap: wrap;
+  }
+
+  .mobilePanel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 8px 16px 16px;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+    gap: 2px;
+  }
+
+  .mobilePanel a {
+    text-decoration: none;
+    color: #334155;
+    padding: 10px 4px;
+    font-size: 0.9rem;
+  }
+
+  .mobileSearchForm {
+    padding: 8px 0 12px;
+  }
+
+  .mobileSearchForm .searchInput {
+    padding-left: 32px;
+  }
+}

@@ -2,8 +2,8 @@
 /* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   clearStoredSession,
   fetchNavbarUser,
@@ -13,17 +13,39 @@ import {
 } from '@/src/lib/auth';
 import { buildLoginHref } from '@/src/lib/loginRedirect';
 import LanguageSelector from '@/src/components/LanguageSelector';
-import styles from '@/src/components/Navbar.module.css';
+import styles from './GlobalHeader.module.css';
 
-export default function GlobalHeader() {
+function profileInitial(user: AuthUser): string {
+  const raw = (user.nickname || user.email || '?').trim();
+  return raw ? raw.slice(0, 1).toUpperCase() : '?';
+}
+
+function GlobalHeaderFallback() {
+  return <div className={styles.fallbackBar} aria-hidden />;
+}
+
+function GlobalHeaderContent() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const qParam = pathname === '/templates' ? (searchParams.get('q') ?? '') : '';
+
   const loginHref = buildLoginHref(pathname || '/');
 
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [searchDraft, setSearchDraft] = useState('');
+  const profileRef = useRef<HTMLDivElement>(null);
+
   const initialCachedUser = getCachedNavbarUserSnapshot();
   const [loadingAuth, setLoadingAuth] = useState(initialCachedUser === undefined);
   const [user, setUser] = useState<AuthUser | null>(initialCachedUser ?? null);
+
+  useEffect(() => {
+    if (pathname === '/templates') {
+      setSearchDraft(qParam);
+    }
+  }, [pathname, qParam]);
 
   useEffect(() => {
     let mounted = true;
@@ -45,30 +67,98 @@ export default function GlobalHeader() {
     };
   }, [pathname]);
 
+  useEffect(() => {
+    if (!profileOpen) return;
+
+    const onDocMouseDown = (event: MouseEvent) => {
+      if (profileRef.current?.contains(event.target as Node)) {
+        return;
+      }
+      setProfileOpen(false);
+    };
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', onDocMouseDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [profileOpen]);
+
   const handleLogout = async () => {
     await logoutCurrentSession();
     clearStoredSession();
     setUser(null);
-    setMenuOpen(false);
+    setProfileOpen(false);
+    setMobileOpen(false);
     router.replace('/');
+    router.refresh();
   };
 
-  const mainNav = (
-    <>
-      <Link href="/">홈</Link>
-      <Link href="/templates">템플릿</Link>
-      <Link href="/create">초대장 만들기</Link>
-      <Link href="/my-invitations">내 초대장</Link>
-      <Link href="/creator/dashboard" data-testid="creator-dashboard-link">
-        크리에이터
-      </Link>
-      <Link href="/admin/templates">관리자</Link>
-    </>
+  const submitSearch = (raw: string) => {
+    const q = raw.trim();
+    if (q) {
+      router.push(`/templates?q=${encodeURIComponent(q)}`);
+    } else {
+      router.push('/templates');
+    }
+    setMobileOpen(false);
+  };
+
+  const onSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    submitSearch(searchDraft);
+  };
+
+  const desktopSearch = (
+    <form className={styles.searchForm} onSubmit={onSearchSubmit}>
+      <div className={styles.searchWrap}>
+        <span className={styles.searchIcon} aria-hidden>
+          ⌕
+        </span>
+        <label htmlFor="global-header-search" className={styles.visuallyHidden}>
+          템플릿 검색
+        </label>
+        <input
+          id="global-header-search"
+          className={styles.searchInput}
+          placeholder="템플릿 검색"
+          value={searchDraft}
+          onChange={(event) => setSearchDraft(event.target.value)}
+          autoComplete="off"
+        />
+      </div>
+    </form>
   );
 
-  const authControls = () => {
+  const mainNav = (
+    <nav className={styles.nav} aria-label="주요 메뉴">
+      <Link href="/" className={styles.navLink}>
+        홈
+      </Link>
+      <Link href="/templates" className={styles.navLink}>
+        템플릿
+      </Link>
+      <Link href="/create" className={styles.navLink}>
+        초대장 만들기
+      </Link>
+      {user && (
+        <Link href="/my" className={styles.navLink}>
+          내 초대장
+        </Link>
+      )}
+    </nav>
+  );
+
+  const authSection = () => {
     if (loadingAuth) {
-      return <span className={styles.loading}>인증 확인 중...</span>;
+      return <span className={styles.loading}>확인 중…</span>;
     }
 
     if (!user) {
@@ -77,99 +167,146 @@ export default function GlobalHeader() {
           <Link href={loginHref} className={styles.authLink} data-testid="login-button">
             로그인
           </Link>
-          <Link href="/signup" className={styles.authLinkPrimary} data-testid="signup-button">
-            크리에이터 시작하기
+          <Link href="/signup" className={styles.authPrimary} data-testid="signup-button">
+            시작하기
           </Link>
         </>
       );
     }
 
     return (
-      <button
-        type="button"
-        className={styles.logoutButton}
-        onClick={() => void handleLogout()}
-        data-testid="logout-button"
-      >
-        로그아웃
-      </button>
+      <div className={styles.profileWrap} ref={profileRef}>
+        <button
+          type="button"
+          className={styles.profileButton}
+          aria-expanded={profileOpen}
+          aria-haspopup="menu"
+          data-testid="profile-menu-trigger"
+          onClick={() => setProfileOpen((open) => !open)}
+        >
+          {profileInitial(user)}
+        </button>
+        {profileOpen && (
+          <div className={styles.dropdown} role="menu" data-testid="profile-menu">
+            <div className={styles.dropdownEmail}>{user.email}</div>
+            <Link href="/my" className={styles.dropdownLink} role="menuitem" onClick={() => setProfileOpen(false)}>
+              내 초대장
+            </Link>
+            <Link
+              href="/creator/dashboard"
+              className={styles.dropdownLink}
+              role="menuitem"
+              data-testid="creator-dashboard-link"
+              onClick={() => setProfileOpen(false)}
+            >
+              크리에이터
+            </Link>
+            <Link href="/admin/templates" className={styles.dropdownLink} role="menuitem" onClick={() => setProfileOpen(false)}>
+              관리자
+            </Link>
+            <div className={styles.dropdownDivider} />
+            <button type="button" className={styles.logoutBtn} data-testid="logout-button" onClick={() => void handleLogout()}>
+              로그아웃
+            </button>
+          </div>
+        )}
+      </div>
     );
   };
 
   return (
     <header className={styles.header}>
-      <div className={styles.inner}>
-        <div className={styles.left}>
-          <Link href="/" className={styles.brand}>
-            Global Invitation
-          </Link>
-          <nav className={styles.desktopMenu}>{mainNav}</nav>
+      <div className={styles.shell}>
+        <Link href="/" className={styles.brand}>
+          Global Invitation
+        </Link>
+
+        <div className={styles.center}>
+          {mainNav}
+          {desktopSearch}
         </div>
 
         <div className={styles.right}>
           <LanguageSelector />
-          {authControls()}
+          {authSection()}
         </div>
 
         <button
           type="button"
           className={styles.mobileToggle}
-          onClick={() => setMenuOpen((prev) => !prev)}
-          aria-label="모바일 메뉴 열기"
+          onClick={() => setMobileOpen((open) => !open)}
+          aria-expanded={mobileOpen}
+          aria-label="모바일 메뉴"
         >
           ☰
         </button>
       </div>
 
-      {menuOpen && (
+      {mobileOpen && (
         <div className={styles.mobilePanel}>
-          <Link href="/" onClick={() => setMenuOpen(false)}>
+          <p className={styles.mobileSectionLabel}>메뉴</p>
+          <Link href="/" onClick={() => setMobileOpen(false)}>
             홈
           </Link>
-          <Link href="/templates" onClick={() => setMenuOpen(false)}>
+          <Link href="/templates" onClick={() => setMobileOpen(false)}>
             템플릿
           </Link>
-          <Link href="/create" onClick={() => setMenuOpen(false)}>
+          <Link href="/create" onClick={() => setMobileOpen(false)}>
             초대장 만들기
           </Link>
-          <Link href="/my-invitations" onClick={() => setMenuOpen(false)}>
-            내 초대장
-          </Link>
-          <Link
-            href="/creator/dashboard"
-            onClick={() => setMenuOpen(false)}
-            data-testid="creator-dashboard-link"
-          >
+          {user && (
+            <Link href="/my" onClick={() => setMobileOpen(false)}>
+              내 초대장
+            </Link>
+          )}
+          <Link href="/creator/dashboard" onClick={() => setMobileOpen(false)} data-testid="creator-dashboard-link">
             크리에이터
           </Link>
-          <Link href="/admin/templates" onClick={() => setMenuOpen(false)}>
+          <Link href="/admin/templates" onClick={() => setMobileOpen(false)}>
             관리자
           </Link>
-          <div className={styles.mobileLanguage}>
-            <LanguageSelector variant="mobile" />
-          </div>
+          <p className={styles.mobileSectionLabel}>검색</p>
+          <form className={styles.mobileSearchForm} onSubmit={onSearchSubmit}>
+            <div className={styles.searchWrap}>
+              <span className={styles.searchIcon} aria-hidden>
+                ⌕
+              </span>
+              <input
+                className={styles.searchInput}
+                placeholder="템플릿 검색"
+                value={searchDraft}
+                onChange={(event) => setSearchDraft(event.target.value)}
+                autoComplete="off"
+              />
+            </div>
+          </form>
+          <div className={styles.mobileSectionLabel}>설정</div>
+          <LanguageSelector variant="mobile" />
           {!user && (
             <>
-              <Link href={loginHref} onClick={() => setMenuOpen(false)} data-testid="login-button">
+              <Link href={loginHref} onClick={() => setMobileOpen(false)} data-testid="login-button">
                 로그인
               </Link>
-              <Link href="/signup" onClick={() => setMenuOpen(false)} data-testid="signup-button">
-                크리에이터 시작하기
+              <Link href="/signup" onClick={() => setMobileOpen(false)} data-testid="signup-button">
+                시작하기
               </Link>
             </>
           )}
           {user && (
-            <button
-              type="button"
-              className={styles.mobileLogout}
-              onClick={() => void handleLogout()}
-              data-testid="logout-button"
-            >
+            <button type="button" className={styles.logoutBtn} data-testid="logout-button" onClick={() => void handleLogout()}>
               로그아웃
             </button>
           )}
         </div>
       )}
     </header>
+  );
+}
+
+export default function GlobalHeader() {
+  return (
+    <Suspense fallback={<GlobalHeaderFallback />}>
+      <GlobalHeaderContent />
+    </Suspense>
   );
 }

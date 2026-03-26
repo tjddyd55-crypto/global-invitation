@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { cloneTemplateInvitation, trackTemplateView } from '@/src/lib/api';
 import { setGuestToken } from '@/src/lib/auth';
@@ -79,8 +79,11 @@ const DISCOVERY_OPTIONS: DiscoveryOption[] = [
   },
 ];
 
-export default function TemplatesPage() {
+function TemplatesPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchQuery = (searchParams.get('q') ?? '').trim().toLowerCase();
+
   const [categoryFilter, setCategoryFilter] = useState<TemplateCategory | 'all'>('all');
   const [styleFilter, setStyleFilter] = useState<TemplateStyle | 'all'>('all');
   const [sortOption, setSortOption] = useState<TemplateSortOption>('newest');
@@ -114,8 +117,23 @@ export default function TemplatesPage() {
         const isCategoryMatched = categoryFilter === 'all' || item.category === categoryFilter;
         const isStyleMatched = styleFilter === 'all' || item.style === styleFilter;
         return isCategoryMatched && isStyleMatched;
+      })
+      .filter((item) => {
+        if (!searchQuery) return true;
+        const haystack = [
+          item.name,
+          item.title ?? '',
+          item.description,
+          item.creatorName ?? '',
+          item.templateKey,
+          CATEGORY_LABELS[item.category],
+          STYLE_LABELS[item.style],
+        ]
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(searchQuery);
       });
-  }, [categoryFilter, styleFilter, templates]);
+  }, [categoryFilter, styleFilter, templates, searchQuery]);
   const currentDiscovery = useMemo(
     () => DISCOVERY_OPTIONS.find((item) => item.value === sortOption) || DISCOVERY_OPTIONS[0],
     [sortOption]
@@ -154,6 +172,11 @@ export default function TemplatesPage() {
         <p className={styles.subtitle}>
           취향과 목적에 맞는 공개 템플릿을 선택해 바로 초대장을 시작하세요.
         </p>
+        {searchQuery ? (
+          <p className={styles.searchHint}>
+            검색: <strong>{searchParams.get('q')?.trim()}</strong> — 이름·설명·제작자·키워드에 부분 일치하는 템플릿만 표시합니다.
+          </p>
+        ) : null}
         <section className={styles.discoverySection}>
           <div className={styles.discoveryHeader}>
             <strong>Discovery</strong>
@@ -267,12 +290,32 @@ export default function TemplatesPage() {
           ))}
         </div>
         {filteredTemplates.length === 0 && (
-          <p className={styles.emptyState}>조건에 맞는 템플릿이 없습니다. 필터를 변경해 보세요.</p>
+          <p className={styles.emptyState}>
+            {searchQuery
+              ? '검색어와 필터에 맞는 템플릿이 없습니다. 검색어를 바꾸거나 필터를 초기화해 보세요.'
+              : '조건에 맞는 템플릿이 없습니다. 필터를 변경해 보세요.'}
+          </p>
         )}
         <p className={styles.footer}>
           <Link href="/my-invitations" className={styles.link}>내 초대장 관리</Link>
         </p>
       </div>
     </MarketingLayout>
+  );
+}
+
+export default function TemplatesPage() {
+  return (
+    <Suspense
+      fallback={
+        <MarketingLayout>
+          <div className={styles.root}>
+            <p className={styles.emptyState}>템플릿 목록을 불러오는 중입니다…</p>
+          </div>
+        </MarketingLayout>
+      }
+    >
+      <TemplatesPageContent />
+    </Suspense>
   );
 }
