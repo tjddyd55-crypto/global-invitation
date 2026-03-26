@@ -1,6 +1,6 @@
 /**
- * 비엔티티 임시 업로드만 `invitation/temp/...` 를 사용합니다.
- * 초대장·템플릿 본문 경로는 `lib/media/keys.ts` 의 entity 규칙을 사용합니다.
+ * 레거시 호환: buildR2Key 는 temp/{session}/{filename} 만 생성합니다.
+ * 신규 코드는 lib/media/keys.ts 의 buildTempObjectKey / buildMediaObjectKey 를 사용하세요.
  */
 
 export type R2KeyType = 'temp';
@@ -24,14 +24,16 @@ function sanitizeFilename(filename: string): string {
   return base;
 }
 
-/** presign 직전 스테이징 등: `invitation/temp/{session}/{file}` */
+/** @deprecated keys.buildTempObjectKey 사용 권장 */
 export function buildR2Key(params: { type: 'temp'; id: string; filename: string }): string {
   const id = sanitizeId(params.id);
   const filename = sanitizeFilename(params.filename);
-  return `invitation/temp/${id}/${filename}`;
+  const key = `temp/${id}/${filename}`;
+  console.log('[R2_KEY]', key);
+  return key;
 }
 
-/** @deprecated 구버전 `invitation/thumbnails/thumb_{id}.jpg` — 신규는 `template/{id}/thumbnail/thumb.jpg` */
+/** @deprecated */
 export function buildR2ThumbnailCompanionKey(entityId: string): string {
   const id = sanitizeId(entityId);
   return `invitation/thumbnails/thumb_${id}.jpg`;
@@ -51,7 +53,6 @@ function normalizePublicBase(): string {
   return trimmed.startsWith('http://') ? trimmed.replace('http://', 'https://') : trimmed;
 }
 
-/** DB·API에 저장하는 공개 URL (`?v=` 쿼리 없음, CDN 직접 경로) */
 export function buildCanonicalPublicUrl(objectKey: string): string {
   const base = normalizePublicBase();
   const key = objectKey.replace(/^\/+/, '');

@@ -1,12 +1,10 @@
 import crypto from 'crypto';
-import { buildR2Key } from '../mediaKeyBuilder';
 
 /**
- * Entity 폴더 규칙:
- * - invitation/{invitationId}/hero|gallery|…
- * - template/{templateId}/hero|gallery|thumbnail|…
- * userId 단독 폴더·invitation/template 혼합·무작위 flat 루트 금지.
+ * 단일 키 체계: 최종 엔티티 경로는 buildMediaObjectKey, 스테이징은 buildTempObjectKey.
+ * invitation/{id}/… | template/{id}/… | temp/{session}/… 만 신규 생성한다.
  */
+
 export type MediaScope =
   | 'invitationHero'
   | 'invitationGallery'
@@ -67,7 +65,7 @@ function sanitizeExtension(value: string): string {
   return value.replace(/[^a-z0-9]/gi, '').toLowerCase();
 }
 
-function resolveFileExtension(contentType: string, filename?: string): string {
+export function resolveFileExtension(contentType: string, filename?: string): string {
   const fromMime = MIME_EXTENSION_MAP[contentType] || '';
   if (fromMime) {
     return fromMime;
@@ -83,41 +81,65 @@ function buildFileToken(now: Date): string {
   return `${timestamp}-${random}`;
 }
 
+/** 모든 확정·스테이징 키에 대해 호출 */
+export function logR2Key(key: string): void {
+  console.log('[R2_KEY]', key);
+}
+
+/** presign 스테이징: temp/{sessionId}/{timestamp-rand}.ext */
+export function buildTempObjectKey(sessionId: string, contentType: string, filename?: string): string {
+  const sid = sanitizeSegment(sessionId);
+  if (!sid) throw new Error('INVALID_TEMP_SESSION');
+  const ext = resolveFileExtension(contentType, filename);
+  const token = buildFileToken(new Date());
+  const key = `temp/${sid}/${token}.${ext}`;
+  logR2Key(key);
+  return key;
+}
+
+export function isTempStagingKey(objectKey: string): boolean {
+  const segments = objectKey.trim().replace(/^\/+/, '').split('/').filter(Boolean);
+  return segments[0] === 'temp' && segments.length >= 3;
+}
+
 export function buildMediaObjectKey(params: BuildMediaObjectKeyParams): string {
   const now = params.now || new Date();
   const ext = resolveFileExtension(params.contentType, params.filename);
   const tokenFile = `${buildFileToken(now)}.${ext}`;
 
+  let key: string;
+
   if (params.scope === 'invitationHero') {
     const invitationId = sanitizeSegment(params.invitationId);
     if (!invitationId) throw new Error('INVALID_MEDIA_OWNER');
-    return `invitation/${invitationId}/hero/original.jpg`;
-  }
-  if (params.scope === 'invitationGallery') {
+    key = `invitation/${invitationId}/hero/original.jpg`;
+  } else if (params.scope === 'invitationGallery') {
     const invitationId = sanitizeSegment(params.invitationId);
     if (!invitationId) throw new Error('INVALID_MEDIA_OWNER');
     const token = buildFileToken(now);
-    return `invitation/${invitationId}/gallery/${token}.${ext}`;
-  }
-  if (params.scope === 'templateCover') {
+    key = `invitation/${invitationId}/gallery/${token}.${ext}`;
+  } else if (params.scope === 'templateCover') {
     const templateId = sanitizeSegment(params.templateId);
     if (!templateId) throw new Error('INVALID_MEDIA_OWNER');
-    return `template/${templateId}/thumbnail/main.jpg`;
-  }
-  if (params.scope === 'templateHero') {
+    key = `template/${templateId}/thumbnail/main.jpg`;
+  } else if (params.scope === 'templateHero') {
     const templateId = sanitizeSegment(params.templateId);
     if (!templateId) throw new Error('INVALID_MEDIA_OWNER');
-    return `template/${templateId}/hero/original.jpg`;
-  }
-  if (params.scope === 'templateAsset') {
+    key = `template/${templateId}/hero/original.jpg`;
+  } else if (params.scope === 'templateAsset') {
     const templateId = sanitizeSegment(params.templateId);
     if (!templateId) throw new Error('INVALID_MEDIA_OWNER');
     const token = buildFileToken(now);
-    return `template/${templateId}/gallery/${token}.${ext}`;
+    key = `template/${templateId}/gallery/${token}.${ext}`;
+  } else {
+    const sessionId = crypto.randomBytes(16).toString('hex');
+    key = buildTempObjectKey(sessionId, params.contentType, params.filename);
   }
 
-  const tempId = crypto.randomBytes(16).toString('hex');
-  return buildR2Key({ type: 'temp', id: tempId, filename: `common-${tokenFile}` });
+  if (params.scope !== 'common') {
+    logR2Key(key);
+  }
+  return key;
 }
 
 export function usageFromScope(scope: MediaScope): MediaUsage {
@@ -191,6 +213,16 @@ export function parseInvitationOptimizedOriginalKey(objectKey: string): {
   return null;
 }
 
+function parseEntityInvitationKey(segments: string[]): ParsedMediaObjectKey | null {
+  if (segments[0] !== 'invitation' || segments.length < 3) return null;
+  const invitationId = segments[1] || '';
+  const section = segments[2] || '';
+  if (!invitationId) return null;
+  if (section === 'hero') return { scope: 'invitationHero', invitationId };
+  if (section === 'gallery') return { scope: 'invitationGallery', invitationId };
+  return null;
+}
+
 function parseEntityTemplateKey(segments: string[]): ParsedMediaObjectKey | null {
   if (segments[0] !== 'template' || segments.length < 3) return null;
   const templateId = segments[1] || '';
@@ -199,6 +231,14 @@ function parseEntityTemplateKey(segments: string[]): ParsedMediaObjectKey | null
   if (section === 'hero') return { scope: 'templateHero', templateId };
   if (section === 'gallery') return { scope: 'templateAsset', templateId };
   if (section === 'thumbnail') return { scope: 'templateCover', templateId };
+  return null;
+}
+
+/** temp 스테이징(공통 업로드) — 읽기·삭제 정책용 */
+function parseTempKeyAsCommon(segments: string[]): ParsedMediaObjectKey | null {
+  if (segments[0] === 'temp' && segments.length >= 2) {
+    return { scope: 'common' };
+  }
   return null;
 }
 
@@ -211,26 +251,6 @@ function parseLegacyInvitationKey(segments: string[]): ParsedMediaObjectKey | nu
       return { scope: 'invitationHero', invitationId };
     }
     return { scope: 'invitationGallery', invitationId };
-  }
-
-  if (
-    segments.length >= 3 &&
-    segments[1] &&
-    segments[2] &&
-    segments[1] !== 'hero' &&
-    segments[1] !== 'gallery' &&
-    segments[1] !== 'invitations' &&
-    segments[1] !== 'templates' &&
-    segments[1] !== 'thumbnails' &&
-    segments[1] !== 'temp'
-  ) {
-    const invitationId = segments[1];
-    if (segments[2] === 'hero') {
-      return { scope: 'invitationHero', invitationId };
-    }
-    if (segments[2] === 'gallery') {
-      return { scope: 'invitationGallery', invitationId };
-    }
   }
 
   if (segments[1] === 'invitations' && segments.length === 4) {
@@ -279,6 +299,16 @@ function parseLegacyInvitationKey(segments: string[]): ParsedMediaObjectKey | nu
 export function parseMediaObjectKey(objectKey: string): ParsedMediaObjectKey | null {
   const normalized = stripE2EPrefixIfPresent(objectKey);
   const segments = normalized.split('/').filter(Boolean);
+
+  const tempCommon = parseTempKeyAsCommon(segments);
+  if (tempCommon) {
+    return tempCommon;
+  }
+
+  const entityInv = parseEntityInvitationKey(segments);
+  if (entityInv) {
+    return entityInv;
+  }
 
   const templateEntity = parseEntityTemplateKey(segments);
   if (templateEntity) {

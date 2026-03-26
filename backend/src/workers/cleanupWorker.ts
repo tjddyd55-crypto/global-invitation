@@ -1,10 +1,10 @@
 import prisma from '../lib/prisma';
-import { deleteFile, deleteStaleObjectsUnderPrefix } from '../lib/storage/uploadToR2';
+import { deleteFile } from '../lib/storage/uploadToR2';
 import { resolveR2Config } from '../lib/storage/r2Client';
+import { purgeStaleTempStagingObjects, runLegacyMediaStorageGradualPurge } from '../storage/mediaCleanup';
 
 const TICK_MS = 60_000;
 const JOB_BATCH_SIZE = 100;
-const INVITATION_TEMP_PREFIX = 'invitation/temp/';
 const TEMP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function isR2Configured(): boolean {
@@ -54,12 +54,7 @@ async function purgeStaleTempUploads(): Promise<void> {
     return;
   }
 
-  const cutoff = new Date(Date.now() - TEMP_MAX_AGE_MS);
-  await deleteStaleObjectsUnderPrefix({
-    prefix: INVITATION_TEMP_PREFIX,
-    olderThan: cutoff,
-    onEachDelete: (key) => console.log('[R2_DELETE]', key),
-  });
+  await purgeStaleTempStagingObjects(TEMP_MAX_AGE_MS);
 }
 
 async function runCleanupTick(): Promise<void> {
@@ -72,6 +67,11 @@ async function runCleanupTick(): Promise<void> {
     await purgeStaleTempUploads();
   } catch (error) {
     console.error('[cleanupWorker] temp purge failed', error);
+  }
+  try {
+    await runLegacyMediaStorageGradualPurge();
+  } catch (error) {
+    console.error('[cleanupWorker] legacy gradual purge failed', error);
   }
 }
 

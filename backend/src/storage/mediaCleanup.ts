@@ -1,9 +1,77 @@
 import type { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { resolveKeyFromPublicUrl } from '../lib/storage/r2Client';
-import { deleteFile, listAllObjectKeysUnderPrefix } from '../lib/storage/uploadToR2';
+import {
+  deleteFile,
+  deleteStaleObjectsUnderPrefix,
+  deleteStaleObjectsUnderPrefixCapped,
+  listAllObjectKeysUnderPrefix,
+} from '../lib/storage/uploadToR2';
 import { invitationEntityPrefix, templateEntityPrefix } from '../lib/media/keys';
 import { deleteImageByUrl, deleteStoragePrefix, sanitizePathSegment } from './mediaStorage';
+
+/** 신규 업로드에서는 사용하지 않는 구 스토리지 경로 (점진 삭제 대상) */
+export const LEGACY_MEDIA_STORAGE_PREFIXES = [
+  'invitations/',
+  'templates/thumbnails/',
+  'creator/',
+  'users/',
+] as const;
+
+let legacyPurgePrefixRotation = 0;
+
+/**
+ * 환경 변수 LEGACY_R2_GRADUAL_PURGE=true 일 때만 동작.
+ * 오래된 객체(기본 90일, LEGACY_R2_PURGE_MIN_AGE_DAYS)를 틱당 상한(기본 200)만 삭제.
+ */
+export async function runLegacyMediaStorageGradualPurge(): Promise<number> {
+  if (process.env.LEGACY_R2_GRADUAL_PURGE !== 'true') {
+    return 0;
+  }
+  const maxPerTick = Math.min(
+    5000,
+    Math.max(1, Number(process.env.LEGACY_R2_PURGE_MAX_PER_TICK) || 200)
+  );
+  const minAgeDays = Math.max(1, Number(process.env.LEGACY_R2_PURGE_MIN_AGE_DAYS) || 90);
+  const olderThan = new Date(Date.now() - minAgeDays * 24 * 60 * 60 * 1000);
+  const prefixes = LEGACY_MEDIA_STORAGE_PREFIXES;
+  const prefix = prefixes[legacyPurgePrefixRotation % prefixes.length] || prefixes[0];
+  legacyPurgePrefixRotation += 1;
+
+  const deleted = await deleteStaleObjectsUnderPrefixCapped({
+    prefix,
+    olderThan,
+    maxDeletes: maxPerTick,
+    onEachDelete: (key) => console.log('[R2_DELETE_LEGACY]', key),
+  });
+  if (deleted > 0) {
+    console.info('[cleanup] legacy gradual purge', {
+      prefix,
+      deleted,
+      minAgeDays,
+      olderThan: olderThan.toISOString(),
+    });
+  }
+  return deleted;
+}
+
+/** 스펙 기준 스테이징 temp/{sessionId}/… 및 구 invitation/temp/ 스테이징 정리 */
+export async function purgeStaleTempStagingObjects(maxAgeMs: number): Promise<number> {
+  const cutoff = new Date(Date.now() - maxAgeMs);
+  const onDelete = (key: string) => console.log('[R2_DELETE]', key);
+  let total = 0;
+  total += await deleteStaleObjectsUnderPrefix({
+    prefix: 'temp/',
+    olderThan: cutoff,
+    onEachDelete: onDelete,
+  });
+  total += await deleteStaleObjectsUnderPrefix({
+    prefix: 'invitation/temp/',
+    olderThan: cutoff,
+    onEachDelete: onDelete,
+  });
+  return total;
+}
 
 type TemplateMediaCleanupInput = {
   id: string;

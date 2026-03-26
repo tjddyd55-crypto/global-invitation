@@ -212,3 +212,66 @@ export async function deleteStaleObjectsUnderPrefix(params: {
 
   return deletedCount;
 }
+
+export type DeleteStaleObjectsCappedParams = {
+  prefix: string;
+  olderThan: Date;
+  maxDeletes: number;
+  onEachDelete?: (key: string) => void;
+};
+
+/** 점진 삭제용: prefix 내에서 LastModified 기준으로 상한 개수만 삭제 */
+export async function deleteStaleObjectsUnderPrefixCapped(
+  params: DeleteStaleObjectsCappedParams
+): Promise<number> {
+  const config = resolveR2Config();
+  let continuationToken: string | undefined;
+  let deletedCount = 0;
+  const cap = Math.max(0, params.maxDeletes);
+
+  do {
+    if (deletedCount >= cap) {
+      break;
+    }
+
+    const listed = await r2Client.send(
+      new ListObjectsV2Command({
+        Bucket: config.bucketName,
+        Prefix: params.prefix,
+        ContinuationToken: continuationToken,
+        MaxKeys: 1000,
+      })
+    );
+
+    const staleKeys = (listed.Contents || [])
+      .filter((item) => item.Key && item.LastModified && item.LastModified < params.olderThan)
+      .map((item) => item.Key as string);
+
+    const remaining = cap - deletedCount;
+    const batchKeys = staleKeys.slice(0, remaining);
+
+    for (let index = 0; index < batchKeys.length; index += DELETE_BATCH_SIZE) {
+      const batch = batchKeys.slice(index, index + DELETE_BATCH_SIZE);
+      if (batch.length === 0) continue;
+
+      const result = await r2Client.send(
+        new DeleteObjectsCommand({
+          Bucket: config.bucketName,
+          Delete: {
+            Objects: batch.map((key) => ({ Key: key })),
+            Quiet: true,
+          },
+        })
+      );
+      deletedCount += result.Deleted?.length || 0;
+      batch.forEach((key) => params.onEachDelete?.(key));
+      if (deletedCount >= cap) {
+        break;
+      }
+    }
+
+    continuationToken = listed.IsTruncated ? listed.NextContinuationToken : undefined;
+  } while (continuationToken && deletedCount < cap);
+
+  return deletedCount;
+}

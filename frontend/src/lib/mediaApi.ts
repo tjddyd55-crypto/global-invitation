@@ -59,7 +59,11 @@ type ResolvedUploadTarget = {
 };
 
 type PresignResponse = {
+  /** 스테이징 키 (PUT 대상). backend: stagingObjectKey === fileKey */
+  stagingObjectKey?: string;
+  /** 최종 엔티티 키 (confirm 시 objectKey) */
   objectKey?: string;
+  finalObjectKey?: string;
   fileKey?: string;
   uploadUrl: string;
   publicUrl?: string;
@@ -353,6 +357,7 @@ async function uploadToR2Direct(
 
 async function confirmDirectUpload(params: {
   target: ResolvedUploadTarget;
+  stagingObjectKey: string;
   objectKey: string;
   publicUrl: string;
   file: File;
@@ -365,6 +370,7 @@ async function confirmDirectUpload(params: {
       ...buildAuthHeaders(),
     },
     body: JSON.stringify({
+      stagingObjectKey: params.stagingObjectKey,
       objectKey: params.objectKey,
       publicUrl: params.publicUrl,
       contentType: params.file.type,
@@ -447,9 +453,13 @@ export async function uploadMediaImage(file: File, options?: UploadMediaOptions)
   }
 
   const uploadUrl = presigned.uploadUrl;
-  const objectKey = (presigned.objectKey || presigned.fileKey || '').trim();
+  let stagingObjectKey = (presigned.stagingObjectKey || presigned.fileKey || '').trim();
+  const finalObjectKey = (presigned.finalObjectKey || presigned.objectKey || '').trim();
+  if (!stagingObjectKey && finalObjectKey) {
+    stagingObjectKey = finalObjectKey;
+  }
   const publicUrl = normalizePublicUrl((presigned.publicUrl || presigned.url || '').trim());
-  if (!uploadUrl || !objectKey || !publicUrl) {
+  if (!uploadUrl || !stagingObjectKey || !finalObjectKey || !publicUrl) {
     throw new Error('presign 응답이 올바르지 않습니다.');
   }
 
@@ -457,7 +467,8 @@ export async function uploadMediaImage(file: File, options?: UploadMediaOptions)
     await uploadToR2Direct(uploadUrl, fileToUpload, resolved.onProgress);
     const confirmed = await confirmDirectUpload({
       target,
-      objectKey,
+      stagingObjectKey,
+      objectKey: finalObjectKey,
       publicUrl,
       file: fileToUpload,
     });
