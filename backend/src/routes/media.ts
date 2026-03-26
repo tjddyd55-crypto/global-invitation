@@ -3,16 +3,13 @@ import multer from 'multer';
 import { buildCanonicalPublicUrl, mapScopeToType } from '../lib/mediaKeyBuilder';
 import prisma from '../lib/prisma';
 import { getAuthUser } from '../lib/auth';
-import { buildPublicFileUrl } from '../lib/storage/r2Client';
-import { parseMediaObjectKey, type MediaScope } from '../lib/media/keys';
+import { type MediaScope } from '../lib/media/keys';
+import { uploadImage, type MediaAssetType, type MediaContext } from '../storage/mediaStorage';
 import {
-  deleteImageByUrl,
-  resolveStorageKeyFromUrl,
-  uploadImage,
-  type MediaAssetType,
-  type MediaContext,
-} from '../storage/mediaStorage';
-import { confirmMediaUpload, createMediaPresign, markMediaDeletedByObjectKey } from '../services/mediaService';
+  confirmMediaUpload,
+  createMediaPresign,
+  deleteMediaForAuthenticatedUser,
+} from '../services/mediaService';
 
 const router = Router();
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -109,17 +106,6 @@ function normalizeFolderWithOptionalE2EPrefix(rawFolder: unknown): NormalizedFol
     normalizedFolder: stripped,
     hasE2EPrefix: true,
   };
-}
-
-function stripE2EPrefixFromStorageKey(key: string): string {
-  const normalized = key.trim().replace(/^\/+/, '');
-  if (!normalized.startsWith(`${E2E_MEDIA_PREFIX}/`)) {
-    return normalized;
-  }
-  if (!isE2ETestModeEnabled()) {
-    return normalized;
-  }
-  return normalized.slice(`${E2E_MEDIA_PREFIX}/`.length);
 }
 
 function folderToScopeFromNormalizedFolder(normalizedFolder: string): {
@@ -244,98 +230,6 @@ async function canUploadForContext(params: {
 
   if (!entityId) return true;
   return entityId === userId;
-}
-
-async function canDeleteByStorageKey(params: {
-  userId: string;
-  isCreator: boolean;
-  key: string;
-}): Promise<boolean> {
-  const keyForAuthorization = stripE2EPrefixFromStorageKey(params.key);
-  const segments = keyForAuthorization.split('/').filter(Boolean);
-  if (segments.length < 2) return false;
-
-  if (segments[0] === 'temp') {
-    return false;
-  }
-
-  if (segments[0] === 'users') {
-    return segments[1] === params.userId;
-  }
-
-  if (segments[0] === 'template' && segments.length >= 2) {
-    if (!params.isCreator) return false;
-    const templateId = segments[1] || '';
-    return canAccessTemplateMedia(params.userId, templateId);
-  }
-
-  if (segments[0] === 'invitations') {
-    const invitationId = segments[1] || '';
-    return canAccessInvitationMedia(params.userId, invitationId);
-  }
-
-  if (segments[0] === 'templates') {
-    if (!params.isCreator) return false;
-    if (segments[1] === 'thumbnails') {
-      const fileNameOrFolder = segments[2] || '';
-      const entityId =
-        segments.length > 3
-          ? fileNameOrFolder
-          : fileNameOrFolder.replace(/\.webp$/i, '').replace(/^thumb_/i, '');
-      return canAccessTemplateMedia(params.userId, entityId);
-    }
-  }
-
-  if (segments[0] === 'creator') {
-    if (!params.isCreator) return false;
-    const creatorId = segments[1] || '';
-    const entityId = segments[2] || '';
-    const assetsSegment = segments[3] || '';
-    if (assetsSegment !== 'assets') {
-      return false;
-    }
-    if (creatorId !== params.userId) return false;
-    return canAccessTemplateMedia(params.userId, entityId);
-  }
-
-  if (segments[0] === 'invitation') {
-    if (
-      segments.length >= 3 &&
-      segments[1] &&
-      (segments[2] === 'hero' || segments[2] === 'gallery') &&
-      segments[1] !== 'temp' &&
-      segments[1] !== 'hero' &&
-      segments[1] !== 'gallery' &&
-      segments[1] !== 'invitations' &&
-      segments[1] !== 'templates'
-    ) {
-      const invitationId = segments[1] || '';
-      return canAccessInvitationMedia(params.userId, invitationId);
-    }
-    if (segments[1] === 'hero' || segments[1] === 'gallery') {
-      const invitationId = segments[2] || '';
-      return canAccessInvitationMedia(params.userId, invitationId);
-    }
-    if (segments[1] === 'invitations') {
-      const invitationId = segments[2] || '';
-      return canAccessInvitationMedia(params.userId, invitationId);
-    }
-    if (segments[1] === 'templates' && segments.length >= 4) {
-      if (!params.isCreator) return false;
-      const templateId = segments[2] || '';
-      return canAccessTemplateMedia(params.userId, templateId);
-    }
-    if (segments[1] === 'thumbnails') {
-      if (!params.isCreator) return false;
-      const file = segments[2] || '';
-      const mainMatch = /^([a-zA-Z0-9_-]+)\.jpg$/i.exec(file);
-      const companionMatch = /^thumb_([a-zA-Z0-9_-]+)\.jpg$/i.exec(file);
-      const entityId = (mainMatch && !file.startsWith('thumb_') ? mainMatch[1] : null) || companionMatch?.[1] || '';
-      return canAccessTemplateMedia(params.userId, entityId);
-    }
-  }
-
-  return false;
 }
 
 router.post('/upload', (req, res) => {
@@ -664,40 +558,28 @@ router.delete('/', async (req, res) => {
       return res.status(401).json({ error: 'AUTH_REQUIRED' });
     }
 
-    const fileKey = normalizeText(req.body?.fileKey);
-    const fileUrlInput = normalizeText(req.body?.url) || normalizeText(req.body?.fileUrl);
-    const fileUrl = fileKey ? buildPublicFileUrl(fileKey) : fileUrlInput;
-    if (!fileUrl) {
-      return res.status(400).json({ error: 'MEDIA_URL_REQUIRED' });
-    }
-
-    const key = resolveStorageKeyFromUrl(fileUrl);
-    if (!key) {
-      return res.status(400).json({ error: 'INVALID_MEDIA_URL' });
-    }
-    const parsedKey = parseMediaObjectKey(key);
-
-    const canDelete = await canDeleteByStorageKey({
-      userId: user.id,
-      isCreator: isCreatorActor(user),
-      key,
-    });
-    if (!canDelete) {
-      return res.status(401).json({ error: 'UNAUTHORIZED_MEDIA_ACCESS' });
-    }
-
-    await deleteImageByUrl(fileUrl);
-    if (parsedKey) {
-      await markMediaDeletedByObjectKey({
-        objectKey: key,
-        userId: user.id,
-      }).catch((error) => {
-        console.warn('Failed to mark media file as deleted:', error);
-      });
-    }
+    await deleteMediaForAuthenticatedUser(
+      { id: user.id, role: String(user.role || '') },
+      {
+        objectKey:
+          normalizeText(req.body?.objectKey) ||
+          normalizeText(req.body?.fileKey) ||
+          normalizeText(req.body?.finalObjectKey),
+        url: normalizeText(req.body?.url) || normalizeText(req.body?.fileUrl),
+      }
+    );
 
     return res.status(200).json({ success: true });
   } catch (deleteError) {
+    if (deleteError instanceof Error && deleteError.message === 'MEDIA_TARGET_REQUIRED') {
+      return res.status(400).json({ error: 'MEDIA_URL_REQUIRED' });
+    }
+    if (deleteError instanceof Error && deleteError.message === 'INVALID_MEDIA_URL') {
+      return res.status(400).json({ error: 'INVALID_MEDIA_URL' });
+    }
+    if (deleteError instanceof Error && deleteError.message === 'UNAUTHORIZED_MEDIA_ACCESS') {
+      return res.status(401).json({ error: 'UNAUTHORIZED_MEDIA_ACCESS' });
+    }
     if (deleteError instanceof Error && deleteError.message === 'R2_STORAGE_NOT_CONFIGURED') {
       return res.status(503).json({ error: 'R2_STORAGE_NOT_CONFIGURED' });
     }

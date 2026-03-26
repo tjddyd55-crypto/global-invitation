@@ -74,7 +74,9 @@ export interface TemplateDefinition {
   lifecycleStatus: TemplateLifecycleStatus;
   studioConfig?: Prisma.JsonValue | null;
   thumbnailUrl?: string | null;
+  thumbnailObjectKey?: string | null;
   previewThumbnailUrl?: string | null;
+  previewThumbnailObjectKey?: string | null;
   adminRejectReason?: string | null;
   sourceSubmissionId?: string | null;
   isActive: boolean;
@@ -100,7 +102,9 @@ export type TemplateCreateInput = {
   status?: TemplateStatus;
   studioConfig?: Prisma.InputJsonValue;
   thumbnailUrl?: string;
+  thumbnailObjectKey?: string;
   previewThumbnailUrl?: string;
+  previewThumbnailObjectKey?: string;
   sourceSubmissionId?: string;
 };
 
@@ -236,7 +240,9 @@ function mapTemplateRecord(
     status: TemplateStatus;
     studioConfig?: Prisma.JsonValue | null;
     thumbnailUrl?: string | null;
+    thumbnailObjectKey?: string | null;
     previewThumbnailUrl?: string | null;
+    previewThumbnailObjectKey?: string | null;
     adminRejectReason?: string | null;
     sourceSubmissionId?: string | null;
     isActive: boolean;
@@ -732,6 +738,8 @@ export async function createTemplate(input: TemplateCreateInput): Promise<Templa
   const slug = await createUniqueSlug(`${input.category}-${input.style}-${input.name}`);
   const normalizedThumbnail =
     normalizeText(input.thumbnailUrl || '') || normalizeText(input.previewThumbnailUrl || '') || null;
+  const thumbnailObjectKey = normalizeText(input.thumbnailObjectKey || '') || null;
+  const previewThumbnailObjectKey = normalizeText(input.previewThumbnailObjectKey || '') || thumbnailObjectKey;
   const row = await prisma.template.create({
     data: {
       slug,
@@ -749,6 +757,8 @@ export async function createTemplate(input: TemplateCreateInput): Promise<Templa
       studioConfig: input.studioConfig === undefined ? undefined : input.studioConfig,
       thumbnailUrl: normalizedThumbnail,
       previewThumbnailUrl: normalizedThumbnail,
+      thumbnailObjectKey,
+      previewThumbnailObjectKey,
       sourceSubmissionId: normalizeText(input.sourceSubmissionId || '') || null,
       isActive: true,
       isDeleted: false,
@@ -764,6 +774,7 @@ export async function createTemplate(input: TemplateCreateInput): Promise<Templa
     creatorShare: row.creatorShare,
     studioConfig: row.studioConfig as Prisma.InputJsonValue | null,
     thumbnailUrl: row.thumbnailUrl,
+    thumbnailObjectKey: row.thumbnailObjectKey,
   });
   return mapTemplateRecord(row);
 }
@@ -821,6 +832,16 @@ export async function updateTemplate(
     payload.thumbnailUrl = nextThumbnail;
     payload.previewThumbnailUrl = nextThumbnail;
   }
+  if (input.thumbnailObjectKey !== undefined) {
+    const nextKey = normalizeText(input.thumbnailObjectKey || '') || null;
+    payload.thumbnailObjectKey = nextKey;
+    if (input.previewThumbnailObjectKey === undefined) {
+      payload.previewThumbnailObjectKey = nextKey;
+    }
+  }
+  if (input.previewThumbnailObjectKey !== undefined) {
+    payload.previewThumbnailObjectKey = normalizeText(input.previewThumbnailObjectKey || '') || null;
+  }
   if (input.sourceSubmissionId !== undefined) {
     payload.sourceSubmissionId = normalizeText(input.sourceSubmissionId || '') || null;
   }
@@ -850,7 +871,9 @@ export async function updateTemplate(
     input.creatorShare !== undefined ||
     input.templateKey !== undefined ||
     input.studioConfig !== undefined ||
-    input.previewThumbnailUrl !== undefined;
+    input.previewThumbnailUrl !== undefined ||
+    input.thumbnailObjectKey !== undefined ||
+    input.previewThumbnailObjectKey !== undefined;
 
   if (shouldCreateVersion) {
     await createTemplateVersion({
@@ -863,6 +886,7 @@ export async function updateTemplate(
       creatorShare: row.creatorShare,
       studioConfig: row.studioConfig as Prisma.InputJsonValue | null,
       thumbnailUrl: row.thumbnailUrl,
+      thumbnailObjectKey: row.thumbnailObjectKey,
     });
   }
 
@@ -879,6 +903,7 @@ type TemplateVersionInput = {
   creatorShare: number;
   studioConfig?: Prisma.InputJsonValue | null;
   thumbnailUrl?: string | null;
+  thumbnailObjectKey?: string | null;
 };
 
 export async function createTemplateVersion(input: TemplateVersionInput) {
@@ -911,6 +936,7 @@ export async function createTemplateVersion(input: TemplateVersionInput) {
             ? Prisma.JsonNull
             : input.studioConfig,
       thumbnailUrl: input.thumbnailUrl || null,
+      thumbnailObjectKey: input.thumbnailObjectKey || null,
     },
   });
 }

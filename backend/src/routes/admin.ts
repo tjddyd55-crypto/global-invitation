@@ -595,6 +595,7 @@ router.post('/templates/:id/delete', async (req, res) => {
         creatorId: template.creatorId,
         sourceSubmissionId: template.sourceSubmissionId,
         previewThumbnailUrl: template.previewThumbnailUrl,
+        previewThumbnailObjectKey: template.previewThumbnailObjectKey,
       });
     } catch (cleanupError) {
       console.warn('Failed to cleanup template media:', cleanupError);

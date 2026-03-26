@@ -489,7 +489,18 @@ export async function uploadMediaImage(file: File, options?: UploadMediaOptions)
   }
 }
 
-export async function deleteMediaFile(fileUrl: string) {
+export async function deleteMediaFile(fileUrl: string, objectKey?: string) {
+  const trimmedKey = (objectKey || '').trim();
+  const trimmedUrl = (fileUrl || '').trim();
+  const payload =
+    trimmedKey.length > 0
+      ? { objectKey: trimmedKey, ...(trimmedUrl ? { url: trimmedUrl } : {}) }
+      : { url: trimmedUrl };
+
+  if (!trimmedKey && !trimmedUrl) {
+    throw new Error('삭제할 미디어 정보가 없습니다.');
+  }
+
   const response = await fetch(buildApiUrl('/api/media'), {
     method: 'DELETE',
     credentials: 'include',
@@ -497,7 +508,7 @@ export async function deleteMediaFile(fileUrl: string) {
       'Content-Type': 'application/json',
       ...buildAuthHeaders(),
     },
-    body: JSON.stringify({ url: fileUrl }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {

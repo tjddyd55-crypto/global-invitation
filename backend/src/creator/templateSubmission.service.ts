@@ -30,6 +30,7 @@ type SubmissionWithRelations = {
   status: TemplateSubmissionStatus;
   studioConfig: Prisma.JsonValue | null;
   previewThumbnailUrl: string | null;
+  previewThumbnailObjectKey: string | null;
   parentSubmissionId: string | null;
   revisionNumber: number;
   submittedAt: Date | null;
@@ -55,6 +56,7 @@ export type TemplateSubmissionDto = {
   status: TemplateSubmissionStatus;
   studioConfig: Prisma.JsonValue | null;
   previewThumbnailUrl: string | null;
+  previewThumbnailObjectKey: string | null;
   parentSubmissionId: string | null;
   revisionNumber: number;
   submittedAt: string | null;
@@ -129,6 +131,7 @@ export type UpdateTemplateSubmissionInput = {
   style?: string;
   price?: number;
   previewThumbnailUrl?: string;
+  previewThumbnailObjectKey?: string;
   studioConfig?: Prisma.InputJsonValue;
 };
 
@@ -210,6 +213,7 @@ function toDto(row: SubmissionWithRelations): TemplateSubmissionDto {
     status: row.status,
     studioConfig: row.studioConfig,
     previewThumbnailUrl: row.previewThumbnailUrl,
+    previewThumbnailObjectKey: row.previewThumbnailObjectKey,
     parentSubmissionId: row.parentSubmissionId,
     revisionNumber: row.revisionNumber,
     submittedAt: row.submittedAt ? row.submittedAt.toISOString() : null,
@@ -382,6 +386,7 @@ export async function createTemplateSubmissionDraft(
         creatorShare: number;
         studioConfig: Prisma.JsonValue | null;
         previewThumbnailUrl: string | null;
+        previewThumbnailObjectKey: string | null;
         revisionNumber: number;
       }
     | null = null;
@@ -403,6 +408,7 @@ export async function createTemplateSubmissionDraft(
         creatorShare: true,
         studioConfig: true,
         previewThumbnailUrl: true,
+        previewThumbnailObjectKey: true,
         revisionNumber: true,
       },
     });
@@ -458,6 +464,7 @@ export async function createTemplateSubmissionDraft(
           studioConfig: normalizedStudioConfig === undefined ? undefined : normalizedStudioConfig,
           previewThumbnailUrl:
             normalizeText(input.previewThumbnailUrl) || parentSubmission?.previewThumbnailUrl || null,
+          previewThumbnailObjectKey: parentSubmission?.previewThumbnailObjectKey ?? null,
           parentSubmissionId: parentSubmission?.id ?? null,
           revisionNumber,
           submittedAt: null,
@@ -997,6 +1004,8 @@ export async function approveTemplateSubmission(
         studioConfig: validation.normalized as Prisma.InputJsonValue,
         thumbnailUrl: submission.previewThumbnailUrl,
         previewThumbnailUrl: submission.previewThumbnailUrl,
+        thumbnailObjectKey: submission.previewThumbnailObjectKey,
+        previewThumbnailObjectKey: submission.previewThumbnailObjectKey,
         sourceSubmissionId: submission.id,
         isActive: true,
         isDeleted: false,
@@ -1015,6 +1024,7 @@ export async function approveTemplateSubmission(
         creatorShare: template.creatorShare,
         studioConfig: template.studioConfig === null ? Prisma.JsonNull : template.studioConfig,
         thumbnailUrl: template.thumbnailUrl,
+        thumbnailObjectKey: submission.previewThumbnailObjectKey,
       },
     });
 
@@ -1044,6 +1054,7 @@ export async function approveTemplateSubmission(
       dto: toDto(updated as SubmissionWithRelations),
       templateId: template.id,
       previewUrl: submission.previewThumbnailUrl,
+      previewObjectKey: submission.previewThumbnailObjectKey,
     };
   }, {
     maxWait: 10_000,
@@ -1052,16 +1063,27 @@ export async function approveTemplateSubmission(
 
   const canonical = await copySubmissionPreviewToCanonicalTemplateThumbnail(
     transactionResult.templateId,
-    transactionResult.previewUrl
+    {
+      sourceUrl: transactionResult.previewUrl,
+      sourceObjectKey: transactionResult.previewObjectKey,
+    }
   );
   if (canonical) {
     await prisma.template.update({
       where: { id: transactionResult.templateId },
-      data: { thumbnailUrl: canonical, previewThumbnailUrl: canonical },
+      data: {
+        thumbnailUrl: canonical.url,
+        previewThumbnailUrl: canonical.url,
+        thumbnailObjectKey: canonical.objectKey,
+        previewThumbnailObjectKey: canonical.objectKey,
+      },
     });
     await prisma.templateVersion.updateMany({
       where: { templateId: transactionResult.templateId, versionNumber: 1 },
-      data: { thumbnailUrl: canonical },
+      data: {
+        thumbnailUrl: canonical.url,
+        thumbnailObjectKey: canonical.objectKey,
+      },
     });
   }
 

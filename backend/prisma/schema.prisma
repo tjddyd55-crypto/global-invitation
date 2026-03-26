@@ -339,7 +339,9 @@ model Template {
   status          TemplateStatus @default(DRAFT)
   studioConfig    Json?    @map("studio_config") @db.JsonB
   thumbnailUrl    String?  @map("thumbnail_url")
+  thumbnailObjectKey String? @map("thumbnail_object_key")
   previewThumbnailUrl String? @map("preview_thumbnail_url")
+  previewThumbnailObjectKey String? @map("preview_thumbnail_object_key")
   /// 관리자가 템플릿을 REJECTED로 돌릴 때 필수로 남기는 사유 (크리에이터 피드백)
   adminRejectReason String? @map("admin_reject_reason")
   sourceSubmissionId String? @map("source_submission_id") @db.Uuid
@@ -390,6 +392,7 @@ model TemplateSubmission {
   status             TemplateSubmissionStatus @default(DRAFT)
   studioConfig       Json?                    @map("studio_config") @db.JsonB
   previewThumbnailUrl String?                 @map("preview_thumbnail_url")
+  previewThumbnailObjectKey String?            @map("preview_thumbnail_object_key")
   parentSubmissionId String?                  @map("parent_submission_id") @db.Uuid
   revisionNumber     Int                      @default(1) @map("revision_number")
   submittedAt        DateTime?                @map("submitted_at") @db.Timestamptz(6)
@@ -467,6 +470,7 @@ model TemplateVersion {
   creatorShare      Float    @map("creator_share")
   studioConfig      Json?    @map("studio_config") @db.JsonB
   thumbnailUrl      String?  @map("thumbnail_url")
+  thumbnailObjectKey String? @map("thumbnail_object_key")
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   template          Template       @relation(fields: [templateId], references: [id], onDelete: Cascade)

@@ -18,6 +18,8 @@ import { prepareInvitationOptimizedUploads } from '../lib/imageProcessor';
 import { buildCanonicalPublicUrl } from '../lib/mediaKeyBuilder';
 import { createPresignedUploadUrl, headObject, type HeadObjectResult } from '../lib/media/r2';
 import { deleteFile, readFileBuffer, uploadFile } from '../lib/storage/uploadToR2';
+import { canDeleteByStorageKey, isMediaTemplatePrivilegedRole } from '../lib/media/mediaDeleteAuthorization';
+import { deleteStoredMediaByObjectKey, resolveStorageKeyFromUrl } from '../storage/mediaStorage';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const SHARP_PIXEL_CAP = 60_000_000;
@@ -365,6 +367,7 @@ async function upsertTemplateMediaReference(params: {
       },
       data: {
         previewThumbnailUrl: params.publicUrl,
+        previewThumbnailObjectKey: params.objectKey,
       },
     }),
     prisma.template.updateMany({
@@ -375,10 +378,11 @@ async function upsertTemplateMediaReference(params: {
       data: {
         thumbnailUrl: params.publicUrl,
         previewThumbnailUrl: params.publicUrl,
+        thumbnailObjectKey: params.objectKey,
+        previewThumbnailObjectKey: params.objectKey,
       },
     }),
   ]);
-  void params.objectKey;
 }
 
 async function writeJpegWithThumb(mainKey: string, thumbKey: string, source: Buffer): Promise<void> {
@@ -735,6 +739,42 @@ export async function markMediaDeletedByObjectKey(input: {
     data: {
       deletedAt: new Date(),
     },
+  });
+}
+
+/**
+ * objectKey 우선, 없을 때에만 public URL 로 스토리지 키를 역산(레거시 클라이언트)합니다.
+ */
+export async function deleteMediaForAuthenticatedUser(
+  user: MediaAuthUser,
+  input: { objectKey?: string; url?: string }
+): Promise<void> {
+  const normalizedKey = normalizeText(input.objectKey).replace(/^\/+/, '');
+  let key = normalizedKey;
+  if (!key) {
+    const rawUrl = normalizeText(input.url || '').split('?')[0];
+    if (!rawUrl) {
+      throw new Error('MEDIA_TARGET_REQUIRED');
+    }
+    const fromUrl = resolveStorageKeyFromUrl(rawUrl);
+    if (!fromUrl) {
+      throw new Error('INVALID_MEDIA_URL');
+    }
+    key = fromUrl;
+  }
+
+  const allowed = await canDeleteByStorageKey({
+    userId: user.id,
+    isCreator: isMediaTemplatePrivilegedRole(user.role),
+    key,
+  });
+  if (!allowed) {
+    throw new Error('UNAUTHORIZED_MEDIA_ACCESS');
+  }
+
+  await deleteStoredMediaByObjectKey(key);
+  await markMediaDeletedByObjectKey({ objectKey: key, userId: user.id }).catch((error) => {
+    console.warn('Failed to mark media file as deleted:', error);
   });
 }
 

@@ -8,7 +8,7 @@ import {
   listAllObjectKeysUnderPrefix,
 } from '../lib/storage/uploadToR2';
 import { invitationEntityPrefix, templateEntityPrefix } from '../lib/media/keys';
-import { deleteImageByUrl, deleteStoragePrefix, sanitizePathSegment } from './mediaStorage';
+import { deleteImageByUrl, deleteMediaObjectKey, deleteStoragePrefix, sanitizePathSegment } from './mediaStorage';
 
 /** 신규 업로드에서는 사용하지 않는 구 스토리지 경로 (점진 삭제 대상) */
 export const LEGACY_MEDIA_STORAGE_PREFIXES = [
@@ -78,6 +78,7 @@ type TemplateMediaCleanupInput = {
   creatorId?: string | null;
   sourceSubmissionId?: string | null;
   previewThumbnailUrl?: string | null;
+  previewThumbnailObjectKey?: string | null;
 };
 
 function collectHttpUrlsFromJson(value: unknown, out: Set<string>): void {
@@ -209,7 +210,13 @@ export async function cleanupTemplateMedia(input: TemplateMediaCleanupInput): Pr
     deletedCount += await deleteStoragePrefix(`creator/${creatorId}/${sourceSubmissionId}`);
   }
 
-  if (input.previewThumbnailUrl?.trim()) {
+  const previewKey = input.previewThumbnailObjectKey?.trim();
+  if (previewKey) {
+    await deleteMediaObjectKey(previewKey).catch((error) => {
+      console.warn('[cleanup] delete preview object key failed', previewKey, error);
+    });
+    deletedCount += 1;
+  } else if (input.previewThumbnailUrl?.trim()) {
     const deleted = await deleteImageByUrl(input.previewThumbnailUrl);
     if (deleted) {
       deletedCount += 1;

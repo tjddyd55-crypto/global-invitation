@@ -77,6 +77,21 @@ export async function deleteMediaObjectKey(key: string): Promise<void> {
   await deleteFile(key);
 }
 
+/**
+ * 단일 객체 삭제 또는 접두사 단위 삭제(`…/` 로 끝나는 키는 해당 prefix 하위 전체).
+ */
+export async function deleteStoredMediaByObjectKey(objectKey: string): Promise<void> {
+  const normalized = objectKey.trim().replace(/^\/+/, '');
+  if (!normalized) {
+    return;
+  }
+  if (normalized.endsWith('/')) {
+    await deleteStoragePrefix(normalized.replace(/\/+$/, ''));
+    return;
+  }
+  await deleteMediaObjectKey(normalized);
+}
+
 export async function deleteStoragePrefix(prefix: string): Promise<number> {
   const normalized = normalizeFolder(prefix);
   return deleteFilesByPrefix(`${normalized}/`);

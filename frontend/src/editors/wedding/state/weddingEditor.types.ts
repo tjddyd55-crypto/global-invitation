@@ -34,6 +34,8 @@ export type WeddingEditorImage = {
   url: string;
   name?: string;
   mediaId?: string;
+  /** R2 객체 키(삭제 시 우선 사용) */
+  objectKey?: string;
 };
 
 export type WeddingEditorGallery = {

@@ -91,6 +91,7 @@ export default function MultiImageUploader({
           url: uploaded.url,
           name: file.name,
           mediaId: uploaded.fileKey,
+          objectKey: uploaded.objectKey,
         });
         updateQueueItem(queueItem.id, { status: 'done', progress: 100 });
       } catch (uploadError) {
@@ -123,7 +124,7 @@ export default function MultiImageUploader({
     setError(null);
 
     try {
-      await deleteMediaFile(target.url);
+      await deleteMediaFile(target.url, target.objectKey);
 
       const nextImages = images.filter((_, idx) => idx !== index);
       onChange(nextImages);

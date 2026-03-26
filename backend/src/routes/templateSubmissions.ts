@@ -187,6 +187,10 @@ router.patch('/template-submissions/:id', async (req, res) => {
         req.body?.previewThumbnailUrl !== undefined
           ? normalizeText(req.body.previewThumbnailUrl)
           : undefined,
+      previewThumbnailObjectKey:
+        req.body?.previewThumbnailObjectKey !== undefined
+          ? normalizeText(req.body.previewThumbnailObjectKey)
+          : undefined,
       studioConfig: req.body?.studioConfig,
     });
 
