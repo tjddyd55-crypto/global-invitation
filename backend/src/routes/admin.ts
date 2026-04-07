@@ -184,6 +184,7 @@ router.get('/invitations/:id/analytics', async (req, res) => {
       select: {
         id: true,
         slug: true,
+        shareSlug: true,
         title: true,
       },
     });

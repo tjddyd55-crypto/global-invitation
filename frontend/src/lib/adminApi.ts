@@ -88,6 +88,7 @@ export type AdminInvitationGuestList = {
   invitation: {
     id: string;
     slug: string;
+    shareSlug?: string | null;
     title?: string | null;
     rsvpDeadline?: string | null;
   };
@@ -103,6 +104,7 @@ export type InvitationAnalyticsSummary = {
   invitation: {
     id: string;
     slug: string;
+    shareSlug?: string | null;
     title?: string | null;
   };
   totalViews: number;

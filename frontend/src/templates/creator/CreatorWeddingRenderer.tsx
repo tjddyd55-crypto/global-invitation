@@ -15,6 +15,7 @@ type CreatorWeddingRendererProps = {
   showRsvp?: boolean;
   showGuestbook?: boolean;
   onShare?: () => void;
+  onKakaoShare?: () => void;
   isShared?: boolean;
 };
 
@@ -28,6 +29,7 @@ export default function CreatorWeddingRenderer({
   showRsvp,
   showGuestbook,
   onShare,
+  onKakaoShare,
   isShared,
 }: CreatorWeddingRendererProps) {
   const resolvedData = runtimeData ?? data;
@@ -46,6 +48,7 @@ export default function CreatorWeddingRenderer({
         showRsvp={mergedShowRsvp}
         showGuestbook={mergedShowGuestbook}
         onShare={onShare}
+        onKakaoShare={onKakaoShare}
         isShared={isShared}
       />
     </div>

@@ -1,5 +1,7 @@
 export type FuneralInvitation = {
-  templateKey: 'funeral_classic';
+  templateType?: 'FULL';
+  conceptType?: 'FUNERAL';
+  templateKey: 'funeral_classic' | 'invitation_full';
   deceasedName: string;
   birthDate?: string;
   deathDate: string;
@@ -32,12 +34,14 @@ export function isFuneralClassicDemoSlug(slug?: string | null): boolean {
 }
 
 export function isFuneralClassicTemplate(templateKey?: string | null): boolean {
-  return templateKey === 'funeral_classic';
+  return templateKey === 'funeral_classic' || templateKey === 'invitation_full';
 }
 
 export function getFuneralClassicDemoData(): FuneralInvitation {
   return {
-    templateKey: 'funeral_classic',
+    templateType: 'FULL',
+    conceptType: 'FUNERAL',
+    templateKey: 'invitation_full',
     deceasedName: '홍길동',
     birthDate: '1952-04-11',
     deathDate: '2035-05-02',

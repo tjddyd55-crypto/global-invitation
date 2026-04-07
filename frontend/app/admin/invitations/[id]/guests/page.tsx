@@ -12,6 +12,7 @@ import {
   type AdminInvitationGuestList,
 } from '@/src/lib/adminApi';
 import styles from '@/src/components/admin/AdminShell.module.css';
+import { buildPublicInvitationUrlPath } from '@/src/lib/publicInvitation';
 
 type AdminInvitationGuestsPageProps = {
   params: {
@@ -157,7 +158,11 @@ export default function AdminInvitationGuestsPage({ params }: AdminInvitationGue
             {exporting ? 'Exporting...' : 'Export CSV'}
           </button>
           <Link
-            href={`/invitation/${guestList.invitation.slug}`}
+            href={
+              guestList.invitation.shareSlug?.trim()
+                ? buildPublicInvitationUrlPath(guestList.invitation.shareSlug.trim())
+                : `/invitation/${guestList.invitation.slug}`
+            }
             target="_blank"
             rel="noreferrer"
             className={styles.button}

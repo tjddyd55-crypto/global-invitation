@@ -33,39 +33,14 @@ const DEFAULT_FORM = {
   message: '',
 };
 
-function getRsvpStorageKey(invitationSlug: string) {
-  return `invitation_rsvp_submission_${invitationSlug}`;
-}
-
-function loadStoredRsvp(invitationSlug: string): RsvpSubmissionResponse['rsvp'] | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(getRsvpStorageKey(invitationSlug));
-    if (!raw) return null;
-    return JSON.parse(raw) as RsvpSubmissionResponse['rsvp'];
-  } catch {
-    return null;
-  }
-}
-
-function saveStoredRsvp(invitationSlug: string, rsvp: RsvpSubmissionResponse['rsvp']) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(getRsvpStorageKey(invitationSlug), JSON.stringify(rsvp));
-  } catch {
-    // ignore storage errors
-  }
-}
-
 export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
-  const storedRsvp = loadStoredRsvp(invitationSlug);
   const [guestName, setGuestName] = useState(DEFAULT_FORM.guestName);
   const [attendance, setAttendance] = useState<AttendanceValue>(DEFAULT_FORM.attendance);
   const [guestCount, setGuestCount] = useState(DEFAULT_FORM.guestCount);
   const [mealChoice, setMealChoice] = useState(DEFAULT_FORM.mealChoice);
   const [message, setMessage] = useState(DEFAULT_FORM.message);
-  const [rsvpId, setRsvpId] = useState<string | null>(storedRsvp?.id ?? null);
-  const [submittedGuestName, setSubmittedGuestName] = useState<string | null>(storedRsvp?.guestName ?? null);
+  const [rsvpId, setRsvpId] = useState<string | null>(null);
+  const [submittedGuestName, setSubmittedGuestName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -132,7 +107,6 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
       const payload = (await response.json()) as RsvpSubmissionResponse;
       setRsvpId(payload.rsvp.id);
       setSubmittedGuestName(payload.rsvp.guestName);
-      saveStoredRsvp(invitationSlug, payload.rsvp);
       setSuccess(
         payload.mode === 'updated'
           ? '기존 RSVP 응답이 업데이트되었습니다.'

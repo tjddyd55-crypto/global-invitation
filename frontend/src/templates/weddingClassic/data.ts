@@ -3,10 +3,10 @@ import { formatDate, formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/lib/api';
 
 export type WeddingClassicPerson = {
-  image: string;
+  image?: string;
   name: string;
-  phone: string;
-  parentsText: string;
+  phone?: string;
+  parentsText?: string;
 };
 
 export type WeddingClassicAccount = {
@@ -23,32 +23,66 @@ export type WeddingClassicMessage = {
 };
 
 export type WeddingClassicData = {
+  templateType: 'FULL';
+  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  /** 공통 필드 */
+  title: string;
+  content: string;
+  eventDate: string;
+  locationText: string;
+  schedule: string[];
+  rsvpEnabled: boolean;
+  share?: {
+    ogTitle?: string;
+    ogDescription?: string;
+    ogImage?: string;
+  };
+  musicKey?: string;
   heroImage: string;
-  heroOverlayText?: string;
-  heroTitle: string;
-  heroSubtitle: string;
-  coupleNames: string;
-  weddingDateTime: string;
-  venueName: string;
-  introQuote: string;
-  introText: string[];
-  groom: WeddingClassicPerson;
-  bride: WeddingClassicPerson;
-  weddingDate: Date;
-  calendarTitle: string;
   galleryImages: string[];
-  address: string;
-  mapImage: string;
-  transportInfo: string[];
-  parkingInfo: string[];
-  rsvp?: { enabled?: boolean };
-  rsvpTitle: string;
-  rsvpDescription: string;
-  rsvpButton: string;
-  accountsTitle: string;
   accounts: WeddingClassicAccount[];
-  messagesTitle: string;
-  messages: WeddingClassicMessage[];
+  /** 컨셉 확장 필드 */
+  groomName?: string;
+  brideName?: string;
+  groomPhone?: string;
+  bridePhone?: string;
+  parentsInfo?: string;
+  deceasedName?: string;
+  funeralHall?: string;
+  funeralDate?: string;
+  contactPerson?: string;
+  /** 하위 호환(기존 렌더 경로) */
+  heroOverlayText?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  coupleNames?: string;
+  weddingDateTime?: string;
+  venueName?: string;
+  introQuote?: string;
+  introText?: string[];
+  groom?: WeddingClassicPerson;
+  bride?: WeddingClassicPerson;
+  funeral?: {
+    deceased?: string;
+    funeralHall?: string;
+    schedule?: string;
+  };
+  weddingDate?: Date;
+  calendarTitle?: string;
+  address: string;
+  /** WGS84 (에디터 STEP6), 저장 시 JSON에 포함 */
+  mapLat?: number;
+  mapLng?: number;
+  mapImage?: string;
+  transportInfo?: string[];
+  parkingInfo?: string[];
+  rsvp?: { enabled?: boolean };
+  rsvpTitle?: string;
+  rsvpDescription?: string;
+  rsvpButton?: string;
+  accountsTitle?: string;
+  messagesTitle?: string;
+  messages?: WeddingClassicMessage[];
 };
 
 const HERO_IMAGE = '/images/wedding/classic/hero.jpg';
@@ -113,7 +147,7 @@ export function buildWeddingClassicHeroTitle(groomName: string, brideName: strin
   return template.replace('{groom}', groom).replace('{bride}', bride);
 }
 
-export const WEDDING_CLASSIC_TEMPLATE_KEYS = new Set(['wedding_classic', 'classic']);
+export const WEDDING_CLASSIC_TEMPLATE_KEYS = new Set(['wedding_classic', 'classic', 'invitation_full']);
 export const DEMO_WEDDING_CLASSIC_SLUG = 'demo-wedding-classic';
 export const SAMPLE_WEDDING_SLUG = 'sample-wedding';
 
@@ -175,6 +209,21 @@ export function buildWeddingClassicData(
   const brideFatherLabel = translate(language, I18N_KEYS.relationship.brideFather);
 
   return {
+    templateType: 'FULL',
+    conceptType: 'WEDDING',
+    title: coupleNames,
+    content:
+      '봄날의 햇살 아래, 결혼합니다.\n사랑의 선율 속에서,\n저희 두 사람이 하나 되어 행복한 춤을 시작하려 합니다.',
+    eventDate: weddingDate.toISOString(),
+    locationText: invitation?.locationText || '더링크호텔 서울 3층 베일리홀',
+    schedule: [formatDateTime(language, weddingDate)],
+    rsvpEnabled: true,
+    share: {
+      ogTitle: heroTitle,
+      ogDescription: `${formatDateTime(language, weddingDate)} · ${invitation?.locationText || '더링크호텔 서울'}`,
+      ogImage: HERO_IMAGE,
+    },
+    musicKey: invitation?.musicKey || 'piano_wedding',
     heroImage: HERO_IMAGE,
     heroOverlayText: translate(language, I18N_KEYS.weddingClassic.heroOverlayText),
     heroTitle,
@@ -197,12 +246,17 @@ export function buildWeddingClassicData(
       phone: '010-1234-5678',
       parentsText: '유갑성 · 우재한 의 아들',
     },
+    groomName,
+    groomPhone: '010-1234-5678',
     bride: {
       image: BRIDE_IMAGE,
       name: `${brideLabel} ${brideName}`,
       phone: '010-9876-5432',
       parentsText: '이상금 · 형명숙 의 딸',
     },
+    brideName,
+    bridePhone: '010-9876-5432',
+    parentsInfo: '유갑성 · 우재한 의 아들 / 이상금 · 형명숙 의 딸',
     weddingDate,
     calendarTitle: buildWeddingClassicCalendarTitle(weddingDate, language),
     galleryImages: GALLERY_IMAGES,

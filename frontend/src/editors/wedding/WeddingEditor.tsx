@@ -44,6 +44,13 @@ const EDITOR_SECTIONS: EditorSectionItem[] = [
   { key: 'share', title: 'Share' },
 ];
 
+function resolveVisibleSections(conceptType: WeddingEditorState['setup']['conceptType']): EditorSectionItem[] {
+  if (conceptType === 'WEDDING') {
+    return EDITOR_SECTIONS;
+  }
+  return EDITOR_SECTIONS.filter((section) => section.key !== 'couple');
+}
+
 type WeddingEditorProps = {
   initialState: WeddingEditorState;
   pageUrl: string;
@@ -94,6 +101,7 @@ export default function WeddingEditor({
 
   const previewData = useMemo(() => buildWeddingClassicPreviewData(state), [state]);
   const sharePreview = useMemo(() => buildSharePreview(state), [state]);
+  const visibleSections = useMemo(() => resolveVisibleSections(state.setup.conceptType), [state.setup.conceptType]);
 
   useEffect(() => {
     if (previewLoggedRef.current || !fullscreenPreviewOpen) return;
@@ -134,13 +142,13 @@ export default function WeddingEditor({
       }
     );
 
-    EDITOR_SECTIONS.forEach((section) => {
+    visibleSections.forEach((section) => {
       const node = sectionRefs.current[section.key];
       if (node) observer.observe(node);
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [visibleSections]);
 
   useEffect(() => {
     const sentinel = mobileNavSentinelRef.current;
@@ -244,7 +252,7 @@ export default function WeddingEditor({
       <div className={styles.editorLayout}>
         <aside className={styles.navColumn}>
           <nav className={styles.sectionNav}>
-            {EDITOR_SECTIONS.map((section) => {
+            {visibleSections.map((section) => {
               const isActive = section.key === activeSection;
               return (
                 <button
@@ -266,7 +274,7 @@ export default function WeddingEditor({
         >
           <div ref={mobileNavSentinelRef} className={styles.mobileNavSentinel} aria-hidden />
           <div className={`${styles.mobileSectionNav} ${isMobileNavPinned ? styles.mobileSectionNavPinned : ''}`}>
-            {EDITOR_SECTIONS.map((section) => {
+            {visibleSections.map((section) => {
               const isActive = section.key === activeSection;
               return (
                 <button
@@ -288,7 +296,11 @@ export default function WeddingEditor({
               ref={setSectionRef('basic')}
             >
               <Step0Setup value={state.setup} onChange={(payload) => dispatch({ type: 'SET_SETUP', payload })} />
-              <Step1BasicInfo value={state.basic} onChange={(payload) => dispatch({ type: 'SET_BASIC', payload })} />
+              <Step1BasicInfo
+                value={state.basic}
+                conceptType={state.setup.conceptType}
+                onChange={(payload) => dispatch({ type: 'SET_BASIC', payload })}
+              />
               <Step3InvitationMessage
                 value={state.invitationMessage}
                 onChange={(payload) => dispatch({ type: 'SET_INVITATION_MESSAGE', payload })}
@@ -303,18 +315,20 @@ export default function WeddingEditor({
               <Step2HeroImage value={state.hero} onChange={(payload) => dispatch({ type: 'SET_HERO', payload })} />
             </section>
 
-            <section
-              className={styles.editorSection}
-              data-section-key="couple"
-              ref={setSectionRef('couple')}
-            >
-              <Step4CoupleInfo
-                groom={state.groom}
-                bride={state.bride}
-                onGroomChange={(payload) => dispatch({ type: 'SET_GROOM', payload })}
-                onBrideChange={(payload) => dispatch({ type: 'SET_BRIDE', payload })}
-              />
-            </section>
+            {state.setup.conceptType === 'WEDDING' && (
+              <section
+                className={styles.editorSection}
+                data-section-key="couple"
+                ref={setSectionRef('couple')}
+              >
+                <Step4CoupleInfo
+                  groom={state.groom}
+                  bride={state.bride}
+                  onGroomChange={(payload) => dispatch({ type: 'SET_GROOM', payload })}
+                  onBrideChange={(payload) => dispatch({ type: 'SET_BRIDE', payload })}
+                />
+              </section>
+            )}
 
             <section
               className={styles.editorSection}

@@ -27,13 +27,12 @@ type TemplatePreviewWrapperProps = {
 function resolvePreviewScale(templateKey: string) {
   const entry = getTemplateRegistryEntry(templateKey);
   if (!entry) return 0.28;
-  if (entry.category === 'message') return 0.3;
   if (entry.category === 'funeral') return 0.29;
   return 0.24;
 }
 
 function isCreatorTemplateKey(templateKey: string): boolean {
-  return /^creator_(wedding|funeral|message)_[a-z0-9_]+$/.test(templateKey);
+  return /^creator_(wedding|funeral)_[a-z0-9_]+$/.test(templateKey);
 }
 
 function buildPreviewProps(templateKey: string, data: unknown, studioConfig?: unknown) {
@@ -48,6 +47,8 @@ function buildPreviewProps(templateKey: string, data: unknown, studioConfig?: un
   switch (templateKey) {
     case 'wedding_classic':
     case 'classic':
+    case 'funeral_classic':
+    case 'invitation_full':
       return {
         ...baseProps,
         invitationSlug: `preview-${templateKey}`,

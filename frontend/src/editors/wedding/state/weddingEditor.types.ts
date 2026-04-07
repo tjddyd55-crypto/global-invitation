@@ -1,6 +1,7 @@
 export type WeddingEditorSetup = {
   invitationType: 'wedding';
-  templateKey: 'wedding_classic' | 'classic';
+  templateKey: 'invitation_full';
+  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
   language: 'ko' | 'en' | 'mn';
 };
 

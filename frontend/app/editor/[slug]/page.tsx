@@ -26,16 +26,22 @@ import {
   getFuneralClassicDemoData,
   isFuneralClassicDemoSlug,
 } from '@/src/templates/funeralClassic/data';
-import type { FuneralInvitationData, WeddingInvitationData } from '@/src/invitation/schemas';
-import { isFuneralInvitationData, isWeddingInvitationData } from '@/src/invitation/schemas';
+import type {
+  FuneralInvitationData,
+  InvitationConceptType,
+  WeddingInvitationData,
+} from '@/src/invitation/schemas';
+import {
+  isFuneralInvitationData,
+  isWeddingInvitationData,
+  resolveInvitationConceptType,
+} from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import { ensureGuestToken, getStoredSession, setGuestToken, setLastDraftSlug } from '@/src/lib/auth';
 import {
-  fetchTemplateDefinitionById,
   getTemplateEditorPath,
-  getTemplateEditorType,
 } from '@/src/templates/registry';
 
 type EditorError = {
@@ -57,6 +63,57 @@ function trackEvent(payload: Parameters<typeof logEvent>[0]) {
   void logEvent(payload);
 }
 
+function resolveConceptFromQuery(value: string | null): InvitationConceptType | null {
+  if (value === 'WEDDING' || value === 'FUNERAL' || value === 'GENERAL') {
+    return value;
+  }
+  return null;
+}
+
+function buildFullDataFromFuneralState(state: FuneralEditorState): WeddingInvitationData {
+  const funeralDate = new Date(state.schedule.funeralDate);
+  const normalizedDate = Number.isNaN(funeralDate.getTime()) ? new Date() : funeralDate;
+  const eventDateIso = normalizedDate.toISOString();
+  return {
+    templateType: 'FULL',
+    conceptType: 'FUNERAL',
+    title: state.deceasedName ? `${state.deceasedName} 추모 초대` : '추모 초대',
+    content: state.message || '',
+    eventDate: eventDateIso,
+    locationText: state.funeralHall.address || state.funeralHall.name || '',
+    schedule: [
+      state.schedule.wakeStart || '',
+      state.schedule.funeralDate || '',
+      state.schedule.burial || '',
+    ].filter(Boolean),
+    rsvpEnabled: true,
+    musicKey: 'piano_wedding',
+    heroImage: state.heroImage || '/images/wedding/classic/hero.jpg',
+    heroTitle: state.deceasedName ? `${state.deceasedName} 추모 초대` : '추모 초대',
+    heroSubtitle: state.schedule.funeralDate || '',
+    weddingDate: normalizedDate,
+    weddingDateTime: state.schedule.funeralDate || eventDateIso,
+    venueName: state.funeralHall.name || '',
+    introQuote: state.message || '',
+    introText: state.familyMembers ?? [],
+    galleryImages: [],
+    accounts: [],
+    address: state.funeralHall.address || '',
+    mapImage: state.funeralHall.mapImage,
+    mapLat: state.funeralHall.mapLat,
+    mapLng: state.funeralHall.mapLng,
+    deceasedName: state.deceasedName,
+    funeralHall: state.funeralHall.name,
+    funeralDate: state.schedule.funeralDate,
+    contactPerson: state.contact ? `${state.contact.name} ${state.contact.phone}`.trim() : '',
+    funeral: {
+      deceased: state.deceasedName,
+      funeralHall: state.funeralHall.name,
+      schedule: state.schedule.funeralDate,
+    },
+  };
+}
+
 export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
@@ -65,6 +122,7 @@ export default function EditorPage() {
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
   const requestedTemplate = searchParams.get('template');
   const requestedToken = searchParams.get('token');
+  const requestedConcept = resolveConceptFromQuery(searchParams.get('concept'));
   const { language } = useI18n();
   const editorLoggedRef = useRef(false);
   const saveNoticeTimerRef = useRef<number | null>(null);
@@ -83,6 +141,7 @@ export default function EditorPage() {
   const [shareUiNotice, setShareUiNotice] = useState<string | null>(null);
   const [funeralData, setFuneralData] = useState<ReturnType<typeof getFuneralClassicDemoData> | null>(null);
   const [hasSession, setHasSession] = useState(false);
+  const [conceptType, setConceptType] = useState<InvitationConceptType>(requestedConcept || 'WEDDING');
 
   const isFuneralDemo = isFuneralClassicDemoSlug(slug);
 
@@ -127,11 +186,13 @@ export default function EditorPage() {
       setSaveNotice(null);
       setShareUrl(null);
       setShareUiNotice(null);
+      setConceptType(requestedConcept || 'WEDDING');
 
       try {
         if (isFuneralDemo) {
           if (!isMounted) return;
           setFuneralData(getFuneralClassicDemoData());
+          setConceptType('FUNERAL');
           return;
         }
 
@@ -173,6 +234,8 @@ export default function EditorPage() {
         setInvitation(editorInvitation);
         const normalizedStatus = editorInvitation.status === 'published' ? 'published' : 'draft';
         setDraftStatus(normalizedStatus);
+        const runtimeData = editorInvitation.dataJson ?? editorInvitation.data;
+        setConceptType(requestedConcept || resolveInvitationConceptType(runtimeData, editorInvitation.templateKey));
         setLastSavedAt(editorInvitation.updatedAt ?? null);
         if (editorInvitation.shareSlug) {
           setShareUrl(`/i/${editorInvitation.shareSlug}`);
@@ -195,7 +258,7 @@ export default function EditorPage() {
     return () => {
       isMounted = false;
     };
-  }, [slug, router, isFuneralDemo, requestedTemplate, requestedToken]);
+  }, [slug, router, isFuneralDemo, requestedTemplate, requestedToken, requestedConcept]);
 
   useEffect(() => {
     if (!invitation || hasSession) return;
@@ -214,30 +277,41 @@ export default function EditorPage() {
     }
 
     if (invitation) {
-      const templateType = getTemplateEditorType(invitation.templateKey) === 'funeral' ? 'funeral' : 'wedding';
+      const templateType = conceptType === 'FUNERAL' ? 'funeral' : 'wedding';
       trackEvent({ eventType: 'editor_open', templateType, language, pageUrl });
       editorLoggedRef.current = true;
     }
-  }, [funeralData, invitation, language, pageUrl]);
+  }, [funeralData, invitation, language, pageUrl, conceptType]);
 
-  const editorType = useMemo(
-    () => getTemplateEditorType(invitation?.templateKey ?? (isFuneralDemo ? 'funeral_classic' : null)),
-    [invitation?.templateKey, isFuneralDemo]
-  );
+  const editorType = conceptType;
 
   const initialState = useMemo(() => {
-    if (!invitation || editorType !== 'wedding') return null;
+    if (!invitation || editorType === 'FUNERAL') return null;
     const runtimeData = (invitation.dataJson ?? invitation.data) as WeddingInvitationData | undefined;
     if (isWeddingInvitationData(runtimeData)) {
-      return createWeddingEditorStateFromDraft(invitation, runtimeData);
+      const draft = createWeddingEditorStateFromDraft(invitation, runtimeData);
+      return {
+        ...draft,
+        setup: {
+          ...draft.setup,
+          conceptType: editorType,
+        },
+      };
     }
-    return createWeddingEditorState(invitation);
+    const created = createWeddingEditorState(invitation);
+    return {
+      ...created,
+      setup: {
+        ...created.setup,
+        conceptType: editorType,
+      },
+    };
   }, [editorType, invitation]);
   const funeralInitialState = useMemo(() => {
     if (funeralData) {
       return createFuneralEditorState(funeralData);
     }
-    if (!invitation || editorType !== 'funeral') {
+    if (!invitation || editorType !== 'FUNERAL') {
       return null;
     }
 
@@ -323,14 +397,17 @@ export default function EditorPage() {
     setSaveError(null);
     setShareUiNotice(null);
 
+    const runtimeData = buildFullDataFromFuneralState(state);
     const invitationPayload: Invitation = {
       ...(invitation as Invitation),
-      templateKey: 'funeral_classic',
+      templateKey: 'invitation_full',
+      templateType: 'FULL',
+      conceptType: 'FUNERAL',
       title: `${state.deceasedName} 부고장`,
       eventDate: state.schedule.funeralDate,
       locationText: state.funeralHall.address || state.funeralHall.name,
       message: state.message,
-      data: state,
+      data: runtimeData,
       status: 'draft',
     };
 
@@ -343,7 +420,7 @@ export default function EditorPage() {
           locationText: invitationPayload.locationText,
           message: invitationPayload.message,
           templateKey: invitationPayload.templateKey,
-          data_json: state,
+          data_json: runtimeData,
         },
         requestedToken
       );
@@ -453,7 +530,7 @@ export default function EditorPage() {
     );
   }
 
-  if (editorType === 'funeral' && funeralInitialState) {
+  if (editorType === 'FUNERAL' && funeralInitialState) {
     return (
       <FuneralEditor
         initialState={funeralInitialState}
@@ -464,7 +541,7 @@ export default function EditorPage() {
     );
   }
 
-  if (editorType === 'wedding' && initialState) {
+  if (editorType !== 'FUNERAL' && initialState) {
     return (
       <>
         {shareUrl && (

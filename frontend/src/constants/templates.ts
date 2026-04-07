@@ -15,110 +15,23 @@ export interface Template {
 
 export const TEMPLATES: Template[] = [
   {
-    key: 'basic',
-    i18nKey: 'BASIC',
-    defaultMusicKey: 'piano_soft',
-    thumbnail: '/templates/basic.jpg',
-    tags: {
-      country: ['GLOBAL'],
-      mood: ['SIMPLE', 'MINIMAL'],
-      event: ['WEDDING', 'ANNIVERSARY'],
-    },
-    price: 0,
-    isRecommended: true,
-  },
-  {
-    key: 'wedding_classic',
-    i18nKey: 'CLASSIC',
+    key: 'invitation_full',
+    i18nKey: 'FULL',
     defaultMusicKey: 'piano_wedding',
-    thumbnail: '/templates/classic.jpg',
+    thumbnail: '/templates/full.jpg',
     tags: {
       country: ['GLOBAL'],
-      mood: ['CLASSIC', 'PREMIUM'],
-      event: ['WEDDING'],
-    },
-    price: 5,
-    isRecommended: true,
-  },
-  {
-    key: 'modern',
-    i18nKey: 'MODERN',
-    defaultMusicKey: 'acoustic_guitar',
-    thumbnail: '/templates/modern.jpg',
-    tags: {
-      country: ['GLOBAL'],
-      mood: ['MINIMAL', 'VIBRANT'],
-      event: ['WEDDING', 'PARTY'],
-    },
-    price: 10,
-    isNew: true,
-  },
-  {
-    key: 'korean_traditional',
-    i18nKey: 'KOREAN_TRADITIONAL',
-    defaultMusicKey: 'piano_soft',
-    thumbnail: '/templates/korean.jpg',
-    tags: {
-      country: ['KOREAN'],
-      mood: ['CLASSIC', 'PREMIUM'],
-      event: ['WEDDING', 'BIRTHDAY_PARTY'],
-    },
-    price: 0,
-  },
-  {
-    key: 'japanese_minimal',
-    i18nKey: 'JAPANESE_MINIMAL',
-    defaultMusicKey: 'piano_soft',
-    thumbnail: '/templates/japanese.jpg',
-    tags: {
-      country: ['JAPANESE'],
-      mood: ['MINIMAL', 'SIMPLE', 'EMOTIONAL'],
-      event: ['WEDDING', 'ANNIVERSARY'],
-    },
-    price: 5,
-  },
-  {
-    key: 'mongolian_festive',
-    i18nKey: 'MONGOLIAN_FESTIVE',
-    defaultMusicKey: 'acoustic_guitar',
-    thumbnail: '/templates/mongolian.jpg',
-    tags: {
-      country: ['MONGOLIAN'],
-      mood: ['VIBRANT', 'BRIGHT'],
+      mood: ['CLASSIC', 'PREMIUM', 'MINIMAL'],
       event: ['WEDDING', 'PARTY', 'ANNIVERSARY'],
     },
-    price: 0,
-    isNew: true,
-  },
-  {
-    key: 'bright_party',
-    i18nKey: 'BRIGHT_PARTY',
-    defaultMusicKey: 'acoustic_guitar',
-    thumbnail: '/templates/bright.jpg',
-    tags: {
-      country: ['GLOBAL'],
-      mood: ['BRIGHT', 'VIBRANT'],
-      event: ['BIRTHDAY', 'PARTY', 'ANNIVERSARY'],
-    },
     price: 5,
-  },
-  {
-    key: 'elegant_wedding',
-    i18nKey: 'ELEGANT_WEDDING',
-    defaultMusicKey: 'piano_wedding',
-    thumbnail: '/templates/elegant.jpg',
-    tags: {
-      country: ['GLOBAL'],
-      mood: ['PREMIUM', 'CLASSIC'],
-      event: ['WEDDING'],
-    },
-    price: 10,
     isRecommended: true,
   },
 ];
 
 export const getTemplateByKey = (key: string): Template | undefined => {
-  const normalizedKey = key === 'classic' ? 'wedding_classic' : key;
+  const normalizedKey =
+    key === 'classic' || key === 'wedding_classic' || key === 'funeral_classic' ? 'invitation_full' : key;
   return TEMPLATES.find((t) => t.key === normalizedKey);
 };
 

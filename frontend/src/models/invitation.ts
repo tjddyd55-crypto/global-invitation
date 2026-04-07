@@ -2,6 +2,8 @@ export interface Invitation {
   id: string;
   slug: string;
   shareSlug?: string | null;
+  templateType?: 'FULL';
+  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL';
   templateId?: string | null;
   title?: string | null;
   eventDate?: string | null;

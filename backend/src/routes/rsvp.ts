@@ -349,6 +349,7 @@ router.get('/:invitationId', async (req, res) => {
       select: {
         id: true,
         slug: true,
+        shareSlug: true,
         title: true,
         rsvpDeadline: true,
       },

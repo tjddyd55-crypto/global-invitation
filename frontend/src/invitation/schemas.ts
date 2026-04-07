@@ -6,6 +6,8 @@ import type { BrandedMessageCard } from '@/src/models/messageBranded';
 
 export type WeddingInvitationData = WeddingClassicData;
 export type FuneralInvitationData = FuneralInvitation;
+export type InvitationTemplateType = 'FULL';
+export type InvitationConceptType = 'WEDDING' | 'FUNERAL' | 'GENERAL';
 export type MessageSimpleInvitationData = MessageCardSimple;
 export type MessageThankYouInvitationData = MessageCardData;
 export type MessageBrandedInvitationData = BrandedMessageCard;
@@ -38,12 +40,37 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 
+function isCommonFullFields(value: JsonRecord): boolean {
+  return (
+    value.templateType === 'FULL' &&
+    isConceptType(value.conceptType) &&
+    typeof value.title === 'string' &&
+    typeof value.heroImage === 'string' &&
+    typeof value.content === 'string' &&
+    typeof value.eventDate === 'string' &&
+    typeof value.locationText === 'string' &&
+    Array.isArray(value.galleryImages) &&
+    isStringArray(value.schedule) &&
+    Array.isArray(value.accounts) &&
+    typeof value.rsvpEnabled === 'boolean'
+  );
+}
+
 function hasWeddingDate(value: unknown): value is Date {
   return value instanceof Date && !Number.isNaN(value.getTime());
 }
 
+function isConceptType(value: unknown): value is InvitationConceptType {
+  return value === 'WEDDING' || value === 'FUNERAL' || value === 'GENERAL';
+}
+
 export function isWeddingInvitationData(value: unknown): value is WeddingInvitationData {
   if (!isRecord(value)) return false;
+  if (isCommonFullFields(value)) {
+    return value.conceptType === 'WEDDING' || value.conceptType === 'GENERAL';
+  }
+  if (value.templateType !== undefined && value.templateType !== 'FULL') return false;
+  if (value.conceptType !== undefined && !isConceptType(value.conceptType)) return false;
   if (typeof value.heroImage !== 'string') return false;
   if (typeof value.heroTitle !== 'string') return false;
   if (typeof value.heroSubtitle !== 'string') return false;
@@ -67,7 +94,12 @@ export function isWeddingInvitationData(value: unknown): value is WeddingInvitat
 
 export function isFuneralInvitationData(value: unknown): value is FuneralInvitationData {
   if (!isRecord(value)) return false;
-  if (value.templateKey !== 'funeral_classic') return false;
+  if (isCommonFullFields(value)) {
+    return value.conceptType === 'FUNERAL';
+  }
+  if (value.templateType !== undefined && value.templateType !== 'FULL') return false;
+  if (value.conceptType !== undefined && value.conceptType !== 'FUNERAL') return false;
+  if (value.templateKey !== 'funeral_classic' && value.templateKey !== 'invitation_full') return false;
   if (typeof value.deceasedName !== 'string') return false;
   if (typeof value.deathDate !== 'string') return false;
   if (typeof value.chiefMourner !== 'string') return false;
@@ -121,4 +153,33 @@ export function isInvitationRuntimeData(value: unknown): value is InvitationRunt
     isFuneralInvitationData(value) ||
     isMessageInvitationData(value)
   );
+}
+
+export function isFullInvitationData(value: unknown): value is WeddingInvitationData | FuneralInvitationData {
+  return isWeddingInvitationData(value) || isFuneralInvitationData(value);
+}
+
+export function resolveInvitationConceptType(
+  value: unknown,
+  templateKey?: string | null
+): InvitationConceptType {
+  if (isRecord(value) && isConceptType(value.conceptType)) {
+    return value.conceptType;
+  }
+  if (isFuneralInvitationData(value) || templateKey === 'funeral_classic') {
+    return 'FUNERAL';
+  }
+  if (isWeddingInvitationData(value)) {
+    return 'WEDDING';
+  }
+  return 'GENERAL';
+}
+
+export function resolveInvitationRsvpEnabled(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  if (typeof value.rsvpEnabled === 'boolean') return value.rsvpEnabled;
+  if (isRecord(value.rsvp) && typeof value.rsvp.enabled === 'boolean') {
+    return value.rsvp.enabled;
+  }
+  return false;
 }

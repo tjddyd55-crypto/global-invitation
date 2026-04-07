@@ -10,6 +10,7 @@ import {
   requestMagicLink,
   type AuthSession,
 } from '@/src/lib/auth';
+import { buildPublicInvitationUrlPath } from '@/src/lib/publicInvitation';
 
 export default function DashboardPage() {
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -203,7 +204,14 @@ export default function DashboardPage() {
                 <Link href={`/editor/${item.slug}`} style={{ color: '#2f6fed' }}>
                   편집
                 </Link>
-                <Link href={`/invitation/${item.slug}`} style={{ color: '#2f6fed' }}>
+                <Link
+                  href={
+                    item.shareSlug?.trim()
+                      ? buildPublicInvitationUrlPath(item.shareSlug.trim())
+                      : `/invitation/${item.slug}`
+                  }
+                  style={{ color: '#2f6fed' }}
+                >
                   보기
                 </Link>
               </div>

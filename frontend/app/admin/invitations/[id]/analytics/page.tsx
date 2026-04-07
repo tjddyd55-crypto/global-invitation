@@ -8,6 +8,7 @@ import {
   type InvitationAnalyticsSummary,
 } from '@/src/lib/adminApi';
 import styles from '@/src/components/admin/AdminShell.module.css';
+import { buildPublicInvitationUrlPath } from '@/src/lib/publicInvitation';
 
 type AdminInvitationAnalyticsPageProps = {
   params: {
@@ -93,7 +94,11 @@ export default function AdminInvitationAnalyticsPage({
             Guest List
           </Link>
           <Link
-            href={`/invitation/${analytics.invitation.slug}`}
+            href={
+              analytics.invitation.shareSlug?.trim()
+                ? buildPublicInvitationUrlPath(analytics.invitation.shareSlug.trim())
+                : `/invitation/${analytics.invitation.slug}`
+            }
             target="_blank"
             rel="noreferrer"
             className={styles.button}

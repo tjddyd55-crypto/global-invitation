@@ -6,10 +6,10 @@ import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { logEvent } from '@/src/lib/events';
-import { getShareContent } from '@/src/lib/share';
+import { getShareContent, type ShareTemplateType } from '@/src/lib/share';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
+import { buildPublicInvitationUrlPath } from '@/src/lib/publicInvitation';
 import { resolveInvitationBySlug } from '@/src/lib/resolveInvitationData';
-import { trackInvitationView } from '@/src/lib/trackInvitationView';
 import EditorBackButton from '@/app/_components/EditorBackButton';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import type { Invitation } from '@/src/lib/api';
@@ -17,10 +17,11 @@ import {
   fetchTemplateDefinitionById,
   getTemplateRegistryEntry,
   getTemplateRenderer,
+  type TemplateCategory,
   type TemplateDefinition,
 } from '@/src/templates/registry';
 import RSVPForm from '@/src/components/rsvp/RSVPForm';
-import { isWeddingInvitationData } from '@/src/invitation/schemas';
+import { resolveInvitationConceptType, resolveInvitationRsvpEnabled } from '@/src/invitation/schemas';
 import SafeCreatorRenderer from '@/src/templates/creator/SafeCreatorRenderer';
 
 const EVENT_TRACKING_ENABLED = false;
@@ -35,6 +36,11 @@ function trackEvent(payload: Parameters<typeof logEvent>[0]) {
     return;
   }
   void logEvent(payload);
+}
+
+function resolveShareTemplateType(category: TemplateCategory, conceptType: string): ShareTemplateType {
+  if (conceptType === 'FUNERAL' || category === 'funeral') return 'funeral';
+  return 'wedding';
 }
 
 export default function InvitationPage() {
@@ -55,7 +61,6 @@ export default function InvitationPage() {
   const [showPlayButton, setShowPlayButton] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const viewLoggedRef = useRef(false);
-  const analyticsTrackedSlugRef = useRef<string | null>(null);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
 
   useEffect(() => {
@@ -87,6 +92,16 @@ export default function InvitationPage() {
       setLoading(false);
     }
   }, [slug, router]);
+
+  /** 공개된 초대장은 공식 경로 /i/{shareSlug}로만 조회·통계를 맞춘다. 로컬 초대장에 shareSlug가 있을 때만 리다이렉트. */
+  useEffect(() => {
+    if (loading || !slug) return;
+    if (publishStatus !== 'published') return;
+    const share = invitation?.shareSlug?.trim();
+    if (share) {
+      router.replace(buildPublicInvitationUrlPath(share));
+    }
+  }, [loading, slug, publishStatus, invitation?.shareSlug, router]);
 
   useEffect(() => {
     const templateId = invitation?.templateId;
@@ -165,19 +180,6 @@ export default function InvitationPage() {
     }
   }, [invitation, loading, language, pageUrl]);
 
-  useEffect(() => {
-    if (!slug || loading || !invitation || publishStatus !== 'published') {
-      return;
-    }
-
-    if (analyticsTrackedSlugRef.current === slug) {
-      return;
-    }
-
-    analyticsTrackedSlugRef.current = slug;
-    trackInvitationView(slug);
-  }, [invitation, loading, publishStatus, slug]);
-
   const handleShare = async () => {
     if (isSharing) return;
     if (!slug) return;
@@ -185,11 +187,16 @@ export default function InvitationPage() {
     setShareFallbackUrl(null);
     setIsSharing(true);
     try {
-      const { title, description } = getShareContent('wedding', t);
+      const category =
+        templateDefinition?.category || getTemplateRegistryEntry(invitation?.templateKey)?.category || 'wedding';
+      const runtimeData = runtimeDataOverride ?? invitation?.dataJson ?? invitation?.data ?? null;
+      const conceptType = resolveInvitationConceptType(runtimeData, invitation?.templateKey);
+      const shareKind = resolveShareTemplateType(category, conceptType);
+      const { title, description } = getShareContent(shareKind, t);
+      const publicShare = invitation?.shareSlug?.trim();
+      const path = publicShare ? buildPublicInvitationUrlPath(publicShare) : `/invitation/${slug}`;
       const url =
-        typeof window !== 'undefined'
-          ? `${window.location.origin}/invitation/${slug}`
-          : buildCanonicalUrl(`/invitation/${slug}`);
+        typeof window !== 'undefined' ? `${window.location.origin}${path}` : buildCanonicalUrl(path);
       trackEvent({ eventType: 'share_click', templateType: 'wedding', language, pageUrl });
       if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
         await navigator.share({ title, text: description, url });
@@ -206,6 +213,14 @@ export default function InvitationPage() {
     } finally {
       setIsSharing(false);
     }
+  };
+
+  const handleKakaoShare = () => {
+    if (typeof window === 'undefined' || !slug) return;
+    const publicShare = invitation?.shareSlug?.trim();
+    const path = publicShare ? buildPublicInvitationUrlPath(publicShare) : `/invitation/${slug}`;
+    const absolute = `${window.location.origin}${path}`;
+    window.open(`https://story.kakao.com/share?url=${encodeURIComponent(absolute)}`, '_blank', 'noopener,noreferrer');
   };
 
   const handlePlayMusic = () => {
@@ -259,41 +274,20 @@ export default function InvitationPage() {
     return null;
   }
 
-  const shouldRenderGuestRsvp =
-    isWeddingInvitationData(runtimeDataOverride) && runtimeDataOverride.rsvp?.enabled === true;
-  const isCreatorTemplate = /^creator_(wedding|funeral|message)_[a-z0-9_]+$/.test(invitation.templateKey);
+  const conceptType = resolveInvitationConceptType(runtimeDataOverride, invitation.templateKey);
+  const shouldRenderGuestRsvp = resolveInvitationRsvpEnabled(runtimeDataOverride);
+  const isCreatorTemplate = /^creator_(wedding|funeral)_[a-z0-9_]+$/.test(invitation.templateKey);
   const hasStudioConfig = Boolean(templateDefinition?.studioConfig);
   const templateCategory =
     templateDefinition?.category || getTemplateRegistryEntry(invitation.templateKey)?.category || 'wedding';
 
   const fallbackTemplateKey =
-    templateCategory === 'funeral'
-      ? 'funeral_classic'
-      : templateCategory === 'message'
-        ? 'message_simple'
-        : 'wedding_classic';
+    conceptType === 'FUNERAL' || templateCategory === 'funeral' ? 'funeral_classic' : 'invitation_full';
   const FallbackTemplate = getTemplateRenderer(fallbackTemplateKey);
 
   return (
     <>
       <EditorBackButton fallbackUrl={`/editor/${slug}`} />
-      {showPlayButton && invitation.musicKey && (
-        <div style={{ position: 'sticky', top: 16, zIndex: 3, display: 'flex', justifyContent: 'center' }}>
-          <button
-            onClick={handlePlayMusic}
-            style={{
-              padding: '0.6rem 1.1rem',
-              borderRadius: '999px',
-              border: 'none',
-              background: '#2f6fed',
-              color: 'white',
-              cursor: 'pointer',
-            }}
-          >
-            {t('playMusic')}
-          </button>
-        </div>
-      )}
       {isCreatorTemplate && hasStudioConfig && FallbackTemplate ? (
         <SafeCreatorRenderer
           creatorRenderer={Template}
@@ -306,16 +300,12 @@ export default function InvitationPage() {
             previewMode: false,
             showPlayButton: false,
             showRsvp: shouldRenderGuestRsvp ? false : undefined,
-            onShare: handleShare,
-            isShared: shared,
           }}
           fallbackProps={{
             data: runtimeDataOverride,
             invitationSlug: slug,
             showPlayButton: false,
             showRsvp: shouldRenderGuestRsvp ? false : undefined,
-            onShare: handleShare,
-            isShared: shared,
           }}
         />
       ) : isCreatorTemplate && FallbackTemplate ? (
@@ -324,8 +314,6 @@ export default function InvitationPage() {
           invitationSlug={slug}
           showPlayButton={false}
           showRsvp={shouldRenderGuestRsvp ? false : undefined}
-          onShare={handleShare}
-          isShared={shared}
         />
       ) : (
         <Template
@@ -333,11 +321,42 @@ export default function InvitationPage() {
           invitationSlug={slug}
           showPlayButton={false}
           showRsvp={shouldRenderGuestRsvp ? false : undefined}
-          onShare={handleShare}
-          isShared={shared}
         />
       )}
-      {shouldRenderGuestRsvp && <RSVPForm invitationSlug={slug} />}
+      {shouldRenderGuestRsvp && (
+        <section style={{ maxWidth: '760px', margin: '0 auto', padding: '1rem' }}>
+          <h2 style={{ marginBottom: '0.5rem' }}>참석 여부</h2>
+          <RSVPForm invitationSlug={slug} />
+        </section>
+      )}
+      <section style={{ maxWidth: '760px', margin: '0 auto', padding: '1rem' }}>
+        <h2 style={{ marginBottom: '0.5rem' }}>공유하기</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+          <button
+            type="button"
+            onClick={handleShare}
+            style={{ padding: '0.6rem 1rem', borderRadius: '999px', border: '1px solid #a9ba7a', background: '#a9ba7a', color: 'white' }}
+          >
+            {shared ? '공유됨' : '공유하기'}
+          </button>
+          <button
+            type="button"
+            onClick={handleKakaoShare}
+            style={{ padding: '0.6rem 1rem', borderRadius: '999px', border: '1px solid #8a7a6a', background: 'white', color: '#4a433a' }}
+          >
+            카카오 공유
+          </button>
+          {invitation.musicKey && (
+            <button
+              type="button"
+              onClick={handlePlayMusic}
+              style={{ padding: '0.6rem 1rem', borderRadius: '999px', border: 'none', background: '#2f6fed', color: 'white' }}
+            >
+              {showPlayButton ? t('playMusic') : '음악 다시 재생'}
+            </button>
+          )}
+        </div>
+      </section>
       {shareFallbackUrl && (
         <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
       )}

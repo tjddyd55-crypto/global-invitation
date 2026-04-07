@@ -2,13 +2,13 @@
 
 import ImageUploader from '../components/ImageUploader';
 import styles from '../weddingEditor.module.css';
-import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
-import type { WeddingClassicData } from '@/src/templates/weddingClassic/data';
+import FullInvitationRenderer from '@/src/templates/full/FullInvitationRenderer';
+import type { InvitationRuntimeData } from '@/src/invitation/schemas';
 import { cdnImageSrc } from '@/src/lib/image';
 import type { WeddingEditorShare } from '../state/weddingEditor.types';
 
 type Step9SharePreviewProps = {
-  data: WeddingClassicData;
+  data: InvitationRuntimeData;
   share: WeddingEditorShare;
   previewShare: WeddingEditorShare;
   heroImage: string;
@@ -36,7 +36,7 @@ export default function Step9SharePreview({
       </div>
       <div className={styles.previewStack}>
         <div className={styles.previewFull}>
-          <WeddingClassicInvitation data={data} showRsvp={showRsvp} showGuestbook={showGuestbook} />
+          <FullInvitationRenderer data={data} showRsvp={showRsvp} showGuestbook={showGuestbook} />
         </div>
         <div className={styles.ogEditor}>
           <div className={styles.subSectionTitle}>공유 카드(OG) 설정</div>

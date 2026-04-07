@@ -2,21 +2,8 @@ import type { ComponentType } from 'react';
 import { buildApiUrl, buildRequestInit } from '@/src/lib/apiBase';
 import { syncGuestTokenFromResponse } from '@/src/lib/guestToken';
 import type { TemplatePreviewData } from '@/src/templates/previewData';
-import {
-  funeralPreviewData,
-  messageBrandedJciPreviewData,
-  messageSimplePreviewData,
-  messageThankYouPreviewData,
-  weddingPreviewData,
-} from '@/src/templates/previewData';
-import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
-import FuneralClassicInvitation from '@/src/templates/funeralClassic/FuneralClassicInvitation';
-import MessageSimpleCard from '@/src/templates/messageSimple/MessageSimpleCard';
-import MessageThankYouCard from '@/src/templates/messageThankYou/MessageThankYouCard';
-import MessageBrandedJCI from '@/src/templates/messageBranded/jci/MessageBrandedJCI';
-import CreatorWeddingRenderer from '@/src/templates/creator/CreatorWeddingRenderer';
-import CreatorFuneralRenderer from '@/src/templates/creator/CreatorFuneralRenderer';
-import CreatorMessageRenderer from '@/src/templates/creator/CreatorMessageRenderer';
+import { weddingPreviewData } from '@/src/templates/previewData';
+import FullInvitationRenderer from '@/src/templates/full/FullInvitationRenderer';
 
 export type TemplateCategory =
   | 'wedding'
@@ -40,7 +27,7 @@ export type TemplateLifecycleStatus =
   | 'DRAFT'
   | 'SUBMITTED';
 
-export type TemplateEditorType = 'wedding' | 'funeral' | 'message';
+export type TemplateEditorType = 'unified' | 'wedding' | 'funeral' | 'message';
 export type TemplateRegistryCategory = 'wedding' | 'funeral' | 'message';
 export type TemplateRendererComponent = ComponentType<any>;
 
@@ -84,198 +71,106 @@ export type TemplateRegistryEntry = {
   editorType: TemplateEditorType;
   renderer: TemplateRendererComponent;
   previewData: TemplatePreviewData;
-  schema: 'WeddingInvitationData' | 'FuneralInvitationData' | 'MessageInvitationData';
+  schema: 'FullInvitationData' | 'WeddingInvitationData' | 'FuneralInvitationData' | 'MessageInvitationData';
   label: string;
   componentName: string;
   editorPath: (slug: string) => string;
 };
 
 export const TEMPLATE_REGISTRY: Record<string, TemplateRegistryEntry> = {
+  invitation_full: {
+    category: 'wedding',
+    editorType: 'unified',
+    renderer: FullInvitationRenderer,
+    previewData: weddingPreviewData,
+    schema: 'FullInvitationData',
+    label: 'Invitation Full',
+    componentName: 'FullInvitationRenderer',
+    editorPath: (slug) => `/editor/${slug}`,
+  },
   wedding_classic: {
     category: 'wedding',
-    editorType: 'wedding',
-    renderer: WeddingClassicInvitation,
+    editorType: 'unified',
+    renderer: FullInvitationRenderer,
     previewData: weddingPreviewData,
-    schema: 'WeddingInvitationData',
-    label: 'Wedding Classic',
-    componentName: 'WeddingClassicTemplate',
+    schema: 'FullInvitationData',
+    label: 'Invitation Full (Wedding Alias)',
+    componentName: 'FullInvitationRenderer',
     editorPath: (slug) => `/editor/${slug}`,
   },
   classic: {
     category: 'wedding',
-    editorType: 'wedding',
-    renderer: WeddingClassicInvitation,
+    editorType: 'unified',
+    renderer: FullInvitationRenderer,
     previewData: weddingPreviewData,
-    schema: 'WeddingInvitationData',
-    label: 'Wedding Classic (Legacy)',
-    componentName: 'WeddingClassicTemplate',
+    schema: 'FullInvitationData',
+    label: 'Invitation Full (Legacy Alias)',
+    componentName: 'FullInvitationRenderer',
     editorPath: (slug) => `/editor/${slug}`,
   },
   funeral_classic: {
     category: 'funeral',
-    editorType: 'funeral',
-    renderer: FuneralClassicInvitation,
-    previewData: funeralPreviewData,
-    schema: 'FuneralInvitationData',
-    label: 'Funeral Classic',
-    componentName: 'FuneralClassicTemplate',
+    editorType: 'unified',
+    renderer: FullInvitationRenderer,
+    previewData: weddingPreviewData,
+    schema: 'FullInvitationData',
+    label: 'Invitation Full (Funeral Alias)',
+    componentName: 'FullInvitationRenderer',
     editorPath: (slug) => `/editor/${slug}`,
-  },
-  message_simple: {
-    category: 'message',
-    editorType: 'message',
-    renderer: MessageSimpleCard,
-    previewData: messageSimplePreviewData,
-    schema: 'MessageInvitationData',
-    label: 'Message Simple',
-    componentName: 'MessageSimpleTemplate',
-    editorPath: (slug) => `/message/editor/${slug}`,
-  },
-  message_thankyou: {
-    category: 'message',
-    editorType: 'message',
-    renderer: MessageThankYouCard,
-    previewData: messageThankYouPreviewData,
-    schema: 'MessageInvitationData',
-    label: 'Message Thank You',
-    componentName: 'MessageThankYouTemplate',
-    editorPath: (slug) => `/message/editor/${slug}`,
-  },
-  message_branded_jci: {
-    category: 'message',
-    editorType: 'message',
-    renderer: MessageBrandedJCI,
-    previewData: messageBrandedJciPreviewData,
-    schema: 'MessageInvitationData',
-    label: 'Message Branded JCI',
-    componentName: 'MessageBrandedJciTemplate',
-    editorPath: (slug) => `/message/branded/editor/${slug}`,
-  },
-  message_branded: {
-    category: 'message',
-    editorType: 'message',
-    renderer: MessageBrandedJCI,
-    previewData: messageBrandedJciPreviewData,
-    schema: 'MessageInvitationData',
-    label: 'Message Branded JCI (Legacy)',
-    componentName: 'MessageBrandedJciTemplate',
-    editorPath: (slug) => `/message/branded/editor/${slug}`,
   },
 };
 
-const CREATOR_TEMPLATE_KEY_REGEX = /^creator_(wedding|funeral|message)_[a-z0-9_]+$/;
+const CREATOR_TEMPLATE_KEY_REGEX = /^creator_(wedding|funeral)_[a-z0-9_]+$/;
 
-const CREATOR_CATEGORY_REGISTRY: Record<TemplateRegistryCategory, TemplateRegistryEntry> = {
+const CREATOR_CATEGORY_REGISTRY: Partial<Record<TemplateRegistryCategory, TemplateRegistryEntry>> = {
   wedding: {
     category: 'wedding',
-    editorType: 'wedding',
-    renderer: CreatorWeddingRenderer,
+    editorType: 'unified',
+    renderer: FullInvitationRenderer,
     previewData: weddingPreviewData,
-    schema: 'WeddingInvitationData',
+    schema: 'FullInvitationData',
     label: 'Creator Wedding',
-    componentName: 'CreatorWeddingTemplate',
+    componentName: 'FullInvitationRenderer',
     editorPath: (slug) => `/editor/${slug}`,
   },
   funeral: {
     category: 'funeral',
-    editorType: 'funeral',
-    renderer: CreatorFuneralRenderer,
-    previewData: funeralPreviewData,
-    schema: 'FuneralInvitationData',
+    editorType: 'unified',
+    renderer: FullInvitationRenderer,
+    previewData: weddingPreviewData,
+    schema: 'FullInvitationData',
     label: 'Creator Funeral',
-    componentName: 'CreatorFuneralTemplate',
+    componentName: 'FullInvitationRenderer',
     editorPath: (slug) => `/editor/${slug}`,
-  },
-  message: {
-    category: 'message',
-    editorType: 'message',
-    renderer: CreatorMessageRenderer,
-    previewData: messageSimplePreviewData,
-    schema: 'MessageInvitationData',
-    label: 'Creator Message',
-    componentName: 'CreatorMessageTemplate',
-    editorPath: (slug) => `/message/editor/${slug}`,
   },
 };
 
 export const ADMIN_TEMPLATE_KEY_OPTIONS = [
-  { value: 'wedding_classic', label: 'Wedding Classic' },
-  { value: 'classic', label: 'Wedding Classic (legacy alias)' },
-  { value: 'funeral_classic', label: 'Funeral Classic' },
-  { value: 'message_simple', label: 'Message Simple' },
-  { value: 'message_thankyou', label: 'Message Thank You' },
-  { value: 'message_branded_jci', label: 'Message Branded JCI' },
-  { value: 'message_branded', label: 'Message Branded JCI (legacy alias)' },
+  { value: 'invitation_full', label: 'Invitation Full' },
+  { value: 'wedding_classic', label: 'Invitation Full (wedding alias)' },
+  { value: 'funeral_classic', label: 'Invitation Full (funeral alias)' },
+  { value: 'classic', label: 'Invitation Full (legacy alias)' },
 ] as const;
 
 export type SupportedTemplateKey = keyof typeof TEMPLATE_REGISTRY;
 export const VALID_TEMPLATE_KEYS = Object.keys(TEMPLATE_REGISTRY) as SupportedTemplateKey[];
 
 const LEGACY_TEMPLATE_ALIASES: Record<string, string> = {
-  FULL: 'wedding-korean-classic',
-  SIMPLE: 'wedding-simple-minimal',
+  FULL: 'invitation-full-default',
+  SIMPLE: 'invitation-full-default',
 };
 
 const DEFAULT_TEMPLATE_REGISTRY: TemplateDefinition[] = [
   {
-    id: 'wedding-korean-classic',
-    name: '한국 전통 웨딩',
-    category: 'wedding',
-    style: 'korean',
-    description: '전통적인 한국식 결혼식 초대장',
-    price: 50,
-    creatorShare: 0,
-    component: 'WeddingClassicTemplate',
-    templateKey: 'wedding_classic',
-    marketplaceType: 'SYSTEM',
-    status: 'PUBLISHED',
-    isActive: true,
-    isDeleted: false,
-    createdAt: '2026-02-17T00:00:00.000Z',
-  },
-  {
-    id: 'wedding-modern-white',
-    name: '모던 화이트 웨딩',
+    id: 'invitation-full-default',
+    name: 'FULL 초대장 엔진',
     category: 'wedding',
     style: 'modern',
-    description: '깔끔하고 현대적인 웨딩 초대장',
+    description: '단일 FULL 엔진 + 컨셉 확장(WEDDING/FUNERAL/GENERAL)',
     price: 50,
     creatorShare: 0,
-    component: 'WeddingClassicTemplate',
-    templateKey: 'wedding_classic',
-    marketplaceType: 'SYSTEM',
-    status: 'PUBLISHED',
-    isActive: true,
-    isDeleted: false,
-    createdAt: '2026-02-17T00:00:00.000Z',
-  },
-  {
-    id: 'wedding-japanese-minimal',
-    name: '일본식 웨딩',
-    category: 'wedding',
-    style: 'japanese',
-    description: '절제된 일본 스타일의 웨딩 초대장',
-    price: 50,
-    creatorShare: 20,
-    creatorId: 'creator-japan-studio',
-    component: 'WeddingClassicTemplate',
-    templateKey: 'wedding_classic',
-    marketplaceType: 'CREATOR',
-    status: 'PUBLISHED',
-    isActive: true,
-    isDeleted: false,
-    createdAt: '2026-02-17T00:00:00.000Z',
-  },
-  {
-    id: 'wedding-simple-minimal',
-    name: '심플 웨딩',
-    category: 'wedding',
-    style: 'western',
-    description: '군더더기 없이 단정한 웨딩 초대장',
-    price: 30,
-    creatorShare: 0,
-    component: 'WeddingClassicTemplate',
-    templateKey: 'classic',
+    component: 'FullInvitationRenderer',
+    templateKey: 'invitation_full',
     marketplaceType: 'SYSTEM',
     status: 'PUBLISHED',
     isActive: true,

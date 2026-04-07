@@ -1,5 +1,6 @@
 import styles from './LocationMapSection.module.css';
 import { cdnImageSrc } from '@/src/lib/image';
+import { buildMapNavigationUrls } from '@/src/templates/shared/mapNavigation';
 
 type LocationNavLabels = {
   tmap?: string;
@@ -11,6 +12,8 @@ type LocationMapSectionProps = {
   sectionTitle?: string;
   title: string;
   address?: string;
+  mapLat?: number;
+  mapLng?: number;
   mapImage?: string;
   mapImageAlt?: string;
   navLabels?: LocationNavLabels;
@@ -24,6 +27,8 @@ export default function LocationMapSection({
   sectionTitle,
   title,
   address,
+  mapLat,
+  mapLng,
   mapImage,
   mapImageAlt = 'Map',
   navLabels,
@@ -32,12 +37,19 @@ export default function LocationMapSection({
   parkingTitle,
   parkingInfo,
 }: LocationMapSectionProps) {
+  const navUrls = buildMapNavigationUrls({
+    address: address || '',
+    mapLat,
+    mapLng,
+    label: title || address,
+  });
+
   const navItems = navLabels
     ? [
-        { key: 'tmap', label: navLabels.tmap },
-        { key: 'kakao', label: navLabels.kakao },
-        { key: 'naver', label: navLabels.naver },
-      ].filter((item) => Boolean(item.label))
+        { key: 'tmap', label: navLabels.tmap, href: navUrls.tmap },
+        { key: 'kakao', label: navLabels.kakao, href: navUrls.kakao },
+        { key: 'naver', label: navLabels.naver, href: navUrls.naver },
+      ].filter((item) => Boolean(item.label && item.href))
     : [];
   const hasNavButtons = navItems.length > 0;
   const hasTransportInfo = Boolean(transportTitle && transportInfo && transportInfo.length > 0);
@@ -54,9 +66,15 @@ export default function LocationMapSection({
       {hasNavButtons && (
         <div className={styles.navButtons}>
           {navItems.map((item) => (
-            <button key={item.key} className={styles.navButton} type="button">
+            <a
+              key={item.key}
+              className={styles.navButton}
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {item.label}
-            </button>
+            </a>
           ))}
         </div>
       )}

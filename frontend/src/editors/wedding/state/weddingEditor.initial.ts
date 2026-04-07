@@ -71,8 +71,13 @@ function normalizeLanguage(language?: string | null): Language {
   return 'ko';
 }
 
-function normalizeTemplateKey(templateKey?: string | null): 'wedding_classic' | 'classic' {
-  return templateKey === 'classic' ? 'classic' : 'wedding_classic';
+function normalizeTemplateKey(): 'invitation_full' {
+  return 'invitation_full';
+}
+
+function normalizeConceptType(value: unknown): 'WEDDING' | 'FUNERAL' | 'GENERAL' {
+  if (value === 'FUNERAL' || value === 'GENERAL') return value;
+  return 'WEDDING';
 }
 
 function buildGalleryImages(): WeddingEditorImage[] {
@@ -135,12 +140,17 @@ export function createWeddingEditorState(invitation?: Invitation | null): Weddin
   const eventDateTime = toDateTimeLocal(invitation?.eventDate ?? null);
   const venueName = invitation?.locationText || DEFAULT_VENUE_NAME;
   const language = normalizeLanguage(invitation?.language ?? null);
-  const templateKey = normalizeTemplateKey(invitation?.templateKey ?? null);
+  const templateKey = normalizeTemplateKey();
+  const conceptType = normalizeConceptType(
+    (invitation?.dataJson as { conceptType?: unknown } | undefined)?.conceptType ??
+      (invitation?.data as { conceptType?: unknown } | undefined)?.conceptType
+  );
 
   return {
     setup: {
       invitationType: 'wedding',
       templateKey,
+      conceptType,
       language,
     },
     basic: {
@@ -205,11 +215,21 @@ export function createWeddingEditorStateFromDraft(
 
   return {
     ...base,
+    setup: {
+      ...base.setup,
+      conceptType: runtimeData.conceptType || base.setup.conceptType,
+    },
     basic: {
       ...base.basic,
-      title: invitation.title || runtimeData.coupleNames || base.basic.title,
-      eventDateTime: toDateTimeLocalFromDate(runtimeData.weddingDate),
-      venueName: runtimeData.venueName || base.basic.venueName,
+      title: invitation.title || runtimeData.title || runtimeData.coupleNames || base.basic.title,
+      subtitle: runtimeData.contactPerson || base.basic.subtitle,
+      eventDateTime:
+        typeof runtimeData.eventDate === 'string'
+          ? toDateTimeLocal(runtimeData.eventDate)
+          : runtimeData.weddingDate
+            ? toDateTimeLocalFromDate(runtimeData.weddingDate)
+            : base.basic.eventDateTime,
+      venueName: runtimeData.locationText || runtimeData.venueName || base.basic.venueName,
       venueDetail: undefined,
     },
     hero: {
@@ -218,34 +238,47 @@ export function createWeddingEditorStateFromDraft(
     },
     invitationMessage: {
       quote: runtimeData.introQuote || base.invitationMessage.quote,
-      body: runtimeData.introText.length > 0 ? runtimeData.introText : base.invitationMessage.body,
+      body:
+        runtimeData.content?.split('\n').filter(Boolean) && runtimeData.content.split('\n').filter(Boolean).length > 0
+          ? runtimeData.content.split('\n').filter(Boolean)
+          : runtimeData.introText && runtimeData.introText.length > 0
+            ? runtimeData.introText
+            : base.invitationMessage.body,
     },
     groom: {
-      name: stripRolePrefix(runtimeData.groom.name) || base.groom.name,
-      photo: runtimeData.groom.image || base.groom.photo,
-      phone: runtimeData.groom.phone || base.groom.phone,
-      parentsText: runtimeData.groom.parentsText || base.groom.parentsText,
+      name: stripRolePrefix(runtimeData.groom?.name || runtimeData.groomName || '') || base.groom.name,
+      photo: runtimeData.groom?.image || base.groom.photo,
+      phone: runtimeData.groom?.phone || runtimeData.groomPhone || base.groom.phone,
+      parentsText: runtimeData.groom?.parentsText || runtimeData.parentsInfo || base.groom.parentsText,
     },
     bride: {
-      name: stripRolePrefix(runtimeData.bride.name) || base.bride.name,
-      photo: runtimeData.bride.image || base.bride.photo,
-      phone: runtimeData.bride.phone || base.bride.phone,
-      parentsText: runtimeData.bride.parentsText || base.bride.parentsText,
+      name: stripRolePrefix(runtimeData.bride?.name || runtimeData.brideName || '') || base.bride.name,
+      photo: runtimeData.bride?.image || base.bride.photo,
+      phone: runtimeData.bride?.phone || runtimeData.bridePhone || base.bride.phone,
+      parentsText: runtimeData.bride?.parentsText || runtimeData.parentsInfo || base.bride.parentsText,
     },
     gallery: {
       images:
-        runtimeData.galleryImages.length > 0
+        runtimeData.galleryImages && runtimeData.galleryImages.length > 0
           ? runtimeData.galleryImages.map((url, index) => ({ id: `gallery-${index + 1}`, url }))
           : base.gallery.images,
     },
     location: {
       ...base.location,
-      address: runtimeData.address || base.location.address,
-      transportInfo: runtimeData.transportInfo.length > 0 ? runtimeData.transportInfo : base.location.transportInfo,
-      parkingInfo: runtimeData.parkingInfo.length > 0 ? runtimeData.parkingInfo : base.location.parkingInfo,
+      address: runtimeData.locationText || runtimeData.address || base.location.address,
+      mapLat: runtimeData.mapLat ?? base.location.mapLat,
+      mapLng: runtimeData.mapLng ?? base.location.mapLng,
+      transportInfo:
+        runtimeData.transportInfo && runtimeData.transportInfo.length > 0
+          ? runtimeData.transportInfo
+          : base.location.transportInfo,
+      parkingInfo:
+        runtimeData.parkingInfo && runtimeData.parkingInfo.length > 0
+          ? runtimeData.parkingInfo
+          : base.location.parkingInfo,
     },
     accounts:
-      runtimeData.accounts.length > 0
+      runtimeData.accounts && runtimeData.accounts.length > 0
         ? runtimeData.accounts.map((account, index) => ({
             id: `account-${index + 1}`,
             role: account.role,
@@ -256,7 +289,7 @@ export function createWeddingEditorStateFromDraft(
         : base.accounts,
     extras: {
       ...base.extras,
-      rsvpEnabled: runtimeData.rsvp?.enabled ?? base.extras.rsvpEnabled,
+      rsvpEnabled: runtimeData.rsvpEnabled ?? runtimeData.rsvp?.enabled ?? base.extras.rsvpEnabled,
       rsvpButtonText: runtimeData.rsvpButton || base.extras.rsvpButtonText,
     },
     share: {
