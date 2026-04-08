@@ -93,7 +93,7 @@
 }
 
 .previewFloatingButton {
-  display: none;
+  display: inline-flex;
   position: fixed;
   right: 24px;
   bottom: 24px;

@@ -23,6 +23,7 @@ import FuneralEditor from '@/src/editors/funeral/FuneralEditor';
 import { createFuneralEditorState } from '@/src/editors/funeral/state/funeralEditor.initial';
 import type { FuneralEditorState } from '@/src/editors/funeral/state/funeralEditor.types';
 import {
+  type FuneralInvitation,
   getFuneralClassicDemoData,
   isFuneralClassicDemoSlug,
 } from '@/src/templates/funeralClassic/data';
@@ -68,6 +69,88 @@ function resolveConceptFromQuery(value: string | null): InvitationConceptType | 
     return value;
   }
   return null;
+}
+
+type FullFuneralRuntimeData = {
+  templateType?: 'FULL';
+  conceptType?: 'FUNERAL';
+  title?: string;
+  content?: string | string[];
+  eventDate?: string;
+  locationText?: string;
+  address?: string;
+  venueName?: string;
+  schedule?: string[];
+  heroImage?: string;
+  funeralHall?: string;
+  funeralDate?: string;
+  contactPerson?: string;
+  mapImage?: string;
+  mapLat?: number;
+  mapLng?: number;
+  introText?: string[];
+  deceasedName?: string;
+};
+
+function normalizeMessageToString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string').join('\n');
+  }
+  return '';
+}
+
+function parseContactPerson(value?: string): { name: string; phone: string } | null {
+  if (!value) return null;
+  const normalized = value.trim();
+  if (!normalized) return null;
+
+  const phoneMatch = normalized.match(/(01[0-9][- ]?\d{3,4}[- ]?\d{4}|0\d{1,2}[- ]?\d{3,4}[- ]?\d{4})/);
+  if (!phoneMatch) {
+    return { name: normalized, phone: '' };
+  }
+
+  const phone = phoneMatch[0].replace(/\s+/g, '');
+  const name = normalized.replace(phoneMatch[0], '').trim();
+  return {
+    name: name || normalized,
+    phone,
+  };
+}
+
+function toFuneralInvitationFromFullRuntime(data: FullFuneralRuntimeData): FuneralInvitation {
+  const base = getFuneralClassicDemoData();
+  const scheduleList = Array.isArray(data.schedule) ? data.schedule.filter(Boolean) : [];
+  const funeralDate = data.funeralDate || scheduleList[1] || data.eventDate || base.schedule.funeralDate;
+  const contact = parseContactPerson(data.contactPerson);
+
+  return {
+    ...base,
+    templateType: 'FULL',
+    conceptType: 'FUNERAL',
+    templateKey: 'invitation_full',
+    deceasedName: data.deceasedName || data.title || base.deceasedName,
+    deathDate: funeralDate,
+    chiefMourner: contact?.name || base.chiefMourner,
+    familyMembers: Array.isArray(data.introText) && data.introText.length > 0 ? data.introText : base.familyMembers,
+    message: normalizeMessageToString(data.content) || base.message,
+    funeralHall: {
+      name: data.funeralHall || data.venueName || data.locationText || base.funeralHall.name,
+      address: data.locationText || data.address || base.funeralHall.address,
+      mapImage: data.mapImage || base.funeralHall.mapImage,
+      mapLat: data.mapLat ?? base.funeralHall.mapLat,
+      mapLng: data.mapLng ?? base.funeralHall.mapLng,
+    },
+    schedule: {
+      wakeStart: scheduleList[0] || base.schedule.wakeStart,
+      funeralDate,
+      burial: scheduleList[2] || base.schedule.burial,
+    },
+    contact: contact
+      ? { name: contact.name, phone: contact.phone }
+      : base.contact,
+    heroImage: data.heroImage || base.heroImage,
+  };
 }
 
 function buildFullDataFromFuneralState(state: FuneralEditorState): WeddingInvitationData {
@@ -316,8 +399,19 @@ export default function EditorPage() {
     }
 
     const runtimeData = invitation.dataJson ?? invitation.data;
-    const invitationData = isFuneralInvitationData(runtimeData) ? runtimeData : undefined;
-    return createFuneralEditorState(isFuneralInvitationData(runtimeData) ? runtimeData : invitationData ?? null);
+    if (!isFuneralInvitationData(runtimeData)) {
+      return createFuneralEditorState(null);
+    }
+
+    const hasFuneralClassicShape =
+      typeof (runtimeData as { templateKey?: unknown }).templateKey === 'string' &&
+      typeof (runtimeData as { funeralHall?: unknown }).funeralHall === 'object';
+
+    const normalizedData = hasFuneralClassicShape
+      ? (runtimeData as FuneralInvitationData)
+      : toFuneralInvitationFromFullRuntime(runtimeData as unknown as FullFuneralRuntimeData);
+
+    return createFuneralEditorState(normalizedData);
   }, [editorType, funeralData, invitation]);
 
   const handleSave = async (state: WeddingEditorState): Promise<void> => {

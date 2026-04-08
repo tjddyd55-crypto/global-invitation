@@ -6,9 +6,10 @@ import type { WeddingEditorSetup } from '../state/weddingEditor.types';
 type Step0SetupProps = {
   value: WeddingEditorSetup;
   onChange: (value: Partial<WeddingEditorSetup>) => void;
+  onConceptChange?: (conceptType: WeddingEditorSetup['conceptType']) => void;
 };
 
-export default function Step0Setup({ value, onChange }: Step0SetupProps) {
+export default function Step0Setup({ value, onChange, onConceptChange }: Step0SetupProps) {
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
@@ -28,9 +29,14 @@ export default function Step0Setup({ value, onChange }: Step0SetupProps) {
           <span className={styles.fieldLabel}>컨셉 선택</span>
           <select
             value={value.conceptType}
-            onChange={(event) =>
-              onChange({ conceptType: event.target.value as WeddingEditorSetup['conceptType'] })
-            }
+            onChange={(event) => {
+              const nextConcept = event.target.value as WeddingEditorSetup['conceptType'];
+              if (onConceptChange) {
+                onConceptChange(nextConcept);
+                return;
+              }
+              onChange({ conceptType: nextConcept });
+            }}
           >
             <option value="WEDDING">결혼식</option>
             <option value="FUNERAL">부고장</option>

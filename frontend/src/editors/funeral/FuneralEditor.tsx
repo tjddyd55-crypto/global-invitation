@@ -55,13 +55,6 @@ export default function FuneralEditor({ initialState, onSave, saveNotice, saveEr
           <button type="button" className={styles.buttonPrimary} onClick={handleSave} disabled={!onSave}>
             저장
           </button>
-          <button
-            type="button"
-            className={`${styles.buttonGhost} ${styles.mobileOnly}`}
-            onClick={() => setMobilePreviewOpen(true)}
-          >
-            미리보기
-          </button>
         </div>
       </header>
 
@@ -160,6 +153,14 @@ export default function FuneralEditor({ initialState, onSave, saveNotice, saveEr
           <PreviewPanel data={state} />
         </aside>
       </div>
+
+      <button
+        type="button"
+        className={styles.previewFloatingButton}
+        onClick={() => setMobilePreviewOpen(true)}
+      >
+        Preview
+      </button>
 
       {mobilePreviewOpen && (
         <div className={styles.previewOverlay}>

@@ -66,6 +66,24 @@
   align-self: start;
 }
 
+.previewFloatingButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  border: none;
+  border-radius: 999px;
+  padding: 0.75rem 1.1rem;
+  background: #2f2f2f;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
 .stepperNav {
   display: flex;
   flex-direction: column;
@@ -370,5 +388,10 @@
 
   .editorLayout {
     padding-bottom: 5rem;
+  }
+
+  .previewFloatingButton {
+    right: 16px;
+    bottom: 16px;
   }
 }

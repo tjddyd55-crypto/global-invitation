@@ -3,6 +3,8 @@ import type { WeddingEditorState } from './weddingEditor.types';
 
 export function weddingEditorReducer(state: WeddingEditorState, action: WeddingEditorAction): WeddingEditorState {
   switch (action.type) {
+    case 'REPLACE_STATE':
+      return action.payload;
     case 'SET_SETUP':
       return { ...state, setup: { ...state.setup, ...action.payload } };
     case 'SET_BASIC':
