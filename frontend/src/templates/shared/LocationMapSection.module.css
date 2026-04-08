@@ -1,39 +1,91 @@
+.root {
+  box-sizing: border-box;
+}
+
+.rootLight {
+  color: inherit;
+}
+
+.rootDark {
+  color: #e8e6e3;
+}
+
 .sectionTitle {
   font-weight: 700;
-  font-size: 1.1rem;
-  margin-bottom: 0.75rem;
+  font-size: 18px;
+  line-height: 24px;
+  margin-bottom: 12px;
+}
+
+.rootDark .sectionTitle {
+  color: #f3f4f6;
 }
 
 .locationBlock {
-  margin-bottom: 1.5rem;
+  margin-bottom: 12px;
+}
+
+.locationBlock h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.locationBlock div {
+  font-size: 14px;
+  line-height: 22px;
 }
 
 .mapImage {
   width: 100%;
+  height: 200px;
+  object-fit: cover;
   border-radius: 12px;
-  margin: 1.5rem 0;
+  margin: 0 0 12px;
+  display: block;
 }
 
 .navButtons {
   display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .navButton {
-  padding: 0.65rem 1.2rem;
-  border-radius: 999px;
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 48px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
   border: 1px solid #d6d0c7;
   background: #fff;
   color: #5a5a5a;
-  font-size: 0.9rem;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.rootDark .navButton {
+  background: #333;
+  border-color: #4b4b4b;
+  color: #f3f4f6;
 }
 
 .infoList {
   text-align: left;
-  margin: 0.5rem auto;
-  max-width: 420px;
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 22px;
   color: #5a5a5a;
+}
+
+.rootDark .infoList {
+  color: #9ca3af;
 }

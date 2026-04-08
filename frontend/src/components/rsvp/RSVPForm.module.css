@@ -1,43 +1,45 @@
 .section {
-  max-width: 720px;
-  margin: 2rem auto 3rem;
-  padding: 1.5rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.06);
+  max-width: 375px;
+  margin: 48px auto 0;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  border-radius: 0;
+  border: none;
+  background: #f9fafb;
 }
 
 .title {
-  margin: 0 0 0.4rem;
-  font-size: 1.35rem;
+  margin: 0 0 8px;
+  font-size: 18px;
   font-weight: 700;
+  line-height: 24px;
 }
 
 .description {
-  margin: 0 0 1.25rem;
+  margin: 0 0 16px;
   color: #6b7280;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 22px;
 }
 
 .form {
   display: grid;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .fieldGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
 .field {
   display: grid;
-  gap: 0.45rem;
+  gap: 8px;
 }
 
 .field label {
-  font-size: 0.92rem;
+  font-size: 14px;
   font-weight: 600;
   color: #374151;
 }
@@ -48,34 +50,51 @@
   width: 100%;
   border: 1px solid #d1d5db;
   border-radius: 12px;
-  padding: 0.8rem 0.9rem;
+  padding: 0 12px;
   font: inherit;
+  font-size: 16px;
   background: #fff;
+  box-sizing: border-box;
+}
+
+.field input,
+.field select {
+  height: 44px;
 }
 
 .field textarea {
   min-height: 120px;
+  padding: 10px 12px;
   resize: vertical;
 }
 
 .helperText {
   color: #6b7280;
-  font-size: 0.82rem;
+  font-size: 13px;
+  line-height: 20px;
 }
 
 .actions {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  width: 100%;
 }
 
 .submitButton {
+  box-sizing: border-box;
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
   border: none;
-  border-radius: 999px;
-  padding: 0.85rem 1.4rem;
+  border-radius: 12px;
   background: #2563eb;
   color: #fff;
   cursor: pointer;
   font-weight: 600;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .submitButton:disabled {
@@ -85,17 +104,12 @@
 
 .error {
   color: #b91c1c;
-  font-size: 0.9rem;
+  font-size: 14px;
+  line-height: 22px;
 }
 
 .success {
   color: #047857;
-  font-size: 0.9rem;
-}
-
-@media (max-width: 767px) {
-  .section {
-    margin: 1.5rem 1rem 2.5rem;
-    padding: 1.25rem;
-  }
+  font-size: 14px;
+  line-height: 22px;
 }

@@ -21,6 +21,7 @@ import {
   type TemplateDefinition,
 } from '@/src/templates/registry';
 import RSVPForm from '@/src/components/rsvp/RSVPForm';
+import publicInvitationMobile from '@/src/styles/publicInvitationMobile.module.css';
 import { resolveInvitationConceptType, resolveInvitationRsvpEnabled } from '@/src/invitation/schemas';
 import SafeCreatorRenderer from '@/src/templates/creator/SafeCreatorRenderer';
 
@@ -288,6 +289,7 @@ export default function InvitationPage() {
   return (
     <>
       <EditorBackButton fallbackUrl={`/editor/${slug}`} />
+      <div className={publicInvitationMobile.shell}>
       {isCreatorTemplate && hasStudioConfig && FallbackTemplate ? (
         <SafeCreatorRenderer
           creatorRenderer={Template}
@@ -323,43 +325,35 @@ export default function InvitationPage() {
           showRsvp={shouldRenderGuestRsvp ? false : undefined}
         />
       )}
-      {shouldRenderGuestRsvp && (
-        <section style={{ maxWidth: '760px', margin: '0 auto', padding: '1rem' }}>
-          <h2 style={{ marginBottom: '0.5rem' }}>참석 여부</h2>
-          <RSVPForm invitationSlug={slug} />
-        </section>
-      )}
-      <section style={{ maxWidth: '760px', margin: '0 auto', padding: '1rem' }}>
-        <h2 style={{ marginBottom: '0.5rem' }}>공유하기</h2>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
-          <button
-            type="button"
-            onClick={handleShare}
-            style={{ padding: '0.6rem 1rem', borderRadius: '999px', border: '1px solid #a9ba7a', background: '#a9ba7a', color: 'white' }}
-          >
+      {shouldRenderGuestRsvp ? <RSVPForm invitationSlug={slug} /> : null}
+      <section className={publicInvitationMobile.shareSection}>
+        <h2 className={publicInvitationMobile.shareTitle}>공유하기</h2>
+        <div className={publicInvitationMobile.shareStack}>
+          <button type="button" onClick={handleShare} className={publicInvitationMobile.shareButton}>
             {shared ? '공유됨' : '공유하기'}
           </button>
           <button
             type="button"
             onClick={handleKakaoShare}
-            style={{ padding: '0.6rem 1rem', borderRadius: '999px', border: '1px solid #8a7a6a', background: 'white', color: '#4a433a' }}
+            className={`${publicInvitationMobile.shareButton} ${publicInvitationMobile.shareButtonSecondary}`}
           >
             카카오 공유
           </button>
-          {invitation.musicKey && (
+          {invitation.musicKey ? (
             <button
               type="button"
               onClick={handlePlayMusic}
-              style={{ padding: '0.6rem 1rem', borderRadius: '999px', border: 'none', background: '#2f6fed', color: 'white' }}
+              className={`${publicInvitationMobile.shareButton} ${publicInvitationMobile.shareButtonMusic}`}
             >
               {showPlayButton ? t('playMusic') : '음악 다시 재생'}
             </button>
-          )}
+          ) : null}
         </div>
       </section>
-      {shareFallbackUrl && (
+      {shareFallbackUrl ? (
         <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
-      )}
+      ) : null}
+      </div>
     </>
   );
 }

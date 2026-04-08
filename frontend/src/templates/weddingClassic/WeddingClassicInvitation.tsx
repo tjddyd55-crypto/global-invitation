@@ -127,8 +127,21 @@ export default function WeddingClassicInvitation({
   const locationTitle = '위치 안내';
   const accountsTitle = '마음 전하실 곳';
 
+  const scheduleForHero = scheduleList.filter(Boolean);
+  const heroDate =
+    (typeof r.weddingDateTime === 'string' && r.weddingDateTime.trim() ? r.weddingDateTime.trim() : '') ||
+    scheduleForHero[0] ||
+    (typeof r.eventDate === 'string' ? r.eventDate : '') ||
+    '';
+  const heroVenue = (locationText || r.venueName || '').trim();
+  const pageConceptClass =
+    conceptType === 'WEDDING' ? styles.conceptWedding : conceptType === 'FUNERAL' ? styles.conceptFuneral : styles.conceptGeneral;
+
+  const groomDisplay = (r.groom?.name ?? r.groomName ?? '').trim();
+  const brideDisplay = (r.bride?.name ?? r.brideName ?? '').trim();
+
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${pageConceptClass}`}>
       {showPlayButton && onPlayMusic && (
         <button
           className={styles.audioButton}
@@ -139,22 +152,27 @@ export default function WeddingClassicInvitation({
         </button>
       )}
 
-      <section className={styles.section}>
-        <div className={styles.heroWrapper}>
+      <section className={styles.heroSection} aria-label="대표 이미지">
+        <div className={styles.heroMedia}>
           <img className={styles.heroImage} src={cdnImageSrc(heroImage)} alt="" loading="lazy" />
+          <div className={styles.heroScrim} aria-hidden />
         </div>
-        <div className={styles.heroOverlay}>
+        <div className={styles.heroContent}>
           <div className={styles.heroTitle}>{title}</div>
+          {heroDate ? <div className={styles.heroDate}>{heroDate}</div> : null}
           {r.heroOverlayText ? <div className={styles.heroOverlayText}>{r.heroOverlayText}</div> : null}
+          {heroVenue ? <div className={styles.heroVenue}>{heroVenue}</div> : null}
         </div>
       </section>
 
       {hasMessage ? (
-        <section className={`${styles.section} ${styles.scheduleHighlight}`}>
+        <section className={`${styles.section} ${styles.messageSection} ${styles.scheduleHighlight}`}>
           <h2 className={styles.calendarTitle}>{messageTitle}</h2>
-          <div className={styles.scheduleDateTime}>
+          <div className={styles.messageBody}>
             {messageLines.map((line, index) => (
-              <p key={`message-line-${index}`}>{line}</p>
+              <p key={`message-line-${index}`} className={styles.messageParagraph}>
+                {line}
+              </p>
             ))}
           </div>
         </section>
@@ -162,60 +180,47 @@ export default function WeddingClassicInvitation({
 
       {hasMessage ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
-      {conceptType === 'WEDDING' && showCoupleSection && (r?.coupleNames ?? r?.groomName ?? r?.brideName ?? r?.groom ?? r?.bride) ? (
-        <section className={styles.section}>
+      {conceptType === 'WEDDING' && showCoupleSection && (groomDisplay || brideDisplay) ? (
+        <section className={`${styles.section} ${styles.conceptSection}`}>
           <h2 className={styles.calendarTitle}>신랑 · 신부</h2>
-          <div className={styles.coupleGrid}>
-            {r?.groom || r.groomName ? (
-              <div className={styles.coupleCard}>
-                <img
-                  className={styles.coupleImage}
-                  src={cdnImageSrc(r.groom?.image ?? heroImage)}
-                  alt={r.groom?.name ?? r.groomName ?? ''}
-                  loading="lazy"
-                />
-                <div className={styles.coupleName}>{r.groom?.name ?? r.groomName ?? ''}</div>
-                <div className={styles.contactLine}>📞 {r.groom?.phone ?? r.groomPhone ?? ''}</div>
-                <div className={styles.coupleParents}>{r.groom?.parentsText ?? r.parentsInfo ?? ''}</div>
-              </div>
-            ) : null}
-            {r?.bride || r.brideName ? (
-              <div className={styles.coupleCard}>
-                <img
-                  className={styles.coupleImage}
-                  src={cdnImageSrc(r.bride?.image ?? heroImage)}
-                  alt={r.bride?.name ?? r.brideName ?? ''}
-                  loading="lazy"
-                />
-                <div className={styles.coupleName}>{r.bride?.name ?? r.brideName ?? ''}</div>
-                <div className={styles.contactLine}>📞 {r.bride?.phone ?? r.bridePhone ?? ''}</div>
-                <div className={styles.coupleParents}>{r.bride?.parentsText ?? r.parentsInfo ?? ''}</div>
-              </div>
-            ) : null}
+          <div className={styles.coupleSimple}>
+            {groomDisplay ? <p className={styles.coupleNamePrimary}>{groomDisplay}</p> : null}
+            {groomDisplay && brideDisplay ? <p className={styles.coupleHeart}>♥</p> : null}
+            {brideDisplay ? <p className={styles.coupleNamePrimary}>{brideDisplay}</p> : null}
           </div>
         </section>
       ) : null}
 
       {conceptType === 'FUNERAL' && (
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.conceptSection} ${styles.funeralBlock}`}>
           <h2 className={styles.calendarTitle}>고인</h2>
-          {r.deceasedName ? <p className={styles.introText}>{r.deceasedName}</p> : null}
+          {r.deceasedName ? <p className={styles.funeralLine}>{r.deceasedName}</p> : null}
         </section>
       )}
 
       {conceptType === 'FUNERAL' && (
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.conceptSection} ${styles.funeralBlock}`}>
           <h2 className={styles.calendarTitle}>빈소 안내</h2>
-          {r.funeralHall ? <p className={styles.introText}>{r.funeralHall}</p> : null}
-          <h3 className={styles.calendarTitle} style={{ marginTop: '1rem' }}>발인 일정</h3>
-          {r.funeralDate ? <p className={styles.introText}>{r.funeralDate}</p> : null}
-          <h3 className={styles.calendarTitle} style={{ marginTop: '1rem' }}>조문 안내</h3>
-          {r.contactPerson ? <p className={styles.introText}>{r.contactPerson}</p> : null}
+          {r.funeralHall ? (
+            <p className={styles.funeralLine}>
+              <span className={styles.funeralLabel}>빈소</span> {r.funeralHall}
+            </p>
+          ) : null}
+          {r.funeralDate ? (
+            <p className={styles.funeralLine}>
+              <span className={styles.funeralLabel}>발인</span> {r.funeralDate}
+            </p>
+          ) : null}
+          {r.contactPerson ? (
+            <p className={styles.funeralLine}>
+              <span className={styles.funeralLabel}>조문</span> {r.contactPerson}
+            </p>
+          ) : null}
         </section>
       )}
 
       {hasSchedule ? (
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.scheduleSection}`}>
           <div className={styles.calendarTitle}>{scheduleTitle}</div>
           {conceptType === 'WEDDING' ? (
             <div className={styles.calendarGrid}>
@@ -234,13 +239,21 @@ export default function WeddingClassicInvitation({
               ))}
             </div>
           ) : (
-            <div style={{ display: 'grid', gap: '0.4rem' }}>
-              {scheduleList.filter(Boolean).map((item, index) => (
-                <div key={`${item}-${index}`} className={styles.scheduleVenue}>
-                  {item}
-                </div>
-              ))}
-            </div>
+            <ul className={styles.scheduleList}>
+              {scheduleList.filter(Boolean).map((item, index) => {
+                const parts = item.split('\n').map((p) => p.trim()).filter(Boolean);
+                const head = parts[0] ?? item;
+                const rest = parts.slice(1);
+                return (
+                  <li key={`${item}-${index}`} className={styles.scheduleItem}>
+                    <div className={styles.scheduleItemDate}>{head}</div>
+                    {rest.length > 0 ? (
+                      <div className={styles.scheduleItemDetail}>{rest.join(' · ')}</div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </section>
       ) : null}
@@ -263,7 +276,7 @@ export default function WeddingClassicInvitation({
       ) : null}
 
       {hasLocation ? (
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.locationSection}`}>
           <LocationMapSection
             sectionTitle={locationTitle}
             title=""
@@ -272,6 +285,7 @@ export default function WeddingClassicInvitation({
             mapLng={r.mapLng}
             mapImage={r.mapImage}
             mapImageAlt={t(I18N_KEYS.weddingClassic.mapAlt)}
+            tone={conceptType === 'FUNERAL' ? 'dark' : 'light'}
             navLabels={{
               tmap: t(I18N_KEYS.weddingClassic.navTmap),
               kakao: t(I18N_KEYS.weddingClassic.navKakao),
@@ -286,7 +300,7 @@ export default function WeddingClassicInvitation({
       ) : null}
 
       {conceptType !== 'GENERAL' && Array.isArray(accounts) && accounts.length > 0 ? (
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.accountsSection}`}>
           <h2>{accountsTitle}</h2>
           <div className={styles.accountList}>
             {accounts.map((account) => (

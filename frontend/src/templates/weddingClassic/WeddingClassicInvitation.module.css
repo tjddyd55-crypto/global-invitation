@@ -1,45 +1,44 @@
+/* 모바일 기준: 375px 캔버스, 구조는 컨셉 공통 · 스타일만 분기 */
+
 .page {
+  max-width: 375px;
+  margin: 0 auto;
+  box-sizing: border-box;
   background: #f7f5f2;
   color: #3b3b3b;
   font-family: "Noto Serif KR", "Times New Roman", serif;
-  line-height: 1.7;
+  padding: 0;
 }
 
-.section {
-  padding: 2.5rem 1.5rem;
+.conceptWedding {
   text-align: center;
 }
 
-.sectionBreak {
-  margin: 0;
-  padding: 0 1.5rem;
-  border: none;
-  border-top: 1px solid #e2ddd5;
+.conceptFuneral {
+  background: #1c1c1c;
+  color: #e8e6e3;
+  text-align: left;
 }
 
-.scheduleHighlight {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+.conceptGeneral {
+  background: #f4f4f5;
+  color: #1f2937;
+  text-align: left;
 }
 
-.scheduleHighlight .scheduleDateTime {
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: #3b3b3b;
-  margin-bottom: 0.35rem;
-}
-
-.scheduleHighlight .scheduleVenue {
-  font-size: 1rem;
-  color: #5a5a5a;
-}
-
-.hero {
+/* ---- Hero: 520px, cover, scrim, 중앙 텍스트 ---- */
+.heroSection {
   position: relative;
-  aspect-ratio: 16 / 9;
+  width: 100%;
+  height: 520px;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
+}
+
+.heroMedia {
+  position: absolute;
+  inset: 0;
 }
 
 .heroImage {
@@ -49,117 +48,214 @@
   object-fit: cover;
 }
 
-.heroOverlay {
+.heroScrim {
   position: absolute;
-  bottom: 1.5rem;
-  left: 0;
-  right: 0;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.heroContent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
   text-align: center;
-  color: #f4f0e8;
+  color: #fff;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 .heroTitle {
-  font-size: 1.4rem;
-  letter-spacing: 0.08rem;
+  font-size: 28px;
+  line-height: 36px;
   font-weight: 600;
+  margin: 0;
 }
 
-.heroSubtitle {
-  font-size: 0.95rem;
-  margin-top: 0.35rem;
+.heroDate {
+  margin: 12px 0 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
 }
 
 .heroOverlayText {
-  font-size: 0.85rem;
-  margin-top: 0.4rem;
-  letter-spacing: 0.04rem;
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 22px;
+  opacity: 0.95;
 }
 
-.headerTitle {
-  font-size: 1.6rem;
-  margin: 0.5rem 0 0.75rem;
+.heroVenue {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+  opacity: 0.92;
 }
 
-.headerMeta {
-  font-size: 1rem;
-  margin: 0.2rem 0;
-  color: #5a5a5a;
+/* ---- 공통 섹션 간격 48px, 좌우 16px ---- */
+.section {
+  margin: 48px 0 0;
+  padding: 0 16px;
+  box-sizing: border-box;
 }
 
-.introQuote {
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
-  color: #5c5c5c;
+.section > h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
 }
 
-.introText {
-  margin: 0.4rem 0;
+.conceptWedding .section > h2 {
+  text-align: center;
 }
 
-.coupleGrid {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: 1fr 1fr;
-  margin-top: 2rem;
+.heroSection + .section {
+  margin-top: 48px;
 }
 
-.coupleCard {
+.sectionBreak {
+  margin: 48px 0 0;
+  padding: 0 16px;
+  border: none;
+  border-top: 1px solid #e2ddd5;
+}
+
+.conceptFuneral .sectionBreak {
+  border-top-color: #3d3d3d;
+}
+
+.conceptGeneral .sectionBreak {
+  border-top-color: #e5e7eb;
+}
+
+.messageSection {
+  margin-top: 48px;
+  padding: 0 24px;
+}
+
+.conceptWedding .messageSection {
+  text-align: center;
+}
+
+.conceptFuneral .messageSection,
+.conceptGeneral .messageSection {
+  text-align: left;
+}
+
+.messageBody {
+  margin: 0;
+}
+
+.messageParagraph {
+  margin: 0 0 10px;
+  font-size: 16px;
+  line-height: 26px;
+}
+
+.messageParagraph:last-child {
+  margin-bottom: 0;
+}
+
+.scheduleHighlight {
   background: #fff;
   border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 20px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.coupleImage {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 12px;
-  margin-bottom: 1rem;
-  object-fit: cover;
+.conceptFuneral .scheduleHighlight {
+  background: #252525;
+  box-shadow: none;
+  border: 1px solid #333;
 }
 
-.coupleName {
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-}
-
-.coupleParents {
-  font-size: 0.95rem;
-  color: #6a6a6a;
-}
-
-.contactLine {
-  margin-bottom: 0.35rem;
-  color: #5b5b5b;
-}
-
-.contactButton {
-  margin-top: 1.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  border: 1px solid #c9c2b8;
-  background: #fdfcf8;
-  color: #5a5a5a;
+.conceptGeneral .scheduleHighlight {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
 }
 
 .calendarTitle {
-  font-size: 1.4rem;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
   color: #6a7b66;
-  margin-bottom: 1.5rem;
+  margin: 0 0 16px;
+}
+
+.conceptFuneral .calendarTitle {
+  color: #c4c2be;
+}
+
+.conceptGeneral .calendarTitle {
+  color: #374151;
+}
+
+.conceptSection {
+  margin-top: 48px;
+}
+
+.coupleSimple {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.coupleNamePrimary {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+
+.coupleHeart {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: #a9ba7a;
+}
+
+.funeralBlock .funeralLine {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 24px;
+}
+
+.funeralBlock .funeralLine:last-child {
+  margin-bottom: 0;
+}
+
+.funeralLabel {
+  display: inline-block;
+  min-width: 2.8em;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-right: 6px;
+}
+
+.scheduleSection .calendarTitle {
+  margin-bottom: 16px;
 }
 
 .calendarGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.5rem;
+  gap: 8px;
   text-align: center;
-  margin-top: 1rem;
 }
 
 .calendarCell {
-  padding: 0.4rem 0;
+  padding: 6px 0;
   border-radius: 999px;
+  font-size: 12px;
 }
 
 .calendarHeader {
@@ -167,100 +263,299 @@
   color: #6a6a6a;
 }
 
+.conceptFuneral .calendarHeader {
+  color: #9ca3af;
+}
+
 .calendarHighlight {
   background: #a9ba7a;
   color: #fff;
 }
 
+.scheduleList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scheduleItem {
+  margin: 0;
+}
+
+.scheduleItemDate {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+}
+
+.scheduleItemDetail {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 22px;
+  color: #6b7280;
+}
+
+.conceptFuneral .scheduleItemDetail {
+  color: #9ca3af;
+}
+
 .galleryGrid {
   display: grid;
-  gap: 0.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .galleryImage {
   width: 100%;
-  aspect-ratio: 1 / 1;
-  border-radius: 8px;
+  height: 160px;
+  border-radius: 12px;
   object-fit: cover;
+  display: block;
 }
 
 .galleryEmpty {
   padding: 2rem;
   text-align: center;
   color: #888;
-  font-size: 0.95rem;
+  font-size: 14px;
+}
+
+.locationSection {
+  padding-bottom: 8px;
+}
+
+.accountList {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.conceptFuneral .accountList {
+  gap: 12px;
+}
+
+.accountCard {
+  border: 1px solid #ded8ce;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+}
+
+.conceptFuneral .accountCard {
+  background: #252525;
+  border-color: #3d3d3d;
+}
+
+.conceptGeneral .accountCard {
+  border-color: #e5e7eb;
+}
+
+.accountHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.copyButton {
+  border: 1px solid #d0cabf;
+  background: #fdfcf8;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #6a6a6a;
+}
+
+.conceptFuneral .copyButton {
+  background: #333;
+  border-color: #4b4b4b;
+  color: #d1d5db;
+}
+
+.audioButton {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 30;
+  background: rgba(247, 245, 242, 0.92);
+  border: 1px solid #dcd5c8;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+}
+
+.conceptFuneral .audioButton {
+  background: rgba(37, 37, 37, 0.92);
+  border-color: #4b4b4b;
+  color: #f3f4f6;
+}
+
+.introText {
+  margin: 0.4rem 0;
+}
+
+.introQuote {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: #5c5c5c;
+}
+
+.headerTitle {
+  font-size: 18px;
+  margin: 8px 0 12px;
+}
+
+.headerMeta {
+  font-size: 14px;
+  margin: 4px 0;
+  color: #5a5a5a;
+}
+
+.contactLine {
+  margin-bottom: 6px;
+  color: #5b5b5b;
+}
+
+.coupleGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 1rem;
+}
+
+.coupleCard {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.coupleImage {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  object-fit: cover;
+}
+
+.coupleName {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.coupleParents {
+  font-size: 14px;
+  color: #6a6a6a;
+}
+
+.contactButton {
+  margin-top: 24px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: 1px solid #c9c2b8;
+  background: #fdfcf8;
+  color: #5a5a5a;
+}
+
+.scheduleDateTime {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3b3b3b;
+}
+
+.conceptFuneral .scheduleDateTime {
+  color: #e8e6e3;
+}
+
+.scheduleVenue {
+  font-size: 14px;
+  color: #5a5a5a;
+}
+
+.conceptFuneral .scheduleVenue {
+  color: #9ca3af;
 }
 
 .locationBlock {
-  margin-bottom: 1.5rem;
+  margin-bottom: 16px;
 }
 
 .mapImage {
   width: 100%;
   border-radius: 12px;
-  margin: 1.5rem 0;
 }
 
 .navButtons {
   display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
+  gap: 8px;
+  justify-content: stretch;
+  flex-wrap: nowrap;
+  margin-bottom: 16px;
 }
 
 .navButton {
-  padding: 0.65rem 1.2rem;
-  border-radius: 999px;
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
   border: 1px solid #d6d0c7;
   background: #fff;
   color: #5a5a5a;
-  font-size: 0.9rem;
+  font-size: 14px;
+  text-decoration: none;
 }
 
 .infoList {
   text-align: left;
-  margin: 0.5rem auto;
-  max-width: 420px;
+  margin: 8px 0;
+  font-size: 14px;
   color: #5a5a5a;
 }
 
 .rsvpButton {
-  margin-top: 1.5rem;
-  padding: 0.75rem 2rem;
-  border-radius: 8px;
+  margin-top: 24px;
+  padding: 12px 24px;
+  border-radius: 12px;
   border: none;
   background: #a9ba7a;
   color: #fff;
-  font-size: 1rem;
+  font-size: 16px;
   cursor: pointer;
 }
 
 .rsvpForm {
-  max-width: 360px;
-  margin: 1rem auto 0;
-  text-align: left;
+  max-width: 100%;
+  margin: 12px auto 0;
 }
 
 .rsvpFormRow {
-  margin-bottom: 1rem;
+  margin-bottom: 12px;
 }
 
 .rsvpFormRow label {
   display: block;
-  font-size: 0.9rem;
+  font-size: 14px;
   color: #5a5a5a;
-  margin-bottom: 0.35rem;
+  margin-bottom: 8px;
 }
 
 .rsvpFormRow input,
 .rsvpFormRow select {
   width: 100%;
-  padding: 0.6rem;
+  padding: 0 12px;
+  height: 44px;
   border: 1px solid #d6d0c7;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 12px;
+  font-size: 16px;
+  box-sizing: border-box;
 }
 
 .rsvpReadOnly {
@@ -275,110 +570,68 @@
 }
 
 .rsvpAlreadyResponded {
-  font-size: 0.95rem;
+  font-size: 14px;
   color: #5a5a5a;
-  margin-bottom: 0.75rem;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   justify-content: center;
 }
 
 .rsvpReadOnlyNotice {
-  font-size: 0.85rem;
+  font-size: 13px;
   color: #888;
-  margin-top: 0.5rem;
+  margin-top: 8px;
 }
 
 .rsvpThankYouBlock {
-  margin-top: 1.25rem;
-  padding: 1.25rem;
+  margin-top: 16px;
+  padding: 16px;
   background: #f0f3ec;
   border-radius: 12px;
   border: 1px solid #d4e0c8;
-  font-size: 1rem;
+  font-size: 15px;
   color: #3b3b3b;
-}
-
-.accountList {
-  display: grid;
-  gap: 1rem;
-  text-align: left;
-  max-width: 520px;
-  margin: 2rem auto 0;
-}
-
-.accountCard {
-  border: 1px solid #ded8ce;
-  border-radius: 12px;
-  padding: 1rem 1.2rem;
-  background: #fff;
-}
-
-.accountHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.copyButton {
-  border: 1px solid #d0cabf;
-  background: #fdfcf8;
-  border-radius: 8px;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.85rem;
-  color: #6a6a6a;
 }
 
 .messageList {
   display: grid;
-  gap: 1rem;
+  gap: 16px;
   text-align: left;
   max-width: 520px;
-  margin: 2rem auto 0;
+  margin: 24px auto 0;
 }
 
 .messageCard {
   border-radius: 12px;
   border: 1px solid #e2ddd5;
-  padding: 1rem 1.2rem;
+  padding: 16px;
   background: #fff;
 }
 
 .messageMeta {
-  font-size: 0.85rem;
+  font-size: 13px;
   color: #888;
-  margin-bottom: 0.5rem;
-}
-
-.audioButton {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  background: #f7f5f2;
-  border: 1px solid #dcd5c8;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  cursor: pointer;
+  margin-bottom: 8px;
 }
 
 .shareActions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
 }
 
 .shareButton {
-  padding: 0.8rem 2rem;
-  border-radius: 999px;
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
   border: 1px solid #a9ba7a;
   background: #a9ba7a;
   color: #fff;
-  font-size: 1rem;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -388,10 +641,6 @@
   color: #4a433a;
 }
 
-/*
- * Future Extension (inactive) – 위치만 예약, 현재 동작 영향 0.
- * visibility/display 변경 시 Contract §6 & CHANGE_GOVERNANCE.md 선행 필요.
- */
 .extensionPlaceholder {
   display: none;
   margin: 0;

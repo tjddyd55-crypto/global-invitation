@@ -21,6 +21,8 @@ type LocationMapSectionProps = {
   transportInfo?: string[];
   parkingTitle?: string;
   parkingInfo?: string[];
+  /** 부고 등 어두운 배경에서 대비 유지 */
+  tone?: 'light' | 'dark';
 };
 
 export default function LocationMapSection({
@@ -36,6 +38,7 @@ export default function LocationMapSection({
   transportInfo,
   parkingTitle,
   parkingInfo,
+  tone = 'light',
 }: LocationMapSectionProps) {
   const navUrls = buildMapNavigationUrls({
     address: address || '',
@@ -55,9 +58,11 @@ export default function LocationMapSection({
   const hasTransportInfo = Boolean(transportTitle && transportInfo && transportInfo.length > 0);
   const hasParkingInfo = Boolean(parkingTitle && parkingInfo && parkingInfo.length > 0);
 
+  const rootTone = tone === 'dark' ? styles.rootDark : styles.rootLight;
+
   return (
-    <>
-      {sectionTitle && <div className={styles.sectionTitle}>{sectionTitle}</div>}
+    <div className={`${styles.root} ${rootTone}`}>
+      {sectionTitle ? <div className={styles.sectionTitle}>{sectionTitle}</div> : null}
       <div className={styles.locationBlock}>
         <h2>{title}</h2>
         {address && <div>{address}</div>}
@@ -94,6 +99,6 @@ export default function LocationMapSection({
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

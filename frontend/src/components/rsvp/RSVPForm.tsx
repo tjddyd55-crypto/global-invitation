@@ -121,7 +121,7 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
 
   return (
     <section className={styles.section}>
-      <h2 className={styles.title}>참석 여부 전달</h2>
+      <h2 className={styles.title}>참석 여부</h2>
       <p className={styles.description}>
         초대해 주셔서 감사합니다. 참석 가능 여부와 간단한 메모를 남겨 주세요.
       </p>
