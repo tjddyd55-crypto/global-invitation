@@ -8,13 +8,6 @@ type Step3InvitationMessageProps = {
   onChange: (value: Partial<WeddingEditorInvitationMessage>) => void;
 };
 
-function toParagraphs(text: string): string[] {
-  return text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
-
 export default function Step3InvitationMessage({ value, onChange }: Step3InvitationMessageProps) {
   return (
     <section className={styles.stepSection}>
@@ -35,8 +28,8 @@ export default function Step3InvitationMessage({ value, onChange }: Step3Invitat
         <span className={styles.fieldLabel}>본문 문단 (2~4개 권장)</span>
         <textarea
           rows={6}
-          value={value.body.join('\n')}
-          onChange={(event) => onChange({ body: toParagraphs(event.target.value) })}
+          value={value.body}
+          onChange={(event) => onChange({ body: event.target.value })}
           placeholder="문단을 줄바꿈으로 구분하세요."
         />
       </label>

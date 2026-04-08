@@ -9,6 +9,8 @@ import type {
   WeddingEditorState,
 } from './weddingEditor.types';
 
+type EditorConceptType = WeddingEditorState['setup']['conceptType'];
+
 const DEFAULT_HERO_IMAGE = '/images/wedding/classic/hero.jpg';
 const DEFAULT_GROOM_IMAGE = '/images/wedding/classic/groom.jpg';
 const DEFAULT_BRIDE_IMAGE = '/images/wedding/classic/bride.jpg';
@@ -22,12 +24,6 @@ const DEFAULT_EVENT_DATE_TIME = '2025-04-13T17:20';
 const DEFAULT_VENUE_NAME = '더링크호텔 서울';
 const DEFAULT_VENUE_DETAIL = '3층 베일리홀';
 const DEFAULT_INTRO_QUOTE = '예쁜 예감이 들었다. 우리는 언제나 손을 잡고 있게 될 것이다.';
-const DEFAULT_MESSAGE_BODY = [
-  '봄날의 햇살 아래, 결혼합니다.',
-  '사랑의 선율 속에서,',
-  '저희 두 사람이 하나 되어 행복한 춤을 시작하려 합니다.',
-  '소중한 분들과 함께하고 싶습니다.',
-];
 
 const DEFAULT_TRANSPORT = ['신도림역 1번 출구 앞'];
 const DEFAULT_PARKING = ['웨딩고객 주차 1시간 30분 무료'];
@@ -60,10 +56,25 @@ function toDateTimeLocal(source?: string | null): string {
   return parsed.toISOString().slice(0, 16);
 }
 
-function splitMessage(source?: string | null): string[] {
-  if (!source) return DEFAULT_MESSAGE_BODY;
-  const lines = source.split('\n').map((line) => line.trim()).filter(Boolean);
-  return lines.length > 0 ? lines : DEFAULT_MESSAGE_BODY;
+function normalizeLineBreaks(value: string): string {
+  return value.replace(/\r\n?/g, '\n');
+}
+
+function normalizeMessageValue(source: unknown): string | null {
+  if (typeof source === 'string') {
+    return normalizeLineBreaks(source);
+  }
+  if (Array.isArray(source)) {
+    const lines = source.filter((item): item is string => typeof item === 'string').map(normalizeLineBreaks);
+    return lines.length > 0 ? lines.join('\n') : '';
+  }
+  return null;
+}
+
+function resolveMessage(source: unknown, fallback: string): string {
+  const normalized = normalizeMessageValue(source);
+  if (normalized === null) return fallback;
+  return normalized;
 }
 
 function normalizeLanguage(language?: string | null): Language {
@@ -78,6 +89,24 @@ function normalizeTemplateKey(): 'invitation_full' {
 function normalizeConceptType(value: unknown): 'WEDDING' | 'FUNERAL' | 'GENERAL' {
   if (value === 'FUNERAL' || value === 'GENERAL') return value;
   return 'WEDDING';
+}
+
+function getDefaultTitleByConcept(conceptType: EditorConceptType): string {
+  if (conceptType === 'FUNERAL') return '부고를 전합니다';
+  if (conceptType === 'GENERAL') return '초대합니다';
+  return '결혼식에 초대합니다';
+}
+
+function getDefaultMessageByConcept(conceptType: EditorConceptType): string {
+  if (conceptType === 'FUNERAL') return '삼가 고인의 명복을 빕니다.';
+  if (conceptType === 'GENERAL') return '행사에 초대드립니다.';
+  return '소중한 분들을 모시고\n결혼식을 올리게 되었습니다.';
+}
+
+function getDefaultQuoteByConcept(conceptType: EditorConceptType): string {
+  if (conceptType === 'FUNERAL') return '삼가 고인의 명복을 빕니다.';
+  if (conceptType === 'GENERAL') return '뜻깊은 시간에 함께해 주세요.';
+  return DEFAULT_INTRO_QUOTE;
 }
 
 function buildGalleryImages(): WeddingEditorImage[] {
@@ -135,16 +164,24 @@ function stripRolePrefix(value: string): string {
   return normalized;
 }
 
-export function createWeddingEditorState(invitation?: Invitation | null): WeddingEditorState {
+export function createWeddingEditorState(
+  invitation?: Invitation | null,
+  options?: { conceptType?: EditorConceptType }
+): WeddingEditorState {
   const { groomName, brideName } = parseCoupleNames(invitation?.title ?? undefined);
   const eventDateTime = toDateTimeLocal(invitation?.eventDate ?? null);
   const venueName = invitation?.locationText || DEFAULT_VENUE_NAME;
   const language = normalizeLanguage(invitation?.language ?? null);
   const templateKey = normalizeTemplateKey();
-  const conceptType = normalizeConceptType(
-    (invitation?.dataJson as { conceptType?: unknown } | undefined)?.conceptType ??
-      (invitation?.data as { conceptType?: unknown } | undefined)?.conceptType
-  );
+  const conceptType =
+    options?.conceptType ??
+    normalizeConceptType(
+      (invitation?.dataJson as { conceptType?: unknown } | undefined)?.conceptType ??
+        (invitation?.data as { conceptType?: unknown } | undefined)?.conceptType
+    );
+  const defaultTitle = getDefaultTitleByConcept(conceptType);
+  const defaultMessage = getDefaultMessageByConcept(conceptType);
+  const defaultQuote = getDefaultQuoteByConcept(conceptType);
 
   return {
     setup: {
@@ -154,7 +191,7 @@ export function createWeddingEditorState(invitation?: Invitation | null): Weddin
       language,
     },
     basic: {
-      title: invitation?.title || `${groomName} ♥ ${brideName}`,
+      title: invitation?.title || defaultTitle,
       subtitle: undefined,
       eventDateTime,
       venueName,
@@ -165,8 +202,8 @@ export function createWeddingEditorState(invitation?: Invitation | null): Weddin
       overlayText: translate(language, I18N_KEYS.weddingClassic.heroOverlayText),
     },
     invitationMessage: {
-      quote: DEFAULT_INTRO_QUOTE,
-      body: splitMessage(invitation?.message ?? null),
+      quote: defaultQuote,
+      body: resolveMessage(invitation?.message ?? null, defaultMessage),
     },
     groom: {
       name: groomName,
@@ -208,10 +245,15 @@ export function createWeddingEditorStateFromDraft(
   invitation: Invitation,
   runtimeData: WeddingInvitationData | null
 ): WeddingEditorState {
-  const base = createWeddingEditorState(invitation);
+  const base = runtimeData
+    ? createWeddingEditorState(invitation, { conceptType: normalizeConceptType(runtimeData.conceptType) })
+    : createWeddingEditorState(invitation);
   if (!runtimeData) {
     return base;
   }
+
+  const normalizedContent = normalizeMessageValue((runtimeData as { content?: unknown }).content);
+  const normalizedLegacyIntroText = normalizeMessageValue((runtimeData as { introText?: unknown }).introText);
 
   return {
     ...base,
@@ -238,12 +280,7 @@ export function createWeddingEditorStateFromDraft(
     },
     invitationMessage: {
       quote: runtimeData.introQuote || base.invitationMessage.quote,
-      body:
-        runtimeData.content?.split('\n').filter(Boolean) && runtimeData.content.split('\n').filter(Boolean).length > 0
-          ? runtimeData.content.split('\n').filter(Boolean)
-          : runtimeData.introText && runtimeData.introText.length > 0
-            ? runtimeData.introText
-            : base.invitationMessage.body,
+      body: normalizedContent ?? normalizedLegacyIntroText ?? base.invitationMessage.body,
     },
     groom: {
       name: stripRolePrefix(runtimeData.groom?.name || runtimeData.groomName || '') || base.groom.name,

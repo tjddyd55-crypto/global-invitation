@@ -6,7 +6,6 @@ import LivePreviewPanel from './components/LivePreviewPanel';
 import Step0Setup from './steps/Step0Setup';
 import Step1BasicInfo from './steps/Step1BasicInfo';
 import Step2HeroImage from './steps/Step2HeroImage';
-import Step3InvitationMessage from './steps/Step3InvitationMessage';
 import Step4CoupleInfo from './steps/Step4CoupleInfo';
 import Step5Gallery from './steps/Step5Gallery';
 import Step6Location from './steps/Step6Location';
@@ -298,12 +297,10 @@ export default function WeddingEditor({
               <Step0Setup value={state.setup} onChange={(payload) => dispatch({ type: 'SET_SETUP', payload })} />
               <Step1BasicInfo
                 value={state.basic}
+                invitationMessage={state.invitationMessage}
                 conceptType={state.setup.conceptType}
                 onChange={(payload) => dispatch({ type: 'SET_BASIC', payload })}
-              />
-              <Step3InvitationMessage
-                value={state.invitationMessage}
-                onChange={(payload) => dispatch({ type: 'SET_INVITATION_MESSAGE', payload })}
+                onInvitationMessageChange={(payload) => dispatch({ type: 'SET_INVITATION_MESSAGE', payload })}
               />
             </section>
 

@@ -298,7 +298,7 @@ export default function EditorPage() {
         },
       };
     }
-    const created = createWeddingEditorState(invitation);
+    const created = createWeddingEditorState(invitation, { conceptType: editorType });
     return {
       ...created,
       setup: {

@@ -38,6 +38,14 @@ function safeArray<T>(v: T[] | undefined | null): T[] {
   return Array.isArray(v) ? v : [];
 }
 
+function normalizeMessageText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string').join('\n');
+  }
+  return '';
+}
+
 function safeDate(value?: string): Date | null {
   if (!value) return null;
   const parsed = new Date(value);
@@ -88,7 +96,8 @@ export default function WeddingClassicInvitation({
   const galleryImages = Array.isArray(r.galleryImages) ? r.galleryImages : [];
   const title = r.title || r.heroTitle || '';
   const locationText = r.locationText || r.address || '';
-  const contentText = r.content || [r.introQuote, ...(safeArray(r.introText))].filter(Boolean).join('\n');
+  const contentText = normalizeMessageText(r.content) || [r.introQuote, ...(safeArray(r.introText))].filter(Boolean).join('\n');
+  const messageLines = contentText.split('\n');
   const scheduleList = safeArray(r.schedule).length > 0 ? safeArray(r.schedule) : [r.eventDate || r.weddingDateTime || ''];
   const hasLocation = Boolean(locationText) || (typeof r.mapLat === 'number' && typeof r.mapLng === 'number');
   const hasSchedule = scheduleList.filter(Boolean).length > 0;
@@ -143,8 +152,10 @@ export default function WeddingClassicInvitation({
       {hasMessage ? (
         <section className={`${styles.section} ${styles.scheduleHighlight}`}>
           <h2 className={styles.calendarTitle}>{messageTitle}</h2>
-          <div className={styles.scheduleDateTime} style={{ whiteSpace: 'pre-line' }}>
-            {contentText}
+          <div className={styles.scheduleDateTime}>
+            {messageLines.map((line, index) => (
+              <p key={`message-line-${index}`}>{line}</p>
+            ))}
           </div>
         </section>
       ) : null}

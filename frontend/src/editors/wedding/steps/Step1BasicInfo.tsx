@@ -1,15 +1,27 @@
 'use client';
 
 import styles from '../weddingEditor.module.css';
-import type { WeddingEditorBasic, WeddingEditorSetup } from '../state/weddingEditor.types';
+import type {
+  WeddingEditorBasic,
+  WeddingEditorInvitationMessage,
+  WeddingEditorSetup,
+} from '../state/weddingEditor.types';
 
 type Step1BasicInfoProps = {
   value: WeddingEditorBasic;
+  invitationMessage: WeddingEditorInvitationMessage;
   conceptType: WeddingEditorSetup['conceptType'];
   onChange: (value: Partial<WeddingEditorBasic>) => void;
+  onInvitationMessageChange: (value: Partial<WeddingEditorInvitationMessage>) => void;
 };
 
-export default function Step1BasicInfo({ value, conceptType, onChange }: Step1BasicInfoProps) {
+export default function Step1BasicInfo({
+  value,
+  invitationMessage,
+  conceptType,
+  onChange,
+  onInvitationMessageChange,
+}: Step1BasicInfoProps) {
   const labels =
     conceptType === 'FUNERAL'
       ? {
@@ -18,10 +30,12 @@ export default function Step1BasicInfo({ value, conceptType, onChange }: Step1Ba
           datetime: '발인 날짜',
           venue: '빈소 위치',
           detail: '추가 안내 (선택)',
-          titlePlaceholder: '예: 홍길동',
+          titlePlaceholder: '예: 부고를 전합니다',
           subtitlePlaceholder: '예: 상주 홍길동 010-1234-5678',
           venuePlaceholder: '예: 서울아산병원장례식장 특실',
           detailPlaceholder: '예: 조문 시간: 오전 10시 - 오후 8시',
+          message: '부고 메시지',
+          messagePlaceholder: '삼가 고인의 명복을 빕니다.',
         }
       : conceptType === 'GENERAL'
         ? {
@@ -30,10 +44,12 @@ export default function Step1BasicInfo({ value, conceptType, onChange }: Step1Ba
             datetime: '행사 날짜/시간',
             venue: '장소명',
             detail: '상세 장소 (선택)',
-            titlePlaceholder: '예: 2026 글로벌 컨퍼런스',
+            titlePlaceholder: '예: 초대합니다',
             subtitlePlaceholder: '예: 함께 만드는 미래',
             venuePlaceholder: '예: 코엑스 컨퍼런스홀',
             detailPlaceholder: '예: 3층 오디토리움',
+            message: '행사 메시지',
+            messagePlaceholder: '행사에 초대드립니다.',
           }
         : {
             title: '제목',
@@ -41,10 +57,12 @@ export default function Step1BasicInfo({ value, conceptType, onChange }: Step1Ba
             datetime: '예식 날짜/시간',
             venue: '장소명',
             detail: '홀 이름 (선택)',
-            titlePlaceholder: '예: 유동규 ♥ 이소영',
+            titlePlaceholder: '예: 결혼식에 초대합니다',
             subtitlePlaceholder: '예: 사랑의 약속',
             venuePlaceholder: '예: 더링크호텔 서울',
             detailPlaceholder: '예: 3층 베일리홀',
+            message: '초대 메시지',
+            messagePlaceholder: '소중한 분들을 모시고\n결혼식을 올리게 되었습니다.',
           };
 
   return (
@@ -100,6 +118,15 @@ export default function Step1BasicInfo({ value, conceptType, onChange }: Step1Ba
             value={value.venueDetail ?? ''}
             onChange={(event) => onChange({ venueDetail: event.target.value })}
             placeholder={labels.detailPlaceholder}
+          />
+        </label>
+        <label className={styles.field} style={{ gridColumn: '1 / -1' }}>
+          <span className={styles.fieldLabel}>{labels.message}</span>
+          <textarea
+            rows={5}
+            value={invitationMessage.body}
+            onChange={(event) => onInvitationMessageChange({ body: event.target.value })}
+            placeholder={labels.messagePlaceholder}
           />
         </label>
       </div>

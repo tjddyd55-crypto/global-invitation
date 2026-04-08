@@ -20,7 +20,7 @@ export type WeddingEditorHero = {
 
 export type WeddingEditorInvitationMessage = {
   quote?: string;
-  body: string[];
+  body: string;
 };
 
 export type WeddingEditorPerson = {

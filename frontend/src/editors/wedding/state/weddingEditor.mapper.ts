@@ -75,10 +75,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     templateType: 'FULL',
     conceptType: state.setup.conceptType,
     title: invitationTitle,
-    content:
-      state.invitationMessage.body.length > 0
-        ? state.invitationMessage.body.join('\n')
-        : state.invitationMessage.quote || '',
+    content: state.invitationMessage.body || state.invitationMessage.quote || '',
     eventDate: weddingDate.toISOString(),
     schedule: [formatDateTime(state.setup.language, weddingDate)],
     rsvpEnabled: state.extras.rsvpEnabled,
@@ -110,7 +107,6 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     weddingDateTime: formatDateTime(state.setup.language, weddingDate),
     venueName,
     introQuote: state.invitationMessage.quote || '',
-    introText: state.invitationMessage.body.length > 0 ? state.invitationMessage.body : [],
     weddingDate,
     calendarTitle: buildWeddingClassicCalendarTitle(weddingDate, state.setup.language),
     transportInfo: state.location.transportInfo ?? [],
@@ -177,8 +173,7 @@ export function buildSharePreview(state: WeddingEditorState): WeddingEditorShare
 export function weddingEditorStateToInvitation(state: WeddingEditorState, slug: string): Invitation {
   const now = new Date().toISOString();
   const locationText = resolveVenueName(state.basic.venueName, state.basic.venueDetail);
-  const message =
-    state.invitationMessage.body.length > 0 ? state.invitationMessage.body.join('\n') : undefined;
+  const normalizedMessage = state.invitationMessage.body.trim();
   return {
     id: slug,
     slug,
@@ -187,7 +182,7 @@ export function weddingEditorStateToInvitation(state: WeddingEditorState, slug: 
     title: state.basic.title || undefined,
     eventDate: state.basic.eventDateTime || undefined,
     locationText: locationText || undefined,
-    message: message || undefined,
+    message: normalizedMessage || undefined,
     templateKey: state.setup.templateKey,
     musicKey: 'piano_wedding',
     countryCode: 'GLOBAL',

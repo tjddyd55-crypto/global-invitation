@@ -40,13 +40,17 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 
+function isStringOrStringArray(value: unknown): boolean {
+  return typeof value === 'string' || isStringArray(value);
+}
+
 function isCommonFullFields(value: JsonRecord): boolean {
   return (
     value.templateType === 'FULL' &&
     isConceptType(value.conceptType) &&
     typeof value.title === 'string' &&
     typeof value.heroImage === 'string' &&
-    typeof value.content === 'string' &&
+    isStringOrStringArray(value.content) &&
     typeof value.eventDate === 'string' &&
     typeof value.locationText === 'string' &&
     Array.isArray(value.galleryImages) &&
