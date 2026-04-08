@@ -5,8 +5,11 @@ export function weddingEditorReducer(state: WeddingEditorState, action: WeddingE
   switch (action.type) {
     case 'REPLACE_STATE':
       return action.payload;
-    case 'SET_SETUP':
-      return { ...state, setup: { ...state.setup, ...action.payload } };
+    case 'SET_SETUP': {
+      const { conceptType: _omitConcept, ...setupRest } = action.payload;
+      void _omitConcept;
+      return { ...state, setup: { ...state.setup, ...setupRest } };
+    }
     case 'SET_BASIC':
       return { ...state, basic: { ...state.basic, ...action.payload } };
     case 'SET_HERO':

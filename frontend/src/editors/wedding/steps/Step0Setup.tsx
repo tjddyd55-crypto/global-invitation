@@ -6,10 +6,15 @@ import type { WeddingEditorSetup } from '../state/weddingEditor.types';
 type Step0SetupProps = {
   value: WeddingEditorSetup;
   onChange: (value: Partial<WeddingEditorSetup>) => void;
-  onConceptChange?: (conceptType: WeddingEditorSetup['conceptType']) => void;
 };
 
-export default function Step0Setup({ value, onChange, onConceptChange }: Step0SetupProps) {
+const CONCEPT_LABEL: Record<WeddingEditorSetup['conceptType'], string> = {
+  WEDDING: '결혼식',
+  FUNERAL: '부고장',
+  GENERAL: '일반 행사',
+};
+
+export default function Step0Setup({ value, onChange }: Step0SetupProps) {
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
@@ -25,24 +30,10 @@ export default function Step0Setup({ value, onChange, onConceptChange }: Step0Se
           <span className={styles.fieldLabel}>템플릿</span>
           <div className={styles.readOnlyField}>invitation_full (고정)</div>
         </div>
-        <label className={styles.field}>
-          <span className={styles.fieldLabel}>컨셉 선택</span>
-          <select
-            value={value.conceptType}
-            onChange={(event) => {
-              const nextConcept = event.target.value as WeddingEditorSetup['conceptType'];
-              if (onConceptChange) {
-                onConceptChange(nextConcept);
-                return;
-              }
-              onChange({ conceptType: nextConcept });
-            }}
-          >
-            <option value="WEDDING">결혼식</option>
-            <option value="FUNERAL">부고장</option>
-            <option value="GENERAL">일반 행사</option>
-          </select>
-        </label>
+        <div className={styles.field}>
+          <span className={styles.fieldLabel}>컨셉</span>
+          <div className={styles.readOnlyField}>{CONCEPT_LABEL[value.conceptType]}</div>
+        </div>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>언어 선택</span>
           <select
@@ -56,7 +47,7 @@ export default function Step0Setup({ value, onChange, onConceptChange }: Step0Se
         </label>
       </div>
       <div className={styles.noticeBox}>
-        컨셉은 렌더 분기와 컨셉별 확장 필드 노출에 사용됩니다.
+        컨셉은 초대장을 만들 때 결정되며, 편집 중에는 변경할 수 없습니다. 언어는 아래에서 변경할 수 있습니다.
       </div>
     </section>
   );

@@ -90,7 +90,10 @@ export default function WeddingClassicInvitation({
   if (!data) return null;
 
   const r = data;
-  const conceptType = r.conceptType ?? 'WEDDING';
+  const conceptType = r.conceptType;
+  if (conceptType !== 'WEDDING' && conceptType !== 'FUNERAL' && conceptType !== 'GENERAL') {
+    return null;
+  }
   const heroImage =
     (typeof r.heroImage === 'string' && r.heroImage.trim() ? r.heroImage : '') || WEDDING_HERO_PREVIEW_FALLBACK;
   const galleryImages = Array.isArray(r.galleryImages) ? r.galleryImages : [];
@@ -137,8 +140,8 @@ export default function WeddingClassicInvitation({
   const pageConceptClass =
     conceptType === 'WEDDING' ? styles.conceptWedding : conceptType === 'FUNERAL' ? styles.conceptFuneral : styles.conceptGeneral;
 
-  const groomDisplay = (r.groom?.name ?? r.groomName ?? '').trim();
-  const brideDisplay = (r.bride?.name ?? r.brideName ?? '').trim();
+  const groomDisplay = (r.groomName ?? r.groom?.name ?? '').trim();
+  const brideDisplay = (r.brideName ?? r.bride?.name ?? '').trim();
 
   return (
     <div className={`${styles.page} ${pageConceptClass}`}>

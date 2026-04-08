@@ -224,7 +224,9 @@ export default function EditorPage() {
   const [shareUiNotice, setShareUiNotice] = useState<string | null>(null);
   const [funeralData, setFuneralData] = useState<ReturnType<typeof getFuneralClassicDemoData> | null>(null);
   const [hasSession, setHasSession] = useState(false);
-  const [conceptType, setConceptType] = useState<InvitationConceptType>(requestedConcept || 'WEDDING');
+  /** 초대장당 최초 로드 시 한 번만 설정; 에디터·프리뷰 단일 기준 */
+  const [initialConceptType, setInitialConceptType] = useState<InvitationConceptType | null>(null);
+  const conceptType = initialConceptType;
 
   const isFuneralDemo = isFuneralClassicDemoSlug(slug);
 
@@ -269,13 +271,13 @@ export default function EditorPage() {
       setSaveNotice(null);
       setShareUrl(null);
       setShareUiNotice(null);
-      setConceptType(requestedConcept || 'WEDDING');
+      setInitialConceptType(null);
 
       try {
         if (isFuneralDemo) {
           if (!isMounted) return;
           setFuneralData(getFuneralClassicDemoData());
-          setConceptType('FUNERAL');
+          setInitialConceptType('FUNERAL');
           return;
         }
 
@@ -318,7 +320,9 @@ export default function EditorPage() {
         const normalizedStatus = editorInvitation.status === 'published' ? 'published' : 'draft';
         setDraftStatus(normalizedStatus);
         const runtimeData = editorInvitation.dataJson ?? editorInvitation.data;
-        setConceptType(requestedConcept || resolveInvitationConceptType(runtimeData, editorInvitation.templateKey));
+        setInitialConceptType(
+          requestedConcept || resolveInvitationConceptType(runtimeData, editorInvitation.templateKey)
+        );
         setLastSavedAt(editorInvitation.updatedAt ?? null);
         if (editorInvitation.shareSlug) {
           setShareUrl(`/i/${editorInvitation.shareSlug}`);
@@ -369,7 +373,7 @@ export default function EditorPage() {
   const editorType = conceptType;
 
   const initialState = useMemo(() => {
-    if (!invitation || editorType === 'FUNERAL') return null;
+    if (!invitation || !editorType || editorType === 'FUNERAL') return null;
     const runtimeData = (invitation.dataJson ?? invitation.data) as WeddingInvitationData | undefined;
     if (isWeddingInvitationData(runtimeData)) {
       const draft = createWeddingEditorStateFromDraft(invitation, runtimeData);

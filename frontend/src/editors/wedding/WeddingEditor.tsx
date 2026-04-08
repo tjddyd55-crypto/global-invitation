@@ -13,7 +13,6 @@ import Step7Accounts from './steps/Step7Accounts';
 import Step8Extras from './steps/Step8Extras';
 import Step9SharePreview from './steps/Step9SharePreview';
 import { buildSharePreview, buildWeddingClassicPreviewData } from './state/weddingEditor.mapper';
-import { createWeddingEditorState } from './state/weddingEditor.initial';
 import { weddingEditorReducer } from './state/weddingEditor.reducer';
 import type { WeddingEditorState } from './state/weddingEditor.types';
 import { logEvent } from '@/src/lib/events';
@@ -33,16 +32,6 @@ type EditorSectionItem = {
   title: string;
 };
 
-type EditorConceptType = WeddingEditorState['setup']['conceptType'];
-
-type PreservedFields = {
-  language: WeddingEditorState['setup']['language'];
-  basic: Pick<WeddingEditorState['basic'], 'title' | 'subtitle' | 'eventDateTime' | 'venueName' | 'venueDetail'>;
-  invitationMessage: WeddingEditorState['invitationMessage'];
-  location: Pick<WeddingEditorState['location'], 'address' | 'mapLat' | 'mapLng'>;
-  galleryImages: WeddingEditorState['gallery']['images'];
-};
-
 const EDITOR_SECTIONS: EditorSectionItem[] = [
   { key: 'basic', title: 'Basic Info' },
   { key: 'hero', title: 'Hero' },
@@ -59,81 +48,6 @@ function resolveVisibleSections(conceptType: WeddingEditorState['setup']['concep
     return EDITOR_SECTIONS;
   }
   return EDITOR_SECTIONS.filter((section) => section.key !== 'couple');
-}
-
-function cloneGalleryImages(images: WeddingEditorState['gallery']['images']): WeddingEditorState['gallery']['images'] {
-  return images.map((image) => ({ ...image }));
-}
-
-function extractPreservedFields(state: WeddingEditorState): PreservedFields {
-  return {
-    language: state.setup.language,
-    basic: {
-      title: state.basic.title,
-      subtitle: state.basic.subtitle,
-      eventDateTime: state.basic.eventDateTime,
-      venueName: state.basic.venueName,
-      venueDetail: state.basic.venueDetail,
-    },
-    invitationMessage: {
-      quote: state.invitationMessage.quote,
-      body: state.invitationMessage.body,
-    },
-    location: {
-      address: state.location.address,
-      mapLat: state.location.mapLat,
-      mapLng: state.location.mapLng,
-    },
-    galleryImages: cloneGalleryImages(state.gallery.images),
-  };
-}
-
-function mergePreservedFields(newState: WeddingEditorState, preserved: PreservedFields): WeddingEditorState {
-  return {
-    ...newState,
-    setup: {
-      ...newState.setup,
-      language: preserved.language,
-    },
-    basic: {
-      ...newState.basic,
-      title: preserved.basic.title,
-      subtitle: preserved.basic.subtitle,
-      eventDateTime: preserved.basic.eventDateTime,
-      venueName: preserved.basic.venueName,
-      venueDetail: preserved.basic.venueDetail,
-    },
-    invitationMessage: {
-      ...newState.invitationMessage,
-      ...preserved.invitationMessage,
-    },
-    location: {
-      ...newState.location,
-      address: preserved.location.address,
-      mapLat: preserved.location.mapLat,
-      mapLng: preserved.location.mapLng,
-    },
-    gallery: {
-      ...newState.gallery,
-      images: cloneGalleryImages(preserved.galleryImages),
-    },
-  };
-}
-
-function hasConceptSpecificData(state: WeddingEditorState): boolean {
-  if (state.setup.conceptType !== 'WEDDING') return false;
-
-  const baseline = createWeddingEditorState(null, { conceptType: 'WEDDING' });
-  return (
-    state.groom.name !== baseline.groom.name ||
-    state.groom.phone !== baseline.groom.phone ||
-    state.groom.parentsText !== baseline.groom.parentsText ||
-    state.groom.photo !== baseline.groom.photo ||
-    state.bride.name !== baseline.bride.name ||
-    state.bride.phone !== baseline.bride.phone ||
-    state.bride.parentsText !== baseline.bride.parentsText ||
-    state.bride.photo !== baseline.bride.photo
-  );
 }
 
 type WeddingEditorProps = {
@@ -269,31 +183,9 @@ export default function WeddingEditor({
     await onPublish(state);
   };
 
-  const handleChangeConcept = (nextConcept: EditorConceptType) => {
-    if (state.setup.conceptType === nextConcept) return;
-
-    if (hasConceptSpecificData(state)) {
-      const shouldProceed = window.confirm('컨셉을 변경하면 일부 정보가 초기화됩니다. 계속하시겠습니까?');
-      if (!shouldProceed) return;
-    }
-
-    const preserved = extractPreservedFields(state);
-    const newState = createWeddingEditorState(null, {
-      conceptType: nextConcept,
-    });
-    const mergedState = mergePreservedFields(newState, preserved);
-    dispatch({ type: 'REPLACE_STATE', payload: mergedState });
-    setActiveSection('basic');
-  };
-
   const handleSetupChange = (payload: Partial<WeddingEditorState['setup']>) => {
-    const { conceptType, ...restPayload } = payload;
-    if (conceptType) {
-      handleChangeConcept(conceptType);
-    }
-    if (Object.keys(restPayload).length > 0) {
-      dispatch({ type: 'SET_SETUP', payload: restPayload });
-    }
+    if (Object.keys(payload).length === 0) return;
+    dispatch({ type: 'SET_SETUP', payload });
   };
 
   const handleGalleryUploadStateChange = (uploadState: { isUploading: boolean; hasError: boolean }) => {
@@ -407,11 +299,7 @@ export default function WeddingEditor({
               data-section-key="basic"
               ref={setSectionRef('basic')}
             >
-              <Step0Setup
-                value={state.setup}
-                onChange={handleSetupChange}
-                onConceptChange={handleChangeConcept}
-              />
+              <Step0Setup value={state.setup} onChange={handleSetupChange} />
               <Step1BasicInfo
                 value={state.basic}
                 invitationMessage={state.invitationMessage}

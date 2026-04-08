@@ -1,12 +1,7 @@
 'use client';
 
 import type { FuneralInvitationData, InvitationRuntimeData, WeddingInvitationData } from '@/src/invitation/schemas';
-import {
-  isFuneralInvitationData,
-  isWeddingInvitationData,
-  resolveInvitationConceptType,
-} from '@/src/invitation/schemas';
-import { getFuneralClassicDemoData } from '@/src/templates/funeralClassic/data';
+import { isFuneralInvitationData, isWeddingInvitationData } from '@/src/invitation/schemas';
 import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
 import { buildWeddingClassicData, getSampleWeddingInvitation } from '@/src/templates/weddingClassic/data';
 
@@ -57,6 +52,16 @@ function toWeddingFromFuneral(data: FuneralInvitationData): WeddingInvitationDat
   };
 }
 
+function resolveWeddingPayload(data: InvitationRuntimeData): WeddingInvitationData | null {
+  if (isWeddingInvitationData(data)) {
+    return data;
+  }
+  if (isFuneralInvitationData(data)) {
+    return toWeddingFromFuneral(data);
+  }
+  return null;
+}
+
 export default function FullInvitationRenderer({
   data,
   invitationSlug,
@@ -68,25 +73,16 @@ export default function FullInvitationRenderer({
   onKakaoShare,
   isShared,
 }: FullInvitationRendererProps) {
-  const conceptType = resolveInvitationConceptType(data, (data as { templateKey?: string })?.templateKey);
+  const weddingData = resolveWeddingPayload(data);
+  if (!weddingData) {
+    return null;
+  }
 
-  const weddingData =
-    isWeddingInvitationData(data)
-      ? data
-      : isFuneralInvitationData(data)
-        ? toWeddingFromFuneral(data)
-        : toWeddingFromFuneral(getFuneralClassicDemoData());
-
-  const normalizedData =
-    conceptType === 'FUNERAL'
-      ? { ...weddingData, conceptType: 'FUNERAL' as const }
-      : conceptType === 'GENERAL'
-        ? { ...weddingData, conceptType: 'GENERAL' as const }
-        : { ...weddingData, conceptType: 'WEDDING' as const };
+  const conceptType = weddingData.conceptType;
 
   return (
     <WeddingClassicInvitation
-      data={normalizedData}
+      data={weddingData}
       invitationSlug={invitationSlug}
       showPlayButton={showPlayButton}
       previewMode={previewMode}
@@ -99,4 +95,3 @@ export default function FullInvitationRenderer({
     />
   );
 }
-

@@ -1,7 +1,8 @@
 export type WeddingEditorSetup = {
   invitationType: 'wedding';
   templateKey: 'invitation_full';
-  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  /** 에디터 진입 시 페이지에서 고정; 런타임 변경 불가 */
+  readonly conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
   language: 'ko' | 'en' | 'mn';
 };
 
