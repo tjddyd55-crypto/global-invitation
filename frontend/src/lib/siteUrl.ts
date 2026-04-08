@@ -6,8 +6,39 @@ function normalizePath(path: string): string {
   return path.startsWith('/') ? path : `/${path}`;
 }
 
+function isLocalhostHost(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname.endsWith('.local')
+  );
+}
+
+/**
+ * NEXT_PUBLIC_SITE_URL 정규화: 스킴 없으면 https, 프로덕션 호스트는 https 권장.
+ * 공유/OG 절대 URL 안정화용.
+ */
+function normalizeConfiguredSiteUrl(raw: string): string {
+  const t = raw.trim().replace(/\/+$/, '');
+  if (!t) return '';
+  try {
+    const withProto = t.includes('://') ? t : `https://${t}`;
+    const u = new URL(withProto);
+    if (isLocalhostHost(u.hostname)) {
+      return u.origin;
+    }
+    if (u.protocol === 'http:') {
+      u.protocol = 'https:';
+    }
+    return u.origin;
+  } catch {
+    return t;
+  }
+}
+
 function resolveSiteBaseUrl(): string {
-  if (SITE_URL) return SITE_URL;
+  if (SITE_URL) return normalizeConfiguredSiteUrl(SITE_URL);
   if (process.env.NODE_ENV !== 'production') return DEFAULT_DEV_SITE_URL;
   // Production: no localhost fallback. Empty => relative URLs only.
   return '';

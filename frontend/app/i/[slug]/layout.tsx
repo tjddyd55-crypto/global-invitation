@@ -1,12 +1,7 @@
 import type { Metadata } from 'next';
+import { extractSharePresentationFromPayload } from '@/src/lib/invitationShareMeta';
+import { fetchSharedInvitationCached } from '@/src/lib/server/fetchSharedInvitationCached';
 import { buildCanonicalUrl, getMetadataBase } from '@/src/lib/siteUrl';
-
-type SharedInvitationMeta = {
-  title?: string | null;
-  message?: string | null;
-  data?: Record<string, unknown> | null;
-  dataJson?: Record<string, unknown> | null;
-};
 
 function resolveSafeSlug(value: unknown): string {
   if (typeof value === 'string') return value;
@@ -14,105 +9,111 @@ function resolveSafeSlug(value: unknown): string {
   return '';
 }
 
-function resolveBackendBaseUrl(): string {
-  const fromPublic = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
-  const fromServer = process.env.API_BASE_URL || process.env.BACKEND_URL;
-  const candidate = fromPublic || fromServer || 'http://127.0.0.1:3001';
-  return candidate.endsWith('/') ? candidate.slice(0, -1) : candidate;
+function openGraphImageUrl(metadataBase: URL | undefined, slug: string): string {
+  const path = `/i/${slug}/opengraph-image`;
+  if (!metadataBase) return path;
+  try {
+    return new URL(path, metadataBase).toString();
+  } catch {
+    return path;
+  }
 }
 
-function pickOgImage(payload: SharedInvitationMeta): string {
-  const data = payload.dataJson || payload.data || {};
-  const heroImage = typeof data.heroImage === 'string' ? data.heroImage : '';
-  const ogImage = typeof data.ogImage === 'string' ? data.ogImage : '';
-  if (heroImage) return heroImage;
-  if (ogImage) return ogImage;
-  return '/default-og.png';
-}
-
-function pickDescription(payload: SharedInvitationMeta): string {
-  const data = payload.dataJson || payload.data || {};
-  const ogDescription = typeof data.ogDescription === 'string' ? data.ogDescription : '';
-  if (ogDescription) return ogDescription;
-  if (payload.message) return payload.message;
-  return "You're invited";
-}
-
-function pickTitle(payload: SharedInvitationMeta): string {
-  const data = payload.dataJson || payload.data || {};
-  const ogTitle = typeof data.ogTitle === 'string' ? data.ogTitle : '';
-  if (ogTitle) return ogTitle;
-  if (payload.title) return payload.title;
-  return 'Invitation';
-}
-
-export async function generateMetadata(
-  { params }: { params: { slug?: string | string[] } }
-): Promise<Metadata> {
+/**
+ * 메타/OG URL은 NEXT_PUBLIC_SITE_URL(https 권장) 기준 canonical.
+ * 카카오·페이스북은 자체 OG 캐시가 있어, 문구/이미지 변경 후 플랫폼 도구에서 링크 갱신이 필요하다.
+ */
+export async function generateMetadata({ params }: { params: { slug?: string | string[] } }): Promise<Metadata> {
   const slug = resolveSafeSlug(params?.slug);
   const canonicalPath = buildCanonicalUrl(slug ? `/i/${slug}` : '/i');
+  const metadataBase = getMetadataBase();
 
-  const fallbackTitle = 'Invitation';
-  const fallbackDescription = "You're invited";
+  const fallbackTitle = '초대장';
+  const fallbackDescription = '행사에 초대드립니다';
 
   if (!slug) {
     return {
-      metadataBase: getMetadataBase(),
+      metadataBase,
       title: fallbackTitle,
       description: fallbackDescription,
       alternates: { canonical: canonicalPath },
-    };
-  }
-
-  try {
-    const response = await fetch(`${resolveBackendBaseUrl()}/api/invitations/share/${encodeURIComponent(slug)}`, {
-      cache: 'no-store',
-    });
-    if (!response.ok) {
-      throw new Error('NOT_FOUND');
-    }
-    const payload = (await response.json()) as SharedInvitationMeta;
-    const title = pickTitle(payload);
-    const description = pickDescription(payload);
-    const image = pickOgImage(payload);
-
-    return {
-      metadataBase: getMetadataBase(),
-      title,
-      description,
-      alternates: { canonical: canonicalPath },
       openGraph: {
-        title,
-        description,
-        images: [image],
+        title: fallbackTitle,
+        description: fallbackDescription,
         type: 'website',
         url: canonicalPath,
       },
       twitter: {
         card: 'summary_large_image',
-        title,
-        description,
-        images: [image],
+        title: fallbackTitle,
+        description: fallbackDescription,
+        images: metadataBase ? [{ url: new URL('/default-og.png', metadataBase).toString() }] : undefined,
+      },
+    };
+  }
+
+  const ogUrl = openGraphImageUrl(metadataBase, slug);
+
+  try {
+    const payload = await fetchSharedInvitationCached(slug);
+    if (!payload) {
+      throw new Error('NOT_FOUND');
+    }
+    const pres = extractSharePresentationFromPayload(payload);
+
+    return {
+      metadataBase,
+      title: pres.metaTitle,
+      description: pres.metaDescription,
+      alternates: { canonical: canonicalPath },
+      openGraph: {
+        title: pres.metaTitle,
+        description: pres.metaDescription,
+        type: 'website',
+        url: canonicalPath,
+        locale: 'ko_KR',
+        images: [
+          {
+            url: ogUrl,
+            width: 1200,
+            height: 630,
+            alt: pres.metaTitle,
+          },
+        ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: pres.metaTitle,
+        description: pres.metaDescription,
+        images: [ogUrl],
       },
     };
   } catch {
     return {
-      metadataBase: getMetadataBase(),
+      metadataBase,
       title: fallbackTitle,
       description: fallbackDescription,
       alternates: { canonical: canonicalPath },
       openGraph: {
         title: fallbackTitle,
         description: fallbackDescription,
-        images: ['/default-og.png'],
         type: 'website',
         url: canonicalPath,
+        locale: 'ko_KR',
+        images: [
+          {
+            url: ogUrl,
+            width: 1200,
+            height: 630,
+            alt: fallbackTitle,
+          },
+        ],
       },
       twitter: {
         card: 'summary_large_image',
         title: fallbackTitle,
         description: fallbackDescription,
-        images: ['/default-og.png'],
+        images: [ogUrl],
       },
     };
   }

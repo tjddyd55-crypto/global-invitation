@@ -6,8 +6,11 @@ import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { getSharedInvitationBySlug, type Invitation } from '@/src/lib/api';
-import { getShareContent, type ShareTemplateType } from '@/src/lib/share';
-import { buildAbsolutePublicInvitationUrl, buildPublicInvitationUrlPath } from '@/src/lib/publicInvitation';
+import { buildAbsolutePublicInvitationUrl } from '@/src/lib/publicInvitation';
+import {
+  extractSharePresentationFromInvitation,
+  KAKAO_SHARE_BUTTON_LABEL,
+} from '@/src/lib/invitationShareMeta';
 import { trackInvitationView } from '@/src/lib/trackInvitationView';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import {
@@ -26,11 +29,6 @@ function resolveSafeSlug(value: unknown): string {
   if (typeof value === 'string') return value;
   if (Array.isArray(value)) return typeof value[0] === 'string' ? value[0] : '';
   return '';
-}
-
-function resolveShareTemplateType(category: TemplateCategory, conceptType: string): ShareTemplateType {
-  if (conceptType === 'FUNERAL' || category === 'funeral') return 'funeral';
-  return 'wedding';
 }
 
 export default function PublicShareInvitationPage() {
@@ -151,36 +149,35 @@ export default function PublicShareInvitationPage() {
   };
 
   const handleKakaoShare = () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !invitation) return;
     const absolute = buildAbsolutePublicInvitationUrl(window.location.origin, effectiveShareSlug);
+    /** 스토리 공유는 요청 URL의 OG/Twitter 메타·동적 OG 이미지(`/i/.../opengraph-image`)를 스크랩한다. */
     window.open(`https://story.kakao.com/share?url=${encodeURIComponent(absolute)}`, '_blank', 'noopener,noreferrer');
   };
 
   const handleShare = async () => {
-    if (isSharing) return;
+    if (isSharing || !invitation) return;
     if (typeof window === 'undefined') return;
 
     setShareFallbackUrl(null);
     setIsSharing(true);
     try {
-      const category =
-        templateDefinition?.category ||
-        getTemplateRegistryEntry(invitation?.templateKey)?.category ||
-        'wedding';
-      const runtimeData = invitation?.dataJson ?? invitation?.data ?? null;
-      const conceptType = resolveInvitationConceptType(runtimeData, invitation?.templateKey);
-      const shareKind = resolveShareTemplateType(category, conceptType);
-      const { title, description } = getShareContent(shareKind, t);
+      const pres = extractSharePresentationFromInvitation(invitation);
       const url = buildAbsolutePublicInvitationUrl(window.location.origin, effectiveShareSlug);
+      const shareText = `${pres.metaTitle}\n${pres.metaDescription}`;
 
       if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-        await navigator.share({ title, text: description, url });
+        await navigator.share({
+          title: pres.metaTitle,
+          text: pres.metaDescription,
+          url,
+        });
         markShared();
         return;
       }
 
       if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(`${shareText}\n${url}`);
         markShared();
       } else {
         setShareFallbackUrl(url);
@@ -280,6 +277,7 @@ export default function PublicShareInvitationPage() {
             type="button"
             onClick={handleKakaoShare}
             className={`${publicInvitationMobile.shareButton} ${publicInvitationMobile.shareButtonSecondary}`}
+            title={KAKAO_SHARE_BUTTON_LABEL}
           >
             카카오 공유
           </button>
