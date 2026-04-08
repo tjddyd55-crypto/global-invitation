@@ -11,8 +11,7 @@ import Step5Gallery from './steps/Step5Gallery';
 import Step6Location from './steps/Step6Location';
 import Step7Accounts from './steps/Step7Accounts';
 import Step8Extras from './steps/Step8Extras';
-import Step9SharePreview from './steps/Step9SharePreview';
-import { buildSharePreview, buildWeddingClassicPreviewData } from './state/weddingEditor.mapper';
+import { buildWeddingClassicPreviewData } from './state/weddingEditor.mapper';
 import { weddingEditorReducer } from './state/weddingEditor.reducer';
 import type { WeddingEditorState } from './state/weddingEditor.types';
 import { logEvent } from '@/src/lib/events';
@@ -24,8 +23,7 @@ type EditorSectionKey =
   | 'gallery'
   | 'location'
   | 'accounts'
-  | 'rsvp'
-  | 'share';
+  | 'rsvp';
 
 type EditorSectionItem = {
   key: EditorSectionKey;
@@ -39,8 +37,7 @@ const EDITOR_SECTIONS: EditorSectionItem[] = [
   { key: 'gallery', title: 'Gallery' },
   { key: 'location', title: 'Location' },
   { key: 'accounts', title: 'Accounts' },
-  { key: 'rsvp', title: 'RSVP' },
-  { key: 'share', title: 'Share' },
+  { key: 'rsvp', title: 'RSVP · 공유' },
 ];
 
 function resolveVisibleSections(conceptType: WeddingEditorState['setup']['conceptType']): EditorSectionItem[] {
@@ -95,11 +92,9 @@ export default function WeddingEditor({
     location: null,
     accounts: null,
     rsvp: null,
-    share: null,
   });
 
   const previewData = useMemo(() => buildWeddingClassicPreviewData(state), [state]);
-  const sharePreview = useMemo(() => buildSharePreview(state), [state]);
   const visibleSections = useMemo(() => resolveVisibleSections(state.setup.conceptType), [state.setup.conceptType]);
 
   useEffect(() => {
@@ -371,34 +366,19 @@ export default function WeddingEditor({
               data-section-key="rsvp"
               ref={setSectionRef('rsvp')}
             >
-              <Step8Extras value={state.extras} onChange={(payload) => dispatch({ type: 'SET_EXTRAS', payload })} />
-            </section>
-
-            <section
-              className={styles.editorSection}
-              data-section-key="share"
-              ref={setSectionRef('share')}
-            >
-              <Step9SharePreview
-                data={previewData}
+              <Step8Extras
+                value={state.extras}
+                onChange={(payload) => dispatch({ type: 'SET_EXTRAS', payload })}
                 share={state.share}
-                previewShare={sharePreview}
-                heroImage={state.hero.heroImage}
-                showRsvp={state.extras.rsvpEnabled}
-                showGuestbook={state.extras.guestbookEnabled}
                 onShareChange={(payload) => dispatch({ type: 'SET_SHARE', payload })}
+                heroImage={state.hero.heroImage}
               />
             </section>
           </div>
         </main>
 
         <aside className={styles.previewColumn}>
-          <LivePreviewPanel
-            title="라이브 미리보기"
-            data={previewData}
-            showRsvp={state.extras.rsvpEnabled}
-            showGuestbook={state.extras.guestbookEnabled}
-          />
+          <LivePreviewPanel title="라이브 미리보기" data={previewData} />
         </aside>
       </div>
 
@@ -424,12 +404,7 @@ export default function WeddingEditor({
             <strong>라이브 미리보기</strong>
           </div>
           <div className={styles.fullscreenPreviewBody}>
-            <LivePreviewPanel
-              data={previewData}
-              showRsvp={state.extras.rsvpEnabled}
-              showGuestbook={state.extras.guestbookEnabled}
-              fullscreen
-            />
+            <LivePreviewPanel data={previewData} fullscreen />
           </div>
         </div>
       )}

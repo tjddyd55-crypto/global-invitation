@@ -1,7 +1,7 @@
 .section {
   max-width: 375px;
   margin: 48px auto 0;
-  padding: 24px 16px;
+  padding: 24px;
   box-sizing: border-box;
   border-radius: 0;
   border: none;
@@ -87,14 +87,22 @@
   padding: 0 16px;
   border: none;
   border-radius: 12px;
-  background: #2563eb;
+  background: #4f46e5;
   color: #fff;
   cursor: pointer;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition:
+    transform 0.08s ease,
+    opacity 0.08s ease;
+}
+
+.submitButton:active:not(:disabled) {
+  transform: scale(0.97);
+  opacity: 0.9;
 }
 
 .submitButton:disabled {

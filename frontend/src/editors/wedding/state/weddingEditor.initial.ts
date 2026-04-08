@@ -328,6 +328,7 @@ export function createWeddingEditorStateFromDraft(
       ...base.extras,
       rsvpEnabled: runtimeData.rsvpEnabled ?? runtimeData.rsvp?.enabled ?? base.extras.rsvpEnabled,
       rsvpButtonText: runtimeData.rsvpButton || base.extras.rsvpButtonText,
+      guestbookEnabled: runtimeData.guestbookEnabled ?? base.extras.guestbookEnabled,
     },
     share: {
       ...base.share,

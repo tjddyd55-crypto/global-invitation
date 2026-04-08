@@ -16,9 +16,6 @@ import { I18N_KEYS } from '@/src/i18n';
 import { cdnImageSrc } from '@/src/lib/image';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 
-/** 빈 히어로 URL 시 broken icon 방지 (레지스트리 기본과 동일 자산) */
-const WEDDING_HERO_PREVIEW_FALLBACK = '/images/wedding/classic/hero.jpg';
-
 type WeddingClassicInvitationProps = {
   data: WeddingInvitationData;
   invitationSlug?: string;
@@ -67,7 +64,7 @@ function buildCalendarCells(targetDate: Date): (number | null)[] {
 
 export default function WeddingClassicInvitation({
   data,
-  invitationSlug = 'demo-wedding-classic',
+  invitationSlug = '',
   showPlayButton,
   previewMode = false,
   onPlayMusic,
@@ -75,7 +72,7 @@ export default function WeddingClassicInvitation({
   showGuestbook = false,
   onShare: _onShareUnused,
   onKakaoShare: _onKakaoShareUnused,
-  showCoupleSection = true,
+  showCoupleSection: _showCoupleSectionUnused = true,
   isShared: _isSharedUnused = false,
 }: WeddingClassicInvitationProps) {
   const { t } = useI18n();
@@ -86,6 +83,7 @@ export default function WeddingClassicInvitation({
   void _onKakaoShareUnused;
   void _isSharedUnused;
   void showGuestbook;
+  void _showCoupleSectionUnused;
 
   if (!data) return null;
 
@@ -94,17 +92,20 @@ export default function WeddingClassicInvitation({
   if (conceptType !== 'WEDDING' && conceptType !== 'FUNERAL' && conceptType !== 'GENERAL') {
     return null;
   }
-  const heroImage =
-    (typeof r.heroImage === 'string' && r.heroImage.trim() ? r.heroImage : '') || WEDDING_HERO_PREVIEW_FALLBACK;
+  const heroImage = typeof r.heroImage === 'string' && r.heroImage.trim() ? r.heroImage.trim() : '';
   const galleryImages = Array.isArray(r.galleryImages) ? r.galleryImages : [];
-  const title = r.title || r.heroTitle || '';
-  const locationText = r.locationText || r.address || '';
-  const contentText = normalizeMessageText(r.content) || [r.introQuote, ...(safeArray(r.introText))].filter(Boolean).join('\n');
+  const title = (r.title || r.heroTitle || '').trim();
+  const subtitle = (r.subtitle ?? '').trim();
+  const locationText = (r.locationText || r.venueName || '').trim();
+  const venueDetail = (r.venueDetail ?? '').trim();
+  const addressForMap = (r.address || '').trim() || locationText;
+  const contentText = normalizeMessageText(r.content);
   const messageLines = contentText.split('\n');
   const scheduleList = safeArray(r.schedule).length > 0 ? safeArray(r.schedule) : [r.eventDate || r.weddingDateTime || ''];
-  const hasLocation = Boolean(locationText) || (typeof r.mapLat === 'number' && typeof r.mapLng === 'number');
+  const hasLocation =
+    Boolean(addressForMap.trim()) || (typeof r.mapLat === 'number' && typeof r.mapLng === 'number');
   const hasSchedule = scheduleList.filter(Boolean).length > 0;
-  const hasGallery = conceptType !== 'FUNERAL' && galleryImages.length > 0;
+  const hasGallery = galleryImages.length > 0;
   const hasMessage = Boolean(contentText.trim());
   const accounts = safeArray(r?.accounts);
   const weekdays = [
@@ -122,10 +123,10 @@ export default function WeddingClassicInvitation({
 
   const messageTitle =
     conceptType === 'WEDDING'
-      ? '소중한 날에 함께해 주세요'
+      ? t(I18N_KEYS.weddingClassic.messageSectionWedding)
       : conceptType === 'FUNERAL'
-        ? '부고'
-        : '행사 안내';
+        ? t(I18N_KEYS.weddingClassic.messageSectionFuneral)
+        : t(I18N_KEYS.weddingClassic.messageSectionGeneral);
   const scheduleTitle = conceptType === 'GENERAL' ? '행사 일정' : '일정';
   const locationTitle = '위치 안내';
   const accountsTitle = '마음 전하실 곳';
@@ -136,12 +137,25 @@ export default function WeddingClassicInvitation({
     scheduleForHero[0] ||
     (typeof r.eventDate === 'string' ? r.eventDate : '') ||
     '';
-  const heroVenue = (locationText || r.venueName || '').trim();
+  const heroLocationLine = locationText;
+  const mapToneFuneralLike = Boolean(
+    (r.deceasedName ?? '').trim() || (r.funeralHall ?? '').trim() || (r.funeralDate ?? '').trim()
+  );
   const pageConceptClass =
     conceptType === 'WEDDING' ? styles.conceptWedding : conceptType === 'FUNERAL' ? styles.conceptFuneral : styles.conceptGeneral;
 
   const groomDisplay = (r.groomName ?? r.groom?.name ?? '').trim();
   const brideDisplay = (r.brideName ?? r.bride?.name ?? '').trim();
+  const groomImg = (r.groomImage ?? r.groom?.image ?? '').trim();
+  const brideImg = (r.brideImage ?? r.bride?.image ?? '').trim();
+  const groomPhone = (r.groomPhone ?? r.groom?.phone ?? '').trim();
+  const bridePhone = (r.bridePhone ?? r.bride?.phone ?? '').trim();
+  const parentsInfo = (r.parentsInfo ?? '').trim();
+  /** 커플 섹션: 이름·사진 등 표시 데이터가 하나라도 있으면 true (평탄/중첩 모두 반영) */
+  const hasCouple = Boolean(groomDisplay || brideDisplay || groomImg || brideImg);
+  const showCoupleBlock = Boolean(hasCouple || groomPhone || bridePhone || parentsInfo);
+  /** 장례 일정 데이터가 있으면 리스트, 그 외에는 커플 데이터가 있을 때만 웨딩형 캘린더 */
+  const useCalendarSchedule = hasCouple && !mapToneFuneralLike;
 
   return (
     <div className={`${styles.page} ${pageConceptClass}`}>
@@ -155,16 +169,33 @@ export default function WeddingClassicInvitation({
         </button>
       )}
 
-      <section className={styles.heroSection} aria-label="대표 이미지">
-        <div className={styles.heroMedia}>
-          <img className={styles.heroImage} src={cdnImageSrc(heroImage)} alt="" loading="lazy" />
-          <div className={styles.heroScrim} aria-hidden />
-        </div>
+      <section
+        className={`${styles.heroSection} ${heroImage ? '' : styles.heroSectionNoImage}`}
+        aria-label="대표 이미지"
+      >
+        {heroImage ? (
+          <div className={styles.heroMedia}>
+            <img className={styles.heroImage} src={cdnImageSrc(heroImage)} alt="" loading="lazy" />
+          </div>
+        ) : null}
+        {heroImage ? <div className={styles.heroOverlay} aria-hidden /> : null}
         <div className={styles.heroContent}>
-          <div className={styles.heroTitle}>{title}</div>
-          {heroDate ? <div className={styles.heroDate}>{heroDate}</div> : null}
-          {r.heroOverlayText ? <div className={styles.heroOverlayText}>{r.heroOverlayText}</div> : null}
-          {heroVenue ? <div className={styles.heroVenue}>{heroVenue}</div> : null}
+          <div className={styles.heroText}>
+            {title ? <h1 className={styles.heroTitle}>{title}</h1> : null}
+            {subtitle ||
+            heroDate ||
+            (r.heroOverlayText ?? '').trim() ||
+            heroLocationLine ||
+            venueDetail ? (
+              <div className={styles.heroMetaStack}>
+                {subtitle ? <p className={styles.heroMeta}>{subtitle}</p> : null}
+                {heroDate ? <p className={styles.heroMeta}>{heroDate}</p> : null}
+                {(r.heroOverlayText ?? '').trim() ? <p className={styles.heroMeta}>{r.heroOverlayText}</p> : null}
+                {heroLocationLine ? <p className={styles.heroMeta}>{heroLocationLine}</p> : null}
+                {venueDetail ? <p className={styles.heroMeta}>{venueDetail}</p> : null}
+              </div>
+            ) : null}
+          </div>
         </div>
       </section>
 
@@ -173,7 +204,7 @@ export default function WeddingClassicInvitation({
           <h2 className={styles.calendarTitle}>{messageTitle}</h2>
           <div className={styles.messageBody}>
             {messageLines.map((line, index) => (
-              <p key={`message-line-${index}`} className={styles.messageParagraph}>
+              <p key={`message-line-${index}`} className={`${styles.messageParagraph} ${styles.textBody}`}>
                 {line}
               </p>
             ))}
@@ -183,49 +214,82 @@ export default function WeddingClassicInvitation({
 
       {hasMessage ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
-      {conceptType === 'WEDDING' && showCoupleSection && (groomDisplay || brideDisplay) ? (
-        <section className={`${styles.section} ${styles.conceptSection}`}>
-          <h2 className={styles.calendarTitle}>신랑 · 신부</h2>
-          <div className={styles.coupleSimple}>
-            {groomDisplay ? <p className={styles.coupleNamePrimary}>{groomDisplay}</p> : null}
-            {groomDisplay && brideDisplay ? <p className={styles.coupleHeart}>♥</p> : null}
-            {brideDisplay ? <p className={styles.coupleNamePrimary}>{brideDisplay}</p> : null}
-          </div>
+      {showCoupleBlock ? (
+        <section className={styles.section}>
+          {hasCouple ? <h2 className={styles.calendarTitle}>신랑 · 신부</h2> : null}
+          {hasCouple ? (
+            <div className={styles.coupleSimple}>
+              {groomDisplay ? <p className={styles.coupleNamePrimary}>{groomDisplay}</p> : null}
+              {groomDisplay && brideDisplay ? <p className={styles.coupleHeart}>♥</p> : null}
+              {brideDisplay ? <p className={styles.coupleNamePrimary}>{brideDisplay}</p> : null}
+            </div>
+          ) : null}
+          {hasCouple && (groomImg || brideImg) ? (
+            <div className={styles.couplePhotosRow}>
+              {groomImg ? (
+                <div className={styles.couplePhotoWrap}>
+                  <img className={styles.couplePhoto} src={cdnImageSrc(groomImg)} alt="" loading="lazy" />
+                  {groomDisplay ? <div className={styles.couplePhotoCaption}>{groomDisplay}</div> : null}
+                </div>
+              ) : null}
+              {brideImg ? (
+                <div className={styles.couplePhotoWrap}>
+                  <img className={styles.couplePhoto} src={cdnImageSrc(brideImg)} alt="" loading="lazy" />
+                  {brideDisplay ? <div className={styles.couplePhotoCaption}>{brideDisplay}</div> : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {groomPhone || bridePhone ? (
+            <div className={styles.couplePhoneBlock}>
+              {groomPhone ? (
+                <div>
+                  {t(I18N_KEYS.weddingClassic.groomLabel)} {groomPhone}
+                </div>
+              ) : null}
+              {bridePhone ? (
+                <div>
+                  {t(I18N_KEYS.weddingClassic.brideLabel)} {bridePhone}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {parentsInfo ? <div className={styles.coupleParentsBlock}>{parentsInfo}</div> : null}
         </section>
       ) : null}
 
-      {conceptType === 'FUNERAL' && (
-        <section className={`${styles.section} ${styles.conceptSection} ${styles.funeralBlock}`}>
+      {(r.deceasedName ?? '').trim() ? (
+        <section className={`${styles.section} ${styles.funeralBlock}`}>
           <h2 className={styles.calendarTitle}>고인</h2>
-          {r.deceasedName ? <p className={styles.funeralLine}>{r.deceasedName}</p> : null}
+          <p className={styles.funeralLine}>{(r.deceasedName ?? '').trim()}</p>
         </section>
-      )}
+      ) : null}
 
-      {conceptType === 'FUNERAL' && (
-        <section className={`${styles.section} ${styles.conceptSection} ${styles.funeralBlock}`}>
+      {(r.funeralHall ?? '').trim() || (r.funeralDate ?? '').trim() || (r.contactPerson ?? '').trim() ? (
+        <section className={`${styles.section} ${styles.funeralBlock}`}>
           <h2 className={styles.calendarTitle}>빈소 안내</h2>
-          {r.funeralHall ? (
+          {(r.funeralHall ?? '').trim() ? (
             <p className={styles.funeralLine}>
-              <span className={styles.funeralLabel}>빈소</span> {r.funeralHall}
+              <span className={styles.funeralLabel}>빈소</span> {(r.funeralHall ?? '').trim()}
             </p>
           ) : null}
-          {r.funeralDate ? (
+          {(r.funeralDate ?? '').trim() ? (
             <p className={styles.funeralLine}>
-              <span className={styles.funeralLabel}>발인</span> {r.funeralDate}
+              <span className={styles.funeralLabel}>발인</span> {(r.funeralDate ?? '').trim()}
             </p>
           ) : null}
-          {r.contactPerson ? (
+          {(r.contactPerson ?? '').trim() ? (
             <p className={styles.funeralLine}>
-              <span className={styles.funeralLabel}>조문</span> {r.contactPerson}
+              <span className={styles.funeralLabel}>조문</span> {(r.contactPerson ?? '').trim()}
             </p>
           ) : null}
         </section>
-      )}
+      ) : null}
 
       {hasSchedule ? (
         <section className={`${styles.section} ${styles.scheduleSection}`}>
           <div className={styles.calendarTitle}>{scheduleTitle}</div>
-          {conceptType === 'WEDDING' ? (
+          {useCalendarSchedule ? (
             <div className={styles.calendarGrid}>
               {weekdays.map((day) => (
                 <div key={day} className={`${styles.calendarCell} ${styles.calendarHeader}`}>
@@ -283,12 +347,12 @@ export default function WeddingClassicInvitation({
           <LocationMapSection
             sectionTitle={locationTitle}
             title=""
-            address={locationText}
+            address={addressForMap}
             mapLat={r.mapLat}
             mapLng={r.mapLng}
             mapImage={r.mapImage}
             mapImageAlt={t(I18N_KEYS.weddingClassic.mapAlt)}
-            tone={conceptType === 'FUNERAL' ? 'dark' : 'light'}
+            tone={mapToneFuneralLike ? 'dark' : 'light'}
             navLabels={{
               tmap: t(I18N_KEYS.weddingClassic.navTmap),
               kakao: t(I18N_KEYS.weddingClassic.navKakao),
@@ -302,7 +366,7 @@ export default function WeddingClassicInvitation({
         </section>
       ) : null}
 
-      {conceptType !== 'GENERAL' && Array.isArray(accounts) && accounts.length > 0 ? (
+      {Array.isArray(accounts) && accounts.length > 0 ? (
         <section className={`${styles.section} ${styles.accountsSection}`}>
           <h2>{accountsTitle}</h2>
           <div className={styles.accountList}>

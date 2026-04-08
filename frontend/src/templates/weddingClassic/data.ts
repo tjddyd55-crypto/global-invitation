@@ -27,11 +27,17 @@ export type WeddingClassicData = {
   conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
   /** 공통 필드 */
   title: string;
+  /** 부제·영웅 보조 줄 */
+  subtitle?: string;
   content: string;
   eventDate: string;
   locationText: string;
+  /** 예식장 상세(층/홀 등) */
+  venueDetail?: string;
   schedule: string[];
   rsvpEnabled: boolean;
+  /** 에디터·미리보기: 방명록 섹션 표시 (미설정 시 false 로 간주) */
+  guestbookEnabled?: boolean;
   share?: {
     ogTitle?: string;
     ogDescription?: string;
@@ -44,6 +50,9 @@ export type WeddingClassicData = {
   /** 컨셉 확장 필드 */
   groomName?: string;
   brideName?: string;
+  /** groom.image 와 동기화 가능한 편의 필드 */
+  groomImage?: string;
+  brideImage?: string;
   groomPhone?: string;
   bridePhone?: string;
   parentsInfo?: string;
@@ -218,6 +227,7 @@ export function buildWeddingClassicData(
     locationText: invitation?.locationText || '더링크호텔 서울 3층 베일리홀',
     schedule: [formatDateTime(language, weddingDate)],
     rsvpEnabled: true,
+    guestbookEnabled: true,
     share: {
       ogTitle: heroTitle,
       ogDescription: `${formatDateTime(language, weddingDate)} · ${invitation?.locationText || '더링크호텔 서울'}`,

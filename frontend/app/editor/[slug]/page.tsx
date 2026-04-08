@@ -170,6 +170,7 @@ function buildFullDataFromFuneralState(state: FuneralEditorState): WeddingInvita
       state.schedule.burial || '',
     ].filter(Boolean),
     rsvpEnabled: true,
+    guestbookEnabled: true,
     musicKey: 'piano_wedding',
     heroImage: state.heroImage || '/images/wedding/classic/hero.jpg',
     heroTitle: state.deceasedName ? `${state.deceasedName} 추모 초대` : '추모 초대',

@@ -4,40 +4,18 @@ import {
   getWeddingClassicDefaultLabels,
 } from '@/src/templates/weddingClassic/data';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
-import { I18N_KEYS, translate, type Language } from '@/src/i18n';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/models/invitation';
-import { WEDDING_EDITOR_ASSETS } from './weddingEditor.initial';
-import type { WeddingEditorShare, WeddingEditorState } from './weddingEditor.types';
+import type { WeddingEditorState } from './weddingEditor.types';
 
-const DEFAULT_MESSAGES = [
-  { name: '서문교', content: '두 분 결혼 축하드려요~ 알콩달콩 이쁘게 잘 살아요^^', createdAt: '2025.04.13 17:21' },
-  { name: '스윙 이소영', content: '소식 전해줘서 고마워요! 행복하게 잘 살아줘요.', createdAt: '2025.04.12 19:45' },
-];
-
-function safeDate(source?: string): Date {
-  if (!source) return new Date('2025-04-13T17:20:00');
-  const parsed = new Date(source);
-  return Number.isNaN(parsed.getTime()) ? new Date('2025-04-13T17:20:00') : parsed;
+function parseWeddingDate(eventDateTime: string): Date {
+  const parsed = new Date(eventDateTime);
+  return Number.isNaN(parsed.getTime()) ? new Date(0) : parsed;
 }
 
-function buildCoupleNames(groomName: string, brideName: string, language: Language): string {
-  const groom = groomName || translate(language, I18N_KEYS.weddingClassic.groomLabel);
-  const bride = brideName || translate(language, I18N_KEYS.weddingClassic.brideLabel);
-  return `${groom} ♥ ${bride}`;
-}
-
-function resolveInvitationTitle(state: WeddingEditorState): string {
-  const normalized = state.basic.title.trim();
-  if (normalized) {
-    return normalized;
-  }
-  return buildCoupleNames(state.groom.name, state.bride.name, state.setup.language);
-}
-
-function resolveVenueName(venueName: string, venueDetail?: string): string {
-  if (!venueDetail) return venueName;
-  return `${venueName} ${venueDetail}`;
+function resolveVenueLine(venueName: string, venueDetail?: string): string {
+  if (!venueDetail?.trim()) return venueName.trim();
+  return `${venueName.trim()} ${venueDetail.trim()}`.trim();
 }
 
 function buildPreviewMapImage(mapLat?: number, mapLng?: number): string {
@@ -47,66 +25,76 @@ function buildPreviewMapImage(mapLat?: number, mapLng?: number): string {
     Number.isNaN(mapLat) ||
     Number.isNaN(mapLng)
   ) {
-    return WEDDING_EDITOR_ASSETS.DEFAULT_MAP_IMAGE;
+    return '';
   }
   return `https://staticmap.openstreetmap.de/staticmap.php?center=${mapLat},${mapLng}&zoom=16&size=600x400&markers=${mapLat},${mapLng},red-pushpin`;
 }
 
-function resolveSharePreview(state: WeddingEditorState): WeddingEditorShare {
-  const fallbackTitle = buildWeddingClassicHeroTitle(state.groom.name, state.bride.name, state.setup.language);
-  const venueName = resolveVenueName(state.basic.venueName, state.basic.venueDetail);
-  const fallbackDate = safeDate(state.basic.eventDateTime);
-  const fallbackDescription = `${formatDateTime(state.setup.language, fallbackDate)} · ${venueName}`;
-  return {
-    ogTitle: state.share.ogTitle || fallbackTitle,
-    ogDescription: state.share.ogDescription || fallbackDescription,
-    ogImage: state.share.ogImage || state.hero.heroImage || WEDDING_EDITOR_ASSETS.DEFAULT_HERO_IMAGE,
-  };
-}
-
+/**
+ * 에디터 state → 공개 템플릿과 동일 스키마의 미리보기 데이터.
+ * - 컨셉과 무관하게 state에 있는 표시용 필드는 모두 포함 (조건부 생략 없음).
+ * - hero: state.hero, 갤러리: state.gallery, RSVP·방명록: state.extras (스키마상 필드명과 대응).
+ */
 export function buildWeddingClassicPreviewData(state: WeddingEditorState): WeddingInvitationData {
-  const weddingDate = safeDate(state.basic.eventDateTime);
-  const venueName = resolveVenueName(state.basic.venueName, state.basic.venueDetail);
-  const invitationTitle = resolveInvitationTitle(state);
-  const coupleNames = invitationTitle;
-  const heroTitle = invitationTitle;
+  const weddingDate = parseWeddingDate(state.basic.eventDateTime);
+  const venueName = state.basic.venueName.trim();
+  const venueDetail = (state.basic.venueDetail ?? '').trim();
+  const locationText = venueName;
+  const venueLineForMap = resolveVenueLine(venueName, venueDetail || undefined);
+  const title = state.basic.title.trim();
+  const heroTitle = title;
+  const heroSubtitle = formatDateTime(state.setup.language, weddingDate);
+  const coupleNames = [state.groom.name.trim(), state.bride.name.trim()].filter(Boolean).join(' ♥ ');
+  const content = state.invitationMessage.body;
+  const heroImage = (state.hero.heroImage ?? '').trim();
+  const galleryImages = state.gallery.images
+    .map((image) => image.url)
+    .filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
   const defaultLabels = getWeddingClassicDefaultLabels(state.setup.language);
-  const common = {
-    templateType: 'FULL',
+  const mapImage = buildPreviewMapImage(state.location.mapLat, state.location.mapLng);
+
+  const groomPhoto = (state.groom.photo ?? '').trim();
+  const bridePhoto = (state.bride.photo ?? '').trim();
+  const parentsInfo = [state.groom.parentsText, state.bride.parentsText].filter(Boolean).join(' / ');
+
+  const base = {
+    templateType: 'FULL' as const,
     conceptType: state.setup.conceptType,
-    title: invitationTitle,
-    content: state.invitationMessage.body || state.invitationMessage.quote || '',
-    eventDate: weddingDate.toISOString(),
+    title,
+    subtitle: (state.basic.subtitle ?? '').trim(),
+    content,
+    eventDate: state.basic.eventDateTime,
+    locationText,
+    venueDetail,
+    venueName,
     schedule: [formatDateTime(state.setup.language, weddingDate)],
     rsvpEnabled: state.extras.rsvpEnabled,
+    guestbookEnabled: state.extras.guestbookEnabled,
     share: {
-      ogTitle: state.share.ogTitle || heroTitle,
-      ogDescription: state.share.ogDescription || `${formatDateTime(state.setup.language, weddingDate)} · ${venueName}`,
-      ogImage: state.share.ogImage || state.hero.heroImage || WEDDING_EDITOR_ASSETS.DEFAULT_HERO_IMAGE,
+      ogTitle: state.share.ogTitle.trim(),
+      ogDescription: state.share.ogDescription.trim(),
+      ogImage: (state.share.ogImage ?? '').trim(),
     },
     musicKey: 'piano_wedding',
-    heroImage: state.hero.heroImage || WEDDING_EDITOR_ASSETS.DEFAULT_HERO_IMAGE,
-    galleryImages: state.gallery.images.length > 0
-      ? state.gallery.images.map((image) => image.url)
-      : WEDDING_EDITOR_ASSETS.DEFAULT_GALLERY_IMAGES,
+    heroImage,
+    galleryImages,
     accounts: state.accounts.map((account) => ({
       role: account.role,
       bank: account.bank,
       number: account.number,
       holder: account.holder,
     })),
-    address: state.location.address,
-    locationText: state.location.address || venueName,
+    address: state.location.address.trim(),
     mapLat: state.location.mapLat,
     mapLng: state.location.mapLng,
-    mapImage: buildPreviewMapImage(state.location.mapLat, state.location.mapLng),
-    heroOverlayText: state.hero.overlayText,
+    mapImage,
+    heroOverlayText: (state.hero.overlayText ?? '').trim(),
     heroTitle,
-    heroSubtitle: formatDateTime(state.setup.language, weddingDate),
+    heroSubtitle,
     coupleNames,
     weddingDateTime: formatDateTime(state.setup.language, weddingDate),
-    venueName,
-    introQuote: state.invitationMessage.quote || '',
+    introQuote: (state.invitationMessage.quote ?? '').trim(),
+    introText: [] as string[],
     weddingDate,
     calendarTitle: buildWeddingClassicCalendarTitle(weddingDate, state.setup.language),
     transportInfo: state.location.transportInfo ?? [],
@@ -114,65 +102,53 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     rsvp: { enabled: state.extras.rsvpEnabled },
     rsvpTitle: defaultLabels.rsvpTitle,
     rsvpDescription: defaultLabels.rsvpDescription,
-    rsvpButton: state.extras.rsvpButtonText || defaultLabels.rsvpButton,
+    rsvpButton: (state.extras.rsvpButtonText ?? '').trim(),
     accountsTitle: defaultLabels.accountsTitle,
     messagesTitle: defaultLabels.messagesTitle,
-    messages: DEFAULT_MESSAGES,
+    messages: [] as WeddingInvitationData['messages'],
+    groomName: state.groom.name,
+    brideName: state.bride.name,
+    groomImage: groomPhoto,
+    brideImage: bridePhoto,
+    groomPhone: state.groom.phone ?? '',
+    bridePhone: state.bride.phone ?? '',
+    parentsInfo,
+    groom: {
+      image: groomPhoto,
+      name: state.groom.name,
+      phone: state.groom.phone ?? '',
+      parentsText: state.groom.parentsText ?? '',
+    },
+    bride: {
+      image: bridePhoto,
+      name: state.bride.name,
+      phone: state.bride.phone ?? '',
+      parentsText: state.bride.parentsText ?? '',
+    },
   } satisfies WeddingInvitationData;
-
-  if (state.setup.conceptType === 'WEDDING') {
-    return {
-      ...common,
-      groomName: state.groom.name || '',
-      brideName: state.bride.name || '',
-      groomPhone: state.groom.phone || '',
-      bridePhone: state.bride.phone || '',
-      parentsInfo: [state.groom.parentsText, state.bride.parentsText].filter(Boolean).join(' / '),
-      groom: {
-        image: state.groom.photo || WEDDING_EDITOR_ASSETS.DEFAULT_GROOM_IMAGE,
-        name: state.groom.name
-          ? `${translate(state.setup.language, I18N_KEYS.weddingClassic.groomLabel)} ${state.groom.name}`
-          : translate(state.setup.language, I18N_KEYS.weddingClassic.groomLabel),
-        phone: state.groom.phone || '',
-        parentsText: state.groom.parentsText || '',
-      },
-      bride: {
-        image: state.bride.photo || WEDDING_EDITOR_ASSETS.DEFAULT_BRIDE_IMAGE,
-        name: state.bride.name
-          ? `${translate(state.setup.language, I18N_KEYS.weddingClassic.brideLabel)} ${state.bride.name}`
-          : translate(state.setup.language, I18N_KEYS.weddingClassic.brideLabel),
-        phone: state.bride.phone || '',
-        parentsText: state.bride.parentsText || '',
-      },
-    };
-  }
 
   if (state.setup.conceptType === 'FUNERAL') {
     return {
-      ...common,
+      ...base,
       deceasedName: state.basic.title || '',
-      funeralHall: venueName,
+      funeralHall: venueLineForMap || venueName,
       funeralDate: weddingDate.toISOString(),
-      contactPerson: state.basic.subtitle || state.accounts[0]?.holder || '',
+      contactPerson: (state.basic.subtitle ?? '').trim(),
       funeral: {
         deceased: state.basic.title || '',
-        funeralHall: venueName,
+        funeralHall: venueLineForMap || venueName,
         schedule: formatDateTime(state.setup.language, weddingDate),
       },
     };
   }
 
-  return common;
-}
-
-export function buildSharePreview(state: WeddingEditorState): WeddingEditorShare {
-  return resolveSharePreview(state);
+  return base;
 }
 
 /** Editor state → Invitation (localStorage 저장용). Backend 전송 금지. */
 export function weddingEditorStateToInvitation(state: WeddingEditorState, slug: string): Invitation {
   const now = new Date().toISOString();
-  const locationText = resolveVenueName(state.basic.venueName, state.basic.venueDetail);
+  const venueLine = resolveVenueLine(state.basic.venueName, state.basic.venueDetail);
   const normalizedMessage = state.invitationMessage.body.trim();
   return {
     id: slug,
@@ -181,7 +157,7 @@ export function weddingEditorStateToInvitation(state: WeddingEditorState, slug: 
     conceptType: state.setup.conceptType,
     title: state.basic.title || undefined,
     eventDate: state.basic.eventDateTime || undefined,
-    locationText: locationText || undefined,
+    locationText: venueLine || undefined,
     message: normalizedMessage || undefined,
     templateKey: state.setup.templateKey,
     musicKey: 'piano_wedding',

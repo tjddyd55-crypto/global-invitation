@@ -33,6 +33,7 @@ function toWeddingFromFuneral(data: FuneralInvitationData): WeddingInvitationDat
       (item): item is string => Boolean(item)
     ),
     rsvpEnabled: true,
+    guestbookEnabled: base.guestbookEnabled ?? true,
     heroImage: data.heroImage || base.heroImage,
     heroTitle: data.deceasedName ? `${data.deceasedName} 추모 초대` : base.heroTitle,
     heroSubtitle: data.schedule.funeralDate || base.heroSubtitle,
@@ -78,19 +79,16 @@ export default function FullInvitationRenderer({
     return null;
   }
 
-  const conceptType = weddingData.conceptType;
-
   return (
     <WeddingClassicInvitation
       data={weddingData}
       invitationSlug={invitationSlug}
       showPlayButton={showPlayButton}
       previewMode={previewMode}
-      showRsvp={showRsvp}
-      showGuestbook={showGuestbook}
+      showRsvp={showRsvp ?? weddingData.rsvpEnabled}
+      showGuestbook={showGuestbook ?? Boolean(weddingData.guestbookEnabled)}
       onShare={onShare}
       onKakaoShare={onKakaoShare}
-      showCoupleSection={conceptType === 'WEDDING'}
       isShared={isShared}
     />
   );

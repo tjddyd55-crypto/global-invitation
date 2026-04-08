@@ -6,19 +6,11 @@ import styles from '../weddingEditor.module.css';
 
 type LivePreviewPanelProps = {
   data: InvitationRuntimeData;
-  showRsvp: boolean;
-  showGuestbook: boolean;
   title?: string;
   fullscreen?: boolean;
 };
 
-export default function LivePreviewPanel({
-  data,
-  showRsvp,
-  showGuestbook,
-  title,
-  fullscreen = false,
-}: LivePreviewPanelProps) {
+export default function LivePreviewPanel({ data, title, fullscreen = false }: LivePreviewPanelProps) {
   const frameClassName = fullscreen
     ? `${styles.previewFrame} ${styles.previewFrameFullscreen}`
     : styles.previewFrame;
@@ -27,7 +19,7 @@ export default function LivePreviewPanel({
     <div className={styles.previewPanel}>
       {title && <div className={styles.previewTitle}>{title}</div>}
       <div className={frameClassName}>
-        <FullInvitationRenderer data={data} showRsvp={showRsvp} showGuestbook={showGuestbook} />
+        <FullInvitationRenderer data={data} />
       </div>
     </div>
   );
