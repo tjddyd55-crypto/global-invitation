@@ -90,3 +90,23 @@ export function buildPlatformRedirect(pathname: string, platform: Platform): str
   if (pathname === '/') return prefix;
   return `${prefix}${pathname}`;
 }
+
+/**
+ * 모바일 UA 로 진입했어도 PC 뷰로 강제해야 하는 라우트.
+ *
+ * 대상:
+ * - `/admin/*` : 관리자 페이지 (PC 전용 정책, `AGENTS.md` 참고).
+ * - `/creator/*` : 중단된 기능이지만 PC 로만 구현되어 있음.
+ *
+ * 동작: middleware 가 모바일 UA + `ui_pref` 쿠키 없음을 감지하면
+ * `ui_pref=desktop` 을 자동 세팅한다. 이후 이동하는 모든 앱 라우트도 PC 뷰로 분기된다.
+ * 사용자가 이미 쿠키를 `mobile` 로 고정한 경우엔 그 의사를 덮어쓰지 않는다.
+ */
+export const FORCE_DESKTOP_PREFIXES: readonly string[] = [
+  '/admin',
+  '/creator',
+];
+
+export function isForceDesktopRoute(pathname: string): boolean {
+  return FORCE_DESKTOP_PREFIXES.some((prefix) => pathSegmentMatches(pathname, prefix));
+}

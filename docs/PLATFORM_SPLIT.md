@@ -111,8 +111,9 @@ public/
 | `/api/*`, `/_next/*`, `/assets/*`, `/icons/*`, `/manifest.webmanifest` 등 정적 | middleware matcher 에서 제외 | 성능 |
 
 단일 진실 원천: `src/shared/platform/routing.ts`
-- `APP_ROUTE_PREFIXES` · `PUBLIC_PATH_PREFIXES` · `pathSegmentMatches` 를 이 한 파일에서만 관리한다.
+- `APP_ROUTE_PREFIXES` · `PUBLIC_PATH_PREFIXES` · `FORCE_DESKTOP_PREFIXES` · `pathSegmentMatches` 를 이 한 파일에서만 관리한다.
 - 새 앱 라우트를 만들면 반드시 `APP_ROUTE_PREFIXES` 에 등록해야 자동 분기된다.
+- **PC 전용 라우트 정책**: `/admin`, `/creator` 는 `FORCE_DESKTOP_PREFIXES` 에 등록되어 있다. 모바일 UA 로 진입 + `ui_pref` 쿠키 없음이면 middleware 가 `ui_pref=desktop` 을 자동 세팅한다. 사용자가 이미 `mobile` 로 고정한 경우에는 덮어쓰지 않는다.
 
 ### 쿠키 `ui_pref=mobile|desktop`
 
@@ -161,12 +162,16 @@ public/
 |---|---|---|---|
 | 홈 (`/`) | ✅ `MobileHomeContent` (auth-aware) | ✅ `PcHomeContent` (auth-aware) | |
 | 로그인/회원가입 | ✅ 풀스크린 스크린 | ✅ 카드 | adminFallback 공유 |
-| 템플릿 (`/templates`) | ✅ 컨셉 카드 스택 | ✅ 라이브 프리뷰 + 카드 | `useCreateInvitation` 공유 |
-| 내 초대장 (`/my-invitations`) | ✅ 상태배지 카드 리스트 | ⚠️ shim | PC 는 기존 복잡 관리 UI 유지 방침 |
-| 대시보드 (`/dashboard`) | ✅ 구독배너 + 통계 | ⚠️ shim | |
-| 에디터 (`/editor/[slug]`) | ⚠️ shim | ⚠️ shim | 668줄 분해는 별도 티켓 |
-| 관리자 (`/admin/*`) | — (PC 강제) | ⚠️ 단일 레거시 | PC 전용 정책 |
-| 크리에이터 (`/creator/*`) | — | ⚠️ 레거시 (동결) | **중단된 기능**. 이식·삭제 모두 금지. 자세한 규칙은 `AGENTS.md` 참고 |
+| 템플릿 (`/templates`) | ✅ 컨셉 카드 스택 | ✅ 라이브 프리뷰 + 카드 | 레거시 원본 `app/templates/page.tsx` 삭제됨 |
+| 템플릿 상세 (`/templates/[key]`) | ⚠️ shim | ⚠️ shim | feature 에 상세 화면 추가 후 삭제 |
+| 내 초대장 (`/my-invitations`) | ⚠️ shim | ✅ 상태배지 카드 리스트 | PC 이식 티켓 필요 |
+| 대시보드 (`/dashboard`) | ⚠️ shim | ✅ 구독배너 + 통계 | PC 이식 티켓 필요 |
+| 내 계정 (`/my`) | ⚠️ shim | ⚠️ shim | 우선순위 낮음 |
+| 만들기 (`/create`) | ⚠️ shim | ⚠️ shim | 에디터와 같이 분해 예정 |
+| 에디터 (`/editor/[slug]`) | ⚠️ shim | ⚠️ shim | 668줄 분해는 별도 티켓 (가장 큰 덩어리) |
+| 메시지 에디터 (`/message/editor/[slug]`) | ⚠️ shim | ⚠️ shim | |
+| 관리자 (`/admin/*`) | — (force-desktop) | — (force-desktop) | 모바일 진입 시 자동 PC 뷰 강제 |
+| 크리에이터 (`/creator/*`) | — (force-desktop) | — (force-desktop) | **중단된 기능**. 이식·삭제 모두 금지. `AGENTS.md` 참고 |
 | PWA (manifest/SW/offline) | ✅ | — | PNG 아이콘은 디자인 확정 후 교체 |
 
 ---

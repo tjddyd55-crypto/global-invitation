@@ -25,7 +25,22 @@ alwaysApply: true
 
 공통 로직은 `features/<name>/model/*` 또는 `src/shared/*` 로 먼저 추출한다.
 
+## PC 전용 라우트 (Force Desktop)
+
+- `/admin/*`, `/creator/*` 는 `FORCE_DESKTOP_PREFIXES` 에 등록되어 있다.
+- 모바일 UA + `ui_pref` 쿠키 없음 → middleware 가 `ui_pref=desktop` 자동 세팅 + 통과.
+- 이 라우트용 **모바일 UI 를 만들지 않는다** (만들어도 접근 경로 없음).
+
 ## 서비스워커 금지 목록
 
 `public/sw.js` 에서 **절대 캐시하지 않는 경로**: `/api/*`, `/admin/*`.
 새 정적 자산을 추가하면 `CACHE_VERSION` 을 올려 구버전을 무효화한다.
+
+## Shim 태그 규약
+
+레거시 재export 파일은 최상단에 반드시 주석:
+```ts
+// @shim: legacy re-export — TODO: features/<name>/ui/(pc|mobile) 로 이식 후 삭제
+export { default } from '@/app/<path>/page';
+```
+`rg "@shim:"` 한 번으로 남은 이식 숙제 전체를 파악할 수 있게 한다.
