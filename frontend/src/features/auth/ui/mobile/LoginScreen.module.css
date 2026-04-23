@@ -1,0 +1,96 @@
+.screen {
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 32px) 20px calc(env(safe-area-inset-bottom) + 24px);
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: #111;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+  flex: 1 1 auto;
+}
+
+.label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.input {
+  height: 48px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 16px; /* iOS zoom 방지 */
+  background: #f9fafb;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  background: #fff;
+}
+
+.error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.submitButton {
+  height: 52px;
+  border: none;
+  border-radius: 14px;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.08s ease, opacity 0.15s ease;
+}
+
+.submitButton:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.linkLine {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.linkLine a {
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: none;
+}

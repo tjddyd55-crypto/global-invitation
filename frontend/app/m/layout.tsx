@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import MobileShell from '@/src/ui/mobile/MobileShell';
 
 export const metadata: Metadata = {
   title: 'Global Invitation — Mobile',
@@ -20,6 +19,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
+/**
+ * 모바일 공통 레이아웃 (얇음).
+ * 실제 쉘(바텀네비)은 `(app)` 그룹에서, 인증 풀스크린은 `(auth)` 그룹에서 적용한다.
+ */
 export default function MobileLayout({ children }: { children: ReactNode }) {
-  return <MobileShell>{children}</MobileShell>;
+  return <>{children}</>;
 }

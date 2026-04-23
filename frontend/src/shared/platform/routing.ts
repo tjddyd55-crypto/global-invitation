@@ -19,6 +19,8 @@ export const PLATFORM_PATH_PREFIX: Record<Platform, '/m' | '/pc'> = {
  * (배열 순서가 매치 우선순위에 영향을 주지 않도록 각 항목은 서로 접두사가 겹치지 않게 유지)
  */
 export const APP_ROUTE_PREFIXES: readonly string[] = [
+  '/login',
+  '/signup',
   '/dashboard',
   '/my',
   '/my-invitations',

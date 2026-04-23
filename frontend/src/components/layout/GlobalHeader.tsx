@@ -612,7 +612,20 @@ function GlobalHeaderContent() {
 export default function GlobalHeader() {
   return (
     <Suspense fallback={<GlobalHeaderFallback />}>
-      <GlobalHeaderContent />
+      <GlobalHeaderGate />
     </Suspense>
   );
+}
+
+/**
+ * 플랫폼 분리 라우트(/m, /pc)에서는 전용 쉘(MobileShell, PcShell)이
+ * 자체 네비게이션을 렌더한다. 이중 헤더가 뜨지 않도록 이 곳에서 숨긴다.
+ * 레거시 라우트(/, /templates 등)에서는 기존처럼 렌더.
+ */
+function GlobalHeaderGate() {
+  const pathname = usePathname() ?? '';
+  if (pathname === '/m' || pathname.startsWith('/m/') || pathname === '/pc' || pathname.startsWith('/pc/')) {
+    return null;
+  }
+  return <GlobalHeaderContent />;
 }

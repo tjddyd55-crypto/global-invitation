@@ -3,11 +3,15 @@ export const LOGIN_REDIRECT_STORAGE_KEY = 'login_redirect';
 /**
  * 상대 경로만 허용해 오픈 리디렉션을 막는다.
  */
+const AUTH_ROUTE_BLOCKLIST = ['/login', '/signup', '/pc/login', '/pc/signup', '/m/login', '/m/signup'];
+
 export function sanitizeReturnPath(path: string | null | undefined): string {
   if (!path || typeof path !== 'string') return '/';
   const trimmed = path.trim();
   if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return '/';
-  if (trimmed.startsWith('/login')) return '/';
+  if (AUTH_ROUTE_BLOCKLIST.some((blocked) => trimmed === blocked || trimmed.startsWith(`${blocked}?`) || trimmed.startsWith(`${blocked}/`))) {
+    return '/';
+  }
   return trimmed;
 }
 
