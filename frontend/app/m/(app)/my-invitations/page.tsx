@@ -1,1 +1,5 @@
-export { default } from '@/app/my-invitations/page';
+import MyInvitationsScreen from '@/src/features/invitations/ui/mobile/MyInvitationsScreen';
+
+export default function MobileMyInvitationsPage() {
+  return <MyInvitationsScreen />;
+}

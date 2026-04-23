@@ -1,0 +1,143 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 24px;
+}
+
+.greeting {
+  padding: 20px;
+  background: linear-gradient(135deg, #111827 0%, #312e81 100%);
+  color: #fff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.greeting h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.greeting p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.statCard {
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.seeAll {
+  font-size: 13px;
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.latestList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.latestCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #111;
+}
+
+.latestCard:active {
+  background: #f9fafb;
+}
+
+.latestMeta {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.chevron {
+  color: #9ca3af;
+  font-size: 18px;
+}
+
+.anonCard {
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+
+.anonCta {
+  display: inline-flex;
+  justify-content: center;
+  height: 44px;
+  line-height: 44px;
+  padding: 0 16px;
+  background: #4f46e5;
+  color: #fff;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.skeleton {
+  height: 80px;
+  background: #f3f4f6;
+  border-radius: 12px;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}

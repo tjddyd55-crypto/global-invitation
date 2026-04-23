@@ -1,0 +1,134 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 1040px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.header p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 960px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #111;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.card:hover {
+  border-color: #a5b4fc;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.08);
+  transform: translateY(-1px);
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cardDesc {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.ctaRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 22px;
+  border-radius: 10px;
+  background: #4f46e5;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.primary:hover {
+  opacity: 0.9;
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 22px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  color: #111;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.secondary:hover {
+  background: #f9fafb;
+}
+
+.marketingHero {
+  padding: 40px 32px;
+  background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%);
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.marketingHero h1 {
+  margin: 0 0 12px;
+  font-size: 32px;
+}
+
+.marketingHero p {
+  margin: 0 0 24px;
+  font-size: 15px;
+  color: #4b5563;
+  max-width: 540px;
+}
+
+.bottomRow {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.skeletonCard {
+  height: 96px;
+  background: #f3f4f6;
+  border-radius: 12px;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
