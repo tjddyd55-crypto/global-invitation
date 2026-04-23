@@ -1,0 +1,45 @@
+---
+description: features/<name> 폴더 규칙 (model + ui/pc + ui/mobile)
+globs: frontend/src/features/**
+alwaysApply: false
+---
+
+# Feature Slice 규칙
+
+feature 는 `model`, `ui/pc`, `ui/mobile` 세 영역으로만 구성한다.
+
+```
+src/features/<name>/
+├─ model/       # 훅·셀렉터·매퍼 — UI 모름. 테스트 대상 1순위.
+├─ ui/pc/       # PC 컴포넌트 (*.tsx, *.module.css)
+└─ ui/mobile/   # 모바일 컴포넌트
+```
+
+## 규칙
+
+- `model/` 은 순수 로직 + React 훅. DOM·CSS·컴포넌트 import 금지.
+- `ui/pc`, `ui/mobile` 은 서로 import 하지 않는다. 공유하고 싶으면 `model/` 로 올린다.
+- `model/` 의 훅 이름은 **동사 + 도메인**: `useCreateInvitation`, `useLoginForm`.
+- API 호출은 `model/` 안에서만. UI 는 상태만 소비한다.
+- 외부(다른 feature) 가 이 feature 의 내부를 import 해야 한다면 **barrel (`index.ts`)** 에 노출된 것만.
+
+## 예시 (auth)
+
+```
+features/auth/
+├─ model/
+│  ├─ useLoginForm.ts        # 로그인 폼 상태 + 제출 로직
+│  ├─ useSignupForm.ts
+│  ├─ adminFallback.ts       # 로그인 실패 시 관리자 재시도
+│  └─ index.ts
+├─ ui/pc/
+│  ├─ LoginCard.tsx
+│  ├─ LoginCard.module.css
+│  ├─ SignupCard.tsx
+│  └─ SignupCard.module.css
+└─ ui/mobile/
+   ├─ LoginScreen.tsx
+   ├─ LoginScreen.module.css
+   ├─ SignupScreen.tsx
+   └─ SignupScreen.module.css
+```

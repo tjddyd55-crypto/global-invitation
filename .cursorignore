@@ -1,0 +1,2 @@
+# AI가 읽지 않도록 제외할 목록
+node_modules/

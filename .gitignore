@@ -36,3 +36,19 @@ backend/.env
 # typescript
 *.tsbuildinfo
 frontend/next-env.d.ts
+
+# editor / IDE
+.vscode/
+.cursor/settings.json
+# 레포 공용 규칙은 추적: .cursor/rules/, .cursorignore
+
+# playwright / e2e 산출물
+e2e/.auth/
+playwright-report/
+test-results/
+
+# secrets (평문 계정정보 - 절대 커밋 금지)
+초대장_계정정보.txt
+*_계정정보.txt
+credentials.txt
+secrets.txt

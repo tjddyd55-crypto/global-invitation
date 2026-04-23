@@ -53,6 +53,7 @@ export const PUBLIC_PATH_PREFIXES: readonly string[] = [
   '/invitation',
   '/preview',
   '/admin',
+  // '/creator': 중단된 기능 (템플릿 제작·공유). 분기하지 않고 통과만 시킨다. AGENTS.md 참고.
   '/creator',
   '/pricing',
   '/about',

@@ -1,0 +1,31 @@
+---
+description: PWA(모바일)/PC 분리 아키텍처의 최상위 불변식
+alwaysApply: true
+---
+
+# Platform Split — 불변식
+
+이 프로젝트는 **하나의 Next.js 앱**에서 모바일 PWA 와 PC 웹을 동시에 운영한다.
+상세: `docs/PLATFORM_SPLIT.md`, `docs/ARCHITECTURE.md`.
+
+## 반드시 지키는 것
+
+- **앱 라우트**(로그인 후 전용 화면)는 `app/pc/(app)/...` + `app/m/(app)/...` 두 경로에 모두 둔다.
+- **공개 URL**(`/i`, `/invitation`, `/preview`, `/message/[slug]`) 은 단일 반응형 유지 — `/m`·`/pc` 로 분기 금지.
+- 플랫폼 라우팅 규칙은 `src/shared/platform/routing.ts` 한 곳에서만 관리한다
+  (`APP_ROUTE_PREFIXES`, `PUBLIC_PATH_PREFIXES`, `pathSegmentMatches`).
+- 새 앱 라우트를 추가하면 `APP_ROUTE_PREFIXES` 에 prefix 를 반드시 등록한다.
+- `app/` 아래 페이지는 라우팅·metadata 만 담당. 비즈니스 로직·fetch 는 `features/*/model` 또는 `shared/*` 로.
+
+## 컴포넌트 안에서 `if (isMobile)` 분기 금지
+
+반드시 라우트·폴더 단위로 분리:
+- `features/<name>/ui/pc/*Page.tsx`
+- `features/<name>/ui/mobile/*Screen.tsx`
+
+공통 로직은 `features/<name>/model/*` 또는 `src/shared/*` 로 먼저 추출한다.
+
+## 서비스워커 금지 목록
+
+`public/sw.js` 에서 **절대 캐시하지 않는 경로**: `/api/*`, `/admin/*`.
+새 정적 자산을 추가하면 `CACHE_VERSION` 을 올려 구버전을 무효화한다.

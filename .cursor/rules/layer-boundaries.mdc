@@ -1,0 +1,36 @@
+---
+description: 레이어 의존 방향 (app → features → shared → lib)
+alwaysApply: true
+---
+
+# Layer Boundaries
+
+의존 방향은 **아래로만** 흐른다. 역방향 import 는 금지.
+
+```
+app/*  →  features/*/ui  →  features/*/model  →  shared/*  →  lib/*
+```
+
+## 금지되는 import
+
+- `src/shared/*` 가 `src/features/*`, `src/ui/*`, `app/*` 를 import — **절대 금지**.
+- `src/features/*/ui/*` 가 `src/lib/*` 를 직접 import — `src/shared/*` barrel 경유.
+- `src/features/A/*` 가 `src/features/B/ui/*` 를 import — 리팩터링 신호 (공유가 필요하면 `shared` 로 올린다).
+- `src/lib/*` 가 React 컴포넌트 import — 금지 (구현체는 UI 를 모른다).
+
+## 올바른 예
+
+```ts
+// ✅ features → shared
+import { useAuth } from '@/src/shared/hooks';
+import { buildApiUrl } from '@/src/shared/api';
+
+// ❌ features → lib 직접 호출
+import { loginWithPassword } from '@/src/lib/auth';
+```
+
+## 새 도메인 추가
+
+1. 구현체를 `src/lib/<domain>.ts` 에.
+2. `src/shared/<domain>/index.ts` 에서 얇게 재export + React 훅/Provider.
+3. feature UI 는 반드시 `src/shared/<domain>` 만 import.
