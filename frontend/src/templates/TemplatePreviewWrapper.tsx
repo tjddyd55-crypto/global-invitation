@@ -82,18 +82,11 @@ export default function TemplatePreviewWrapper({
   studioConfig,
   variant = 'default',
 }: TemplatePreviewWrapperProps) {
+  // 훅은 조건부 return 이전에 "반드시" 모두 호출되어야 한다 (React Rules of Hooks).
   const key = typeof templateKey === 'string' ? templateKey.trim() : '';
-  if (!key) {
-    return <div>Template not found</div>;
-  }
-
-  const entry = getTemplateRegistryEntry(key);
-  const Renderer = entry?.renderer;
-  if (!Renderer) {
-    return <div>Unknown template: {key}</div>;
-  }
-
-  const registryDefault = getTemplatePreviewData(key);
+  const entry = key ? getTemplateRegistryEntry(key) : null;
+  const Renderer = entry?.renderer ?? null;
+  const registryDefault = key ? getTemplatePreviewData(key) : null;
 
   const mergedBase = useMemo(
     () =>
@@ -116,6 +109,14 @@ export default function TemplatePreviewWrapper({
     }
     return fd;
   }, [mergedBase, studioConfig, key]);
+
+  if (!key) {
+    return <div>Template not found</div>;
+  }
+
+  if (!Renderer) {
+    return <div>Unknown template: {key}</div>;
+  }
 
   const scale = resolvePreviewScale(key);
   const isPhone = variant === 'phone';

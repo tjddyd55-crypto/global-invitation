@@ -16,7 +16,8 @@ export const PLATFORM_PATH_PREFIX: Record<Platform, '/m' | '/pc'> = {
 
 /**
  * 플랫폼별로 반드시 쪼개야 하는 루트 레벨 경로.
- * (배열 순서가 매치 우선순위에 영향을 주지 않도록 각 항목은 서로 접두사가 겹치지 않게 유지)
+ * - 배열 순서는 매칭 결과에 영향을 주지 않는다 (isAppRoute 는 "세그먼트 매칭" 만 한다).
+ * - /message/editor 처럼 더 깊은 경로는 반드시 얕은 공개 경로(/message) 보다 APP_ROUTE 에 등록되어야 한다.
  */
 export const APP_ROUTE_PREFIXES: readonly string[] = [
   '/login',
@@ -33,9 +34,10 @@ export const APP_ROUTE_PREFIXES: readonly string[] = [
 
 /**
  * 절대 리다이렉트하지 않는 경로.
- * - 공개 초대장/메시지 URL (SEO·공유링크)
- * - API / Next 내부 / 정적 자산
- * - 이미 /m, /pc 로 시작하는 경로 (무한 리다이렉트 방지)
+ * 여기에 해당하면 middleware 는 즉시 통과시킨다.
+ *
+ * 주의: 단순 `pathname.startsWith('/m')` 매칭은 `/my`, `/message` 까지 잡아버리므로,
+ * "세그먼트 경계(/, = 또는 끝)"까지 확인해야 한다 → pathSegmentMatches 로 판정.
  */
 export const PUBLIC_PATH_PREFIXES: readonly string[] = [
   '/api',
@@ -47,22 +49,39 @@ export const PUBLIC_PATH_PREFIXES: readonly string[] = [
   '/manifest.webmanifest',
   '/robots.txt',
   '/sitemap.xml',
-  '/i/',
-  '/invitation/',
-  '/message/',
-  '/preview/',
+  '/i',
+  '/invitation',
+  '/preview',
   '/admin',
+  '/creator',
+  '/pricing',
+  '/about',
+  '/contact',
+  '/terms',
+  '/privacy',
+  '/payment-info',
+  '/pwa-settings',
+  '/auth',
   '/m',
   '/pc',
 ];
 
+/**
+ * "세그먼트 경계"까지 고려한 prefix 매칭.
+ * - `/m` 은 `/m`, `/m/xxx` 에만 매치되고 `/my`, `/my-invitations` 에는 매치되지 않는다.
+ */
+function pathSegmentMatches(pathname: string, prefix: string): boolean {
+  if (pathname === prefix) return true;
+  return pathname.startsWith(prefix + '/');
+}
+
 export function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/') || pathname.startsWith(prefix));
+  return PUBLIC_PATH_PREFIXES.some((prefix) => pathSegmentMatches(pathname, prefix));
 }
 
 export function isAppRoute(pathname: string): boolean {
   if (pathname === '/') return true;
-  return APP_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
+  return APP_ROUTE_PREFIXES.some((prefix) => pathSegmentMatches(pathname, prefix));
 }
 
 export function buildPlatformRedirect(pathname: string, platform: Platform): string {
