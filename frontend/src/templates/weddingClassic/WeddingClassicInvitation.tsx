@@ -88,12 +88,14 @@ export default function WeddingClassicInvitation({
 
   const [failedGallerySrcs, setFailedGallerySrcs] = useState<Record<string, true>>({});
   const [heroFailed, setHeroFailed] = useState(false);
+  const [heroPortrait, setHeroPortrait] = useState(false);
 
   const heroImageSrc =
     data && typeof data.heroImage === 'string' && data.heroImage.trim() ? data.heroImage.trim() : '';
 
   useEffect(() => {
     setHeroFailed(false);
+    setHeroPortrait(false);
   }, [heroImageSrc]);
 
   if (!data) return null;
@@ -194,11 +196,15 @@ export default function WeddingClassicInvitation({
         {heroImage && !heroFailed ? (
           <div className={styles.heroMedia}>
             <ImageWithFallback
-              className={styles.heroImage}
+              className={`${styles.heroImage}${heroPortrait ? ` ${styles.heroImagePortrait}` : ''}`}
               src={heroImage}
               alt=""
               loading="lazy"
               onFailed={() => setHeroFailed(true)}
+              onLoad={(event) => {
+                const img = event.currentTarget;
+                setHeroPortrait(img.naturalHeight > img.naturalWidth);
+              }}
             />
           </div>
         ) : null}

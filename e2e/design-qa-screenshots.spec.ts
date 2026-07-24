@@ -68,12 +68,15 @@ async function openEmailVerifyScreen(page: Page, nextPath: string) {
   const uniqueEmail = `design-qa-capture-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
   const emailInput = page.getByLabel('이메일 주소');
   await emailInput.click();
-  await emailInput.fill('');
-  await emailInput.pressSequentially(uniqueEmail, { delay: 15 });
+  await emailInput.fill(uniqueEmail);
+  await emailInput.blur();
   await expect(emailInput).toHaveValue(uniqueEmail);
+  // controlled input: ensure React state caught up before enable check
+  await expect
+    .poll(async () => page.getByRole('button', { name: '인증번호 받기' }).isEnabled(), { timeout: 10_000 })
+    .toBeTruthy();
 
   const submit = page.getByRole('button', { name: '인증번호 받기' });
-  await expect(submit).toBeEnabled({ timeout: 10_000 });
   await submit.click();
   await expect(page.getByTestId('email-verify-screen')).toBeVisible({ timeout: 20_000 });
 }

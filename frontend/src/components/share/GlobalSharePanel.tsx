@@ -19,9 +19,14 @@ type ShareTarget = {
   action?: 'copy' | 'native';
 };
 
+function resolveFacebookAppId(): string {
+  return (process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '').trim();
+}
+
 /**
  * 글로벌 공유 옵션.
  * KakaoTalk 단독 강조 없이 WhatsApp/Messenger/LINE/Telegram/Email/SMS를 동일 그리드로 둔다.
+ * Messenger: app_id 없으면 빈 dialog URL 대신 링크 복사로 fallback.
  */
 export default function GlobalSharePanel({
   shareUrl,
@@ -33,9 +38,10 @@ export default function GlobalSharePanel({
   const [notice, setNotice] = useState<string | null>(null);
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedText = encodeURIComponent(`${text}\n${shareUrl}`);
+  const facebookAppId = resolveFacebookAppId();
 
-  const targets = useMemo<ShareTarget[]>(
-    () => [
+  const targets = useMemo<ShareTarget[]>(() => {
+    const items: ShareTarget[] = [
       { id: 'copy', label: '링크 복사', action: 'copy' },
       { id: 'native', label: '기기 공유', action: 'native' },
       {
@@ -43,11 +49,23 @@ export default function GlobalSharePanel({
         label: 'WhatsApp',
         href: `https://wa.me/?text=${encodedText}`,
       },
-      {
+    ];
+
+    if (facebookAppId) {
+      items.push({
         id: 'messenger',
         label: 'Messenger',
-        href: `https://www.facebook.com/dialog/send?link=${encodedUrl}&app_id=&redirect_uri=${encodedUrl}`,
-      },
+        href: `https://www.facebook.com/dialog/send?link=${encodedUrl}&app_id=${encodeURIComponent(facebookAppId)}&redirect_uri=${encodedUrl}`,
+      });
+    } else {
+      items.push({
+        id: 'messenger',
+        label: 'Messenger',
+        action: 'copy',
+      });
+    }
+
+    items.push(
       {
         id: 'line',
         label: 'LINE',
@@ -73,14 +91,15 @@ export default function GlobalSharePanel({
         label: 'KakaoTalk',
         href: `https://story.kakao.com/share?url=${encodedUrl}`,
       },
-    ],
-    [encodedText, encodedUrl, text, title],
-  );
+    );
 
-  const handleCopy = async () => {
+    return items;
+  }, [encodedText, encodedUrl, facebookAppId, text, title]);
+
+  const handleCopy = async (successNotice = '링크를 복사했습니다.') => {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setNotice('링크를 복사했습니다.');
+      setNotice(successNotice);
       onCopied?.();
     } catch {
       setNotice('복사에 실패했습니다. 주소를 직접 선택해 주세요.');
@@ -106,8 +125,17 @@ export default function GlobalSharePanel({
       <div className={styles.grid}>
         {targets.map((target) => {
           if (target.action === 'copy') {
+            const noticeText =
+              target.id === 'messenger'
+                ? 'Messenger 앱 ID가 없어 링크를 복사했습니다. Messenger에 붙여넣어 공유해 주세요.'
+                : '링크를 복사했습니다.';
             return (
-              <button key={target.id} type="button" className={styles.item} onClick={() => void handleCopy()}>
+              <button
+                key={target.id}
+                type="button"
+                className={styles.item}
+                onClick={() => void handleCopy(noticeText)}
+              >
                 {target.label}
               </button>
             );

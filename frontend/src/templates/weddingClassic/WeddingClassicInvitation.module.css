@@ -69,7 +69,13 @@
   height: 100%;
   display: block;
   object-fit: cover;
+  /* 기본 중앙. 세로(portrait) Hero는 얼굴이 상단에 오도록 약간 위로. */
+  object-position: center center;
   border-radius: 0;
+}
+
+.heroImagePortrait {
+  object-position: center 20%;
 }
 
 .heroOverlay {
@@ -309,6 +315,7 @@
   height: 120px;
   border-radius: 12px;
   object-fit: cover;
+  object-position: center center;
   display: block;
   margin: 0 auto;
 }
@@ -454,6 +461,7 @@
   height: 160px;
   border-radius: 12px;
   object-fit: cover;
+  object-position: center center;
   display: block;
   transition: transform 0.2s ease;
 }

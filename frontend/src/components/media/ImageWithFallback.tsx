@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode, type SyntheticEvent } from 'react';
 import { cdnImageSrc } from '@/src/lib/image';
 
 type ImageWithFallbackProps = {
@@ -13,6 +13,7 @@ type ImageWithFallbackProps = {
   fallback?: ReactNode;
   /** 실패 시 1회 호출 (재귀 재시도 없음) */
   onFailed?: () => void;
+  onLoad?: (event: SyntheticEvent<HTMLImageElement>) => void;
 };
 
 /**
@@ -27,6 +28,7 @@ export default function ImageWithFallback({
   loading = 'lazy',
   fallback = null,
   onFailed,
+  onLoad,
 }: ImageWithFallbackProps) {
   const [failed, setFailed] = useState(false);
   const normalized = typeof src === 'string' ? src.trim() : '';
@@ -52,6 +54,7 @@ export default function ImageWithFallback({
       src={resolved}
       alt={alt}
       loading={loading}
+      onLoad={onLoad}
       onError={() => {
         setFailed(true);
         onFailed?.();

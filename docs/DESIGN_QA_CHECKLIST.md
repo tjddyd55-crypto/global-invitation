@@ -314,6 +314,26 @@ Chrome DevTools → device toolbar / 창 크기 고정 후 동일 파일명으�
 
 ---
 
+## 12. 실사 이미지 수동 QA (개발환경)
+
+QA 그라데이션 JPEG와 별도로, **라이선스 확보된 실사**로 development에서 확인한다.  
+(저장소/운영에 라이선스 불명확 이미지 포함 금지)
+
+| # | 항목 | 결과 | 메모 |
+|---|------|------|------|
+| R1 | Hero 가로 업로드·공개 | ☐ | object-fit cover · object-position center |
+| R2 | Hero 세로(portrait) 업로드·공개 | ☐ | portrait 시 object-position center 20% |
+| R3 | 신랑/신부 정사각 crop | ☐ | |
+| R4 | Gallery 가로·세로 혼합 10장+ | ☐ | |
+| R5 | 새로고침 후 유지 · CDN/R2 URL | ☐ | |
+| R6 | ImageWithFallback 실패 처리 | ☐ | |
+| R7 | 모바일 스크롤 성능 | ☐ | |
+| R8 | 공개 링크 무인증 | ☐ | |
+| R9 | Android Chrome 공개·공유 | ☐ | |
+| R10 | iPhone Safari 공개·공유 | ☐ | |
+
+---
+
 ## 관련 파일
 
 | 역할 | 경로 |

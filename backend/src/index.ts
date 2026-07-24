@@ -86,12 +86,17 @@ app.use((req, res, next) => {
 app.use('/api', attachGuestSession);
 app.use('/api', guestRateLimit);
 
-// Health check endpoint
+// Health check endpoint (email diagnostics: secret 값 미포함)
 app.get('/health', async (req, res) => {
   try {
+    const { getEmailDiagnostics } = await import('./lib/mailer');
     // Test database connection
     await prisma.$queryRaw`SELECT 1`;
-    res.status(200).json({ status: 'ok', database: 'connected' });
+    res.status(200).json({
+      status: 'ok',
+      database: 'connected',
+      email: getEmailDiagnostics(),
+    });
   } catch (error) {
     res.status(500).json({ status: 'error', database: 'disconnected', error: error instanceof Error ? error.message : 'Unknown error' });
   }
@@ -116,5 +121,9 @@ app.use('/api/test-login', testLoginRouter);
 // Start server
 app.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
+  void import('./lib/mailer').then(({ getEmailDiagnostics }) => {
+    const email = getEmailDiagnostics();
+    console.info('[startup] email diagnostics', email);
+  });
   startCleanupWorker();
 });

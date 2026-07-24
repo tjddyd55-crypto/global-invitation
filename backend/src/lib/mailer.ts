@@ -1,10 +1,13 @@
 /**
  * Mailer – 이메일 발송.
  *
- * 개발(로컬) 우선:
- * - EMAIL_PROVIDER=mock 또는 NODE_ENV !== production 이면 실발송하지 않고 로그로 대체한다.
- * - 운영에서는 EMAIL_PROVIDER=smtp + EMAIL_ENABLED=true 일 때만 실발송 경로를 탄다.
+ * - EMAIL_PROVIDER=mock (기본): 실발송 없이 로그 + (비 production) previewCode
+ * - EMAIL_PROVIDER=smtp + EMAIL_ENABLED=true + SMTP_* : nodemailer 실발송
+ * - production 에서는 previewCode 절대 노출하지 않는다
  */
+
+import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 
 type MagicLinkEmailParams = {
   to: string;
@@ -17,11 +20,35 @@ type VerificationCodeEmailParams = {
   expiresMinutes?: number;
 };
 
+export type EmailDiagnostics = {
+  provider: string;
+  mockMode: boolean;
+  emailEnabled: boolean;
+  smtpConfigured: boolean;
+  frontendUrlConfigured: boolean;
+  fromConfigured: boolean;
+};
+
+let cachedTransporter: Transporter | null = null;
+
 function resolveServiceName(): string {
   return process.env.SERVICE_NAME || process.env.NEXT_PUBLIC_SERVICE_NAME || 'Global Invitation';
 }
 
-/** mock 우선. production + smtp 설정이 있을 때만 실발송 후보. */
+function resolveSmtpFrom(): string {
+  return (process.env.SMTP_FROM || process.env.EMAIL_FROM || '').trim();
+}
+
+function hasSmtpCredentials(): boolean {
+  return Boolean(
+    (process.env.SMTP_HOST || '').trim() &&
+      (process.env.SMTP_USER || '').trim() &&
+      (process.env.SMTP_PASSWORD || '').trim() &&
+      resolveSmtpFrom()
+  );
+}
+
+/** mock 우선. smtp + EMAIL_ENABLED=true 일 때만 실발송 후보. */
 export function isEmailMockMode(): boolean {
   const provider = (process.env.EMAIL_PROVIDER || '').trim().toLowerCase();
   if (provider === 'mock') return true;
@@ -35,19 +62,77 @@ export function shouldExposeEmailPreviewCode(): boolean {
   return isEmailMockMode();
 }
 
+export function getEmailDiagnostics(): EmailDiagnostics {
+  const provider = (process.env.EMAIL_PROVIDER || 'mock').trim().toLowerCase() || 'mock';
+  return {
+    provider,
+    mockMode: isEmailMockMode(),
+    emailEnabled: process.env.EMAIL_ENABLED === 'true',
+    smtpConfigured: hasSmtpCredentials(),
+    frontendUrlConfigured: Boolean((process.env.FRONTEND_URL || '').trim()),
+    fromConfigured: Boolean(resolveSmtpFrom()),
+  };
+}
+
+function createSmtpTransporter(): Transporter {
+  const host = (process.env.SMTP_HOST || '').trim();
+  const port = Number(process.env.SMTP_PORT || '587');
+  const user = (process.env.SMTP_USER || '').trim();
+  const pass = (process.env.SMTP_PASSWORD || '').trim();
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+
+  return nodemailer.createTransport({
+    host,
+    port: Number.isFinite(port) ? port : 587,
+    secure,
+    auth: { user, pass },
+  });
+}
+
+function getSmtpTransporter(): Transporter {
+  if (!cachedTransporter) {
+    cachedTransporter = createSmtpTransporter();
+  }
+  return cachedTransporter;
+}
+
 /**
  * 매직 링크 이메일 발송.
- * MVP: 실제 발송 없이 스텁. 추후 EMAIL_ENABLED + nodemailer 연동 시 구현.
+ * OTP 경로와 동일하게 mock / smtp 분기를 따른다.
  */
 export async function sendMagicLinkEmail({ to, link }: MagicLinkEmailParams): Promise<boolean> {
-  console.warn('Email feature disabled (MVP). Magic link not sent.', { to, linkLength: link?.length ?? 0 });
-  return Promise.resolve(false);
+  const serviceName = resolveServiceName();
+  const subject = `[${serviceName}] 로그인 링크`;
+  const body = `아래 링크로 로그인해 주세요.\n\n${link}\n`;
+
+  if (isEmailMockMode()) {
+    console.warn('Email feature mock. Magic link not sent.', { to, linkLength: link?.length ?? 0 });
+    return false;
+  }
+
+  if (!hasSmtpCredentials()) {
+    console.warn('EMAIL_PROVIDER=smtp but SMTP credentials are incomplete.', { to });
+    return false;
+  }
+
+  try {
+    await getSmtpTransporter().sendMail({
+      from: resolveSmtpFrom(),
+      to,
+      subject,
+      text: body,
+    });
+    return true;
+  } catch (error) {
+    console.error('Failed to send magic link email:', error instanceof Error ? error.message : error);
+    return false;
+  }
 }
 
 /**
  * 6자리 이메일 인증번호 발송.
- * mock/dev: console 출력 후 false 반환 (호출측이 previewCode 를 내릴 수 있음).
- * production smtp: 추후 true 반환하도록 확장.
+ * mock: console 출력 후 false (호출측 previewCode 가능).
+ * smtp: 실발송 성공 시 true.
  */
 export async function sendVerificationCodeEmail({
   to,
@@ -62,11 +147,31 @@ export async function sendVerificationCodeEmail({
     console.info(`[mailer:mock] verification code for ${to}: ${code} (expires ${expiresMinutes}m)`);
     console.info(`[mailer:mock] subject=${subject}`);
     console.info(`[mailer:mock] body=\n${body}`);
-    return Promise.resolve(false);
+    return false;
   }
 
-  // TODO: SMTP/nodemailer 연동.
-  console.warn('EMAIL_PROVIDER=smtp but transport is not configured yet.', { to, subject });
-  console.info(`[mailer] verification code for ${to}: ${code} (expires ${expiresMinutes}m)`);
-  return Promise.resolve(false);
+  if (!hasSmtpCredentials()) {
+    console.warn('EMAIL_PROVIDER=smtp but SMTP credentials are incomplete.', {
+      to,
+      hasHost: Boolean((process.env.SMTP_HOST || '').trim()),
+      hasUser: Boolean((process.env.SMTP_USER || '').trim()),
+      hasPassword: Boolean((process.env.SMTP_PASSWORD || '').trim()),
+      hasFrom: Boolean(resolveSmtpFrom()),
+    });
+    return false;
+  }
+
+  try {
+    await getSmtpTransporter().sendMail({
+      from: resolveSmtpFrom(),
+      to,
+      subject,
+      text: body,
+    });
+    console.info(`[mailer:smtp] verification code delivered (expires ${expiresMinutes}m)`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send verification code email:', error instanceof Error ? error.message : error);
+    return false;
+  }
 }
