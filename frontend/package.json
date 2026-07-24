@@ -1,11 +1,11 @@
 {
   "name": "global-invitation",
-  "version": "0.1.0",
+  "version": "0.1.1-dev.railway",
   "private": true,
   "scripts": {
     "dev": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next dev",
     "build": "node --max-old-space-size=6144 ./node_modules/next/dist/bin/next build",
-    "start": "node --max-old-space-size=2048 ./node_modules/next/dist/bin/next start",
+    "start": "node --max-old-space-size=2048 ./node_modules/next/dist/bin/next start --hostname 0.0.0.0",
     "lint": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next lint"
   },
   "dependencies": {
