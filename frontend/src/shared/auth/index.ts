@@ -17,6 +17,8 @@ export {
   logoutCurrentSession,
   requestMagicLink,
   verifyMagicLink,
+  requestEmailVerificationCode,
+  verifyEmailVerificationCode,
   signupWithPassword,
   loginWithPassword,
   isOwner,

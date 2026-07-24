@@ -14,7 +14,7 @@ export default function Step5Gallery({ value, onChange, onUploadStateChange }: S
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>STEP 5. 갤러리</h2>
+        <h2>갤러리</h2>
         <p>다중 이미지 업로드, 순서 변경, 삭제가 가능합니다.</p>
       </div>
       <MultiImageUploader

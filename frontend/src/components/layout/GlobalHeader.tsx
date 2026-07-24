@@ -21,7 +21,7 @@ import {
   type InvitationSummary,
   type TemplateSearchHit,
 } from '@/src/lib/api';
-import { buildLoginHref } from '@/src/lib/loginRedirect';
+import { buildCreateInvitationHref, buildLoginHref } from '@/src/lib/loginRedirect';
 import LanguageSelector from '@/src/components/LanguageSelector';
 import styles from './GlobalHeader.module.css';
 
@@ -48,8 +48,6 @@ function GlobalHeaderContent() {
   const searchParams = useSearchParams();
   const qParam = pathname === '/templates' ? (searchParams.get('q') ?? '') : '';
 
-  const loginHref = buildLoginHref(pathname || '/');
-
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -68,6 +66,12 @@ function GlobalHeaderContent() {
   const initialCachedUser = getCachedNavbarUserSnapshot();
   const [loadingAuth, setLoadingAuth] = useState(initialCachedUser === undefined);
   const [user, setUser] = useState<AuthUser | null>(initialCachedUser ?? null);
+
+  const loginHref = buildLoginHref(pathname || '/');
+  const createHref = buildCreateInvitationHref(Boolean(user));
+  const myInvitationsHref = user
+    ? '/my-invitations'
+    : `/auth/email?next=${encodeURIComponent('/my-invitations')}`;
 
   const trimmedDraft = searchDraft.trim();
   const unreadNotifCount = notifications.filter((n) => !n.readAt).length;
@@ -317,17 +321,12 @@ function GlobalHeaderContent() {
       <Link href="/" className={styles.navLink}>
         홈
       </Link>
-      <Link href="/templates" className={styles.navLink}>
-        템플릿
-      </Link>
-      <Link href="/create" className={styles.navLink}>
+      <Link href={createHref} className={styles.navLink}>
         초대장 만들기
       </Link>
-      {user && (
-        <Link href="/my" className={styles.navLink}>
-          내 초대장
-        </Link>
-      )}
+      <Link href={myInvitationsHref} className={styles.navLink}>
+        내 초대장
+      </Link>
     </nav>
   );
 
@@ -401,11 +400,8 @@ function GlobalHeaderContent() {
     if (!user) {
       return (
         <>
-          <Link href={loginHref} className={styles.authLink} data-testid="login-button">
-            로그인
-          </Link>
-          <Link href="/signup" className={styles.authPrimary} data-testid="signup-button">
-            시작하기
+          <Link href={loginHref} className={styles.authPrimary} data-testid="login-button">
+            이메일로 시작하기
           </Link>
         </>
       );
@@ -509,17 +505,12 @@ function GlobalHeaderContent() {
           <Link href="/" onClick={() => setMobileOpen(false)}>
             홈
           </Link>
-          <Link href="/templates" onClick={() => setMobileOpen(false)}>
-            템플릿
-          </Link>
-          <Link href="/create" onClick={() => setMobileOpen(false)}>
+          <Link href={createHref} onClick={() => setMobileOpen(false)}>
             초대장 만들기
           </Link>
-          {user && (
-            <Link href="/my" onClick={() => setMobileOpen(false)}>
-              내 초대장
-            </Link>
-          )}
+          <Link href={myInvitationsHref} onClick={() => setMobileOpen(false)}>
+            내 초대장
+          </Link>
           <Link href="/creator/dashboard" onClick={() => setMobileOpen(false)} data-testid="creator-dashboard-link">
             크리에이터
           </Link>
@@ -589,14 +580,9 @@ function GlobalHeaderContent() {
           <div className={styles.mobileSectionLabel}>설정</div>
           <LanguageSelector variant="mobile" />
           {!user && (
-            <>
-              <Link href={loginHref} onClick={() => setMobileOpen(false)} data-testid="login-button">
-                로그인
-              </Link>
-              <Link href="/signup" onClick={() => setMobileOpen(false)} data-testid="signup-button">
-                시작하기
-              </Link>
-            </>
+            <Link href={loginHref} onClick={() => setMobileOpen(false)} data-testid="login-button">
+              이메일로 시작하기
+            </Link>
           )}
           {user && (
             <button type="button" className={styles.logoutBtn} data-testid="logout-button" onClick={() => void handleLogout()}>
@@ -618,13 +604,20 @@ export default function GlobalHeader() {
 }
 
 /**
- * 플랫폼 분리 라우트(/m, /pc)에서는 전용 쉘(MobileShell, PcShell)이
- * 자체 네비게이션을 렌더한다. 이중 헤더가 뜨지 않도록 이 곳에서 숨긴다.
- * 레거시 라우트(/, /templates 등)에서는 기존처럼 렌더.
+ * 플랫폼 분리 라우트(/m, /pc)와 공개 초대장(/i)에서는 SaaS GlobalHeader를 렌더하지 않는다.
+ * - /m, /pc: MobileShell / PcShell 자체 네비
+ * - /i: PublicInvitationLayout (참석자용 독립 페이지)
  */
 function GlobalHeaderGate() {
   const pathname = usePathname() ?? '';
-  if (pathname === '/m' || pathname.startsWith('/m/') || pathname === '/pc' || pathname.startsWith('/pc/')) {
+  if (
+    pathname === '/m' ||
+    pathname.startsWith('/m/') ||
+    pathname === '/pc' ||
+    pathname.startsWith('/pc/') ||
+    pathname === '/i' ||
+    pathname.startsWith('/i/')
+  ) {
     return null;
   }
   return <GlobalHeaderContent />;

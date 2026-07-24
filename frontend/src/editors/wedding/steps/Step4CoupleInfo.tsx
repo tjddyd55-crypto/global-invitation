@@ -15,7 +15,7 @@ export default function Step4CoupleInfo({ groom, bride, onGroomChange, onBrideCh
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>STEP 4. 신랑 / 신부 정보</h2>
+        <h2>신랑 · 신부</h2>
         <p>항상 2컬럼 대칭 구조로 유지됩니다.</p>
       </div>
       <div className={styles.coupleEditorGrid}>

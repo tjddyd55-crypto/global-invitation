@@ -1,7 +1,7 @@
 .editorPage {
   min-height: 100vh;
-  background: #f6f4ef;
-  color: #3b3b3b;
+  background: var(--gi-bg);
+  color: var(--gi-text);
 }
 
 .editorHeader {
@@ -25,6 +25,44 @@
   font-size: 0.95rem;
 }
 
+.statusLine {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.statusBadge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #d9d2c5;
+  background: #f7f4ee;
+  color: #6a665f;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.statusPublished {
+  background: #eef7e8;
+  border-color: #a9ba7a;
+  color: #5a7340;
+}
+
+.statusMeta {
+  font-size: 0.82rem;
+  color: #7a756c;
+}
+
+.conceptBadge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #d9d2c5;
+  background: #fff;
+  color: #5a554d;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .noticeText {
   margin: 0.5rem 0 0;
   color: #4f7c4d;
@@ -41,11 +79,13 @@
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .editorLayout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 340px;
+  grid-template-columns: 200px minmax(0, 1fr) 375px;
   gap: 1.5rem;
   padding: 1.5rem 2rem 3rem;
 }
@@ -54,16 +94,25 @@
   position: sticky;
   top: 1.5rem;
   align-self: start;
+  display: block;
 }
 
 .formColumn {
   min-width: 0;
+  display: grid;
+  gap: 16px;
 }
 
 .previewColumn {
   position: sticky;
   top: 1.5rem;
   align-self: start;
+}
+
+.previewFrameWrap {
+  width: 375px;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .previewFloatingButton {
@@ -84,63 +133,19 @@
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
 }
 
-.stepperNav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.stepperNavHorizontal {
-  flex-direction: row;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-}
-
-.stepperItem {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: #fff;
-  cursor: pointer;
-  text-align: left;
-  font-size: 0.9rem;
-  min-width: 140px;
-}
-
-.stepperItemActive {
-  border-color: #2f2f2f;
-  background: #f0f0ee;
-  font-weight: 600;
-}
-
-.stepperIndex {
-  display: inline-flex;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #e9e4da;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-}
-
-.stepperTitle {
-  flex: 1;
-}
-
 .mobileStepper {
   display: none;
-  margin-bottom: 1rem;
 }
 
 .stepSection {
   background: #fff;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border-radius: 24px;
+  padding: 32px 24px;
+  margin: 0 auto;
+  width: calc(100% - 32px);
+  max-width: 680px;
+  box-sizing: border-box;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -155,6 +160,15 @@
   margin: 0.4rem 0 0;
   color: #6a665f;
   font-size: 0.95rem;
+}
+
+.noticeBox {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px dashed #d7d1c7;
+  background: #f7f5f0;
+  color: #6a665f;
+  font-size: 0.9rem;
 }
 
 .fieldGrid {
@@ -260,6 +274,11 @@
   cursor: pointer;
 }
 
+.sectionStack {
+  display: grid;
+  gap: 1rem;
+}
+
 .buttonSubtle {
   padding: 0.4rem 0.8rem;
   border-radius: 999px;
@@ -348,11 +367,11 @@
 
 @media (max-width: 1200px) {
   .editorLayout {
-    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-columns: 180px minmax(0, 1fr) 320px;
   }
 
-  .previewColumn {
-    display: none;
+  .previewFrameWrap {
+    width: 320px;
   }
 
   .mobileOnly {
@@ -368,6 +387,7 @@
 
   .editorLayout {
     grid-template-columns: 1fr;
+    padding: 1rem 0 5rem;
   }
 
   .navColumn {
@@ -378,16 +398,16 @@
     display: block;
   }
 
+  .previewColumn {
+    display: none;
+  }
+
   .fieldGrid {
     grid-template-columns: 1fr;
   }
 
   .mobileNav {
-    display: flex;
-  }
-
-  .editorLayout {
-    padding-bottom: 5rem;
+    display: none;
   }
 
   .previewFloatingButton {

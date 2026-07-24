@@ -12,16 +12,14 @@ interface NavItem {
 }
 
 const SIDEBAR_ITEMS: NavItem[] = [
-  { href: '/pc', label: '대시보드' },
-  { href: '/pc/templates', label: '템플릿' },
-  { href: '/pc/dashboard', label: '내 초대장' },
-  { href: '/pc/settings', label: '설정' },
+  { href: '/pc', label: '홈' },
+  { href: '/pc/templates', label: '초대장 만들기' },
+  { href: '/pc/my-invitations', label: '내 초대장' },
+  { href: '/pc/dashboard', label: '대시보드' },
 ];
 
 /**
- * PC 데스크톱 쉘.
- * - 좌측 고정 사이드바 + 상단 유틸바 + 우측 메인 콘텐츠.
- * - 관리·편집 기능에 최적화된 다중 컬럼 레이아웃.
+ * PC 데스크톱 쉘 (Figma Make SaaS 톤).
  */
 export default function PcShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '';

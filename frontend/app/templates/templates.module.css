@@ -108,9 +108,16 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: 1fr;
+  gap: 16px;
   margin-top: 12px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
 }
 
 .resultCount {
@@ -284,26 +291,29 @@
   }
 
   .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .card {
-    padding: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 16px;
   }
 
   .thumbnail {
-    height: 150px;
+    height: 180px;
   }
 
   .cardTitle {
-    font-size: 0.98rem;
+    font-size: 1rem;
   }
 
   .creatorMeta,
   .cardDesc,
   .cardStats span {
-    font-size: 0.76rem;
+    font-size: 0.82rem;
   }
 
   .actions {
@@ -312,6 +322,6 @@
 
   .detailLink,
   .button {
-    font-size: 0.78rem;
+    font-size: 0.85rem;
   }
 }

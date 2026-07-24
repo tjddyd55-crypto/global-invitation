@@ -8,6 +8,11 @@ import prisma from './prisma';
 const MAGIC_LINK_TTL_MINUTES = 30;
 const SESSION_TTL_DAYS = 30;
 const AUTH_SESSION_COOKIE = 'auth_session_token';
+const EMAIL_CODE_TTL_MINUTES = 10;
+const EMAIL_CODE_RESEND_COOLDOWN_SECONDS = 60;
+const EMAIL_CODE_MAX_REQUESTS_PER_WINDOW = 5;
+const EMAIL_CODE_MAX_ATTEMPTS = 5;
+const EMAIL_CODE_PURPOSE_LOGIN = 'LOGIN';
 
 function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
@@ -83,6 +88,52 @@ export function getMagicLinkExpiry(): Date {
 
 export function getSessionExpiry(): Date {
   return new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
+}
+
+export function getEmailCodeExpiry(): Date {
+  return new Date(Date.now() + EMAIL_CODE_TTL_MINUTES * 60 * 1000);
+}
+
+export function getEmailCodeTtlMinutes(): number {
+  return EMAIL_CODE_TTL_MINUTES;
+}
+
+export function getEmailCodeResendCooldownSeconds(): number {
+  return EMAIL_CODE_RESEND_COOLDOWN_SECONDS;
+}
+
+export function getEmailCodeMaxRequestsPerWindow(): number {
+  return EMAIL_CODE_MAX_REQUESTS_PER_WINDOW;
+}
+
+export function getEmailCodeMaxAttempts(): number {
+  return EMAIL_CODE_MAX_ATTEMPTS;
+}
+
+export function getEmailCodeLoginPurpose(): string {
+  return EMAIL_CODE_PURPOSE_LOGIN;
+}
+
+function resolveEmailCodePepper(): string {
+  return process.env.EMAIL_CODE_PEPPER || process.env.AUTH_CODE_PEPPER || 'dev-email-code-pepper';
+}
+
+export function hashEmailVerificationCode(code: string): string {
+  return crypto.createHash('sha256').update(`${resolveEmailCodePepper()}:${code}`).digest('hex');
+}
+
+export function generateEmailVerificationCode(): string {
+  const value = crypto.randomInt(0, 1_000_000);
+  return String(value).padStart(6, '0');
+}
+
+export function timingSafeEqualHex(left: string, right: string): boolean {
+  const leftBuf = Buffer.from(left, 'utf8');
+  const rightBuf = Buffer.from(right, 'utf8');
+  if (leftBuf.length !== rightBuf.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(leftBuf, rightBuf);
 }
 
 export function resolveFrontendBaseUrl(): string {

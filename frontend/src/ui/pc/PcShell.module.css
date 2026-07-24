@@ -2,8 +2,8 @@
   display: grid;
   grid-template-columns: 240px 1fr;
   min-height: 100vh;
-  background: #f5f6f8;
-  color: #111;
+  background: var(--gi-bg);
+  color: var(--gi-text);
 }
 
 .sidebar {
@@ -11,8 +11,8 @@
   top: 0;
   align-self: start;
   height: 100vh;
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
+  background: var(--gi-surface);
+  border-right: 1px solid var(--gi-border);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -20,9 +20,11 @@
 }
 
 .brand {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   padding: 0 8px;
+  color: var(--gi-primary);
+  letter-spacing: 0.02em;
 }
 
 .nav {
@@ -33,23 +35,24 @@
 
 .navItem {
   display: block;
-  padding: 10px 12px;
-  border-radius: 10px;
-  color: #374151;
+  padding: 12px 12px;
+  border-radius: 12px;
+  color: var(--gi-text-secondary);
   text-decoration: none;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   transition: background 0.15s ease, color 0.15s ease;
+  min-height: 44px;
 }
 
 .navItem:hover {
-  background: #f3f4f6;
+  background: var(--gi-surface-muted);
 }
 
 .navItemActive {
-  background: #eef2ff;
-  color: #4f46e5;
-  font-weight: 600;
+  background: var(--gi-primary-soft);
+  color: var(--gi-primary);
+  font-weight: 700;
 }
 
 .main {

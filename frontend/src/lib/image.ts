@@ -52,5 +52,10 @@ export function cdnImageSrc(stored: string | null | undefined): string {
     return asHttps;
   }
 
+  // Next.js public 정적 경로 (/images, /icons 등)는 CDN 키로 취급하지 않는다.
+  if (noQuery.startsWith('/')) {
+    return noQuery;
+  }
+
   return buildImageUrl(noQuery);
 }

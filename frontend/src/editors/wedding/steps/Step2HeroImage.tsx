@@ -13,7 +13,7 @@ export default function Step2HeroImage({ value, onChange }: Step2HeroImageProps)
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>STEP 2. 대표 이미지</h2>
+        <h2>대표 이미지</h2>
         <p>공유 썸네일로 사용되는 대표 이미지를 업로드합니다.</p>
       </div>
       <ImageUploader

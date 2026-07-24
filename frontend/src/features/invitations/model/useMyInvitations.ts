@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { listGuestInvitations, listMyInvitations, type InvitationSummary } from '@/src/lib/api';
-import { getGuestToken, getStoredSession } from '@/src/lib/auth';
+import { listMyInvitations, type InvitationSummary } from '@/src/lib/api';
+import { fetchCurrentUser } from '@/src/shared/auth';
 
 export type InvitationsLoadStatus = 'loading' | 'ready' | 'empty' | 'error';
 
@@ -14,27 +14,23 @@ export interface UseMyInvitationsResult {
 }
 
 /**
- * 로그인 세션 또는 게스트 토큰을 기준으로 내 초대장 목록을 조회한다.
- * - 세션 > 게스트 토큰 순서로 우선.
- * - 네트워크 에러는 'error' 상태로 구분하여 UI 에서 재시도 UX 를 붙일 수 있게 한다.
+ * 인증된 사용자의 초대장 목록만 조회한다.
+ * - 신규 작성자 플로우에서 guestToken 목록은 사용하지 않는다.
  */
 export function useMyInvitations(): UseMyInvitationsResult {
   const [items, setItems] = useState<InvitationSummary[]>([]);
-  const [guestToken, setGuestToken] = useState<string | null>(null);
   const [status, setStatus] = useState<InvitationsLoadStatus>('loading');
 
   const reload = useCallback(async () => {
-    const token = getGuestToken();
-    setGuestToken(token);
     setStatus('loading');
     try {
-      const session = getStoredSession();
-      let loaded: InvitationSummary[] = [];
-      if (session?.token) {
-        loaded = await listMyInvitations();
-      } else if (token) {
-        loaded = await listGuestInvitations(token);
+      const user = await fetchCurrentUser({ useCache: true });
+      if (!user) {
+        setItems([]);
+        setStatus('empty');
+        return;
       }
+      const loaded = await listMyInvitations();
       setItems(loaded);
       setStatus(loaded.length === 0 ? 'empty' : 'ready');
     } catch {
@@ -47,5 +43,5 @@ export function useMyInvitations(): UseMyInvitationsResult {
     void reload();
   }, [reload]);
 
-  return { items, guestToken, status, reload };
+  return { items, guestToken: null, status, reload };
 }

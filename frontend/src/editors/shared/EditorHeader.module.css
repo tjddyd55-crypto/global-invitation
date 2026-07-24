@@ -1,0 +1,199 @@
+.editorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e3ddd4;
+  background: #fff;
+  gap: 1rem;
+}
+
+.headerMain {
+  min-width: 0;
+}
+
+.editorTitle {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.editorSubtitle {
+  margin: 0.25rem 0 0;
+  color: #6a665f;
+  font-size: 0.95rem;
+}
+
+.statusLine {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.statusBadge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #d9d2c5;
+  background: #f7f4ee;
+  color: #6a665f;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.statusPublished {
+  background: #eef7e8;
+  border-color: #a9ba7a;
+  color: #5a7340;
+}
+
+.statusMeta {
+  font-size: 0.82rem;
+  color: #7a756c;
+}
+
+.conceptBadge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #d9d2c5;
+  background: #fff;
+  color: #5a554d;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.errorText {
+  margin: 0.5rem 0 0;
+  color: #b84a2d;
+  font-size: 0.9rem;
+}
+
+.noticeText {
+  margin: 0.5rem 0 0;
+  color: #4f7c4d;
+  font-size: 0.9rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.buttonPrimary {
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  border: none;
+  background: #2f2f2f;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.buttonGhost {
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid #cfc8bc;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+}
+
+.buttonPrimary:disabled,
+.buttonGhost:disabled,
+.menuItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.saveButton {
+  min-width: 124px;
+}
+
+.desktopExtraActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mobileMoreWrap {
+  display: none;
+}
+
+.menuWrap {
+  position: relative;
+}
+
+.menuPanel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 200px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid #e5e1d8;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menuItem {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  color: #3b3b3b;
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: #f5f2ea;
+}
+
+.languageField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  font-size: 0.85rem;
+  color: #6a665f;
+}
+
+.languageField select {
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #d7d0c3;
+  background: #fff;
+  padding: 0 10px;
+  color: #3b3b3b;
+}
+
+@media (max-width: 960px) {
+  .editorHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.1rem 1rem;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .desktopExtraActions {
+    display: none;
+  }
+
+  .mobileMoreWrap {
+    display: block;
+  }
+}

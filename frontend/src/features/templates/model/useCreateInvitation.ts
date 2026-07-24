@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createInvitation } from '@/src/lib/api';
+import { fetchCurrentUser } from '@/src/shared/auth';
 
 export type ConceptType = 'WEDDING' | 'FUNERAL' | 'GENERAL';
 
@@ -43,9 +44,9 @@ export interface UseCreateInvitationResult {
 }
 
 /**
- * 템플릿 카드의 "시작하기" 동작을 담당한다.
- * - PC/Mobile UI 가 공통으로 쓴다.
- * - 실패 시 게스트용 임시 editor 경로로 폴백한다.
+ * 컨셉 선택 후 초대장 생성.
+ * - 인증된 userId 세션이 필수다. 미인증이면 이메일 인증 화면으로 보낸다.
+ * - guestToken 기반 신규 생성/폴백은 사용하지 않는다.
  */
 export function useCreateInvitation(): UseCreateInvitationResult {
   const router = useRouter();
@@ -58,13 +59,24 @@ export function useCreateInvitation(): UseCreateInvitationResult {
       setCreating(concept);
       setError(null);
       try {
-        const created = await createInvitation('invitation_full');
+        const user = await fetchCurrentUser({ useCache: false });
+        if (!user) {
+          router.replace(`/auth/email?next=${encodeURIComponent('/templates')}`);
+          return;
+        }
+
+        const created = await createInvitation({
+          templateKey: 'invitation_full',
+          conceptType: concept,
+        });
         router.push(`/editor/${created.id}?concept=${concept}`);
       } catch (err) {
-        // 게스트 임시 경로로 폴백: 서버 연결 실패 시에도 편집기 진입은 가능하도록.
-        const fallback = `/editor/new?template=invitation-full-default&concept=${concept}`;
-        router.push(fallback);
-        setError(err instanceof Error ? err.message : '네트워크 오류 — 임시 편집기로 이동합니다.');
+        const message = err instanceof Error ? err.message : '초대장 생성에 실패했습니다.';
+        if (message.includes('401') || message.toUpperCase().includes('UNAUTHORIZED')) {
+          router.replace(`/auth/email?next=${encodeURIComponent('/templates')}`);
+          return;
+        }
+        setError(message);
       } finally {
         setCreating(null);
       }

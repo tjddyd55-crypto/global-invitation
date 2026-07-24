@@ -25,7 +25,7 @@ export const APP_ROUTE_PREFIXES: readonly string[] = [
   '/dashboard',
   '/my',
   '/my-invitations',
-  '/editor',
+  // `/editor` 는 viewport 기준 클라이언트 분기 (UA middleware 제외). /m/editor · /pc/editor 유지.
   '/create',
   '/templates',
   '/settings',

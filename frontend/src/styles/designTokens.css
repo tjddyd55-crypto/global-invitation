@@ -1,0 +1,74 @@
+/**
+ * Global Invitation design tokens (Figma Make 기준안)
+ * SaaS 관리/인증/에디터 화면용. 공개 초대장(/i)은 템플릿별 감성 톤을 유지한다.
+ */
+
+:root {
+  /* Surfaces */
+  --gi-bg: #f4efe6;
+  --gi-bg-elevated: #faf7f2;
+  --gi-surface: #ffffff;
+  --gi-surface-muted: #f7f3ec;
+
+  /* Brand / primary (indigo–violet) */
+  --gi-primary: #5b4fd6;
+  --gi-primary-hover: #4a3fc4;
+  --gi-primary-soft: #ece9ff;
+  --gi-primary-border: #c8c0f5;
+
+  /* Text */
+  --gi-text: #1e2433;
+  --gi-text-secondary: #5c6478;
+  --gi-text-muted: #8b92a5;
+  --gi-text-on-primary: #ffffff;
+
+  /* Borders & focus */
+  --gi-border: #e5dfd4;
+  --gi-border-strong: #d2cbbf;
+  --gi-focus: #5b4fd6;
+
+  /* Status */
+  --gi-success: #3d7a4a;
+  --gi-success-soft: #e8f5eb;
+  --gi-danger: #b42318;
+  --gi-danger-soft: #fef3f2;
+  --gi-warning: #b54708;
+
+  /* Radius */
+  --gi-radius-sm: 12px;
+  --gi-radius-md: 16px;
+  --gi-radius-lg: 24px;
+  --gi-radius-pill: 999px;
+
+  /* Spacing */
+  --gi-space-1: 4px;
+  --gi-space-2: 8px;
+  --gi-space-3: 12px;
+  --gi-space-4: 16px;
+  --gi-space-5: 20px;
+  --gi-space-6: 24px;
+  --gi-space-8: 32px;
+  --gi-space-10: 40px;
+
+  /* Typography */
+  --gi-font-sans: "Pretendard", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --gi-font-display: "Pretendard", "Noto Sans KR", sans-serif;
+  --gi-text-xs: 12px;
+  --gi-text-sm: 13px;
+  --gi-text-md: 15px;
+  --gi-text-lg: 18px;
+  --gi-text-xl: 22px;
+  --gi-text-2xl: 28px;
+
+  /* Controls */
+  --gi-control-height: 48px;
+  --gi-control-height-lg: 52px;
+
+  /* Shadow */
+  --gi-shadow-soft: 0 8px 24px rgba(30, 36, 51, 0.06);
+  --gi-shadow-card: 0 12px 32px rgba(30, 36, 51, 0.08);
+
+  /* Layout */
+  --gi-mobile-invite-width: 375px;
+  --gi-content-max: 1120px;
+}

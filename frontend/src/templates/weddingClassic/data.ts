@@ -103,7 +103,7 @@ const GALLERY_IMAGES = Array.from({ length: 12 }, (_, index) => {
   return `/images/wedding/classic/gallery_${number}.jpg`;
 });
 
-const DEFAULT_DATE = new Date('2025-04-13T17:20:00');
+const DEFAULT_DATE = new Date('2025-11-15T14:30:00+09:00');
 const DEFAULT_LANGUAGE: Language = 'en';
 const SUPPORTED_LANGUAGE_SET = new Set<string>(SUPPORTED_LANGUAGES);
 
@@ -177,9 +177,9 @@ export function getWeddingClassicDemoInvitation(): Invitation {
   return {
     id: 'demo-wedding-classic',
     slug: DEMO_WEDDING_CLASSIC_SLUG,
-    title: '유동규 ♥ 이소영',
-    eventDate: '2025-04-13T17:20:00',
-    locationText: '더링크호텔 서울',
+    title: '이준혁 ♥ 김지은',
+    eventDate: '2025-11-15T14:30:00+09:00',
+    locationText: '더 웨딩홀 그랜드볼룸 · 서울 강남구',
     message: '봄날의 햇살 아래, 결혼합니다.',
     templateKey: 'wedding_classic',
     musicKey: 'piano_wedding',
@@ -224,13 +224,13 @@ export function buildWeddingClassicData(
     content:
       '봄날의 햇살 아래, 결혼합니다.\n사랑의 선율 속에서,\n저희 두 사람이 하나 되어 행복한 춤을 시작하려 합니다.',
     eventDate: weddingDate.toISOString(),
-    locationText: invitation?.locationText || '더링크호텔 서울 3층 베일리홀',
+    locationText: invitation?.locationText || '더 웨딩홀 그랜드볼룸 · 서울 강남구',
     schedule: [formatDateTime(language, weddingDate)],
     rsvpEnabled: true,
     guestbookEnabled: true,
     share: {
       ogTitle: heroTitle,
-      ogDescription: `${formatDateTime(language, weddingDate)} · ${invitation?.locationText || '더링크호텔 서울'}`,
+      ogDescription: `${formatDateTime(language, weddingDate)} · ${invitation?.locationText || '더 웨딩홀 그랜드볼룸 · 서울 강남구'}`,
       ogImage: HERO_IMAGE,
     },
     musicKey: invitation?.musicKey || 'piano_wedding',
@@ -240,7 +240,7 @@ export function buildWeddingClassicData(
     heroSubtitle,
     coupleNames,
     weddingDateTime: formatDateTime(language, weddingDate),
-    venueName: invitation?.locationText || '더링크호텔 서울 3층 베일리홀',
+    venueName: invitation?.locationText || '더 웨딩홀 그랜드볼룸 · 서울 강남구',
     introQuote: '예쁜 예감이 들었다. 우리는 언제나 손을 잡고 있게 될 것이다.',
     introText: [
       '봄날의 햇살 아래, 결혼합니다.',
@@ -297,6 +297,6 @@ export function buildWeddingClassicMetadata(invitation?: Invitation | null) {
   const { groomName, brideName } = parseCoupleNames(invitation?.title ?? undefined);
   const language = resolveLanguage(invitation?.language);
   const title = buildWeddingClassicHeroTitle(groomName, brideName, language);
-  const description = `${formatDateTime(language, weddingDate)} · ${invitation?.locationText || '더링크호텔 서울'}`;
+  const description = `${formatDateTime(language, weddingDate)} · ${invitation?.locationText || '더 웨딩홀 그랜드볼룸 · 서울 강남구'}`;
   return { title, description, heroImage: HERO_IMAGE };
 }

@@ -3,7 +3,17 @@ export const LOGIN_REDIRECT_STORAGE_KEY = 'login_redirect';
 /**
  * 상대 경로만 허용해 오픈 리디렉션을 막는다.
  */
-const AUTH_ROUTE_BLOCKLIST = ['/login', '/signup', '/pc/login', '/pc/signup', '/m/login', '/m/signup'];
+const AUTH_ROUTE_BLOCKLIST = [
+  '/login',
+  '/signup',
+  '/pc/login',
+  '/pc/signup',
+  '/m/login',
+  '/m/signup',
+  '/auth/email',
+  '/m/auth/email',
+  '/pc/auth/email',
+];
 
 export function sanitizeReturnPath(path: string | null | undefined): string {
   if (!path || typeof path !== 'string') return '/';
@@ -20,7 +30,14 @@ export function buildLoginHref(pathnameWithOptionalSearch: string): string {
     pathnameWithOptionalSearch && pathnameWithOptionalSearch.startsWith('/')
       ? pathnameWithOptionalSearch
       : '/';
-  return `/login?redirect=${encodeURIComponent(base)}`;
+  return `/auth/email?next=${encodeURIComponent(base)}`;
+}
+
+export function buildCreateInvitationHref(isAuthenticated: boolean): string {
+  if (isAuthenticated) {
+    return '/templates';
+  }
+  return `/auth/email?next=${encodeURIComponent('/templates')}`;
 }
 
 export function resolveLoginRedirectForStorage(

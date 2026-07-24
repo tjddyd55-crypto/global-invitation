@@ -1,0 +1,117 @@
+/* 공유 CTA / 버튼 / 카드 — SaaS 화면 공통 */
+
+.page {
+  min-height: 100%;
+  background: var(--gi-bg);
+  color: var(--gi-text);
+}
+
+.card {
+  background: var(--gi-surface);
+  border: 1px solid var(--gi-border);
+  border-radius: var(--gi-radius-lg);
+  box-shadow: var(--gi-shadow-soft);
+  padding: var(--gi-space-6);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--gi-text-xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+
+.subtitle {
+  margin: var(--gi-space-2) 0 0;
+  color: var(--gi-text-secondary);
+  font-size: var(--gi-text-md);
+  line-height: 1.55;
+}
+
+.primaryButton,
+.secondaryButton,
+.ghostButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--gi-control-height);
+  padding: 0 var(--gi-space-5);
+  border-radius: var(--gi-radius-md);
+  font-size: var(--gi-text-md);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.primaryButton {
+  border: none;
+  background: var(--gi-primary);
+  color: var(--gi-text-on-primary);
+}
+
+.primaryButton:hover {
+  background: var(--gi-primary-hover);
+}
+
+.secondaryButton {
+  border: 1px solid var(--gi-border-strong);
+  background: var(--gi-surface);
+  color: var(--gi-text);
+}
+
+.ghostButton {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--gi-text-secondary);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.ghostButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gi-space-2);
+  font-size: var(--gi-text-sm);
+  font-weight: 600;
+  color: var(--gi-text-secondary);
+}
+
+.input {
+  height: var(--gi-control-height);
+  border: 1px solid var(--gi-border-strong);
+  border-radius: var(--gi-radius-md);
+  padding: 0 var(--gi-space-4);
+  background: var(--gi-surface);
+  color: var(--gi-text);
+  font-size: 16px;
+}
+
+.input:focus {
+  outline: 2px solid var(--gi-focus);
+  outline-offset: 1px;
+}
+
+.error {
+  margin: 0;
+  padding: var(--gi-space-3) var(--gi-space-4);
+  border-radius: var(--gi-radius-sm);
+  background: var(--gi-danger-soft);
+  color: var(--gi-danger);
+  font-size: var(--gi-text-sm);
+}
+
+.hint {
+  margin: 0;
+  padding: var(--gi-space-3) var(--gi-space-4);
+  border-radius: var(--gi-radius-sm);
+  background: var(--gi-surface-muted);
+  border: 1px dashed var(--gi-border);
+  color: var(--gi-text-secondary);
+  font-size: var(--gi-text-sm);
+}

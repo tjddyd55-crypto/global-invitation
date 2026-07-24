@@ -34,9 +34,12 @@ export default function PcHomeContent() {
             모바일 PWA 는 시청·편집용으로 따로 제공됩니다.
           </p>
           <div className={styles.ctaRow}>
-            <Link className={styles.primary} href="/pc/signup">회원가입</Link>
-            <Link className={styles.secondary} href="/pc/login">로그인</Link>
-            <Link className={styles.secondary} href="/pc/templates">템플릿 먼저 둘러보기</Link>
+            <Link className={styles.primary} href="/auth/email?next=%2Fpc%2Ftemplates">
+              이메일로 시작하기
+            </Link>
+            <Link className={styles.secondary} href="/auth/email?next=%2Fpc%2Ftemplates">
+              초대장 만들기
+            </Link>
           </div>
         </div>
         <div className={styles.bottomRow}>

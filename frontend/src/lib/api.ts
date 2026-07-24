@@ -1,5 +1,5 @@
 import type { Invitation } from '@/src/models/invitation';
-import { buildAuthHeaders, ensureGuestToken } from '@/src/lib/auth';
+import { buildAuthHeaders } from '@/src/lib/auth';
 import { buildApiUrl, buildRequestInit } from '@/src/lib/apiBase';
 import { syncGuestTokenFromResponse } from '@/src/lib/guestToken';
 
@@ -45,10 +45,21 @@ export interface InvitationSummary {
   publishedAt?: string | null;
 }
 
-// Create invitation
-export async function createInvitation(templateKey?: string, guestToken?: string): Promise<CreateInvitationResponse> {
+export type CreateInvitationInput = {
+  templateKey?: string;
+  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+};
+
+/** 인증된 사용자만 신규 초대장을 생성한다. guestToken 기반 생성은 사용하지 않는다. */
+export async function createInvitation(
+  templateKeyOrInput?: string | CreateInvitationInput,
+): Promise<CreateInvitationResponse> {
   try {
-    const gt = guestToken || ensureGuestToken();
+    const input: CreateInvitationInput =
+      typeof templateKeyOrInput === 'string'
+        ? { templateKey: templateKeyOrInput }
+        : templateKeyOrInput || {};
+
     const response = await fetch(
       buildApiUrl('/api/invitations'),
       buildRequestInit({
@@ -57,7 +68,10 @@ export async function createInvitation(templateKey?: string, guestToken?: string
           'Content-Type': 'application/json',
           ...buildAuthHeaders(),
         },
-        body: templateKey ? JSON.stringify({ templateKey, guestToken: gt }) : JSON.stringify({ guestToken: gt }),
+        body: JSON.stringify({
+          templateKey: input.templateKey || 'invitation_full',
+          conceptType: input.conceptType,
+        }),
       })
     );
 
@@ -66,11 +80,10 @@ export async function createInvitation(templateKey?: string, guestToken?: string
       throw new Error(`Failed to create invitation: ${response.status} ${errorText}`);
     }
 
-    syncGuestTokenFromResponse(response);
     return response.json();
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('諛깆뿏???쒕쾭???곌껐?????놁뒿?덈떎. ?쒕쾭媛 ?ㅽ뻾 以묒씤吏 ?뺤씤?섏꽭??');
+      throw new Error('백엔드 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인하세요.');
     }
     throw error;
   }
@@ -149,6 +162,49 @@ export async function listMyInvitations(): Promise<InvitationSummary[]> {
   return response.json();
 }
 
+export type InvitationRsvpGuest = {
+  id: string;
+  guestName: string;
+  attendance: string;
+  guestCount: number;
+  mealChoice?: string | null;
+  message?: string | null;
+  isHidden: boolean;
+  createdAt: string;
+};
+
+export type InvitationRsvpListResponse = {
+  invitation: {
+    id: string;
+    title: string | null;
+    shareSlug: string | null;
+  };
+  summary: {
+    total: number;
+    attending: number;
+    declined: number;
+    maybe: number;
+  };
+  guests: InvitationRsvpGuest[];
+};
+
+export async function listInvitationRsvps(invitationId: string): Promise<InvitationRsvpListResponse> {
+  const response = await fetch(
+    buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}/rsvps`),
+    buildRequestInit({
+      headers: buildAuthHeaders(),
+    })
+  );
+
+  if (response.status === 401) {
+    throw new Error('Unauthorized');
+  }
+  if (!response.ok) {
+    throw new Error('Failed to fetch invitation RSVPs');
+  }
+  return response.json();
+}
+
 export async function listGuestInvitations(guestToken: string): Promise<InvitationSummary[]> {
   const response = await fetch(
     buildApiUrl(`/api/invitations?guestToken=${encodeURIComponent(guestToken)}&status=draft&limit=20`),
@@ -161,24 +217,9 @@ export async function listGuestInvitations(guestToken: string): Promise<Invitati
   return response.json();
 }
 
-export async function createGuestInvitation(templateId?: string): Promise<GuestInvitationCreateResponse> {
-  const response = await fetch(
-    buildApiUrl('/api/invitations/guest'),
-    buildRequestInit({
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...buildAuthHeaders(),
-      },
-      body: JSON.stringify(templateId ? { templateId } : {}),
-    })
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to create guest invitation');
-  }
-  syncGuestTokenFromResponse(response);
-  return response.json();
+/** @deprecated 신규 작성자 플로우에서는 사용 금지. 서버도 403을 반환한다. */
+export async function createGuestInvitation(_templateId?: string): Promise<GuestInvitationCreateResponse> {
+  throw new Error('GUEST_CREATE_DISABLED: Email verification is required to create invitations');
 }
 
 export async function cloneTemplateInvitation(templateId: string): Promise<TemplateCloneResponse> {

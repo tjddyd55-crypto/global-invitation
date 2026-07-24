@@ -1,0 +1,29 @@
+# Local development PostgreSQL (Docker)
+# Usage:
+#   docker compose up -d
+#   cd backend && npx prisma migrate dev
+#
+# Do NOT point this at Railway production.
+# Railway prod/dev DB migrations happen only after local QA passes.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: global-invitation-pg
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: global_invitation
+    volumes:
+      - global_invitation_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d global_invitation"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  global_invitation_pg_data:

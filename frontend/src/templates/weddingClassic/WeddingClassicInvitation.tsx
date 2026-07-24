@@ -13,8 +13,9 @@ import styles from './WeddingClassicInvitation.module.css';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
-import { cdnImageSrc } from '@/src/lib/image';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
+import ImageWithFallback from '@/src/components/media/ImageWithFallback';
+import { useEffect, useState } from 'react';
 
 type WeddingClassicInvitationProps = {
   data: WeddingInvitationData;
@@ -85,6 +86,16 @@ export default function WeddingClassicInvitation({
   void showGuestbook;
   void _showCoupleSectionUnused;
 
+  const [failedGallerySrcs, setFailedGallerySrcs] = useState<Record<string, true>>({});
+  const [heroFailed, setHeroFailed] = useState(false);
+
+  const heroImageSrc =
+    data && typeof data.heroImage === 'string' && data.heroImage.trim() ? data.heroImage.trim() : '';
+
+  useEffect(() => {
+    setHeroFailed(false);
+  }, [heroImageSrc]);
+
   if (!data) return null;
 
   const r = data;
@@ -93,7 +104,8 @@ export default function WeddingClassicInvitation({
     return null;
   }
   const heroImage = typeof r.heroImage === 'string' && r.heroImage.trim() ? r.heroImage.trim() : '';
-  const galleryImages = Array.isArray(r.galleryImages) ? r.galleryImages : [];
+  const galleryImages = Array.isArray(r.galleryImages) ? r.galleryImages.filter((img) => typeof img === 'string' && img.trim()) : [];
+  const visibleGalleryImages = galleryImages.filter((image) => !failedGallerySrcs[image]);
   const title = (r.title || r.heroTitle || '').trim();
   const subtitle = (r.subtitle ?? '').trim();
   const locationText = (r.locationText || r.venueName || '').trim();
@@ -105,7 +117,8 @@ export default function WeddingClassicInvitation({
   const hasLocation =
     Boolean(addressForMap.trim()) || (typeof r.mapLat === 'number' && typeof r.mapLng === 'number');
   const hasSchedule = scheduleList.filter(Boolean).length > 0;
-  const hasGallery = galleryImages.length > 0;
+  const showHeroMedia = Boolean(heroImage) && !heroFailed;
+  const hasGallery = visibleGalleryImages.length > 0;
   const hasMessage = Boolean(contentText.trim());
   const accounts = safeArray(r?.accounts);
   const weekdays = [
@@ -117,7 +130,12 @@ export default function WeddingClassicInvitation({
     t(I18N_KEYS.weddingClassic.weekdayFri),
     t(I18N_KEYS.weddingClassic.weekdaySat),
   ];
-  const weddingDate = r?.weddingDate ?? safeDate(r.eventDate || r.weddingDateTime) ?? new Date(0);
+  const weddingDate =
+    r?.weddingDate instanceof Date
+      ? r.weddingDate
+      : safeDate(typeof r?.weddingDate === 'string' ? r.weddingDate : undefined) ??
+        safeDate(r.eventDate || r.weddingDateTime) ??
+        new Date(0);
   const calendarCells = buildCalendarCells(weddingDate);
   const highlightDay = weddingDate.getDate();
 
@@ -170,15 +188,21 @@ export default function WeddingClassicInvitation({
       )}
 
       <section
-        className={`${styles.heroSection} ${heroImage ? '' : styles.heroSectionNoImage}`}
+        className={`${styles.heroSection} ${showHeroMedia ? '' : styles.heroSectionNoImage}`}
         aria-label="대표 이미지"
       >
-        {heroImage ? (
+        {heroImage && !heroFailed ? (
           <div className={styles.heroMedia}>
-            <img className={styles.heroImage} src={cdnImageSrc(heroImage)} alt="" loading="lazy" />
+            <ImageWithFallback
+              className={styles.heroImage}
+              src={heroImage}
+              alt=""
+              loading="lazy"
+              onFailed={() => setHeroFailed(true)}
+            />
           </div>
         ) : null}
-        {heroImage ? <div className={styles.heroOverlay} aria-hidden /> : null}
+        {showHeroMedia ? <div className={styles.heroOverlay} aria-hidden /> : null}
         <div className={styles.heroContent}>
           <div className={styles.heroText}>
             {title ? <h1 className={styles.heroTitle}>{title}</h1> : null}
@@ -200,7 +224,7 @@ export default function WeddingClassicInvitation({
       </section>
 
       {hasMessage ? (
-        <section className={`${styles.section} ${styles.messageSection} ${styles.scheduleHighlight}`}>
+        <section className={`${styles.section} ${styles.messageSection}`}>
           <h2 className={styles.calendarTitle}>{messageTitle}</h2>
           <div className={styles.messageBody}>
             {messageLines.map((line, index) => (
@@ -224,17 +248,29 @@ export default function WeddingClassicInvitation({
               {brideDisplay ? <p className={styles.coupleNamePrimary}>{brideDisplay}</p> : null}
             </div>
           ) : null}
-          {hasCouple && (groomImg || brideImg) ? (
+          {hasCouple && (groomImg || brideImg || groomDisplay || brideDisplay) ? (
             <div className={styles.couplePhotosRow}>
-              {groomImg ? (
+              {groomDisplay || groomImg ? (
                 <div className={styles.couplePhotoWrap}>
-                  <img className={styles.couplePhoto} src={cdnImageSrc(groomImg)} alt="" loading="lazy" />
+                  <ImageWithFallback
+                    className={styles.couplePhoto}
+                    src={groomImg || null}
+                    alt=""
+                    loading="lazy"
+                    fallback={<div className={styles.coupleAvatarFallback} aria-hidden>{(groomDisplay || '신랑').slice(0, 1)}</div>}
+                  />
                   {groomDisplay ? <div className={styles.couplePhotoCaption}>{groomDisplay}</div> : null}
                 </div>
               ) : null}
-              {brideImg ? (
+              {brideDisplay || brideImg ? (
                 <div className={styles.couplePhotoWrap}>
-                  <img className={styles.couplePhoto} src={cdnImageSrc(brideImg)} alt="" loading="lazy" />
+                  <ImageWithFallback
+                    className={styles.couplePhoto}
+                    src={brideImg || null}
+                    alt=""
+                    loading="lazy"
+                    fallback={<div className={styles.coupleAvatarFallback} aria-hidden>{(brideDisplay || '신부').slice(0, 1)}</div>}
+                  />
                   {brideDisplay ? <div className={styles.couplePhotoCaption}>{brideDisplay}</div> : null}
                 </div>
               ) : null}
@@ -329,13 +365,16 @@ export default function WeddingClassicInvitation({
         <section className={styles.section}>
           <h2>{t(I18N_KEYS.weddingClassic.galleryTitle)}</h2>
           <div className={styles.galleryGrid}>
-            {galleryImages.map((image) => (
-              <img
+            {visibleGalleryImages.map((image) => (
+              <ImageWithFallback
                 key={image}
                 className={styles.galleryImage}
-                src={cdnImageSrc(image)}
+                src={image}
                 alt={t(I18N_KEYS.weddingClassic.galleryImageAlt)}
                 loading="lazy"
+                onFailed={() => {
+                  setFailedGallerySrcs((prev) => ({ ...prev, [image]: true }));
+                }}
               />
             ))}
           </div>

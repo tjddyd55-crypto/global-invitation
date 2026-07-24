@@ -12,7 +12,7 @@ export default function Step3Schedule({ schedule, onChange }: Step3ScheduleProps
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>STEP 3. 장례 일정</h2>
+        <h2>장례 일정</h2>
         <p>빈소/발인/장지를 입력합니다.</p>
       </div>
       <div className={styles.fieldGrid}>

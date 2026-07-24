@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { extractSharePresentationFromPayload } from '@/src/lib/invitationShareMeta';
 import { fetchSharedInvitationCached } from '@/src/lib/server/fetchSharedInvitationCached';
 import { buildCanonicalUrl, getMetadataBase } from '@/src/lib/siteUrl';
+import PublicInvitationLayout from '@/src/components/layout/PublicInvitationLayout';
 
 function resolveSafeSlug(value: unknown): string {
   if (typeof value === 'string') return value;
@@ -120,5 +121,5 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
 }
 
 export default function PublicShareLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <PublicInvitationLayout>{children}</PublicInvitationLayout>;
 }

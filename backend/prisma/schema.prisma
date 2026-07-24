@@ -233,6 +233,23 @@ model MagicLinkToken {
   @@map("magic_link_tokens")
 }
 
+/// 작성자 이메일 OTP. 원문 코드는 저장하지 않고 codeHash 만 보관한다.
+model EmailVerificationCode {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String
+  codeHash     String    @map("code_hash")
+  purpose      String    @default("LOGIN")
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
+  consumedAt   DateTime? @map("consumed_at") @db.Timestamptz(6)
+  attemptCount Int       @default(0) @map("attempt_count")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([email, purpose, createdAt])
+  @@index([email, purpose, consumedAt])
+  @@map("email_verification_codes")
+}
+
 model AuthSession {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   token     String   @unique

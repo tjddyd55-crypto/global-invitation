@@ -1,0 +1,137 @@
+.screen {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--gi-text);
+}
+
+.header p {
+  margin: 8px 0 0;
+  color: var(--gi-text-secondary);
+  font-size: 14px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--gi-primary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.linkButton {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--gi-border);
+  background: var(--gi-surface);
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat {
+  background: var(--gi-surface);
+  border: 1px solid var(--gi-border);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat strong {
+  font-size: 22px;
+}
+
+.stat span {
+  color: var(--gi-text-secondary);
+  font-size: 12px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background: var(--gi-surface);
+  border: 1px solid var(--gi-border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: var(--gi-shadow-soft);
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.cardTop h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--gi-primary-soft);
+  color: var(--gi-primary);
+}
+
+.meta {
+  margin: 6px 0 0;
+  color: var(--gi-text-muted);
+  font-size: 12px;
+}
+
+.message {
+  margin: 8px 0 0;
+  color: var(--gi-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.muted {
+  color: var(--gi-text-muted);
+  font-size: 14px;
+}
+
+.error {
+  color: var(--gi-danger);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { Invitation } from '@/src/lib/api';
 import {
   cloneTemplateInvitation,
@@ -44,6 +44,8 @@ import { ensureGuestToken, getStoredSession, setGuestToken, setLastDraftSlug } f
 import {
   getTemplateEditorPath,
 } from '@/src/templates/registry';
+import { resolveEditorPlatformFromWidth } from '@/src/shared/platform/editorViewport';
+import shareBannerStyles from './editorShareBanner.module.css';
 
 type EditorError = {
   title: string;
@@ -201,6 +203,7 @@ function buildFullDataFromFuneralState(state: FuneralEditorState): WeddingInvita
 export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname() ?? '';
   const searchParams = useSearchParams();
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
@@ -211,6 +214,9 @@ export default function EditorPage() {
   const editorLoggedRef = useRef(false);
   const saveNoticeTimerRef = useRef<number | null>(null);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
+  const [platformRedirectPending, setPlatformRedirectPending] = useState(
+    () => pathname === `/editor/${slug}` || pathname.startsWith('/editor/')
+  );
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -230,6 +236,27 @@ export default function EditorPage() {
   const conceptType = initialConceptType;
 
   const isFuneralDemo = isFuneralClassicDemoSlug(slug);
+
+  /**
+   * `/editor/{slug}` 진입 시 viewport 기준으로 /m 또는 /pc 에디터로 1회 이동.
+   * UA middleware 분기와 달리 Playwright 좁은 viewport 도 모바일 셸을 탄다.
+   */
+  useEffect(() => {
+    if (!slug) {
+      setPlatformRedirectPending(false);
+      return;
+    }
+    const isBareEditorPath = pathname === `/editor/${slug}`;
+    if (!isBareEditorPath) {
+      setPlatformRedirectPending(false);
+      return;
+    }
+
+    const platform = resolveEditorPlatformFromWidth(window.innerWidth);
+    const prefix = platform === 'mobile' ? '/m' : '/pc';
+    const qs = window.location.search || '';
+    router.replace(`${prefix}/editor/${slug}${qs}`);
+  }, [pathname, router, slug]);
 
   useEffect(() => {
     ensureGuestToken();
@@ -483,6 +510,7 @@ export default function EditorPage() {
       setLastSavedAt(updated.updatedAt ?? new Date().toISOString());
       setShareUrl(published.share_url);
       setSaveNotice('공개가 완료되었습니다. 공유 링크를 복사해 전달해 보세요.');
+      router.push(`/my-invitations/${invitation.id}/complete`);
     } catch {
       setSaveError('공개에 실패했습니다. 권한 또는 저장 상태를 확인해 주세요.');
     } finally {
@@ -490,9 +518,10 @@ export default function EditorPage() {
     }
   };
 
-  const handleFuneralSave = async (state: FuneralEditorState) => {
-    if (!invitation?.id) return;
+  const saveFuneralDraft = async (state: FuneralEditorState): Promise<boolean> => {
+    if (!invitation?.id) return false;
 
+    setSaving(true);
     setSaveError(null);
     setShareUiNotice(null);
 
@@ -528,9 +557,45 @@ export default function EditorPage() {
       setLastSavedAt(saved.updatedAt ?? new Date().toISOString());
       setSaveNotice('초안이 저장되었습니다.');
       scheduleSaveNoticeClear();
+      return true;
     } catch {
       setSaveError('저장에 실패했습니다. 권한 또는 네트워크 상태를 확인해 주세요.');
-      return;
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleFuneralSave = async (state: FuneralEditorState): Promise<void> => {
+    await saveFuneralDraft(state);
+  };
+
+  const handleFuneralSaveAndExit = async (state: FuneralEditorState) => {
+    const saved = await saveFuneralDraft(state);
+    if (!saved) return;
+    router.push('/my-invitations');
+  };
+
+  const handleFuneralPublish = async (state: FuneralEditorState) => {
+    if (!invitation?.id) return;
+    setPublishing(true);
+    setSaveError(null);
+    setSaveNotice(null);
+    try {
+      const saved = await saveFuneralDraft(state);
+      if (!saved) return;
+      await publishInvitationById(invitation.id, requestedToken);
+      const updated = await getInvitationForEditor(invitation.id, requestedToken);
+      setInvitation(updated);
+      setLastDraftSlug(updated.slug);
+      setDraftStatus('published');
+      setLastSavedAt(updated.updatedAt ?? new Date().toISOString());
+      setSaveNotice('공개가 완료되었습니다.');
+      router.push(`/my-invitations/${invitation.id}/complete`);
+    } catch {
+      setSaveError('공개에 실패했습니다. 권한 또는 저장 상태를 확인해 주세요.');
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -581,6 +646,14 @@ export default function EditorPage() {
     window.print();
   };
 
+  if (platformRedirectPending) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <p>에디터 준비 중...</p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -613,7 +686,18 @@ export default function EditorPage() {
   }
 
   if (isFuneralDemo && funeralInitialState) {
-    return <FuneralEditor initialState={funeralInitialState} onSave={handleFuneralSave} saveNotice={saveNotice} />;
+    return (
+      <FuneralEditor
+        initialState={funeralInitialState}
+        onSave={handleFuneralSave}
+        saveNotice={saveNotice}
+        saveError={saveError}
+        saving={saving}
+        publishing={publishing}
+        draftStatus={draftStatus}
+        lastSavedAt={lastSavedAt}
+      />
+    );
   }
 
   if (!invitation) {
@@ -634,8 +718,14 @@ export default function EditorPage() {
       <FuneralEditor
         initialState={funeralInitialState}
         onSave={handleFuneralSave}
+        onSaveAndExit={handleFuneralSaveAndExit}
+        onPublish={handleFuneralPublish}
+        saving={saving}
+        publishing={publishing}
         saveNotice={saveNotice}
         saveError={saveError}
+        draftStatus={draftStatus}
+        lastSavedAt={lastSavedAt}
       />
     );
   }
@@ -644,29 +734,31 @@ export default function EditorPage() {
     return (
       <>
         {shareUrl && (
-          <section
-            data-testid="share-panel"
-            style={{
-              margin: '1rem auto 0',
-              maxWidth: '1200px',
-              border: '1px solid #d6e2ff',
-              background: '#f7faff',
-              borderRadius: '12px',
-              padding: '0.9rem 1rem',
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: '1rem' }}>공유</h2>
-            <p style={{ margin: '0.45rem 0 0.75rem', color: '#496093' }}>
+          <section data-testid="share-panel" className={shareBannerStyles.sharePanel}>
+            <h2 className={shareBannerStyles.shareTitle}>공유</h2>
+            <p className={shareBannerStyles.shareBody}>
               공개가 완료되었습니다. 공유 URL: <strong data-testid="share-url">{shareAbsoluteUrl}</strong>
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <button type="button" onClick={handleCopyShareUrl}>URL 복사</button>
-              <button type="button" onClick={handleKakaoShare}>카카오 공유</button>
-              <button type="button" onClick={handleFacebookShare}>페이스북 공유</button>
-              <button type="button" onClick={handleImageDownload}>이미지 다운로드</button>
-              <button type="button" onClick={handlePdfDownload}>PDF 다운로드</button>
+            <div className={shareBannerStyles.shareActions}>
+              <button type="button" onClick={handleCopyShareUrl}>
+                URL 복사
+              </button>
+              <span className={shareBannerStyles.shareActionsExtra}>
+                <button type="button" onClick={handleKakaoShare}>
+                  카카오 공유
+                </button>
+                <button type="button" onClick={handleFacebookShare}>
+                  페이스북 공유
+                </button>
+                <button type="button" onClick={handleImageDownload}>
+                  이미지 다운로드
+                </button>
+                <button type="button" onClick={handlePdfDownload}>
+                  PDF 다운로드
+                </button>
+              </span>
             </div>
-            {shareUiNotice && <p style={{ margin: '0.5rem 0 0', color: '#315aa3' }}>{shareUiNotice}</p>}
+            {shareUiNotice && <p className={shareBannerStyles.shareNotice}>{shareUiNotice}</p>}
           </section>
         )}
         <WeddingEditor

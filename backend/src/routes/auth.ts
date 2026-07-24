@@ -5,16 +5,25 @@ import {
   buildMagicLink,
   clearAuthSessionCookie,
   createToken,
+  generateEmailVerificationCode,
   getAuthUser,
+  getEmailCodeExpiry,
+  getEmailCodeLoginPurpose,
+  getEmailCodeMaxAttempts,
+  getEmailCodeMaxRequestsPerWindow,
+  getEmailCodeResendCooldownSeconds,
+  getEmailCodeTtlMinutes,
   getMagicLinkExpiry,
   getSessionExpiry,
+  hashEmailVerificationCode,
   isValidEmail,
   normalizeEmail,
   setAuthSessionCookie,
+  timingSafeEqualHex,
   transferGuestData,
 } from '../lib/auth';
 import { hashPassword, verifyPassword } from '../lib/password';
-import { sendMagicLinkEmail } from '../lib/mailer';
+import { sendMagicLinkEmail, sendVerificationCodeEmail, shouldExposeEmailPreviewCode } from '../lib/mailer';
 
 const router = Router();
 const MIN_PASSWORD_LENGTH = 8;
@@ -407,6 +416,213 @@ router.post('/transfer-guest', async (req, res) => {
   } catch (error) {
     console.error('Error transferring guest data:', error);
     res.status(500).json({ error: 'Failed to transfer guest data' });
+  }
+});
+
+/**
+ * POST /api/auth/email/request-code
+ * 작성자 이메일 OTP 발송. 비밀번호 없이 로그인/자동가입에 사용한다.
+ */
+router.post('/email/request-code', async (req, res) => {
+  try {
+    const email = typeof req.body?.email === 'string' ? req.body.email : '';
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({ error: 'INVALID_EMAIL', ok: false });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const purpose = getEmailCodeLoginPurpose();
+    const now = Date.now();
+    const windowStart = new Date(now - getEmailCodeTtlMinutes() * 60 * 1000);
+    const cooldownMs = getEmailCodeResendCooldownSeconds() * 1000;
+
+    const recentCodes = await prisma.emailVerificationCode.findMany({
+      where: {
+        email: normalizedEmail,
+        purpose,
+        createdAt: { gte: windowStart },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: getEmailCodeMaxRequestsPerWindow() + 1,
+      select: { id: true, createdAt: true },
+    });
+
+    if (recentCodes.length > 0) {
+      const latestCreatedAt = recentCodes[0].createdAt.getTime();
+      const elapsed = now - latestCreatedAt;
+      if (elapsed < cooldownMs) {
+        const retryAfterSeconds = Math.max(1, Math.ceil((cooldownMs - elapsed) / 1000));
+        res.setHeader('Retry-After', String(retryAfterSeconds));
+        return res.status(429).json({
+          ok: false,
+          error: 'RESEND_COOLDOWN',
+          retryAfterSeconds,
+        });
+      }
+    }
+
+    if (recentCodes.length >= getEmailCodeMaxRequestsPerWindow()) {
+      return res.status(429).json({
+        ok: false,
+        error: 'REQUEST_RATE_LIMITED',
+        retryAfterSeconds: getEmailCodeResendCooldownSeconds(),
+      });
+    }
+
+    await prisma.emailVerificationCode.updateMany({
+      where: {
+        email: normalizedEmail,
+        purpose,
+        consumedAt: null,
+      },
+      data: {
+        consumedAt: new Date(),
+      },
+    });
+
+    const code = generateEmailVerificationCode();
+    const codeHash = hashEmailVerificationCode(code);
+    const expiresAt = getEmailCodeExpiry();
+
+    await prisma.emailVerificationCode.create({
+      data: {
+        email: normalizedEmail,
+        codeHash,
+        purpose,
+        expiresAt,
+      },
+    });
+
+    let delivered = false;
+    try {
+      delivered = await sendVerificationCodeEmail({
+        to: normalizedEmail,
+        code,
+        expiresMinutes: getEmailCodeTtlMinutes(),
+      });
+    } catch (err) {
+      console.warn('Failed to send verification code email:', err);
+    }
+
+    const exposePreview = shouldExposeEmailPreviewCode() && !delivered;
+    return res.status(200).json({
+      ok: true,
+      ...(exposePreview ? { previewCode: code } : {}),
+    });
+  } catch (error) {
+    console.error('Error requesting email verification code:', error);
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_REQUEST_CODE' });
+  }
+});
+
+/**
+ * POST /api/auth/email/verify-code
+ * OTP 검증 후 기존 유저 로그인 또는 자동 계정 생성 + 세션 발급.
+ */
+router.post('/email/verify-code', async (req, res) => {
+  try {
+    const email = typeof req.body?.email === 'string' ? req.body.email : '';
+    const code = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
+
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({ ok: false, error: 'INVALID_EMAIL' });
+    }
+    if (!/^\d{6}$/.test(code)) {
+      return res.status(400).json({ ok: false, error: 'INVALID_CODE' });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const purpose = getEmailCodeLoginPurpose();
+
+    const record = await prisma.emailVerificationCode.findFirst({
+      where: {
+        email: normalizedEmail,
+        purpose,
+        consumedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!record) {
+      return res.status(400).json({ ok: false, error: 'CODE_NOT_FOUND' });
+    }
+    if (record.expiresAt.getTime() < Date.now()) {
+      await prisma.emailVerificationCode.update({
+        where: { id: record.id },
+        data: { consumedAt: new Date() },
+      });
+      return res.status(400).json({ ok: false, error: 'CODE_EXPIRED' });
+    }
+    if (record.attemptCount >= getEmailCodeMaxAttempts()) {
+      await prisma.emailVerificationCode.update({
+        where: { id: record.id },
+        data: { consumedAt: new Date() },
+      });
+      return res.status(400).json({ ok: false, error: 'CODE_LOCKED' });
+    }
+
+    const expectedHash = hashEmailVerificationCode(code);
+    const matched = timingSafeEqualHex(record.codeHash, expectedHash);
+    if (!matched) {
+      const nextAttempts = record.attemptCount + 1;
+      const shouldLock = nextAttempts >= getEmailCodeMaxAttempts();
+      await prisma.emailVerificationCode.update({
+        where: { id: record.id },
+        data: {
+          attemptCount: nextAttempts,
+          ...(shouldLock ? { consumedAt: new Date() } : {}),
+        },
+      });
+      return res.status(400).json({
+        ok: false,
+        error: shouldLock ? 'CODE_LOCKED' : 'INVALID_CODE',
+        remainingAttempts: Math.max(0, getEmailCodeMaxAttempts() - nextAttempts),
+      });
+    }
+
+    await prisma.emailVerificationCode.update({
+      where: { id: record.id },
+      data: { consumedAt: new Date() },
+    });
+
+    let user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true, email: true, nickname: true, role: true },
+    });
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          role: 'USER',
+        },
+        select: { id: true, email: true, nickname: true, role: true },
+      });
+    }
+
+    const sessionToken = createToken();
+    await prisma.authSession.create({
+      data: {
+        token: sessionToken,
+        userId: user.id,
+        expiresAt: getSessionExpiry(),
+      },
+    });
+    setAuthSessionCookie(res, sessionToken);
+
+    return res.status(200).json({
+      ok: true,
+      token: sessionToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error('Error verifying email code:', error);
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_VERIFY_CODE' });
   }
 });
 

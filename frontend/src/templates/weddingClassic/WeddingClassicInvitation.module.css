@@ -186,6 +186,11 @@
 
 .messageSection {
   margin-top: 48px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 56px 28px;
 }
 
 .conceptWedding .messageSection {
@@ -198,13 +203,14 @@
 }
 
 .messageBody {
-  margin: 0;
+  margin: 0 auto;
+  max-width: 320px;
 }
 
 .messageParagraph {
   margin: 0 0 10px;
   font-size: 16px;
-  line-height: 26px;
+  line-height: 1.8;
 }
 
 .messageParagraph:last-child {
@@ -213,7 +219,7 @@
 
 .textBody {
   font-size: 16px;
-  line-height: 26px;
+  line-height: 1.8;
 }
 
 .textSub {
@@ -305,6 +311,20 @@
   object-fit: cover;
   display: block;
   margin: 0 auto;
+}
+
+.coupleAvatarFallback {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(145deg, #c4b5a0, #e8ddd0);
+  color: #5c5346;
+  font-size: 36px;
+  font-weight: 600;
 }
 
 .couplePhotoCaption {

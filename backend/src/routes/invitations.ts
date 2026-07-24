@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { InvitationStatus, Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { generateSlug } from '../utils/slug';
-import { createToken, getAuthUser, getGuestToken } from '../lib/auth';
+import { getAuthUser, getGuestToken } from '../lib/auth';
 import { collectInvitationCleanupR2Keys } from '../storage/mediaCleanup';
 
 const router = Router();
@@ -59,10 +59,6 @@ function resolveGuestTokenFromRequest(req: {
   ].filter(Boolean);
 
   return tokenCandidates[0] || null;
-}
-
-function createGuestToken32Bytes(): string {
-  return crypto.randomBytes(32).toString('hex');
 }
 
 function createShareSlugCandidate(length: number): string {
@@ -467,61 +463,56 @@ router.get('/recent', async (req, res) => {
   }
 });
 
-// POST /api/invitations/guest - Create invitation for guest session
-router.post('/guest', async (req, res) => {
-  try {
-    const resolvedTemplate = await resolveTemplateReference(
-      req.body?.templateId ?? req.body?.templateSlug ?? req.body?.template
-    );
-    const guestToken = createGuestToken32Bytes();
-    const invitationData = normalizeInvitationData(req.body?.data_json ?? req.body?.data);
-    const templateKey =
-      normalizeText(req.body?.templateKey) || resolvedTemplate?.templateKey || 'wedding_classic';
-
-    const invitation = await createInvitationRecord({
-      templateId: resolvedTemplate?.id || null,
-      templateKey,
-      ownerType: 'GUEST',
-      ownerId: guestToken,
-      guestToken,
-      data: invitationData,
-      countryCode: normalizeText(req.body?.countryCode) || 'GLOBAL',
-      language: normalizeText(req.body?.language) || 'en',
-    });
-
-    return res.status(201).json({
-      id: invitation.id,
-      guest_token: guestToken,
-      editor_url: `/editor/${invitation.id}?token=${guestToken}`,
-    });
-  } catch (error) {
-    console.error('Error creating guest invitation:', error);
-    return res.status(500).json({ error: 'Failed to create guest invitation' });
-  }
+// POST /api/invitations/guest - legacy only (신규 작성자 플로우에서는 사용 금지)
+router.post('/guest', async (_req, res) => {
+  // legacy: 과거 guestToken 제작 경로. 신규 생성은 이메일 인증 + POST /api/invitations 만 허용.
+  return res.status(403).json({
+    error: 'GUEST_CREATE_DISABLED',
+    message: 'Email verification is required to create invitations',
+  });
 });
 
-// POST /api/invitations - Create invitation (login or guest)
+// POST /api/invitations - Create invitation (authenticated user only)
 router.post('/', async (req, res) => {
   try {
     const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'UNAUTHORIZED' });
+    }
+
     const resolvedTemplate = await resolveTemplateReference(
       req.body?.templateId ?? req.body?.templateSlug ?? req.body?.template
     );
-    const requestGuestToken = resolveGuestTokenFromRequest(req) || getGuestToken(req) || createToken();
     const invitationData = normalizeInvitationData(req.body?.data_json ?? req.body?.data);
     const templateKey =
-      normalizeText(req.body?.templateKey) || resolvedTemplate?.templateKey || 'basic';
+      normalizeText(req.body?.templateKey) || resolvedTemplate?.templateKey || 'invitation_full';
+
+    const conceptRaw = normalizeText(req.body?.conceptType) || normalizeText(req.body?.concept);
+    const conceptType =
+      conceptRaw === 'WEDDING' || conceptRaw === 'FUNERAL' || conceptRaw === 'GENERAL'
+        ? conceptRaw
+        : null;
+
+    const baseData =
+      invitationData && typeof invitationData === 'object' && !Array.isArray(invitationData)
+        ? (invitationData as Record<string, unknown>)
+        : {};
+    const dataWithConcept: Prisma.InputJsonValue = {
+      ...baseData,
+      templateType: 'FULL',
+      ...(conceptType ? { conceptType } : {}),
+    };
 
     const invitation = await createInvitationRecord({
       templateId: resolvedTemplate?.id || null,
       templateKey,
-      ownerType: user ? 'USER' : 'GUEST',
-      ownerId: user?.id || requestGuestToken,
-      userId: user?.id || null,
-      guestToken: user ? null : requestGuestToken,
-      data: invitationData,
+      ownerType: 'USER',
+      ownerId: user.id,
+      userId: user.id,
+      guestToken: null,
+      data: dataWithConcept,
       countryCode: normalizeText(req.body?.countryCode) || 'GLOBAL',
-      language: normalizeText(req.body?.language) || 'en',
+      language: normalizeText(req.body?.language) || 'ko',
     });
 
     return res.status(201).json({
@@ -676,6 +667,75 @@ router.post('/:id/publish', async (req, res) => {
   } catch (error) {
     console.error('Error publishing invitation:', error);
     return res.status(500).json({ error: 'Failed to publish invitation' });
+  }
+});
+
+// GET /api/invitations/:id/rsvps - Owner RSVP management list
+router.get('/:id/rsvps', async (req, res) => {
+  try {
+    const identifier = normalizeText(req.params.id);
+    if (!identifier) {
+      return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
+    }
+
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'UNAUTHORIZED' });
+    }
+
+    const invitation = await findInvitationByIdentifier(identifier);
+    if (!invitation) {
+      return res.status(404).json({ error: 'NOT_FOUND' });
+    }
+
+    const editable = await canEditInvitation({
+      invitation: {
+        userId: invitation.userId,
+        guestToken: invitation.guestToken,
+      },
+      userId: user.id,
+      guestToken: null,
+    });
+    if (!editable) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
+    }
+
+    const guests = await prisma.rSVP.findMany({
+      where: { invitationId: invitation.id },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        guestName: true,
+        attendance: true,
+        guestCount: true,
+        mealChoice: true,
+        message: true,
+        isHidden: true,
+        createdAt: true,
+      },
+    });
+
+    const attending = guests.filter((g) => g.attendance === 'yes' || g.attendance === 'attending').length;
+    const declined = guests.filter((g) => g.attendance === 'no' || g.attendance === 'declined').length;
+    const maybe = guests.filter((g) => g.attendance === 'maybe').length;
+
+    return res.status(200).json({
+      invitation: {
+        id: invitation.id,
+        title: invitation.title,
+        shareSlug: invitation.shareSlug,
+      },
+      summary: {
+        total: guests.length,
+        attending,
+        declined,
+        maybe,
+      },
+      guests,
+    });
+  } catch (error) {
+    console.error('Error listing invitation RSVPs:', error);
+    return res.status(500).json({ error: 'FAILED_TO_LIST_RSVPS' });
   }
 });
 

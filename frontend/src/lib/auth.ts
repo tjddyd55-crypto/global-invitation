@@ -413,6 +413,102 @@ export async function logoutCurrentSession(): Promise<void> {
   clearAuthCaches();
 }
 
+type EmailCodeRequestResponse = {
+  ok: boolean;
+  previewCode?: string;
+  error?: string;
+  retryAfterSeconds?: number;
+};
+
+type EmailCodeVerifyResponse = {
+  ok: boolean;
+  token: string;
+  user: AuthUser;
+  error?: string;
+};
+
+function mapEmailAuthError(code: string | undefined, fallback: string): string {
+  switch (code) {
+    case 'INVALID_EMAIL':
+      return '올바른 이메일 주소를 입력해 주세요.';
+    case 'RESEND_COOLDOWN':
+      return '잠시 후 다시 요청해 주세요.';
+    case 'REQUEST_RATE_LIMITED':
+      return '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.';
+    case 'INVALID_CODE':
+      return '인증번호가 올바르지 않습니다.';
+    case 'CODE_EXPIRED':
+      return '인증번호가 만료되었습니다. 다시 받아 주세요.';
+    case 'CODE_LOCKED':
+      return '인증 실패 횟수를 초과했습니다. 새 인증번호를 받아 주세요.';
+    case 'CODE_NOT_FOUND':
+      return '유효한 인증번호가 없습니다. 다시 받아 주세요.';
+    default:
+      return fallback;
+  }
+}
+
+export async function requestEmailVerificationCode(email: string): Promise<EmailCodeRequestResponse> {
+  const response = await fetch(buildApiUrl('/api/auth/email/request-code'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as EmailCodeRequestResponse;
+  if (!response.ok || !payload.ok) {
+    throw new Error(mapEmailAuthError(payload.error, '인증번호 발송에 실패했습니다.'));
+  }
+  return payload;
+}
+
+export async function verifyEmailVerificationCode(input: {
+  email: string;
+  code: string;
+}): Promise<EmailCodeVerifyResponse> {
+  const response = await fetch(buildApiUrl('/api/auth/email/verify-code'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: input.email,
+      code: input.code,
+    }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as EmailCodeVerifyResponse & {
+    user?: AuthUser;
+    token?: string;
+  };
+
+  if (!response.ok || !payload.ok || !payload.token || !payload.user?.id) {
+    throw new Error(mapEmailAuthError(payload.error, '인증번호 확인에 실패했습니다.'));
+  }
+
+  const sessionUser: AuthUser = {
+    id: payload.user.id,
+    email: payload.user.email,
+    nickname: payload.user.nickname || null,
+    role: payload.user.role || 'USER',
+  };
+
+  setStoredSession({
+    token: payload.token,
+    user: sessionUser,
+  });
+
+  return {
+    ok: true,
+    token: payload.token,
+    user: sessionUser,
+  };
+}
+
 export function isOwner(invitation: Invitation | null): boolean {
   return Boolean(invitation?.isOwner);
 }

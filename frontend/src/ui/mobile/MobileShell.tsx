@@ -15,7 +15,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: '/m', label: '홈', icon: '🏠' },
-  { href: '/m/templates', label: '템플릿', icon: '🗂' },
+  { href: '/m/templates', label: '만들기', icon: '✨' },
   { href: '/m/my-invitations', label: '내 초대장', icon: '📬' },
   { href: '/m/dashboard', label: '대시보드', icon: '📊' },
 ];

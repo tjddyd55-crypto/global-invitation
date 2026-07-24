@@ -6,13 +6,13 @@ import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { getSharedInvitationBySlug, type Invitation } from '@/src/lib/api';
-import { buildAbsolutePublicInvitationUrl } from '@/src/lib/publicInvitation';
+import { buildAbsolutePublicInvitationUrl, buildPublicInvitationUrlPath } from '@/src/lib/publicInvitation';
 import {
   extractSharePresentationFromInvitation,
-  KAKAO_SHARE_BUTTON_LABEL,
 } from '@/src/lib/invitationShareMeta';
 import { trackInvitationView } from '@/src/lib/trackInvitationView';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
+import GlobalSharePanel from '@/src/components/share/GlobalSharePanel';
 import {
   fetchTemplateDefinitionById,
   getTemplateRegistryEntry,
@@ -227,71 +227,90 @@ export default function PublicShareInvitationPage() {
     conceptType === 'FUNERAL' || templateCategory === 'funeral' ? 'funeral_classic' : 'invitation_full';
   const FallbackTemplate = getTemplateRenderer(fallbackTemplateKey);
 
+  const sharePageUrl =
+    typeof window !== 'undefined'
+      ? buildAbsolutePublicInvitationUrl(window.location.origin, effectiveShareSlug)
+      : buildPublicInvitationUrlPath(effectiveShareSlug);
+  const sharePresentation = extractSharePresentationFromInvitation(invitation);
   const baseSlug = invitation.slug;
   return (
-    <div className={publicInvitationMobile.shell}>
-      {isCreatorTemplate && hasStudioConfig && FallbackTemplate ? (
-        <SafeCreatorRenderer
-          creatorRenderer={Template}
-          fallbackRenderer={FallbackTemplate}
-          creatorProps={{
-            data: runtimeData,
-            runtimeData,
-            studioConfig: templateDefinition?.studioConfig,
-            invitationSlug: baseSlug,
-            previewMode: false,
-            showPlayButton: false,
-            showRsvp: showRsvp ? false : undefined,
-          }}
-          fallbackProps={{
-            data: runtimeData,
-            invitationSlug: baseSlug,
-            showPlayButton: false,
-            showRsvp: showRsvp ? false : undefined,
-          }}
-        />
-      ) : isCreatorTemplate && FallbackTemplate ? (
-        <FallbackTemplate
-          data={runtimeData}
-          invitationSlug={baseSlug}
-          showPlayButton={false}
-          showRsvp={showRsvp ? false : undefined}
-        />
-      ) : (
-        <Template
-          data={runtimeData}
-          invitationSlug={baseSlug}
-          showPlayButton={false}
-          showRsvp={showRsvp ? false : undefined}
-        />
-      )}
+    <div className={publicInvitationMobile.pageRoot}>
+      <div className={publicInvitationMobile.layout}>
+        <div className={publicInvitationMobile.inviteColumn}>
+          <div className={publicInvitationMobile.shell}>
+            {isCreatorTemplate && hasStudioConfig && FallbackTemplate ? (
+              <SafeCreatorRenderer
+                creatorRenderer={Template}
+                fallbackRenderer={FallbackTemplate}
+                creatorProps={{
+                  data: runtimeData,
+                  runtimeData,
+                  studioConfig: templateDefinition?.studioConfig,
+                  invitationSlug: baseSlug,
+                  previewMode: false,
+                  showPlayButton: false,
+                  showRsvp: showRsvp ? false : undefined,
+                }}
+                fallbackProps={{
+                  data: runtimeData,
+                  invitationSlug: baseSlug,
+                  showPlayButton: false,
+                  showRsvp: showRsvp ? false : undefined,
+                }}
+              />
+            ) : isCreatorTemplate && FallbackTemplate ? (
+              <FallbackTemplate
+                data={runtimeData}
+                invitationSlug={baseSlug}
+                showPlayButton={false}
+                showRsvp={showRsvp ? false : undefined}
+              />
+            ) : (
+              <Template
+                data={runtimeData}
+                invitationSlug={baseSlug}
+                showPlayButton={false}
+                showRsvp={showRsvp ? false : undefined}
+              />
+            )}
 
-      {showRsvp ? <RSVPForm invitationSlug={baseSlug} /> : null}
-      <section className={publicInvitationMobile.shareSection}>
-        <h2 className={publicInvitationMobile.shareTitle}>공유하기</h2>
-        <div className={publicInvitationMobile.shareStack}>
-          <button type="button" onClick={handleShare} className={publicInvitationMobile.shareButton}>
-            {shared ? '공유됨' : '공유하기'}
-          </button>
-          <button
-            type="button"
-            onClick={handleKakaoShare}
-            className={`${publicInvitationMobile.shareButton} ${publicInvitationMobile.shareButtonSecondary}`}
-            title={KAKAO_SHARE_BUTTON_LABEL}
-          >
-            카카오 공유
-          </button>
-          {invitation.musicKey ? (
-            <button
-              type="button"
-              onClick={handlePlayMusic}
-              className={`${publicInvitationMobile.shareButton} ${publicInvitationMobile.shareButtonMusic}`}
-            >
-              {showPlayButton ? t(I18N_KEYS.fields.playMusic) : '음악 다시 재생'}
-            </button>
-          ) : null}
+            {showRsvp ? <RSVPForm invitationSlug={baseSlug} /> : null}
+
+            <section className={publicInvitationMobile.shareSectionMobile}>
+              <GlobalSharePanel
+                shareUrl={sharePageUrl}
+                title={sharePresentation.metaTitle}
+                text={sharePresentation.metaDescription}
+                variant="sheet"
+              />
+              {invitation.musicKey ? (
+                <button
+                  type="button"
+                  onClick={handlePlayMusic}
+                  className={`${publicInvitationMobile.shareButton} ${publicInvitationMobile.shareButtonMusic}`}
+                >
+                  {showPlayButton ? t(I18N_KEYS.fields.playMusic) : '음악 다시 재생'}
+                </button>
+              ) : null}
+            </section>
+          </div>
         </div>
-      </section>
+
+        <aside className={publicInvitationMobile.desktopAside}>
+          <GlobalSharePanel
+            shareUrl={sharePageUrl}
+            title={sharePresentation.metaTitle}
+            text={sharePresentation.metaDescription}
+            variant="card"
+          />
+          {showRsvp ? (
+            <div className={publicInvitationMobile.asideHint}>
+              참석은 왼쪽 초대장에서 로그인 없이 응답할 수 있습니다.
+            </div>
+          ) : null}
+        </aside>
+      </div>
+
       {shareFallbackUrl ? (
         <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
       ) : null}

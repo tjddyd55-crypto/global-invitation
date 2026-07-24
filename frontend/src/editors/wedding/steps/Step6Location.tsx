@@ -19,7 +19,7 @@ export default function Step6Location({ value, onChange }: Step6LocationProps) {
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>STEP 6. 위치 안내</h2>
+        <h2>위치 안내</h2>
         <p>주소, 지도 미리보기, 교통/주차 안내를 입력합니다.</p>
       </div>
       <label className={styles.field}>

@@ -46,6 +46,8 @@ frontend/next-env.d.ts
 e2e/.auth/
 playwright-report/
 test-results/
+artifacts/design-qa/*.png
+!artifacts/design-qa/.gitkeep
 
 # secrets (평문 계정정보 - 절대 커밋 금지)
 초대장_계정정보.txt

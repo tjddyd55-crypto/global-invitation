@@ -2,155 +2,191 @@
 
 import { useReducer, useState } from 'react';
 import styles from './funeralEditor.module.css';
-import StepperNav, { type FuneralStep } from './components/StepperNav';
 import PreviewPanel from './components/PreviewPanel';
 import Step0Basic from './steps/Step0Basic';
 import Step1Message from './steps/Step1Message';
+import Step2HeroImage from './steps/Step2HeroImage';
 import Step2Family from './steps/Step2Family';
 import Step3Schedule from './steps/Step3Schedule';
 import Step4Hall from './steps/Step4Hall';
-import Step5Preview from './steps/Step5Preview';
+import Step6AccountInfo from './steps/Step6AccountInfo';
+import Step7Attendance from './steps/Step7Attendance';
+import Step8ShareSettings from './steps/Step8ShareSettings';
 import { funeralEditorReducer } from './state/funeralEditor.reducer';
 import type { FuneralEditorState } from './state/funeralEditor.types';
+import EditorHeader from '@/src/editors/shared/EditorHeader';
+import UnifiedStepperNav, { type UnifiedStepItem } from '@/src/editors/shared/UnifiedStepperNav';
 
-const STEP_ITEMS: FuneralStep[] = [
+const STEP_ITEMS: UnifiedStepItem[] = [
   { id: 0, title: '기본 정보' },
-  { id: 1, title: '인사말' },
-  { id: 2, title: '상주/유가족' },
-  { id: 3, title: '장례 일정' },
-  { id: 4, title: '장례식장/지도' },
-  { id: 5, title: '미리보기' },
+  { id: 1, title: '부고문' },
+  { id: 2, title: '대표 이미지' },
+  { id: 3, title: '고인 정보' },
+  { id: 4, title: '장례 일정' },
+  { id: 5, title: '위치 안내' },
+  { id: 6, title: '계좌 정보' },
+  { id: 7, title: '참석 여부' },
+  { id: 8, title: '공유 설정' },
 ];
 
 type FuneralEditorProps = {
   initialState: FuneralEditorState;
   onSave?: (state: FuneralEditorState) => Promise<void> | void;
+  onSaveAndExit?: (state: FuneralEditorState) => Promise<void> | void;
+  onPublish?: (state: FuneralEditorState) => Promise<void> | void;
+  saving?: boolean;
+  publishing?: boolean;
   saveNotice?: string | null;
   saveError?: string | null;
+  draftStatus?: 'draft' | 'published';
+  lastSavedAt?: string | null;
 };
 
-export default function FuneralEditor({ initialState, onSave, saveNotice, saveError }: FuneralEditorProps) {
+export default function FuneralEditor({
+  initialState,
+  onSave,
+  onSaveAndExit,
+  onPublish,
+  saving,
+  publishing,
+  saveNotice,
+  saveError,
+  draftStatus = 'draft',
+  lastSavedAt,
+}: FuneralEditorProps) {
   const [state, dispatch] = useReducer(funeralEditorReducer, initialState);
   const [currentStep, setCurrentStep] = useState(0);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
-
-  const canGoPrev = currentStep > 0;
-  const canGoNext = currentStep < STEP_ITEMS.length - 1;
 
   const handleSave = async () => {
     if (!onSave) return;
     await onSave(state);
   };
+  const handleSaveAndExit = async () => {
+    if (!onSaveAndExit) return;
+    await onSaveAndExit(state);
+  };
+  const handlePublish = async () => {
+    if (!onPublish) return;
+    await onPublish(state);
+  };
 
   return (
     <div className={styles.editorPage}>
-      <header className={styles.editorHeader}>
-        <div>
-          <h1 className={styles.editorTitle}>부고장 에디터</h1>
-          <p className={styles.editorSubtitle}>입력 즉시 미리보기에 반영됩니다.</p>
-          {saveNotice && <p className={styles.noticeText}>{saveNotice}</p>}
-          {saveError && <p className={styles.errorText}>{saveError}</p>}
-        </div>
-        <div className={styles.headerActions}>
-          <button type="button" className={styles.buttonPrimary} onClick={handleSave} disabled={!onSave}>
-            저장
-          </button>
-        </div>
-      </header>
+      <EditorHeader
+        title="부고장 에디터"
+        conceptLabel="부고장"
+        draftStatus={draftStatus}
+        lastSavedAt={lastSavedAt}
+        saveNotice={saveNotice}
+        saveError={saveError}
+        saving={saving}
+        publishing={publishing}
+        onSave={onSave ? handleSave : undefined}
+        onSaveAndExit={onSaveAndExit ? handleSaveAndExit : undefined}
+        onPublish={onPublish ? handlePublish : undefined}
+      />
 
       <div className={styles.editorLayout}>
         <aside className={styles.navColumn}>
-          <StepperNav steps={STEP_ITEMS} currentStep={currentStep} onStepSelect={setCurrentStep} />
+          <UnifiedStepperNav
+            steps={STEP_ITEMS}
+            currentStep={currentStep}
+            onStepSelect={setCurrentStep}
+            orientation="vertical"
+          />
         </aside>
 
         <main className={styles.formColumn}>
           <div className={styles.mobileStepper}>
-            <StepperNav
+            <UnifiedStepperNav
               steps={STEP_ITEMS}
               currentStep={currentStep}
               onStepSelect={setCurrentStep}
-              variant="horizontal"
+              orientation="horizontal"
             />
           </div>
 
-          {currentStep === 0 && (
-            <Step0Basic
-              deceasedName={state.deceasedName}
-              birthDate={state.birthDate}
-              deathDate={state.deathDate}
-              heroImage={state.heroImage}
-              onChange={(payload) =>
-                dispatch({
-                  type: 'SET_BASIC',
-                  payload: {
-                    deceasedName: payload.deceasedName ?? state.deceasedName,
-                    birthDate: payload.birthDate ?? state.birthDate,
-                    deathDate: payload.deathDate ?? state.deathDate,
-                    heroImage: payload.heroImage ?? state.heroImage,
-                  },
-                })
-              }
-            />
-          )}
-          {currentStep === 1 && (
-            <Step1Message
-              message={state.message}
-              onChange={(message) => dispatch({ type: 'SET_MESSAGE', payload: { message } })}
-            />
-          )}
-          {currentStep === 2 && (
-            <Step2Family
-              chiefMourner={state.chiefMourner}
-              familyMembers={state.familyMembers}
-              onChange={(payload) =>
-                dispatch({
-                  type: 'SET_FAMILY',
-                  payload: {
-                    chiefMourner: payload.chiefMourner ?? state.chiefMourner,
-                    familyMembers: payload.familyMembers ?? state.familyMembers,
-                  },
-                })
-              }
-            />
-          )}
-          {currentStep === 3 && (
-            <Step3Schedule
-              schedule={state.schedule}
-              onChange={(schedule) => dispatch({ type: 'SET_SCHEDULE', payload: schedule })}
-            />
-          )}
-          {currentStep === 4 && (
-            <Step4Hall
-              funeralHall={state.funeralHall}
-              contact={state.contact}
-              onHallChange={(hall) => dispatch({ type: 'SET_HALL', payload: hall })}
-              onContactChange={(contact) => dispatch({ type: 'SET_CONTACT', payload: contact })}
-            />
-          )}
-          {currentStep === 5 && <Step5Preview data={state} />}
-
-          <div className={styles.mobileNav}>
-            <button
-              type="button"
-              className={styles.buttonGhost}
-              onClick={() => setCurrentStep((step) => Math.max(0, step - 1))}
-              disabled={!canGoPrev}
-            >
-              이전
-            </button>
-            <button
-              type="button"
-              className={styles.buttonPrimary}
-              onClick={() => setCurrentStep((step) => Math.min(STEP_ITEMS.length - 1, step + 1))}
-              disabled={!canGoNext}
-            >
-              다음
-            </button>
+          <div className={styles.sectionStack}>
+            {currentStep === 0 && (
+              <Step0Basic
+                deceasedName={state.deceasedName}
+                birthDate={state.birthDate}
+                deathDate={state.deathDate}
+                onChange={(payload) =>
+                  dispatch({
+                    type: 'SET_BASIC',
+                    payload: {
+                      deceasedName: payload.deceasedName ?? state.deceasedName,
+                      birthDate: payload.birthDate ?? state.birthDate,
+                      deathDate: payload.deathDate ?? state.deathDate,
+                      heroImage: state.heroImage,
+                    },
+                  })
+                }
+              />
+            )}
+            {currentStep === 1 && (
+              <Step1Message
+                message={state.message}
+                onChange={(message) => dispatch({ type: 'SET_MESSAGE', payload: { message } })}
+              />
+            )}
+            {currentStep === 2 && (
+              <Step2HeroImage
+                heroImage={state.heroImage}
+                onChange={(heroImage) =>
+                  dispatch({
+                    type: 'SET_BASIC',
+                    payload: {
+                      deceasedName: state.deceasedName,
+                      birthDate: state.birthDate,
+                      deathDate: state.deathDate,
+                      heroImage,
+                    },
+                  })
+                }
+              />
+            )}
+            {currentStep === 3 && (
+              <Step2Family
+                chiefMourner={state.chiefMourner}
+                familyMembers={state.familyMembers}
+                onChange={(payload) =>
+                  dispatch({
+                    type: 'SET_FAMILY',
+                    payload: {
+                      chiefMourner: payload.chiefMourner ?? state.chiefMourner,
+                      familyMembers: payload.familyMembers ?? state.familyMembers,
+                    },
+                  })
+                }
+              />
+            )}
+            {currentStep === 4 && (
+              <Step3Schedule
+                schedule={state.schedule}
+                onChange={(schedule) => dispatch({ type: 'SET_SCHEDULE', payload: schedule })}
+              />
+            )}
+            {currentStep === 5 && (
+              <Step4Hall
+                funeralHall={state.funeralHall}
+                contact={state.contact}
+                onHallChange={(hall) => dispatch({ type: 'SET_HALL', payload: hall })}
+                onContactChange={(contact) => dispatch({ type: 'SET_CONTACT', payload: contact })}
+              />
+            )}
+            {currentStep === 6 && <Step6AccountInfo />}
+            {currentStep === 7 && <Step7Attendance />}
+            {currentStep === 8 && <Step8ShareSettings />}
           </div>
         </main>
 
         <aside className={styles.previewColumn}>
-          <PreviewPanel data={state} />
+          <div className={styles.previewFrameWrap}>
+            <PreviewPanel data={state} />
+          </div>
         </aside>
       </div>
 

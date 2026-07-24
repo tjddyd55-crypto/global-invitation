@@ -15,8 +15,8 @@ export default function Step4Hall({ funeralHall, contact, onHallChange, onContac
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>STEP 4. 장례식장/지도</h2>
-        <p>장례식장 정보와 대표 연락처를 입력합니다.</p>
+        <h2>위치 안내</h2>
+        <p>위치와 연락처 정보를 입력합니다.</p>
       </div>
       <label className={styles.field}>
         <span className={styles.fieldLabel}>장례식장 이름</span>

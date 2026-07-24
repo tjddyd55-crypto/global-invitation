@@ -19,11 +19,11 @@ export default function Step2Family({ chiefMourner, familyMembers, onChange }: S
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>STEP 2. 상주/유가족</h2>
-        <p>대표 상주와 가족 관계 정보를 입력합니다.</p>
+        <h2>고인 정보</h2>
+        <p>고인/유가족 관련 정보를 입력합니다.</p>
       </div>
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>상주</span>
+        <span className={styles.fieldLabel}>고인 대표자</span>
         <input
           type="text"
           value={chiefMourner}

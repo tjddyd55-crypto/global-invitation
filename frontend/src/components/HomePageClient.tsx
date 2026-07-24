@@ -33,7 +33,7 @@ function HeroSection({ t }: { t: Translate }) {
       <h1 className={styles.heroTitle}>{t(I18N_KEYS.marketing.heroTitle)}</h1>
       <p className={styles.heroSubtitle}>{t(I18N_KEYS.marketing.heroSubtitle)}</p>
       <div className={styles.heroActions}>
-        <Link className={styles.primaryButton} href="/templates">
+        <Link className={styles.primaryButton} href="/auth/email?next=%2Ftemplates">
           {t(I18N_KEYS.marketing.heroCtaPrimary)}
         </Link>
       </div>
