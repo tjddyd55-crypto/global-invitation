@@ -86,19 +86,49 @@ export function logR2Key(key: string): void {
   console.log('[R2_KEY]', key);
 }
 
+/**
+ * development 등 공유 버킷 격리용 prefix.
+ * 예: R2_KEY_PREFIX=development → development/invitation/...
+ * production 에서는 비워 둔다.
+ */
+export function getStorageKeyPrefix(): string {
+  const raw = (process.env.R2_KEY_PREFIX || '').trim().replace(/^\/+|\/+$/g, '');
+  if (!raw) return '';
+  const safe = sanitizeSegment(raw);
+  return safe ? `${safe}/` : '';
+}
+
+export function applyStorageKeyPrefix(objectKey: string): string {
+  const normalized = objectKey.trim().replace(/^\/+/, '');
+  const prefix = getStorageKeyPrefix();
+  if (!prefix || !normalized || normalized.startsWith(prefix)) {
+    return normalized;
+  }
+  return `${prefix}${normalized}`;
+}
+
+export function stripStorageKeyPrefix(objectKey: string): string {
+  const normalized = objectKey.trim().replace(/^\/+/, '');
+  const prefix = getStorageKeyPrefix();
+  if (prefix && normalized.startsWith(prefix)) {
+    return normalized.slice(prefix.length);
+  }
+  return stripE2EPrefixIfPresent(normalized);
+}
+
 /** presign 스테이징: temp/{sessionId}/{timestamp-rand}.ext */
 export function buildTempObjectKey(sessionId: string, contentType: string, filename?: string): string {
   const sid = sanitizeSegment(sessionId);
   if (!sid) throw new Error('INVALID_TEMP_SESSION');
   const ext = resolveFileExtension(contentType, filename);
   const token = buildFileToken(new Date());
-  const key = `temp/${sid}/${token}.${ext}`;
+  const key = applyStorageKeyPrefix(`temp/${sid}/${token}.${ext}`);
   logR2Key(key);
   return key;
 }
 
 export function isTempStagingKey(objectKey: string): boolean {
-  const segments = objectKey.trim().replace(/^\/+/, '').split('/').filter(Boolean);
+  const segments = stripStorageKeyPrefix(objectKey).split('/').filter(Boolean);
   return segments[0] === 'temp' && segments.length >= 3;
 }
 
@@ -136,6 +166,7 @@ export function buildMediaObjectKey(params: BuildMediaObjectKeyParams): string {
     key = buildTempObjectKey(sessionId, params.contentType, params.filename);
   }
 
+  key = applyStorageKeyPrefix(key);
   if (params.scope !== 'common') {
     logR2Key(key);
   }
@@ -154,13 +185,13 @@ export function usageFromScope(scope: MediaScope): MediaUsage {
 export function invitationEntityPrefix(invitationId: string): string {
   const id = sanitizeSegment(invitationId);
   if (!id) return '';
-  return `invitation/${id}/`;
+  return applyStorageKeyPrefix(`invitation/${id}/`);
 }
 
 export function templateEntityPrefix(templateId: string): string {
   const id = sanitizeSegment(templateId);
   if (!id) return '';
-  return `template/${id}/`;
+  return applyStorageKeyPrefix(`template/${id}/`);
 }
 
 function stripE2EPrefixIfPresent(objectKey: string): string {
@@ -177,7 +208,7 @@ export function parseInvitationOptimizedOriginalKey(objectKey: string): {
   assetId: string;
   basePrefix: string;
 } | null {
-  const normalized = objectKey.trim().replace(/^\/+/, '');
+  const normalized = stripStorageKeyPrefix(objectKey);
   const segments = normalized.split('/').filter(Boolean);
   if (segments[0] !== 'invitation') return null;
 
@@ -297,7 +328,7 @@ function parseLegacyInvitationKey(segments: string[]): ParsedMediaObjectKey | nu
 }
 
 export function parseMediaObjectKey(objectKey: string): ParsedMediaObjectKey | null {
-  const normalized = stripE2EPrefixIfPresent(objectKey);
+  const normalized = stripStorageKeyPrefix(objectKey);
   const segments = normalized.split('/').filter(Boolean);
 
   const tempCommon = parseTempKeyAsCommon(segments);

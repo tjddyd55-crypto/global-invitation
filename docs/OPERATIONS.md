@@ -1,5 +1,9 @@
 # 운영 안정화 체크리스트
 
+Railway **development** 토폴로지·빈 DB bootstrap·SMTP/R2 분리 규칙은  
+[`docs/RAILWAY_DEVELOPMENT.md`](./RAILWAY_DEVELOPMENT.md) 를 본다.  
+production 에 development bootstrap(`db push` + resolve)을 적용하지 않는다.
+
 ## 환경 변수 (운영 필수)
 - `NEXT_PUBLIC_SITE_URL`: canonical/OG/공유/이벤트 로그 `page_url`의 단일 기준 URL
 - `NEXT_PUBLIC_API_BASE_URL` (권장) 또는 `NEXT_PUBLIC_BACKEND_URL`: 백엔드 공개 URL (프론트 API base)
