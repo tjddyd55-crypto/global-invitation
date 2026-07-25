@@ -4,19 +4,26 @@
 
 | 역할 | 서비스 | URL / 비고 |
 |------|--------|------------|
-| DB | **Postgres-GqoC** | Backend만 참조. volume `postgres-volume-X7E2` |
+| DB | **Postgres** | Backend `DATABASE_URL=${{Postgres.DATABASE_URL}}`. volume `postgres-volume-YaVo` |
 | API | **Backend** | https://backend-development-c9a4.up.railway.app |
-| Web | **FrontendDev** | https://frontenddev-development.up.railway.app |
+| Web | **Frontend** | https://frontend-development-1b8a.up.railway.app |
 
-### 미사용 후보 (삭제 전 재확인)
+공식 구조:
 
-| 서비스 | 상태 | Backend/FrontendDev 참조 | 삭제 |
-|--------|------|--------------------------|------|
-| `Postgres` | SUCCESS (legacy volume YaVo) | **없음** (`DATABASE_URL` → `postgres-gqoc`) | 조건부 가능* |
-| `Frontend` | FAILED | CORS/`FRONTEND_URL` **미사용** (FrontendDev만 사용) | 조건부 가능* |
+```
+Postgres
+  └─ Backend
+       └─ Frontend
+```
 
-\* Railway가 주입하는 `RAILWAY_SERVICE_FRONTEND_URL` 등 자동 변수에 legacy 이름이 남을 수 있으나 앱 코드는 사용하지 않는다.  
-\*\* production 환경의 동일 서비스명과 혼동하지 말 것. development에서만 제거할지 대시보드에서 환경 범위를 재확인한 뒤 삭제한다.
+### 삭제 완료 (임시 서비스)
+
+| 서비스 | 비고 |
+|--------|------|
+| `Postgres-GqoC` | 전용 volume `postgres-volume-X7E2` 포함 삭제 |
+| `FrontendDev` | 임시 frontend. 공식 Frontend 복구 후 삭제 |
+
+production 환경의 Postgres / Backend / Frontend 는 변경하지 않는다.
 
 ---
 
@@ -27,14 +34,16 @@
 빈 PostgreSQL에 `prisma migrate deploy`만 실행하면 초반 migration이 실패한다.
 
 - 예: `20260124030000_auth_guest_flow`가 `invitations` / `users` 테이블을 **ALTER** 하지만,  
-  해당 테이블을 **CREATE** 하는 migration이 체인  squashed 이전 이력에 없다.
+  해당 테이블을 **CREATE** 하는 migration이 체인 squashed 이전 이력에 없다.
 - 로컬/구 production DB는 과거에 이미 테이블이 있는 상태에서 migration이 쌓였기 때문에 동작한다.
 
-### 2026-07 development(Postgres-GqoC)에서 사용한 초기
+### development 빈 DB 초기화 (공식 Postgres)
 
-1. Backend `DATABASE_URL`이 **Postgres-GqoC**인지 확인 (production host 금지)
-2. `prisma db push`로 현재 `schema.prisma`와 스키마 동기화
-3. `prisma/migrations/*` 28개를 각각 `prisma migrate resolve --applied <name>`
+1. Backend `DATABASE_URL`이 **Postgres**(`postgres.railway.internal`)인지 확인  
+   - production proxy(`centerbeam`) 금지  
+   - `postgres-gqoc` 금지
+2. 보존할 QA 데이터가 다른 development DB에 있으면 dump/restore 후 진행
+3. 스키마만 필요한 경우: `prisma db push` + 각 migration `prisma migrate resolve --applied <name>`
 4. 이후 Backend start의 `prisma migrate deploy`는 **no-op** (이미 applied)
 
 ### 금지
@@ -42,6 +51,7 @@
 - **production DB에 동일 방식(`db push` + 일괄 resolve) 사용 금지**
 - production `_prisma_migrations` history 임의 수정 금지
 - production `migrate deploy`를 development 절차와 섞지 말 것
+- `postgres-volume-YaVo` 삭제 금지 (development Postgres 유지)
 
 ### 권장 후속 (별도 작업)
 
@@ -53,15 +63,32 @@
 ### 신규 development DB 재현 절차 (요약)
 
 ```bash
-# 1) Railway development + Postgres-GqoC(또는 후속 전용 인스턴스) DATABASE_URL 확인
-# 2) 로컬에서 public URL로 (secret 출력 금지)
+# 1) Railway development + Postgres DATABASE_URL 확인 (secret 출력 금지)
 cd backend
-# DATABASE_URL=<dev-public-url>
+# DATABASE_URL=<dev-public-url>  (sakura proxy / postgres.railway.internal 계열만)
 npx prisma db push --accept-data-loss --skip-generate
 # 각 migration 디렉터리명에 대해:
 npx prisma migrate resolve --applied <migration_name>
-# 3) Backend 재배포 → migrate deploy no-op → /health database=connected
+# 2) Backend 재배포 → migrate deploy no-op → /health database=connected
 ```
+
+---
+
+## Frontend 배포 메모 (development)
+
+- 서비스: **Frontend** (rootDirectory `frontend/`)
+- 브랜치: `chore/cleanup-legacy`
+- `NODE_ENV=production` (Next build 요구. Railway 환경명은 계속 development)
+- `HOSTNAME=0.0.0.0`
+- `frontend/railway.json` buildCommand: `npm run build` (`npm ci` 금지 — cache mount EBUSY)
+- monorepo 루트에서 `railway up -s Frontend -e development` (서비스 rootDirectory 활용)
+
+실패 원인으로 자주 본 것:
+
+- `npm ci` buildCommand + cache mount
+- `NODE_ENV=development`로 Next production build 실패
+- `next start`가 `0.0.0.0`에 bind되지 않음
+- 잘못된 API/SITE URL (FrontendDev 잔존)
 
 ---
 

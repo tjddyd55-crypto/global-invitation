@@ -9,7 +9,7 @@ export default defineConfig({
   workers: 4,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
     storageState: './e2e/.auth/user.json',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
