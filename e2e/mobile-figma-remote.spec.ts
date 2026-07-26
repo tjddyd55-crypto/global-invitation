@@ -63,45 +63,96 @@ async function assertFormInViewport(page: Page, selector: string) {
   return box;
 }
 
-async function loginViaApi(page: Page, email: string) {
+async function loginInBrowser(page: Page, email: string) {
   const res = await page.request.post(`${API}/api/test-login`, {
     data: { email },
   });
-  expect(res.ok()).toBeTruthy();
+  expect(res.ok(), `test-login HTTP ${res.status()}`).toBeTruthy();
+
   const cookies = await page.context().cookies(API);
-  // Attach auth cookie for API host; frontend fetch uses credentials to backend
-  if (cookies.length) {
-    await page.context().addCookies(cookies);
-  }
+  const auth = cookies.find((c) => c.name === 'auth_session_token');
+  expect(auth, 'auth_session_token missing').toBeTruthy();
+
+  // Railway FE/BE are different hosts; Chromium blocks Lax cross-site cookies on fetch.
+  // Re-inject as SameSite=None; Secure so page fetch(credentials) can authenticate.
+  await page.context().clearCookies();
+  await page.context().addCookies([
+    {
+      name: auth!.name,
+      value: auth!.value,
+      domain: auth!.domain,
+      path: auth!.path || '/',
+      expires: auth!.expires,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'None',
+    },
+  ]);
+
+  await page.goto('/m', { waitUntil: 'domcontentloaded', timeout: 90_000 });
+  const me = await page.evaluate(async ({ api }) => {
+    const response = await fetch(`${api}/api/auth/me`, { credentials: 'include' });
+    return { ok: response.ok, status: response.status };
+  }, { api: API });
+  expect(me.ok, `auth/me failed status=${me.status}`).toBeTruthy();
 }
 
 async function ensureEditorFixture(page: Page) {
   const email = `mobile-figma-qa-${Date.now()}@example.com`;
-  await loginViaApi(page, email);
+  await loginInBrowser(page, email);
 
-  const create = await page.request.post(`${API}/api/invitations`, {
-    data: { conceptType: 'WEDDING', language: 'ko', templateKey: 'invitation_full' },
-  });
-  expect(create.ok()).toBeTruthy();
-  const created = await create.json();
-  const id = created.id as string;
-
-  await page.request.put(`${API}/api/invitations/${id}`, {
-    data: {
-      title: '이준혁 ♥ 김지은',
-      data: {
-        templateType: 'FULL',
+  const created = await page.evaluate(async ({ api }) => {
+    const res = await fetch(`${api}/api/invitations`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         conceptType: 'WEDDING',
-        rsvp: { enabled: true },
-      },
-    },
-  });
+        language: 'ko',
+        templateKey: 'invitation_full',
+      }),
+    });
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  }, { api: API });
+  expect(created.ok, `create invitation ${created.status}`).toBeTruthy();
+  const id = created.data.id as string;
 
-  const publish = await page.request.post(`${API}/api/invitations/${id}/publish`);
-  const published = await publish.json();
+  const published = await page.evaluate(
+    async ({ api, id }) => {
+      await fetch(`${api}/api/invitations/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '이준혁 ♥ 김지은',
+          data: {
+            templateType: 'FULL',
+            conceptType: 'WEDDING',
+            rsvp: { enabled: true },
+          },
+        }),
+      });
+      const pub = await fetch(`${api}/api/invitations/${id}/publish`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const body = await pub.json();
+      const detail = await fetch(`${api}/api/invitations/${id}`, { credentials: 'include' });
+      const detailBody = await detail.json();
+      return {
+        ok: pub.ok,
+        shareSlug: body.shareSlug || body.share_slug || detailBody.shareSlug,
+      };
+    },
+    { api: API, id }
+  );
+  expect(published.ok).toBeTruthy();
+  expect(published.shareSlug).toBeTruthy();
+
   return {
     id,
-    shareSlug: (published.shareSlug || published.share_slug) as string,
+    shareSlug: published.shareSlug as string,
     email,
   };
 }
@@ -153,7 +204,7 @@ test.describe('Railway mobile Figma QA', () => {
     });
     const page = await context.newPage();
     await prepareMobile(page);
-    await loginViaApi(page, fixture.email);
+    await loginInBrowser(page, fixture.email);
 
     // Concept
     await page.goto('/m/templates', { waitUntil: 'domcontentloaded', timeout: 90_000 });
@@ -241,7 +292,7 @@ test.describe('Railway mobile Figma QA', () => {
     });
     const page = await context.newPage();
     await prepareMobile(page);
-    await loginViaApi(page, fixture.email);
+    await loginInBrowser(page, fixture.email);
 
     await page.goto('/m/templates', { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await expect(page.getByTestId('mobile-concept-screen')).toBeVisible({ timeout: 30_000 });
@@ -271,7 +322,7 @@ test.describe('Railway mobile Figma QA', () => {
     });
     const page = await context.newPage();
     await prepareMobile(page);
-    await loginViaApi(page, fixture.email);
+    await loginInBrowser(page, fixture.email);
 
     await page.goto('/pc/templates', { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await expect(page.getByTestId('concept-start-cta')).toBeVisible({ timeout: 30_000 });
