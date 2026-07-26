@@ -215,6 +215,18 @@ test.describe('Railway mobile Figma QA', () => {
     await page.screenshot({ path: path.join(OUT, 'mobile-concept-375.png'), fullPage: false });
 
     // Editor step 0
+    const consoleErrors: string[] = [];
+    const failedApis: string[] = [];
+    page.on('pageerror', (err) => consoleErrors.push(`pageerror:${err.message}`));
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(`console:${msg.text()}`);
+    });
+    page.on('response', (res) => {
+      const url = res.url();
+      if (!url.includes(API)) return;
+      if (res.status() >= 400) failedApis.push(`${res.status()} ${url}`);
+    });
+
     await page.goto(`/m/editor/${fixture.id}?concept=WEDDING`, {
       waitUntil: 'domcontentloaded',
       timeout: 90_000,
@@ -223,9 +235,26 @@ test.describe('Railway mobile Figma QA', () => {
     await expect(page.getByTestId('wedding-editor-root')).toBeVisible({ timeout: 60_000 });
     await expect(page.getByTestId('mobile-editor-layout')).toBeVisible();
     await expect(page.getByTestId('mobile-editor-stepper')).toBeVisible();
+    await expect(page.getByTestId('mobile-editor-actions')).toBeVisible();
     await expect(page.getByTestId('desktop-editor-sidebar')).toHaveCount(0);
+    await expect(page.getByTestId('desktop-editor-preview')).toHaveCount(0);
     await expect(page.getByTestId('desktop-editor-layout')).toHaveCount(0);
     await expect(page.getByTestId('mobile-bottom-nav')).toHaveCount(0);
+
+    const rootBox = await page.getByTestId('wedding-editor-root').boundingBox();
+    expect(rootBox?.width).toBeGreaterThanOrEqual(374);
+
+    const firstStep = page.getByTestId('stepper-item-0');
+    await expect(firstStep).toBeVisible();
+    const firstStepBox = await firstStep.boundingBox();
+    expect(firstStepBox).toBeTruthy();
+    expect(firstStepBox!.x).toBeGreaterThanOrEqual(16);
+
+    const stepperScrollLeft = await page
+      .getByTestId('unified-stepper-horizontal')
+      .evaluate((el) => (el as HTMLElement).scrollLeft);
+    expect(stepperScrollLeft).toBe(0);
+
     const formBox0 = await assertFormInViewport(page, '[data-testid="mobile-editor-form"]');
     const editorOverflow0 = await assertNoHorizontalOverflow(page);
     await page.screenshot({ path: path.join(OUT, 'mobile-editor-step0-375.png'), fullPage: false });
@@ -236,11 +265,28 @@ test.describe('Railway mobile Figma QA', () => {
     const formBox1 = await assertFormInViewport(page, '[data-testid="mobile-editor-form"]');
     await page.screenshot({ path: path.join(OUT, 'mobile-editor-step1-375.png'), fullPage: false });
 
+    // Jump to share settings (last step) via stepper if present
+    const shareStep = page.getByTestId('stepper-item-8');
+    if (await shareStep.count()) {
+      await shareStep.click();
+      await page.waitForTimeout(400);
+      await page.screenshot({ path: path.join(OUT, 'mobile-share-settings-375.png'), fullPage: false });
+    }
+
     // Preview
     await page.getByRole('button', { name: '미리보기' }).first().click();
     await expect(page.getByTestId('mobile-preview-overlay')).toBeVisible({ timeout: 20_000 });
     await page.screenshot({ path: path.join(OUT, 'mobile-preview-375.png'), fullPage: false });
     await page.getByLabel('미리보기 닫기').click();
+
+    const appConsoleErrors = consoleErrors.filter(
+      (line) =>
+        !/extension|chrome-extension|Failed to load resource:.*favicon/i.test(line) &&
+        !/Download the React DevTools/i.test(line)
+    );
+    const appFailedApis = failedApis.filter((line) => !/\/api\/test-login/i.test(line));
+    expect(appConsoleErrors, JSON.stringify(appConsoleErrors)).toEqual([]);
+    expect(appFailedApis, JSON.stringify(appFailedApis)).toEqual([]);
 
     // Publish complete
     await page.goto(`/m/my-invitations/${fixture.id}/complete`, {
@@ -272,9 +318,14 @@ test.describe('Railway mobile Figma QA', () => {
       editorOverflow0,
       formBox0,
       formBox1,
+      firstStepBox,
+      stepperScrollLeft,
+      rootWidth: rootBox?.width ?? null,
+      consoleErrors: appConsoleErrors,
+      failedApis: appFailedApis,
       finalUrls: {
         concept: `${FE}/m/templates`,
-        editor: page.url(),
+        editor: `${FE}/m/editor/${fixture.id}?concept=WEDDING`,
       },
     };
     fs.writeFileSync(REPORT, JSON.stringify(report, null, 2), 'utf8');
@@ -311,6 +362,14 @@ test.describe('Railway mobile Figma QA', () => {
 
     await page.getByRole('button', { name: '다음' }).click();
     await page.screenshot({ path: path.join(OUT, 'mobile-editor-step1-390.png'), fullPage: false });
+
+    const shareStep390 = page.getByTestId('stepper-item-8');
+    if (await shareStep390.count()) {
+      await shareStep390.click();
+      await page.waitForTimeout(400);
+      await assertNoHorizontalOverflow(page);
+      await page.screenshot({ path: path.join(OUT, 'mobile-share-settings-390.png'), fullPage: false });
+    }
 
     await context.close();
   });

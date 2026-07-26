@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatEditorSavedAtLabel } from '@/src/lib/i18n/format';
 import styles from './EditorHeader.module.css';
 
 export type EditorLanguageOption = 'ko' | 'en' | 'mn';
@@ -56,9 +57,7 @@ export default function EditorHeader({
   const statusLabel = draftStatus === 'published' ? '공개됨' : '초안';
   const statusClassName =
     draftStatus === 'published' ? `${styles.statusBadge} ${styles.statusPublished}` : styles.statusBadge;
-  const lastSavedLabel = lastSavedAt
-    ? `최근 저장: ${new Date(lastSavedAt).toLocaleString()}`
-    : '저장되지 않은 변경사항';
+  const lastSavedLabel = formatEditorSavedAtLabel(lastSavedAt);
 
   useEffect(() => {
     if (!moreOpen && !settingsOpen) return;

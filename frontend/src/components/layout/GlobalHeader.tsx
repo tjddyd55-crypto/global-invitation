@@ -23,6 +23,8 @@ import {
 } from '@/src/lib/api';
 import { buildCreateInvitationHref, buildLoginHref } from '@/src/lib/loginRedirect';
 import LanguageSelector from '@/src/components/LanguageSelector';
+import { isPlatformAppPath } from '@/src/shared/platform/platformAppPath';
+import { isPublicInvitationPath } from '@/src/shared/platform/publicInvitationPath';
 import styles from './GlobalHeader.module.css';
 
 function profileInitial(user: AuthUser): string {
@@ -610,14 +612,7 @@ export default function GlobalHeader() {
  */
 function GlobalHeaderGate() {
   const pathname = usePathname() ?? '';
-  if (
-    pathname === '/m' ||
-    pathname.startsWith('/m/') ||
-    pathname === '/pc' ||
-    pathname.startsWith('/pc/') ||
-    pathname === '/i' ||
-    pathname.startsWith('/i/')
-  ) {
+  if (isPlatformAppPath(pathname) || isPublicInvitationPath(pathname)) {
     return null;
   }
   return <GlobalHeaderContent />;

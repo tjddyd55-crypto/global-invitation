@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, type RefObject } from 'react';
 import styles from './UnifiedStepperNav.module.css';
 
 export type UnifiedStepItem = {
@@ -20,16 +21,48 @@ export default function UnifiedStepperNav({
   onStepSelect,
   orientation = 'horizontal',
 }: UnifiedStepperNavProps) {
+  const scrollerRef = useRef<HTMLElement | null>(null);
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const isHorizontal = orientation === 'horizontal';
+
+  useEffect(() => {
+    if (!isHorizontal) return;
+    const scroller = scrollerRef.current;
+    const activeIndex = steps.findIndex((step) => step.id === currentStep);
+    const activeEl = itemRefs.current[activeIndex];
+    if (!scroller || !activeEl || activeIndex < 0) return;
+
+    if (activeIndex === 0) {
+      scroller.scrollLeft = 0;
+      return;
+    }
+
+    const maxIndex = steps.length - 1;
+    activeEl.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: activeIndex === maxIndex ? 'end' : 'nearest',
+    });
+  }, [currentStep, isHorizontal, steps]);
+
   return (
-    <nav className={`${styles.stepper} ${orientation === 'vertical' ? styles.vertical : styles.horizontal}`}>
-      {steps.map((step) => {
+    <nav
+      ref={scrollerRef as RefObject<HTMLElement>}
+      className={`${styles.stepper} ${isHorizontal ? styles.horizontal : styles.vertical}`}
+      data-testid={isHorizontal ? 'unified-stepper-horizontal' : 'unified-stepper-vertical'}
+    >
+      {steps.map((step, index) => {
         const isActive = step.id === currentStep;
         return (
           <button
             key={step.id}
             type="button"
+            ref={(el) => {
+              itemRefs.current[index] = el;
+            }}
             className={`${styles.item} ${isActive ? styles.itemActive : ''}`}
             onClick={() => onStepSelect(step.id)}
+            data-testid={`stepper-item-${step.id}`}
           >
             <span className={styles.index}>{step.id}</span>
             <span className={styles.title}>{step.title}</span>
