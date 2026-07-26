@@ -32,6 +32,7 @@ export default function TemplatesPage() {
         <div className={styles.grid} role="radiogroup" aria-label="초대장 컨셉">
           {CONCEPT_OPTIONS.map((concept) => {
             const isSelected = selected === concept.value;
+            const Icon = concept.Icon;
             return (
               <button
                 key={concept.value}
@@ -43,7 +44,9 @@ export default function TemplatesPage() {
                 data-testid={`concept-option-${concept.value.toLowerCase()}`}
               >
                 <div className={styles.cardTop}>
-                  <span className={styles.icon}>{concept.icon}</span>
+                  <span className={styles.icon} style={{ color: concept.accent }}>
+                    <Icon size={28} />
+                  </span>
                   {isSelected && <span className={styles.check}>✓</span>}
                 </div>
                 <span className={styles.cardTitle}>{concept.label}</span>

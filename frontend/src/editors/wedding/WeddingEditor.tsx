@@ -19,6 +19,7 @@ import type { WeddingEditorState } from './state/weddingEditor.types';
 import { logEvent } from '@/src/lib/events';
 import EditorHeader from '@/src/editors/shared/EditorHeader';
 import UnifiedStepperNav, { type UnifiedStepItem } from '@/src/editors/shared/UnifiedStepperNav';
+import { useEditorShell } from '@/src/editors/shared/useEditorShell';
 
 type EditorSectionKey = 'setup' | 'message' | 'hero' | 'couple' | 'schedule' | 'gallery' | 'location' | 'accounts' | 'rsvp' | 'share';
 
@@ -101,6 +102,7 @@ export default function WeddingEditor({
   const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
   const [hasBlockingUploadState, setHasBlockingUploadState] = useState(false);
   const previewLoggedRef = useRef(false);
+  const shell = useEditorShell();
 
   const previewData = useMemo(() => buildWeddingClassicPreviewData(state), [state]);
   const visibleSections = useMemo(() => resolveVisibleSections(state.setup.conceptType), [state.setup.conceptType]);
@@ -218,7 +220,11 @@ export default function WeddingEditor({
   };
 
   return (
-    <div className={styles.editorPage} data-testid="wedding-editor-root">
+    <div
+      className={`${styles.editorPage} ${shell === 'mobile' ? styles.editorPageMobile : ''}`}
+      data-testid="wedding-editor-root"
+      data-editor-shell={shell}
+    >
       <EditorHeader
         title={`${conceptLabel} 에디터`}
         conceptLabel={conceptLabel}
@@ -233,22 +239,15 @@ export default function WeddingEditor({
         onSave={onSave ? handleSave : undefined}
         onSaveAndExit={onSaveAndExit ? handleSaveAndExit : undefined}
         onPublish={onPublish ? handlePublish : undefined}
+        onPreview={shell === 'mobile' ? () => setFullscreenPreviewOpen(true) : undefined}
         language={state.setup.language}
         onLanguageChange={(nextLanguage) => handleSetupChange({ language: nextLanguage })}
+        shell={shell}
       />
 
-      <div className={styles.editorLayout}>
-        <aside className={styles.navColumn}>
-          <UnifiedStepperNav
-            steps={visibleSections}
-            currentStep={currentStep}
-            onStepSelect={setCurrentStep}
-            orientation="vertical"
-          />
-        </aside>
-
-        <main className={styles.formColumn}>
-          <div className={styles.mobileStepper}>
+      {shell === 'mobile' ? (
+        <div className={styles.mobileEditorLayout} data-testid="mobile-editor-layout">
+          <div className={styles.mobileStepper} data-testid="mobile-editor-stepper">
             <UnifiedStepperNav
               steps={visibleSections}
               currentStep={currentStep}
@@ -256,26 +255,72 @@ export default function WeddingEditor({
               orientation="horizontal"
             />
           </div>
-          <div className={styles.sectionStack}>{renderStep()}</div>
-        </main>
-
-        <aside className={styles.previewColumn}>
-          <div className={styles.previewFrameWrap}>
-            <LivePreviewPanel title="라이브 미리보기" data={previewData} />
+          <main className={styles.mobileFormColumn} data-testid="mobile-editor-form">
+            <div className={styles.sectionStack}>{renderStep()}</div>
+          </main>
+          <div className={styles.mobileEditorActions} data-testid="mobile-editor-actions">
+            <button
+              type="button"
+              className={styles.mobileActionGhost}
+              onClick={() => setCurrentStep((step) => Math.max(0, step - 1))}
+              disabled={currentStep <= 0}
+            >
+              이전
+            </button>
+            <button
+              type="button"
+              className={styles.mobileActionPrimary}
+              onClick={() => setFullscreenPreviewOpen(true)}
+            >
+              미리보기
+            </button>
+            <button
+              type="button"
+              className={styles.mobileActionPrimary}
+              onClick={() =>
+                setCurrentStep((step) => Math.min(visibleSections.length - 1, step + 1))
+              }
+              disabled={currentStep >= visibleSections.length - 1}
+            >
+              다음
+            </button>
           </div>
-        </aside>
-      </div>
+        </div>
+      ) : (
+        <div className={styles.editorLayout} data-testid="desktop-editor-layout">
+          <aside className={styles.navColumn} data-testid="desktop-editor-sidebar">
+            <UnifiedStepperNav
+              steps={visibleSections}
+              currentStep={currentStep}
+              onStepSelect={setCurrentStep}
+              orientation="vertical"
+            />
+          </aside>
 
-      <button
-        type="button"
-        className={styles.previewFloatingButton}
-        onClick={() => setFullscreenPreviewOpen(true)}
-      >
-        Preview
-      </button>
+          <main className={styles.formColumn} data-testid="desktop-editor-form">
+            <div className={styles.sectionStack}>{renderStep()}</div>
+          </main>
+
+          <aside className={styles.previewColumn} data-testid="desktop-editor-preview">
+            <div className={styles.previewFrameWrap}>
+              <LivePreviewPanel title="라이브 미리보기" data={previewData} />
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {shell === 'desktop' ? (
+        <button
+          type="button"
+          className={styles.previewFloatingButton}
+          onClick={() => setFullscreenPreviewOpen(true)}
+        >
+          Preview
+        </button>
+      ) : null}
 
       {fullscreenPreviewOpen && (
-        <div className={styles.fullscreenPreviewOverlay}>
+        <div className={styles.fullscreenPreviewOverlay} data-testid="mobile-preview-overlay">
           <div className={styles.fullscreenPreviewHeader}>
             <button
               type="button"

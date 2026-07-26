@@ -5,14 +5,33 @@
   background: var(--gi-bg);
   color: var(--gi-text);
   padding-top: env(safe-area-inset-top);
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .content {
   flex: 1 1 auto;
   width: 100%;
+  min-width: 0;
   max-width: 640px;
   margin: 0 auto;
   padding: 16px 16px 96px;
+  box-sizing: border-box;
+}
+
+.root[data-bottom-nav='hidden'] .content {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+.root[data-chrome='editor'] .content {
+  max-width: none;
+  padding: 0;
+}
+
+.root[data-chrome='concept'] .content {
+  max-width: none;
+  padding: 0;
 }
 
 .bottomNav {

@@ -118,6 +118,87 @@
   display: none;
 }
 
+.editorPageMobile {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  display: block;
+}
+
+.mobileEditorLayout {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+}
+
+.editorPageMobile .mobileStepper {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 0 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobileFormColumn {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 20px;
+  position: static;
+  transform: none;
+  box-sizing: border-box;
+}
+
+.mobileEditorActions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 8px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid #e4ded4;
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.mobileActionPrimary,
+.mobileActionGhost {
+  min-height: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mobileActionPrimary {
+  border: none;
+  background: #2f2f2f;
+  color: #fff;
+}
+
+.mobileActionGhost {
+  border: 1px solid #d7d0c3;
+  background: #fff;
+  color: #4f4a42;
+}
+
+.mobileActionPrimary:disabled,
+.mobileActionGhost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .previewFloatingButton {
   display: inline-flex;
   position: fixed;

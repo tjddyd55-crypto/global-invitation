@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { shouldShowMobileBottomNavigation } from '@/src/shared/platform/mobileBottomNavigation';
 import { useServiceWorker } from '@/src/shared/platform/useServiceWorker';
 import styles from './MobileShell.module.css';
 
@@ -22,31 +23,47 @@ const NAV_ITEMS: NavItem[] = [
 
 /**
  * PWA 스타일 모바일 쉘.
- * - 상단 세이프에어리어, 하단 바텀네비.
- * - 실제 페이지 콘텐츠는 children 으로만 받는다 (쉘이 도메인 로직을 알면 안 됨).
+ * Bottom Navigation 표시는 shouldShowMobileBottomNavigation SSOT만 따른다.
  */
 export default function MobileShell({ children }: { children: ReactNode }) {
   useServiceWorker();
   const pathname = usePathname() ?? '';
+  const showBottomNav = shouldShowMobileBottomNavigation(pathname);
+  const isEditorChrome = pathname.includes('/editor');
+  const isConceptChrome =
+    pathname === '/m/templates' ||
+    pathname.startsWith('/m/templates/') ||
+    pathname === '/m/create' ||
+    pathname.startsWith('/m/create/');
+  const chrome = isEditorChrome ? 'editor' : isConceptChrome ? 'concept' : 'default';
+
   return (
-    <div className={styles.root}>
+    <div
+      className={styles.root}
+      data-bottom-nav={showBottomNav ? 'visible' : 'hidden'}
+      data-chrome={chrome}
+    >
       <main className={styles.content}>{children}</main>
-      <nav className={styles.bottomNav} aria-label="primary">
-        {NAV_ITEMS.map((item) => {
-          const active = isActiveNav(pathname, item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={active ? `${styles.navItem} ${styles.navItemActive}` : styles.navItem}
-              aria-current={active ? 'page' : undefined}
-            >
-              <span aria-hidden className={styles.navIcon}>{item.icon}</span>
-              <span className={styles.navLabel}>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      {showBottomNav ? (
+        <nav className={styles.bottomNav} aria-label="primary" data-testid="mobile-bottom-nav">
+          {NAV_ITEMS.map((item) => {
+            const active = isActiveNav(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={active ? `${styles.navItem} ${styles.navItemActive}` : styles.navItem}
+                aria-current={active ? 'page' : undefined}
+              >
+                <span aria-hidden className={styles.navIcon}>
+                  {item.icon}
+                </span>
+                <span className={styles.navLabel}>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
     </div>
   );
 }

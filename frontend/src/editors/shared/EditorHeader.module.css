@@ -197,3 +197,86 @@
     display: block;
   }
 }
+
+.editorHeaderMobile {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 16px 14px;
+}
+
+.mobileTopRow {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+}
+
+.editorTitleMobile {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobileStatusRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mobileActionRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.iconButton {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid #d7d0c3;
+  background: #fff;
+  color: #3f3a33;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.buttonPrimaryCompact,
+.buttonGhostCompact {
+  min-height: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+.buttonPrimaryCompact {
+  border: none;
+  background: #2f2f2f;
+  color: #fff;
+}
+
+.buttonGhostCompact {
+  border: 1px solid #cfc8bc;
+  background: #fff;
+  color: #555;
+}
+
+.buttonPrimaryCompact:disabled,
+.buttonGhostCompact:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

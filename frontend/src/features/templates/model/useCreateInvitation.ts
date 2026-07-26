@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import { createInvitation } from '@/src/lib/api';
 import { fetchCurrentUser } from '@/src/shared/auth';
+import { BookOpenIcon, CalendarDaysIcon, HeartIcon } from '@/src/ui/icons/ConceptIcons';
 
 export type ConceptType = 'WEDDING' | 'FUNERAL' | 'GENERAL';
 
@@ -12,28 +13,28 @@ export const CONCEPT_OPTIONS: Array<{
   label: string;
   description: string;
   accent: string;
-  icon: string;
+  Icon: ComponentType<{ size?: number; className?: string }>;
 }> = [
   {
     value: 'WEDDING',
     label: '결혼식',
     description: '신랑·신부·혼주 정보와 갤러리·RSVP·계좌 공유까지.',
     accent: '#f43f5e',
-    icon: '💐',
+    Icon: HeartIcon,
   },
   {
     value: 'FUNERAL',
     label: '부고장',
     description: '고인·장례식장·일정 정보와 근조 안내.',
     accent: '#6b7280',
-    icon: '🤍',
+    Icon: BookOpenIcon,
   },
   {
     value: 'GENERAL',
     label: '일반 행사',
     description: '생일·돌·개업 등 공통 기능 중심 초대장.',
     accent: '#3b82f6',
-    icon: '🎉',
+    Icon: CalendarDaysIcon,
   },
 ];
 
@@ -81,7 +82,7 @@ export function useCreateInvitation(): UseCreateInvitationResult {
         setCreating(null);
       }
     },
-    [creatingConcept, router],
+    [creatingConcept, router]
   );
 
   return { creatingConcept, error, start };
