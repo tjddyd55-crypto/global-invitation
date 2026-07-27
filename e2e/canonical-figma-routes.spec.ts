@@ -70,9 +70,8 @@ test.describe('Canonical Figma routes', () => {
         baseURL: FE,
       });
       const page = await context.newPage();
-      await page.goto('/templates', { waitUntil: 'domcontentloaded', timeout: 90_000 });
-      await page.waitForTimeout(500);
-      expect(page.url()).toMatch(/\/create\/concept|\/auth\//);
+      await page.goto('/templates', { waitUntil: 'networkidle', timeout: 90_000 });
+      await expect(page).toHaveURL(/\/create\/concept|\/auth\//, { timeout: 15_000 });
       const body = await page.locator('body').innerText();
       for (const needle of LEGACY_TEMPLATES) {
         expect(body).not.toContain(needle);

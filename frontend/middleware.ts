@@ -17,6 +17,13 @@ const UI_PREF_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30일
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Compat: legacy templates gallery → Figma Concept Selection
+  if (pathname === '/templates' || pathname === '/templates/') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/create/concept';
+    return NextResponse.redirect(url);
+  }
+
   if (isForceDesktopRoute(pathname)) {
     return handleForceDesktop(request);
   }
