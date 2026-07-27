@@ -3,45 +3,42 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/src/shared/hooks';
 import RequireAuth from '@/src/features/auth/ui/shared/RequireAuth';
+import AuthBrandHeader from '@/src/features/marketing/ui/AuthBrandHeader';
 import {
   CONCEPT_OPTIONS,
   type ConceptType,
   useCreateInvitation,
 } from '@/src/features/templates/model/useCreateInvitation';
-import { CheckIcon, ChevronLeftIcon } from '@/src/ui/icons/MarketingIcons';
+import { ArrowRightIcon, ChevronLeftIcon } from '@/src/ui/icons/MarketingIcons';
 import styles from './ConceptSelectionScreen.module.css';
 
 const CONCEPT_CREATE_PATH = '/create/concept';
-const MY_INVITATIONS_PATH = '/my-invitations';
 
 /**
- * Figma Make `ConceptSelectionScreen` — 모바일 컨셉 선택 (canonical `/create/concept`).
+ * Figma Make `ConceptSelectionScreen` — MCP 소스 구조/카피 SSOT.
  */
 export default function ConceptSelectionScreen() {
-  const { status } = useAuth();
-  const [selected, setSelected] = useState<ConceptType>('WEDDING');
+  const [selected, setSelected] = useState<ConceptType | null>(null);
   const { creatingConcept, error, start } = useCreateInvitation();
-  const myInvitationsHref =
-    status === 'authenticated'
-      ? MY_INVITATIONS_PATH
-      : `/auth/email?next=${encodeURIComponent(MY_INVITATIONS_PATH)}`;
 
   return (
     <RequireAuth nextPath={CONCEPT_CREATE_PATH}>
       <section className={styles.screen} data-testid="mobile-concept-screen">
         <div className={styles.topBar}>
-          <Link href="/" className={styles.backLink} aria-label="홈으로">
+          <Link href="/" className={styles.backButton} aria-label="홈으로">
             <ChevronLeftIcon size={20} />
           </Link>
-          <span className={styles.topBarTitle}>초대장 만들기</span>
-          <span className={styles.topBarSpacer} aria-hidden />
+          <AuthBrandHeader variant="inline" />
         </div>
 
         <header className={styles.header}>
-          <h1 className={styles.title}>어떤 초대장을 만들까요?</h1>
-          <p className={styles.desc}>컨셉을 선택하면 같은 에디터에서 바로 시작할 수 있습니다.</p>
+          <h1 className={styles.title}>
+            어떤 초대장을
+            <br />
+            만들까요?
+          </h1>
+          <p className={styles.desc}>초대장 종류를 먼저 선택하면 그에 맞는 입력 항목으로 시작합니다.</p>
         </header>
 
         {error && <p className={styles.error}>{error}</p>}
@@ -56,53 +53,53 @@ export default function ConceptSelectionScreen() {
                 type="button"
                 role="radio"
                 aria-checked={isSelected}
-                className={`${styles.card} ${isSelected ? styles.cardSelected : ''}`}
+                className={styles.card}
+                style={
+                  isSelected
+                    ? {
+                        background: concept.accentActiveBg,
+                        borderColor: concept.accent,
+                        boxShadow: `0 0 0 4px ${concept.accent}26`,
+                      }
+                    : undefined
+                }
                 onClick={() => setSelected(concept.value)}
                 data-testid={`concept-option-${concept.value.toLowerCase()}`}
               >
-                <div className={styles.cardTop}>
-                  <span
-                    className={styles.iconWrap}
-                    style={{ background: concept.accentSoft, color: concept.accent }}
-                  >
-                    <Icon size={24} />
-                  </span>
-                  {isSelected && (
-                    <span className={styles.checkBadge} style={{ background: concept.accent }}>
-                      <CheckIcon size={13} />
+                <span className={styles.iconWrap} style={{ background: concept.accentSoft, color: concept.accent }}>
+                  <Icon size={22} />
+                </span>
+                <span className={styles.cardBody}>
+                  <span className={styles.cardTitleRow}>
+                    <span className={styles.cardTitle}>{concept.label}</span>
+                    <span className={styles.badge} style={{ background: concept.accentSoft, color: concept.accent }}>
+                      {concept.badge}
                     </span>
-                  )}
-                </div>
-                <span className={styles.cardTitle}>{concept.label}</span>
-                <span className={styles.cardDesc}>{concept.description}</span>
-                <ul className={styles.featureList}>
-                  {concept.features.slice(0, 4).map((feature) => (
-                    <li key={feature} className={styles.featureTag}>
-                      {feature}
-                    </li>
-                  ))}
-                  {concept.features.length > 4 && (
-                    <li className={styles.featureTagMore}>+{concept.features.length - 4}</li>
-                  )}
-                </ul>
+                  </span>
+                  <span className={styles.cardFields}>{concept.fieldsSummary}</span>
+                </span>
+                {isSelected && (
+                  <span className={styles.checkBadge} style={{ background: concept.accent }} aria-hidden>
+                    ✓
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        <button
-          type="button"
-          className={styles.cta}
-          onClick={() => void start(selected)}
-          disabled={Boolean(creatingConcept)}
-          data-testid="concept-start-cta"
-        >
-          {creatingConcept ? '생성 중...' : '선택하고 시작하기'}
-        </button>
-
-        <p className={styles.footer}>
-          이미 만든 초대장은 <Link href={myInvitationsHref}>내 초대장</Link>에서 확인하세요.
-        </p>
+        <div className={styles.ctaWrap}>
+          <button
+            type="button"
+            className={`${styles.cta} ${selected ? styles.ctaActive : ''}`}
+            onClick={() => selected && void start(selected)}
+            disabled={!selected || Boolean(creatingConcept)}
+            data-testid="concept-start-cta"
+          >
+            {creatingConcept ? '생성 중...' : '선택하고 시작하기'}
+            <ArrowRightIcon size={18} />
+          </button>
+        </div>
       </section>
     </RequireAuth>
   );
