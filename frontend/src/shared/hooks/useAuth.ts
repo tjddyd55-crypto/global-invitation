@@ -1,15 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  clearStoredSession,
-  fetchNavbarUser,
-  getCachedNavbarUserSnapshot,
-  logoutCurrentSession,
-  type AuthUser,
-} from '@/src/lib/auth';
+import { useAuthSession, type AuthSessionContextValue } from '@/src/shared/auth/AuthProvider';
+import type { AuthStatus } from '@/src/shared/auth/authStatus';
+import type { AuthUser } from '@/src/lib/auth';
 
-type AuthStatus = 'loading' | 'authenticated' | 'anonymous';
+export type { AuthStatus };
 
 export interface UseAuthResult {
   user: AuthUser | null;
@@ -19,43 +14,15 @@ export interface UseAuthResult {
 }
 
 /**
- * Navbar/가드/대시보드에서 공용으로 쓰는 인증 훅.
- * - 초기값은 sessionStorage 캐시에서 즉시 가져와 깜빡임을 제거한다.
- * - 서버 호출은 최초 mount 에서 한 번, 그리고 refresh() 수동 호출 시.
+ * 인증 훅 SSOT — AuthProvider 컨텍스트를 읽는다.
+ * 레거시 `anonymous` 문자열은 사용하지 않는다 (`unauthenticated`).
  */
 export function useAuth(): UseAuthResult {
-  const [user, setUser] = useState<AuthUser | null>(() => readSnapshot());
-  const [status, setStatus] = useState<AuthStatus>(() => (readSnapshot() ? 'authenticated' : 'loading'));
-  const hasBootstrappedRef = useRef(false);
-
-  const refresh = useCallback(async () => {
-    try {
-      const next = await fetchNavbarUser({ useCache: false });
-      setUser(next);
-      setStatus(next ? 'authenticated' : 'anonymous');
-    } catch {
-      setUser(null);
-      setStatus('anonymous');
-    }
-  }, []);
-
-  useEffect(() => {
-    if (hasBootstrappedRef.current) return;
-    hasBootstrappedRef.current = true;
-    void refresh();
-  }, [refresh]);
-
-  const signOut = useCallback(async () => {
-    await logoutCurrentSession();
-    clearStoredSession();
-    setUser(null);
-    setStatus('anonymous');
-  }, []);
-
-  return { user, status, refresh, signOut };
-}
-
-function readSnapshot(): AuthUser | null {
-  const snapshot = getCachedNavbarUserSnapshot();
-  return snapshot ?? null;
+  const session: AuthSessionContextValue = useAuthSession();
+  return {
+    user: session.user,
+    status: session.status,
+    refresh: session.refresh,
+    signOut: session.signOut,
+  };
 }

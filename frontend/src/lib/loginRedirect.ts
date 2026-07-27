@@ -1,3 +1,10 @@
+import {
+  CONCEPT_CREATE_PATH,
+  getCreateInvitationEntryPath,
+  getMyInvitationsEntryPath,
+} from '@/src/shared/auth/authEntryPaths';
+import type { AuthStatus } from '@/src/shared/auth/authStatus';
+
 export const LOGIN_REDIRECT_STORAGE_KEY = 'login_redirect';
 
 /**
@@ -19,7 +26,12 @@ export function sanitizeReturnPath(path: string | null | undefined): string {
   if (!path || typeof path !== 'string') return '/';
   const trimmed = path.trim();
   if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return '/';
-  if (AUTH_ROUTE_BLOCKLIST.some((blocked) => trimmed === blocked || trimmed.startsWith(`${blocked}?`) || trimmed.startsWith(`${blocked}/`))) {
+  if (
+    AUTH_ROUTE_BLOCKLIST.some(
+      (blocked) =>
+        trimmed === blocked || trimmed.startsWith(`${blocked}?`) || trimmed.startsWith(`${blocked}/`)
+    )
+  ) {
     return '/';
   }
   return trimmed;
@@ -33,12 +45,13 @@ export function buildLoginHref(pathnameWithOptionalSearch: string): string {
   return `/auth/email?next=${encodeURIComponent(base)}`;
 }
 
+/** boolean 호환 래퍼 — 내부는 getCreateInvitationEntryPath SSOT. */
 export function buildCreateInvitationHref(isAuthenticated: boolean): string {
-  if (isAuthenticated) {
-    return '/templates';
-  }
-  return `/auth/email?next=${encodeURIComponent('/templates')}`;
+  const status: AuthStatus = isAuthenticated ? 'authenticated' : 'unauthenticated';
+  return getCreateInvitationEntryPath(status);
 }
+
+export { CONCEPT_CREATE_PATH, getCreateInvitationEntryPath, getMyInvitationsEntryPath };
 
 export function resolveLoginRedirectForStorage(
   redirectParam: string | null,

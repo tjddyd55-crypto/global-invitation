@@ -73,3 +73,21 @@
   min-width: 0;
   width: 100%;
 }
+
+.logoutButton {
+  margin-top: auto;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 12px;
+  border-radius: 12px;
+  color: var(--gi-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logoutButton:hover {
+  background: var(--gi-surface-muted);
+  color: var(--gi-text);
+}

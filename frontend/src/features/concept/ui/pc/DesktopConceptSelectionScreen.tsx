@@ -13,7 +13,6 @@ import { ArrowRightIcon, CheckIcon } from '@/src/ui/icons/MarketingIcons';
 import styles from './DesktopConceptSelectionScreen.module.css';
 
 const CONCEPT_CREATE_PATH = '/create/concept';
-const MY_INVITATIONS_PATH = '/my-invitations';
 
 /**
  * Figma Make `DesktopConceptSelectionScreen` — MCP 소스 구조/카피 SSOT.
@@ -26,12 +25,7 @@ export default function DesktopConceptSelectionScreen() {
   return (
     <RequireAuth nextPath={CONCEPT_CREATE_PATH}>
       <div className={styles.page} data-testid="desktop-concept-screen">
-        <MarketingDesktopHeader
-          showNav={false}
-          isLoggedIn
-          createHref={CONCEPT_CREATE_PATH}
-          myInvitationsHref={MY_INVITATIONS_PATH}
-        />
+        <MarketingDesktopHeader showNav={false} />
 
         <div className={styles.progressTrack} aria-hidden>
           <div className={styles.progressFill} />

@@ -52,7 +52,7 @@ function DesktopMyInvitationsContent() {
             </p>
           </div>
           <Link
-            href="/templates"
+            href="/create/concept"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -82,7 +82,7 @@ function DesktopMyInvitationsContent() {
         {(status === 'empty' || (status === 'ready' && items.length === 0)) && (
           <div style={{ padding: 40, textAlign: 'center', background: '#fff', borderRadius: 20 }}>
             <p style={{ color: '#6B7280' }}>아직 만든 초대장이 없습니다</p>
-            <Link href="/templates" style={{ color: '#4F46E5', fontWeight: 600 }}>
+            <Link href="/create/concept" style={{ color: '#4F46E5', fontWeight: 600 }}>
               첫 초대장 만들기
             </Link>
           </div>

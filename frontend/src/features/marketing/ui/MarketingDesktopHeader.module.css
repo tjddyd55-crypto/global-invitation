@@ -95,3 +95,22 @@
 .createButton:hover {
   background: var(--mk-primary-hover);
 }
+
+.logoutLink {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mk-muted);
+  cursor: pointer;
+}
+
+.logoutLink:hover {
+  color: var(--mk-text);
+}
+
+.ctaDisabled {
+  opacity: 0.55;
+  pointer-events: none;
+}

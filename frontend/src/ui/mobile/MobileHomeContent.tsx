@@ -31,7 +31,7 @@ export default function MobileHomeContent() {
     );
   }
 
-  if (status === 'anonymous') {
+  if (status === 'unauthenticated') {
     return (
       <section className={styles.root}>
         <div className={styles.hero}>

@@ -18,6 +18,7 @@ import {
   hashEmailVerificationCode,
   isValidEmail,
   normalizeEmail,
+  resolveSessionToken,
   setAuthSessionCookie,
   timingSafeEqualHex,
   transferGuestData,
@@ -376,16 +377,11 @@ router.get('/me', async (req, res) => {
 
 router.post('/logout', async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    const tokenFromHeader =
-      typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
-        ? authHeader.replace('Bearer', '').trim()
-        : '';
-
-    if (tokenFromHeader) {
+    const token = resolveSessionToken(req);
+    if (token) {
       await prisma.authSession
         .update({
-          where: { token: tokenFromHeader },
+          where: { token },
           data: { revokedAt: new Date() },
         })
         .catch(() => undefined);

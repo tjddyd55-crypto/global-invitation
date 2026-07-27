@@ -1,14 +1,18 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/shared/hooks';
+import {
+  getCreateInvitationEntryPath,
+  getMyInvitationsEntryPath,
+} from '@/src/shared/auth/authEntryPaths';
+import LogoutConfirmDialog from '@/src/features/auth/ui/shared/LogoutConfirmDialog';
 import { ArrowRightIcon, SparklesIcon } from '@/src/ui/icons/MarketingIcons';
 import { HeartIcon as HeartConcept, BookOpenIcon as BookConcept, CalendarDaysIcon as CalConcept } from '@/src/ui/icons/ConceptIcons';
 import styles from './MainScreen.module.css';
-
-const CONCEPT_CREATE_PATH = '/create/concept';
-const MY_INVITATIONS_PATH = '/my-invitations';
 
 const CONCEPT_CARDS = [
   {
@@ -42,25 +46,55 @@ const CONCEPT_CARDS = [
 
 /** Figma Make MainScreen — MCP 소스 카피/구조 */
 export default function MainScreen() {
-  const { status } = useAuth();
-  const isLoggedIn = status === 'authenticated';
-  const createHref = isLoggedIn
-    ? CONCEPT_CREATE_PATH
-    : `/auth/email?next=${encodeURIComponent(CONCEPT_CREATE_PATH)}`;
-  const myInvitationsHref = isLoggedIn
-    ? MY_INVITATIONS_PATH
-    : `/auth/email?next=${encodeURIComponent(MY_INVITATIONS_PATH)}`;
+  const router = useRouter();
+  const { status, signOut } = useAuth();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const ctaDisabled = status === 'loading';
+  const createHref = getCreateInvitationEntryPath(status === 'loading' ? 'unauthenticated' : status);
+  const myInvitationsHref = getMyInvitationsEntryPath(status === 'loading' ? 'unauthenticated' : status);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await signOut();
+      setConfirmOpen(false);
+      router.replace('/');
+      router.refresh();
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   return (
-    <div className={styles.page} data-testid="mobile-main-screen">
+    <div className={styles.page} data-testid="mobile-main-screen" data-auth-state={status}>
       <nav className={styles.nav}>
         <div className={styles.brand}>
           <SparklesIcon size={18} />
           <span>Invite</span>
         </div>
-        <Link href={myInvitationsHref} className={styles.myLink}>
-          내 초대장
-        </Link>
+        <div className={styles.navActions}>
+          {status === 'authenticated' && (
+            <button
+              type="button"
+              className={styles.logoutLink}
+              onClick={() => setConfirmOpen(true)}
+              data-testid="mobile-logout-button"
+            >
+              로그아웃
+            </button>
+          )}
+          <Link
+            href={ctaDisabled ? '#' : myInvitationsHref}
+            className={styles.myLink}
+            aria-disabled={ctaDisabled}
+            onClick={(event) => {
+              if (ctaDisabled) event.preventDefault();
+            }}
+          >
+            내 초대장
+          </Link>
+        </div>
       </nav>
 
       <div className={styles.heroPad}>
@@ -74,7 +108,15 @@ export default function MainScreen() {
           <p className={styles.desc}>
             결혼식, 부고장, 행사 초대장을 이메일 인증 후 간편하게 만들고 공유할 수 있습니다.
           </p>
-          <Link href={createHref} className={styles.primaryCta} data-testid="hero-create-cta">
+          <Link
+            href={ctaDisabled ? '#' : createHref}
+            className={styles.primaryCta}
+            data-testid="hero-create-cta"
+            aria-disabled={ctaDisabled}
+            onClick={(event) => {
+              if (ctaDisabled) event.preventDefault();
+            }}
+          >
             초대장 만들기
             <ArrowRightIcon size={18} />
           </Link>
@@ -92,9 +134,13 @@ export default function MainScreen() {
             return (
               <Link
                 key={card.key}
-                href={createHref}
+                href={ctaDisabled ? '#' : createHref}
                 className={styles.conceptCard}
                 style={{ background: card.bg, borderColor: `${card.color}33` }}
+                aria-disabled={ctaDisabled}
+                onClick={(event) => {
+                  if (ctaDisabled) event.preventDefault();
+                }}
               >
                 <span className={styles.conceptIcon} style={{ background: card.iconBg, color: card.color }}>
                   <Icon size={24} />
@@ -113,6 +159,15 @@ export default function MainScreen() {
       <footer className={styles.footer}>
         <p>© 2025 Invite · 개인정보처리방침 · 이용약관</p>
       </footer>
+
+      <LogoutConfirmDialog
+        open={confirmOpen}
+        busy={loggingOut}
+        onCancel={() => {
+          if (!loggingOut) setConfirmOpen(false);
+        }}
+        onConfirm={() => void handleLogout()}
+      />
     </div>
   );
 }

@@ -28,3 +28,12 @@ export {
 } from '@/src/lib/auth';
 
 export type { AuthUser, AuthSession } from '@/src/lib/auth';
+export type { AuthStatus } from './authStatus';
+export {
+  CONCEPT_CREATE_PATH,
+  MY_INVITATIONS_PATH,
+  getCreateInvitationEntryPath,
+  getMyInvitationsEntryPath,
+  requireAuthenticatedNextPath,
+} from './authEntryPaths';
+export { AuthProvider, useAuthSession, useAuthStatus } from './AuthProvider';

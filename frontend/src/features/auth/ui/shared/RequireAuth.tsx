@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/src/shared/hooks/useAuth';
+import { requireAuthenticatedNextPath } from '@/src/shared/auth/authEntryPaths';
 
 type RequireAuthProps = {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ type RequireAuthProps = {
 
 /**
  * 작성자 전용 화면 가드.
+ * loading 중에는 redirect/children 렌더하지 않는다.
  * 참석자 공개 링크(/i)에는 사용하지 않는다.
  */
 export default function RequireAuth({ children, nextPath }: RequireAuthProps) {
@@ -20,16 +22,16 @@ export default function RequireAuth({ children, nextPath }: RequireAuthProps) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (status !== 'anonymous') return;
+    if (status !== 'unauthenticated') return;
     const target = nextPath || pathname || '/create/concept';
-    router.replace(`/auth/email?next=${encodeURIComponent(target)}`);
+    router.replace(requireAuthenticatedNextPath(target));
   }, [nextPath, pathname, router, status]);
 
   if (status === 'loading') {
     return null;
   }
 
-  if (status === 'anonymous') {
+  if (status === 'unauthenticated') {
     return null;
   }
 

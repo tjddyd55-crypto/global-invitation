@@ -41,7 +41,7 @@ export default function DashboardScreen() {
 
       {listStatus === 'loading' && <div className={styles.skeleton} />}
 
-      {authStatus === 'anonymous' && listStatus !== 'loading' && items.length === 0 ? (
+      {authStatus === 'unauthenticated' && listStatus !== 'loading' && items.length === 0 ? (
         <div className={styles.anonCard}>
           <strong>로그인하면 통계를 확인할 수 있어요.</strong>
           <Link href={loginHref} className={styles.anonCta}>로그인</Link>

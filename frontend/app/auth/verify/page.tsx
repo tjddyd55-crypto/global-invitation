@@ -6,6 +6,7 @@ import { setStoredSession, verifyMagicLink } from '@/src/lib/auth';
 import ResponsivePlatformBoundary from '@/src/shared/platform/ResponsivePlatformBoundary';
 import EmailVerifyScreen from '@/src/features/auth/ui/mobile/EmailVerifyScreen';
 import DesktopEmailVerifyScreen from '@/src/features/auth/ui/pc/DesktopEmailVerifyScreen';
+import RedirectIfAuthenticated from '@/src/features/auth/ui/shared/RedirectIfAuthenticated';
 
 /** 기존 매직링크(`?token=`) 인증 — Figma 이전부터 쓰던 경로, 그대로 유지한다. */
 function MagicLinkVerifyContent({ token, draft }: { token: string; draft: string | null }) {
@@ -47,7 +48,11 @@ function VerifyRouter() {
     return <MagicLinkVerifyContent token={token} draft={draft} />;
   }
 
-  return <ResponsivePlatformBoundary mobile={<EmailVerifyScreen />} desktop={<DesktopEmailVerifyScreen />} />;
+  return (
+    <RedirectIfAuthenticated>
+      <ResponsivePlatformBoundary mobile={<EmailVerifyScreen />} desktop={<DesktopEmailVerifyScreen />} />
+    </RedirectIfAuthenticated>
+  );
 }
 
 export default function AuthVerifyPage() {

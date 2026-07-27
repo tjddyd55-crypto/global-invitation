@@ -1,0 +1,68 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(31, 41, 55, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 360px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e5e1d8;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+  padding: 24px;
+}
+
+.title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.body {
+  margin: 0 0 24px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #6b7280;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancel,
+.confirm {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cancel {
+  border: 1.5px solid #e5e1d8;
+  background: #fff;
+  color: #374151;
+}
+
+.confirm {
+  border: none;
+  background: #4f46e5;
+  color: #fff;
+}
+
+.confirm:disabled,
+.cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

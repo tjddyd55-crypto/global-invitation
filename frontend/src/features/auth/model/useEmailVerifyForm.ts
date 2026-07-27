@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { requestEmailVerificationCode, setStoredSession, verifyEmailVerificationCode } from '@/src/shared/auth';
+import { useAuth } from '@/src/shared/hooks';
 import { resolveAuthNextPath } from './authNextPath';
 import { clearAuthEmail, readAuthEmail, saveAuthEmail } from './authEmailStorage';
 
@@ -36,6 +37,7 @@ function formatRemaining(totalSeconds: number): string {
  */
 export function useEmailVerifyForm(): UseEmailVerifyFormResult {
   const router = useRouter();
+  const { refresh } = useAuth();
   const searchParams = useSearchParams();
   const nextPath = useMemo(() => resolveAuthNextPath(searchParams.get('next')), [searchParams]);
   const queryEmail = searchParams.get('email');
@@ -76,13 +78,14 @@ export function useEmailVerifyForm(): UseEmailVerifyFormResult {
       const result = await verifyEmailVerificationCode({ email, code });
       setStoredSession({ token: result.token, user: result.user });
       clearAuthEmail();
+      await refresh();
       router.replace(nextPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : '인증번호 확인에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
-  }, [code, email, isCodeComplete, nextPath, router, submitting]);
+  }, [code, email, isCodeComplete, nextPath, refresh, router, submitting]);
 
   const resend = useCallback(async () => {
     if (submitting || !email) return;

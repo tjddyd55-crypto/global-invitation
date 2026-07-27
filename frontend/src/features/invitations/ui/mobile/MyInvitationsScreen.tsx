@@ -13,7 +13,7 @@ export default function MyInvitationsScreen() {
   const { items, status, reload } = useMyInvitations();
   const pathname = usePathname() ?? '';
   const prefix = resolveAppNavPrefix(pathname);
-  const templatesHref = appPath(prefix, '/templates');
+  const templatesHref = appPath(prefix, '/create/concept');
   const myInvitationsHref = appPath(prefix, '/my-invitations');
 
   return (

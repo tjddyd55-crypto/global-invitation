@@ -31,7 +31,7 @@ function parseCookieValue(req: Request, cookieName: string): string | null {
   return decodeURIComponent(cookie.slice(cookieName.length + 1));
 }
 
-function resolveSessionToken(req: Request): string | null {
+export function resolveSessionToken(req: Request): string | null {
   const cookieToken = parseCookieValue(req, AUTH_SESSION_COOKIE);
   if (cookieToken?.trim()) {
     return cookieToken.trim();
