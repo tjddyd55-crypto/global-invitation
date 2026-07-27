@@ -31,7 +31,23 @@ Figma Make 파일 `GwuOKQ8rH3R547iFVrojvv` (`get_design_context` MCP, node `0:1`
 | `/auth/verify` | Desktop | `DesktopEmailVerifyScreen` | `features/auth/ui/pc/DesktopEmailVerifyScreen` | absent | Corner logo + OTP 56×64 + timer + resend | STRUCT PASS* |
 | `/auth/verify` | Mobile | `EmailVerifyScreen` | `features/auth/ui/mobile/EmailVerifyScreen` | absent | Back+Invite + OTP 44×56 + timer | STRUCT PASS* |
 
-\*STRUCT PASS = MCP 소스 DOM/카피/수치 반영. Pixel High/Medium=0 은 Railway overlay 재검증 후 최종 확정.
+\*STRUCT PASS = MCP 소스 DOM/카피/수치 반영 + Railway actual 캡처 구조 일치.
+
+## Railway actual 캡처 (artifacts/figma-entry-qa/actual)
+
+| 파일 | Viewport | 비고 |
+| --- | --- | --- |
+| main-desktop-1440.png | 1440×1024 | Invite header + hero + phone + concept 3 |
+| main-mobile-390.png | 390×844 | Mobile Main |
+| main-1023.png | 1023×768 | Mobile breakpoint |
+| main-1024.png | 1024×768 | Desktop breakpoint |
+| auth-email-desktop-1440.png | 1440×1024 | Corner logo + decor 4 + policy + home |
+| auth-email-mobile-390.png | 390×844 | Back + Invite + policy |
+| auth-verify-desktop-1440.png | 1440×1024 | OTP 6 + timer + resend |
+| auth-verify-mobile-390.png | 390×844 | Mobile verify |
+| concept-desktop-1440.png | 1440×1024 | 미로그인 → `/auth/email` redirect (정상) |
+
+Figma Make `get_screenshot` 미지원 → Figma reference PNG / 50% overlay / pixel diff는 MCP 소스 텍스트 SSOT로 대체 비교.
 
 ## Figma MCP에서 확인한 핵심 수치
 
