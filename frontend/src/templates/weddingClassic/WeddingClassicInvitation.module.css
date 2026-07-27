@@ -285,8 +285,20 @@
 
 /* Figma PublicInvitationPage Couple: 120×160, radius 16, grid 1fr 1fr gap 20 */
 .coupleSection {
+  margin: 0;
   padding: 56px 24px;
   background: transparent;
+  box-sizing: border-box;
+}
+
+.conceptWedding .coupleSection,
+.conceptFuneral .coupleSection,
+.conceptGeneral .coupleSection {
+  margin: 0;
+  padding: 56px 24px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .coupleGrid {
@@ -397,8 +409,20 @@
 
 /* Guestbook — section body, message cards only */
 .guestbookSection {
+  margin: 0;
   padding: 56px 20px;
   background: transparent;
+  box-sizing: border-box;
+}
+
+.conceptWedding .guestbookSection,
+.conceptFuneral .guestbookSection,
+.conceptGeneral .guestbookSection {
+  margin: 0;
+  padding: 56px 20px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .guestbookList {

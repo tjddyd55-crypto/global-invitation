@@ -115,6 +115,7 @@ async function ensureFixture(page: Page) {
             content: '봄날의 햇살 아래, 결혼합니다.',
             eventDate: '2025-11-15T14:30:00+09:00',
             locationText: '더 웨딩홀 그랜드볼룸 · 서울 강남구',
+            schedule: ['2025년 11월 15일 토요일 오후 2시 30분'],
             rsvpEnabled: true,
             guestbookEnabled: true,
             groomName: '이준혁',
@@ -208,12 +209,37 @@ async function captureViewport(
 async function captureFigmaReference(browser: Browser) {
   fs.mkdirSync(REF_DIR, { recursive: true });
   const fileUrl = pathToFileURL(REF_HTML).href;
-  const shots: Array<{ name: string; screen: string; viewport: keyof typeof VIEWPORTS }> = [
+  const shots: Array<{
+    name: string;
+    screen: string;
+    viewport: keyof typeof VIEWPORTS;
+    selector?: string;
+  }> = [
     { name: 'public-mobile-hero-375.png', screen: 'public-mobile-hero', viewport: 'mobile375' },
-    { name: 'public-mobile-couple-375.png', screen: 'public-mobile-couple', viewport: 'mobile375' },
-    { name: 'public-mobile-guestbook-375.png', screen: 'public-mobile-guestbook', viewport: 'mobile375' },
-    { name: 'public-mobile-gallery-375.png', screen: 'public-mobile-gallery', viewport: 'mobile375' },
-    { name: 'public-mobile-map-375.png', screen: 'public-mobile-map', viewport: 'mobile375' },
+    {
+      name: 'public-mobile-couple-375.png',
+      screen: 'public-mobile-couple',
+      viewport: 'mobile375',
+      selector: '.couple',
+    },
+    {
+      name: 'public-mobile-guestbook-375.png',
+      screen: 'public-mobile-guestbook',
+      viewport: 'mobile375',
+      selector: '.guestbook',
+    },
+    {
+      name: 'public-mobile-gallery-375.png',
+      screen: 'public-mobile-gallery',
+      viewport: 'mobile375',
+      selector: '.gallery',
+    },
+    {
+      name: 'public-mobile-map-375.png',
+      screen: 'public-mobile-map',
+      viewport: 'mobile375',
+      selector: '.map',
+    },
     { name: 'public-mobile-share-375.png', screen: 'public-mobile-share', viewport: 'mobile375' },
     { name: 'editor-desktop-basic-1440.png', screen: 'editor-desktop-basic', viewport: 'desktop1440' },
     { name: 'editor-mobile-basic-375.png', screen: 'editor-mobile-basic', viewport: 'mobile375' },
@@ -227,7 +253,9 @@ async function captureFigmaReference(browser: Browser) {
     const page = await context.newPage();
     await page.goto(`${fileUrl}?screen=${shot.screen}`, { waitUntil: 'domcontentloaded' });
     await waitReady(page);
-    await captureViewport(page, path.join(REF_DIR, shot.name));
+    await captureViewport(page, path.join(REF_DIR, shot.name), {
+      selector: shot.selector,
+    });
     await context.close();
   }
   return shots.length;
@@ -275,46 +303,39 @@ test.describe('Figma pixel overlay QA', () => {
 
       await captureViewport(page, path.join(ACT_DIR, 'public-mobile-hero-375.png'));
 
-      const couple = page.getByTestId('couple-section');
-      if (await couple.count()) {
-        await couple.scrollIntoViewIfNeeded();
-        await waitReady(page);
-        await captureViewport(page, path.join(ACT_DIR, 'public-mobile-couple-375.png'), {
-          selector: '[data-testid="couple-section"]',
-        });
-      }
+      await expect(page.getByTestId('couple-section')).toBeVisible({ timeout: 30_000 });
+      await page.getByTestId('couple-section').scrollIntoViewIfNeeded();
+      await waitReady(page);
+      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-couple-375.png'), {
+        selector: '[data-testid="couple-section"]',
+      });
 
-      const guestbook = page.getByTestId('guestbook-section');
-      if (await guestbook.count()) {
-        await guestbook.scrollIntoViewIfNeeded();
-        await waitReady(page);
-        await captureViewport(page, path.join(ACT_DIR, 'public-mobile-guestbook-375.png'), {
-          selector: '[data-testid="guestbook-section"]',
-        });
-      }
+      await expect(page.getByTestId('guestbook-section')).toBeVisible({ timeout: 30_000 });
+      await page.getByTestId('guestbook-section').scrollIntoViewIfNeeded();
+      await waitReady(page);
+      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-guestbook-375.png'), {
+        selector: '[data-testid="guestbook-section"]',
+      });
 
       const gallery = page.locator('[aria-label="Album"]').first();
-      if (await gallery.count()) {
-        await gallery.scrollIntoViewIfNeeded();
-        await waitReady(page);
-        await captureViewport(page, path.join(ACT_DIR, 'public-mobile-gallery-375.png'), {
-          selector: '[aria-label="Album"]',
-        });
-      }
+      await expect(gallery).toBeVisible({ timeout: 30_000 });
+      await gallery.scrollIntoViewIfNeeded();
+      await waitReady(page);
+      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-gallery-375.png'), {
+        selector: '[aria-label="Album"]',
+      });
 
-      const map = page.locator('text=위치 안내').first();
-      if (await map.count()) {
-        await map.scrollIntoViewIfNeeded();
-        await waitReady(page);
-        await captureViewport(page, path.join(ACT_DIR, 'public-mobile-map-375.png'));
-      }
+      const mapSection = page.locator('text=위치 안내').first();
+      await expect(mapSection).toBeVisible({ timeout: 30_000 });
+      await mapSection.scrollIntoViewIfNeeded();
+      await waitReady(page);
+      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-map-375.png'));
 
       const share = page.locator('text=공유하기').first();
-      if (await share.count()) {
-        await share.scrollIntoViewIfNeeded();
-        await waitReady(page);
-        await captureViewport(page, path.join(ACT_DIR, 'public-mobile-share-375.png'));
-      }
+      await expect(share).toBeVisible({ timeout: 30_000 });
+      await share.scrollIntoViewIfNeeded();
+      await waitReady(page);
+      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-share-375.png'));
 
       // Banner must not appear on editor after publish
       await loginInBrowser(page, fixture.email);

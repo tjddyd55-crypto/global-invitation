@@ -259,7 +259,7 @@ export default function WeddingClassicInvitation({
       {hasMessage ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
       {showCoupleBlock ? (
-        <section className={`${styles.section} ${styles.coupleSection}`} data-testid="couple-section">
+        <section className={styles.coupleSection} data-testid="couple-section">
           {hasCouple ? <p className={styles.scriptLabel}>The Couple</p> : null}
           {hasCouple ? (
             <div className={styles.coupleGrid}>
@@ -522,15 +522,16 @@ export default function WeddingClassicInvitation({
             ))}
           </div>
           <div className={styles.guestbookActions}>
-            {guestbookMessages.length > 3 ? (
-              <button
-                type="button"
-                className={styles.guestbookBtnSecondary}
-                onClick={() => setGuestbookExpanded((prev) => !prev)}
-              >
-                {guestbookExpanded ? '접기' : '전체보기'}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className={styles.guestbookBtnSecondary}
+              onClick={() => setGuestbookExpanded((prev) => !prev)}
+            >
+              {guestbookExpanded ? '접기' : '전체보기'}
+            </button>
+            <button type="button" className={styles.guestbookBtnPrimary} disabled>
+              작성하기
+            </button>
           </div>
         </section>
       ) : null}
