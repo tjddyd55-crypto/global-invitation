@@ -30,15 +30,11 @@ test.describe('Backend development identity + comments route', () => {
     expect(body.error).toBeTruthy();
   });
 
-  test('my-invitations comments manage path exists on frontend', async ({ page }) => {
-    await page.goto(`${FE}/my-invitations/demo-id/comments`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 90_000,
+  test('my-invitations comments manage path exists on frontend', async ({ request }) => {
+    const res = await request.get(`${FE}/my-invitations/demo-id/comments`, {
+      maxRedirects: 0,
     });
-    await page.waitForTimeout(600);
-    // Auth gate or page — must not 404 Next page
-    const text = await page.locator('body').innerText();
-    expect(text.length).toBeGreaterThan(0);
-    expect(page.url()).not.toMatch(/404/);
+    // Auth redirect (3xx) or page (2xx) — must not be Next 404
+    expect([200, 302, 303, 307, 308]).toContain(res.status());
   });
 });
