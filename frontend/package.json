@@ -8,6 +8,7 @@
     "start": "node --max-old-space-size=2048 ./node_modules/next/dist/bin/next start --hostname 0.0.0.0",
     "lint": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next lint",
     "assert:no-legacy-ui": "node ../scripts/assert-no-legacy-ui.mjs",
+    "assert:no-dev-home-ui": "node ../scripts/assert-no-dev-home-ui.mjs",
     "assert:google-only-maps": "node ../scripts/assert-google-only-maps.mjs"
   },
   "dependencies": {

@@ -24,6 +24,14 @@ const FORBIDDEN = [
   'Invitation Full Engine',
   'FULL · Concept-driven',
   'HomePageClient',
+  // Figma Make 마케팅/컨셉 화면은 PcShell/MobileShell 사이드바를 쓰지 않는다.
+  // (platformShell.ts 'marketing' — src/shared/platform/platformShell.ts)
+  'PcShell',
+  'MobileShell',
+  'PcHomeContent',
+  'Global Invitation 데스크톱',
+  '테스트룸',
+  '모바일 버전 보기',
 ];
 
 const ROUTE_GLOBS = [
