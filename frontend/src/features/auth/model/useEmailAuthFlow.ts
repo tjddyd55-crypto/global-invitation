@@ -7,6 +7,7 @@ import {
   setStoredSession,
   verifyEmailVerificationCode,
 } from '@/src/shared/auth';
+import { resolveAuthNextPath } from './authNextPath';
 
 export type EmailAuthStep = 'email' | 'code';
 
@@ -25,22 +26,19 @@ export interface UseEmailAuthFlowResult {
   editEmail: () => void;
 }
 
-function resolveNextPath(raw: string | null): string {
-  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
-    return '/templates';
-  }
-  return raw;
-}
-
 /**
- * 이메일 OTP 인증 플로우.
+ * 이메일 OTP 인증 플로우 (레거시 단일 화면 `EmailAuthForm` 용).
  * - 비밀번호 없이 로그인/자동가입을 하나로 처리한다.
- * - 성공 시 세션 저장 후 next 경로(기본 /templates)로 이동한다.
+ * - 성공 시 세션 저장 후 next 경로(기본 /create/concept)로 이동한다.
+ *
+ * 참고: canonical `/auth/email`, `/auth/verify` 는 이 훅 대신
+ * `useEmailStartForm` / `useEmailVerifyForm` 로 화면이 분리되어 있다.
+ * 두 훅 모두 `@/src/shared/auth` 의 동일한 API 함수를 호출한다.
  */
 export function useEmailAuthFlow(): UseEmailAuthFlowResult {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = useMemo(() => resolveNextPath(searchParams.get('next')), [searchParams]);
+  const nextPath = useMemo(() => resolveAuthNextPath(searchParams.get('next')), [searchParams]);
 
   const [step, setStep] = useState<EmailAuthStep>('email');
   const [email, setEmail] = useState('');

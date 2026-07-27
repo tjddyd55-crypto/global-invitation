@@ -1,0 +1,108 @@
+.screen {
+  min-height: 100%;
+  background: var(--mk-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.topBar {
+  height: var(--mk-header-h);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.body {
+  flex: 1;
+  padding: 24px 20px 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.iconBadge {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--mk-primary-soft);
+  color: var(--mk-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--mk-text);
+  letter-spacing: -0.02em;
+}
+
+.desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mk-muted);
+}
+
+.form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mk-text);
+}
+
+.input {
+  height: var(--mk-input-h);
+  border: 1.5px solid var(--mk-border);
+  border-radius: var(--mk-radius-btn);
+  padding: 0 16px;
+  font-size: 16px;
+  color: var(--mk-text);
+  background: var(--mk-card);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--mk-primary);
+  box-shadow: 0 0 0 3px var(--mk-primary-soft);
+}
+
+.error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.submitButton {
+  margin-top: 6px;
+  height: var(--mk-input-h);
+  border: none;
+  border-radius: var(--mk-radius-btn);
+  background: #e5e7eb;
+  color: #9ca3af;
+  font-size: 16px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.submitButtonActive {
+  background: var(--mk-primary);
+  color: #fff;
+}

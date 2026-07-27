@@ -21,7 +21,7 @@ export default function RequireAuth({ children, nextPath }: RequireAuthProps) {
 
   useEffect(() => {
     if (status !== 'anonymous') return;
-    const target = nextPath || pathname || '/templates';
+    const target = nextPath || pathname || '/create/concept';
     router.replace(`/auth/email?next=${encodeURIComponent(target)}`);
   }, [nextPath, pathname, router, status]);
 
