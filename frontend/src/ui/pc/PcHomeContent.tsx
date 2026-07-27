@@ -2,7 +2,9 @@
 /* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/src/shared/hooks';
+import { appPath, resolveAppNavPrefix } from '@/src/shared/platform/appNavPrefix';
 import PlatformSwitcher from '@/src/ui/shared/PlatformSwitcher';
 import styles from './PcHomeContent.module.css';
 
@@ -14,6 +16,12 @@ import styles from './PcHomeContent.module.css';
  */
 export default function PcHomeContent() {
   const { status, user } = useAuth();
+  const pathname = usePathname() ?? '';
+  const prefix = resolveAppNavPrefix(pathname);
+  const templatesHref = appPath(prefix, '/templates');
+  const myInvitationsHref = appPath(prefix, '/my-invitations');
+  const dashboardHref = appPath(prefix, '/dashboard');
+  const authNext = encodeURIComponent(templatesHref);
 
   if (status === 'loading') {
     return (
@@ -34,16 +42,16 @@ export default function PcHomeContent() {
             모바일 PWA 는 시청·편집용으로 따로 제공됩니다.
           </p>
           <div className={styles.ctaRow}>
-            <Link className={styles.primary} href="/auth/email?next=%2Fpc%2Ftemplates">
+            <Link className={styles.primary} href={`/auth/email?next=${authNext}`}>
               이메일로 시작하기
             </Link>
-            <Link className={styles.secondary} href="/auth/email?next=%2Fpc%2Ftemplates">
+            <Link className={styles.secondary} href={`/auth/email?next=${authNext}`}>
               초대장 만들기
             </Link>
           </div>
         </div>
         <div className={styles.bottomRow}>
-          <PlatformSwitcher target="mobile" redirectTo="/m">
+          <PlatformSwitcher target="mobile" redirectTo={prefix === '/pc' ? '/m' : '/'}>
             모바일 버전 보기 →
           </PlatformSwitcher>
         </div>
@@ -60,22 +68,22 @@ export default function PcHomeContent() {
       </header>
 
       <div className={styles.grid}>
-        <Link href="/pc/templates" className={styles.card}>
+        <Link href={templatesHref} className={styles.card}>
           <span className={styles.cardTitle}>템플릿 둘러보기</span>
           <span className={styles.cardDesc}>컨셉별 템플릿 검색 · 즉시 편집</span>
         </Link>
-        <Link href="/pc/my-invitations" className={styles.card}>
+        <Link href={myInvitationsHref} className={styles.card}>
           <span className={styles.cardTitle}>내 초대장</span>
           <span className={styles.cardDesc}>작성 중 · 발행된 초대장 관리</span>
         </Link>
-        <Link href="/pc/dashboard" className={styles.card}>
+        <Link href={dashboardHref} className={styles.card}>
           <span className={styles.cardTitle}>대시보드</span>
           <span className={styles.cardDesc}>발송 · 방문 · RSVP 통계</span>
         </Link>
       </div>
 
       <div className={styles.bottomRow}>
-        <PlatformSwitcher target="mobile" redirectTo="/m">
+        <PlatformSwitcher target="mobile" redirectTo={prefix === '/pc' ? '/m' : '/'}>
           모바일 버전 보기 →
         </PlatformSwitcher>
       </div>

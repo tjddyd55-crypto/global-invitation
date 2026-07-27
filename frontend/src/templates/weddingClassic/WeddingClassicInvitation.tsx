@@ -89,6 +89,7 @@ export default function WeddingClassicInvitation({
   const [failedGallerySrcs, setFailedGallerySrcs] = useState<Record<string, true>>({});
   const [heroFailed, setHeroFailed] = useState(false);
   const [heroPortrait, setHeroPortrait] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   const heroImageSrc =
     data && typeof data.heroImage === 'string' && data.heroImage.trim() ? data.heroImage.trim() : '';
@@ -368,21 +369,65 @@ export default function WeddingClassicInvitation({
       ) : null}
 
       {hasGallery ? (
-        <section className={styles.section}>
-          <h2>{t(I18N_KEYS.weddingClassic.galleryTitle)}</h2>
-          <div className={styles.galleryGrid}>
-            {visibleGalleryImages.map((image) => (
-              <ImageWithFallback
-                key={image}
-                className={styles.galleryImage}
-                src={image}
-                alt={t(I18N_KEYS.weddingClassic.galleryImageAlt)}
-                loading="lazy"
-                onFailed={() => {
-                  setFailedGallerySrcs((prev) => ({ ...prev, [image]: true }));
-                }}
-              />
-            ))}
+        <section className={styles.albumSection} aria-label="Album">
+          <p className={styles.scriptLabel}>Album</p>
+          <div className={styles.galleryCarousel}>
+            <ImageWithFallback
+              key={visibleGalleryImages[galleryIndex] ?? visibleGalleryImages[0]}
+              className={styles.galleryMainImage}
+              src={visibleGalleryImages[galleryIndex] ?? visibleGalleryImages[0]}
+              alt={t(I18N_KEYS.weddingClassic.galleryImageAlt)}
+              loading="lazy"
+              onFailed={() => {
+                const image = visibleGalleryImages[galleryIndex];
+                if (!image) return;
+                setFailedGallerySrcs((prev) => ({ ...prev, [image]: true }));
+                setGalleryIndex(0);
+              }}
+            />
+            {visibleGalleryImages.length > 1 ? (
+              <>
+                <button
+                  type="button"
+                  className={`${styles.galleryArrow} ${styles.galleryArrowPrev}`}
+                  aria-label="이전 이미지"
+                  onClick={() =>
+                    setGalleryIndex((i) =>
+                      i <= 0 ? visibleGalleryImages.length - 1 : i - 1
+                    )
+                  }
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.galleryArrow} ${styles.galleryArrowNext}`}
+                  aria-label="다음 이미지"
+                  onClick={() =>
+                    setGalleryIndex((i) =>
+                      i >= visibleGalleryImages.length - 1 ? 0 : i + 1
+                    )
+                  }
+                >
+                  ›
+                </button>
+                <div className={styles.galleryCount}>
+                  {galleryIndex + 1} / {visibleGalleryImages.length}
+                </div>
+                <div className={styles.galleryHint}>밀어서 더 많은 이미지 보기</div>
+                <div className={styles.galleryDots}>
+                  {visibleGalleryImages.map((image, i) => (
+                    <button
+                      key={image}
+                      type="button"
+                      className={i === galleryIndex ? styles.galleryDotActive : styles.galleryDot}
+                      aria-label={`${i + 1}번 이미지`}
+                      onClick={() => setGalleryIndex(i)}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : null}
           </div>
         </section>
       ) : null}

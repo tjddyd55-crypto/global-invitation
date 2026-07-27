@@ -9,16 +9,29 @@ type Step2HeroImageProps = {
   onChange: (value: Partial<WeddingEditorHero>) => void;
 };
 
+/**
+ * Figma Make Hero upload step — callout + dashed upload (4:3 / 10MB).
+ */
 export default function Step2HeroImage({ value, onChange }: Step2HeroImageProps) {
   return (
-    <section className={styles.stepSection}>
-      <div className={styles.sectionHeader}>
-        <h2>대표 이미지</h2>
-        <p>공유 썸네일로 사용되는 대표 이미지를 업로드합니다.</p>
+    <section className={`${styles.stepSection} ${styles.stepSectionNoTitle}`}>
+      <div className={styles.heroCallout}>
+        <span className={styles.heroCalloutIcon} aria-hidden>
+          🖼
+        </span>
+        <div>
+          <p className={styles.heroCalloutTitle}>Hero 대표 이미지</p>
+          <p className={styles.heroCalloutBody}>
+            초대장 최상단에 크게 표시되는 첫인상 사진입니다.
+            <br />
+            신랑·신부 사진 및 갤러리 사진과 별도로 관리됩니다.
+          </p>
+        </div>
       </div>
+
       <ImageUploader
-        label="대표 이미지"
-        description="공유 시 이 이미지가 사용됩니다."
+        label="이미지 선택"
+        description="JPG, PNG, WEBP · 권장 비율 4:3 · 최대 10MB"
         value={value.heroImage}
         onChange={(heroImage) => onChange({ heroImage })}
         onClear={() => onChange({ heroImage: '' })}
@@ -27,6 +40,7 @@ export default function Step2HeroImage({ value, onChange }: Step2HeroImageProps)
         required
         priority
       />
+
       <label className={styles.field}>
         <span className={styles.fieldLabel}>오버레이 문구 (선택)</span>
         <input

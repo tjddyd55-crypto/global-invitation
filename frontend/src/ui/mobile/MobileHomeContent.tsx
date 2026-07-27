@@ -2,7 +2,9 @@
 /* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/src/shared/hooks';
+import { appPath, resolveAppNavPrefix } from '@/src/shared/platform/appNavPrefix';
 import PlatformSwitcher from '@/src/ui/shared/PlatformSwitcher';
 import styles from './MobileHomeContent.module.css';
 
@@ -13,6 +15,12 @@ import styles from './MobileHomeContent.module.css';
  */
 export default function MobileHomeContent() {
   const { status, user } = useAuth();
+  const pathname = usePathname() ?? '';
+  const prefix = resolveAppNavPrefix(pathname);
+  const templatesHref = appPath(prefix, '/templates');
+  const myInvitationsHref = appPath(prefix, '/my-invitations');
+  const dashboardHref = appPath(prefix, '/dashboard');
+  const authNext = encodeURIComponent(templatesHref);
 
   if (status === 'loading') {
     return (
@@ -31,15 +39,15 @@ export default function MobileHomeContent() {
           <p>모바일에서 간편하게 초대장을 만들고, 한 번의 탭으로 공유하세요.</p>
         </div>
         <div className={styles.actionGrid}>
-          <Link href="/auth/email?next=%2Fm%2Ftemplates" className={styles.primary}>
+          <Link href={`/auth/email?next=${authNext}`} className={styles.primary}>
             이메일로 시작하기
           </Link>
-          <Link href="/auth/email?next=%2Fm%2Ftemplates" className={styles.secondary}>
+          <Link href={`/auth/email?next=${authNext}`} className={styles.secondary}>
             초대장 만들기
           </Link>
         </div>
         <div className={styles.bottomRow}>
-          <PlatformSwitcher target="desktop" redirectTo="/pc">
+          <PlatformSwitcher target="desktop" redirectTo={prefix === '/m' ? '/pc' : '/'}>
             데스크톱 버전 보기 →
           </PlatformSwitcher>
         </div>
@@ -56,21 +64,21 @@ export default function MobileHomeContent() {
       </div>
 
       <div className={styles.cardList}>
-        <Link href="/m/templates" className={styles.card}>
+        <Link href={templatesHref} className={styles.card}>
           <div>
             <div className={styles.cardTitle}>템플릿 둘러보기</div>
             <div className={styles.cardDesc}>컨셉별로 바로 시작</div>
           </div>
           <span className={styles.chevron}>›</span>
         </Link>
-        <Link href="/m/my-invitations" className={styles.card}>
+        <Link href={myInvitationsHref} className={styles.card}>
           <div>
             <div className={styles.cardTitle}>내 초대장</div>
             <div className={styles.cardDesc}>작성 중 · 발행된 초대장</div>
           </div>
           <span className={styles.chevron}>›</span>
         </Link>
-        <Link href="/m/dashboard" className={styles.card}>
+        <Link href={dashboardHref} className={styles.card}>
           <div>
             <div className={styles.cardTitle}>대시보드</div>
             <div className={styles.cardDesc}>방문 · RSVP 요약</div>
@@ -80,7 +88,7 @@ export default function MobileHomeContent() {
       </div>
 
       <div className={styles.bottomRow}>
-        <PlatformSwitcher target="desktop" redirectTo="/pc">
+        <PlatformSwitcher target="desktop" redirectTo={prefix === '/m' ? '/pc' : '/'}>
           데스크톱 버전 보기 →
         </PlatformSwitcher>
       </div>

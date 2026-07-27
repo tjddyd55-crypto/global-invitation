@@ -1,2 +1,6 @@
-// @shim: legacy re-export — TODO: features/dashboard/ui/pc 로 이식 후 삭제 (AGENTS.md 참고)
-export { default } from '@/app/dashboard/page';
+import DashboardLegacyContent from '@/src/features/dashboard/ui/pc/DashboardLegacyContent';
+
+/** QA: /pc/dashboard — Desktop 셸 고정 */
+export default function PcDashboardPage() {
+  return <DashboardLegacyContent />;
+}

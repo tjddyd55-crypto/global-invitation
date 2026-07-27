@@ -6,6 +6,14 @@
   color: var(--gi-text);
 }
 
+/* Editor: Figma DesktopEditor — SaaS sidebar 없음 */
+.rootEditor {
+  display: block;
+  min-height: 100vh;
+  background: var(--gi-bg);
+  color: var(--gi-text);
+}
+
 .sidebar {
   position: sticky;
   top: 0;
@@ -58,4 +66,10 @@
 .main {
   padding: 32px 40px;
   min-width: 0;
+}
+
+.mainEditor {
+  padding: 0;
+  min-width: 0;
+  width: 100%;
 }

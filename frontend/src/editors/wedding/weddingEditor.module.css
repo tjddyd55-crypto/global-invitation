@@ -1,7 +1,7 @@
 .editorPage {
   min-height: 100vh;
-  background: var(--gi-bg);
-  color: var(--gi-text);
+  background: #f7f3ec;
+  color: #1f2937;
 }
 
 .editorHeader {
@@ -83,33 +83,144 @@
   justify-content: flex-end;
 }
 
+/* Figma DesktopEditor: max 1240 / 240 1fr 340 / gap 24 / pad 32 */
 .editorLayout {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr) 375px;
-  gap: 1.5rem;
-  padding: 1.5rem 2rem 3rem;
+  grid-template-columns: 240px minmax(0, 1fr) 340px;
+  gap: 24px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px 32px 48px;
+  align-items: start;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .navColumn {
   position: sticky;
-  top: 1.5rem;
+  top: 88px;
   align-self: start;
+  background: #fff;
+  border-radius: 20px;
+  padding: 16px;
+  border: 1px solid #e5e1d8;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.navColumnLabel {
+  margin: 0 0 12px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  letter-spacing: 0.5px;
+}
+
+.progressCard {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: #f9f9f9;
+  border-radius: 12px;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.progressHeader strong {
+  color: #4f46e5;
+  font-weight: 700;
+}
+
+.progressTrack {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #4f46e5;
+  border-radius: 3px;
+  transition: width 0.3s;
 }
 
 .formColumn {
   min-width: 0;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
+}
+
+.formCard {
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e1d8;
+}
+
+.formCardTitle {
+  margin: 0 0 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.desktopStepNav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.desktopPrevBtn,
+.desktopNextBtn {
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 24px;
+}
+
+.desktopPrevBtn {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.desktopPrevBtn:disabled {
+  color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.desktopNextBtn {
+  background: #4f46e5;
+  color: #fff;
+  padding: 0 28px;
+  margin-left: auto;
 }
 
 .previewColumn {
   position: sticky;
-  top: 1.5rem;
+  top: 88px;
   align-self: start;
+  width: 340px;
 }
 
 .previewFrameWrap {
-  width: 375px;
+  width: 340px;
   max-width: 100%;
   margin: 0 auto;
 }
@@ -158,79 +269,109 @@
   min-width: 0;
   max-width: none;
   margin: 0;
-  padding: 16px 20px 20px;
+  padding: 20px 16px;
+  padding-bottom: 100px;
   position: static;
   transform: none;
   box-sizing: border-box;
 }
 
+.editorPageMobile .formCard {
+  padding: 24px;
+  border-radius: 24px;
+}
+
+.editorPageMobile .formCardTitle {
+  font-size: 17px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+}
+
+.formCard .sectionHeader {
+  display: none;
+}
+
+.formCard .stepSectionNoTitle .sectionHeader {
+  display: none;
+}
+
 .mobileEditorActions {
-  position: fixed;
+  position: sticky;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 25;
-  display: grid;
-  grid-template-columns: 1fr 1.2fr 1fr;
-  gap: 8px;
+  display: flex;
+  gap: 10px;
   width: 100%;
   margin: 0;
-  padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background: #fff;
-  border-top: 1px solid #e4ded4;
-  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.06);
+  border-top: 1px solid #e5e1d8;
   box-sizing: border-box;
 }
 
 .mobileActionPrimary,
-.mobileActionGhost {
-  min-height: 44px;
-  height: 44px;
+.mobileActionGhost,
+.mobileActionPreview {
+  height: 48px;
   border-radius: 14px;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-}
-
-.mobileActionPrimary {
-  border: none;
-  background: #2f2f2f;
-  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .mobileActionGhost {
-  border: 1px solid #d7d0c3;
-  background: #fff;
-  color: #4f4a42;
+  flex: 1;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
 }
 
-.mobileActionPrimary:disabled,
 .mobileActionGhost:disabled {
-  opacity: 0.45;
+  color: #d1d5db;
   cursor: not-allowed;
 }
 
-.previewFloatingButton {
-  display: inline-flex;
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 20;
+.mobileActionPreview {
+  width: 80px;
+  flex-shrink: 0;
+  background: rgba(79, 70, 229, 0.08);
+  border: 1.5px solid rgba(79, 70, 229, 0.3);
+  color: #4f46e5;
+  font-size: 14px;
+}
+
+.mobileActionPrimary {
+  flex: 1;
   border: none;
-  border-radius: 999px;
-  padding: 0.75rem 1.1rem;
-  background: #2f2f2f;
+  background: #4f46e5;
   color: #fff;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
 }
 
 .fullscreenPreviewOverlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
-  background: rgba(15, 15, 15, 0.78);
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.previewModal {
+  background: #f7f3ec;
+  border-radius: 24px;
+  width: 340px;
+  max-width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -238,11 +379,12 @@
 .fullscreenPreviewHeader {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 0.75rem;
-  padding: 1rem 1.5rem;
+  padding: 16px 20px;
   background: #fff;
-  border-bottom: 1px solid #e4ded4;
+  border-bottom: 1px solid #e5e1d8;
+  flex-shrink: 0;
 }
 
 .previewBackButton {
@@ -362,21 +504,40 @@
 
 .mobileStepper {
   display: none;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .stepSection {
-  background: #fff;
-  border-radius: 24px;
-  padding: 32px 24px;
-  margin: 0 auto;
-  width: calc(100% - 32px);
-  max-width: 680px;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  max-width: none;
   box-sizing: border-box;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 16px;
+}
+
+.formCard .field input,
+.formCard .field textarea,
+.formCard input[type='text'],
+.formCard input[type='tel'],
+.formCard input[type='email'],
+.formCard textarea {
+  height: 48px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e1d8;
+  background: #f9f9f9;
+  box-sizing: border-box;
+}
+
+.formCard textarea {
+  height: auto;
+  min-height: 120px;
+  padding: 12px 14px;
 }
 
 .sectionHeader h2 {
@@ -751,27 +912,106 @@
 .previewPanel {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  width: 340px;
+  max-width: 100%;
 }
 
 .previewTitle {
-  font-weight: 700;
-  font-size: 1rem;
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .previewFrame {
-  border-radius: 16px;
+  border-radius: 28px;
   overflow: hidden;
-  border: 1px solid #e1dbd0;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-  max-height: calc(100vh - 140px);
-  overflow-y: auto;
+  border: 1px solid #e5e1d8;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  max-height: calc(100vh - 180px);
   background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.previewNotch {
+  height: 24px;
+  background: #e5e1d8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.previewNotch::after {
+  content: '';
+  width: 60px;
+  height: 10px;
+  background: #f7f3ec;
+  border-radius: 5px;
+}
+
+.previewScroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .previewFrameFullscreen {
   max-height: none;
-  min-height: calc(100vh - 130px);
+  border-radius: 16px;
+  border: none;
+  box-shadow: none;
+}
+
+.editingCard {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e1d8;
+}
+
+.editingCard p {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.editingCard strong {
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.heroCallout {
+  background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.heroCalloutIcon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.heroCalloutTitle {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.heroCalloutBody {
+  margin: 0;
+  font-size: 11px;
+  color: #b45309;
+  line-height: 1.5;
 }
 
 .previewStack {
@@ -868,61 +1108,17 @@
   gap: 1rem;
 }
 
-@media (max-width: 1200px) {
+/* Desktop layout only mounts when shell===desktop (viewport >= 1024). Keep grid stable. */
+@media (max-width: 1100px) {
   .editorLayout {
-    grid-template-columns: 180px minmax(0, 1fr) 320px;
+    grid-template-columns: 220px minmax(0, 1fr) 300px;
+    gap: 20px;
+    padding: 24px;
   }
 
-  .previewFrameWrap {
-    width: 320px;
+  .previewColumn,
+  .previewPanel {
+    width: 300px;
   }
 }
 
-@media (max-width: 960px) {
-  .editorHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .editorLayout {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    padding: 1rem 0 6rem;
-  }
-
-  .navColumn {
-    display: none;
-  }
-
-  .mobileStepper {
-    display: block;
-  }
-
-  .previewColumn {
-    display: none;
-  }
-
-  .fieldGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .formColumn {
-    padding-right: 0;
-  }
-
-  .previewFloatingButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    right: 16px;
-    bottom: 16px;
-  }
-
-  .fullscreenPreviewHeader {
-    padding: 0.85rem 1rem;
-  }
-
-  .fullscreenPreviewBody {
-    padding: 0.75rem;
-  }
-}

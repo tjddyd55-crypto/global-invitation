@@ -2,10 +2,12 @@
 /* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/src/shared/hooks';
 import { useMyInvitations } from '@/src/features/invitations/model/useMyInvitations';
 import { useSubscription } from '@/src/shared/billing';
 import type { SubscriptionState } from '@/src/shared/billing';
+import { appPath, resolveAppNavPrefix } from '@/src/shared/platform/appNavPrefix';
 import styles from './DashboardScreen.module.css';
 
 /**
@@ -17,6 +19,11 @@ export default function DashboardScreen() {
   const { status: authStatus, user } = useAuth();
   const { items, status: listStatus } = useMyInvitations();
   const { subscription } = useSubscription();
+  const pathname = usePathname() ?? '';
+  const prefix = resolveAppNavPrefix(pathname);
+  const loginHref = prefix === '/m' ? '/m/login' : '/auth/email';
+  const myInvitationsHref = appPath(prefix, '/my-invitations');
+  const templatesHref = appPath(prefix, '/templates');
 
   const displayName = user?.nickname || user?.email?.split('@')[0] || '게스트';
   const totalCount = items.length;
@@ -37,7 +44,7 @@ export default function DashboardScreen() {
       {authStatus === 'anonymous' && listStatus !== 'loading' && items.length === 0 ? (
         <div className={styles.anonCard}>
           <strong>로그인하면 통계를 확인할 수 있어요.</strong>
-          <Link href="/m/login" className={styles.anonCta}>로그인</Link>
+          <Link href={loginHref} className={styles.anonCta}>로그인</Link>
         </div>
       ) : (
         <>
@@ -48,14 +55,14 @@ export default function DashboardScreen() {
 
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>최근 초대장</h2>
-            <Link href="/m/my-invitations" className={styles.seeAll}>모두 보기 →</Link>
+            <Link href={myInvitationsHref} className={styles.seeAll}>모두 보기 →</Link>
           </div>
 
           <div className={styles.latestList}>
             {latest.length === 0 ? (
               <div className={styles.anonCard}>
                 <span>아직 초대장이 없어요.</span>
-                <Link href="/m/templates" className={styles.anonCta}>템플릿 고르기</Link>
+                <Link href={templatesHref} className={styles.anonCta}>템플릿 고르기</Link>
               </div>
             ) : (
               latest.map((item) => (

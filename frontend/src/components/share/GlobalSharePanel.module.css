@@ -57,7 +57,7 @@
   font-weight: 600;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }

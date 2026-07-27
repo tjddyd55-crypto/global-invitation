@@ -2,20 +2,26 @@
 /* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import RequireAuth from '@/src/features/auth/ui/shared/RequireAuth';
 import { useMyInvitations } from '@/src/features/invitations/model/useMyInvitations';
 import type { InvitationSummary } from '@/src/lib/api';
+import { appPath, resolveAppNavPrefix } from '@/src/shared/platform/appNavPrefix';
 import styles from './MyInvitationsScreen.module.css';
 
 export default function MyInvitationsScreen() {
   const { items, status, reload } = useMyInvitations();
+  const pathname = usePathname() ?? '';
+  const prefix = resolveAppNavPrefix(pathname);
+  const templatesHref = appPath(prefix, '/templates');
+  const myInvitationsHref = appPath(prefix, '/my-invitations');
 
   return (
-    <RequireAuth nextPath="/m/my-invitations">
+    <RequireAuth nextPath={myInvitationsHref}>
       <section className={styles.screen}>
         <header className={styles.header}>
           <h1>내 초대장</h1>
-          <Link href="/m/templates" className={styles.newButton}>＋ 새로 만들기</Link>
+          <Link href={templatesHref} className={styles.newButton}>＋ 새로 만들기</Link>
         </header>
 
         {status === 'loading' && (
@@ -38,7 +44,7 @@ export default function MyInvitationsScreen() {
           <div className={styles.emptyBox}>
             <span className={styles.emptyIcon}>📮</span>
             <p>아직 저장된 초대장이 없어요.</p>
-            <Link href="/m/templates" className={styles.emptyCta}>첫 초대장 만들기</Link>
+            <Link href={templatesHref} className={styles.emptyCta}>첫 초대장 만들기</Link>
           </div>
         )}
 

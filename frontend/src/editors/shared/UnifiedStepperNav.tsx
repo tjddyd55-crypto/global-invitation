@@ -13,6 +13,8 @@ type UnifiedStepperNavProps = {
   currentStep: number;
   onStepSelect: (stepId: number) => void;
   orientation?: 'horizontal' | 'vertical';
+  /** Figma Make: 1-based display (default true). Internal id remains 0-based index. */
+  oneBasedLabels?: boolean;
 };
 
 export default function UnifiedStepperNav({
@@ -20,6 +22,7 @@ export default function UnifiedStepperNav({
   currentStep,
   onStepSelect,
   orientation = 'horizontal',
+  oneBasedLabels = true,
 }: UnifiedStepperNavProps) {
   const scrollerRef = useRef<HTMLElement | null>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -53,6 +56,8 @@ export default function UnifiedStepperNav({
     >
       {steps.map((step, index) => {
         const isActive = step.id === currentStep;
+        const isCompleted = index < steps.findIndex((s) => s.id === currentStep);
+        const label = oneBasedLabels ? index + 1 : step.id;
         return (
           <button
             key={step.id}
@@ -60,11 +65,15 @@ export default function UnifiedStepperNav({
             ref={(el) => {
               itemRefs.current[index] = el;
             }}
-            className={`${styles.item} ${isActive ? styles.itemActive : ''}`}
+            className={`${styles.item} ${isActive ? styles.itemActive : ''} ${
+              isCompleted ? styles.itemCompleted : ''
+            }`}
             onClick={() => onStepSelect(step.id)}
             data-testid={`stepper-item-${step.id}`}
           >
-            <span className={styles.index}>{step.id}</span>
+            <span className={styles.index} aria-hidden>
+              {isCompleted ? '✓' : label}
+            </span>
             <span className={styles.title}>{step.title}</span>
           </button>
         );

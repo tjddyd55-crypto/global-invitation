@@ -4,8 +4,11 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import RequireAuth from '@/src/features/auth/ui/shared/RequireAuth';
 import PublishCompleteScreen from '@/src/features/invitations/ui/shared/PublishCompleteScreen';
+import ResponsivePlatformBoundary from '@/src/shared/platform/ResponsivePlatformBoundary';
 import { getInvitationForEditor } from '@/src/lib/api';
 import { buildAbsolutePublicInvitationUrl } from '@/src/lib/publicInvitation';
+import MobileShell from '@/src/ui/mobile/MobileShell';
+import PcShell from '@/src/ui/pc/PcShell';
 
 export default function PublishCompletePage() {
   const params = useParams();
@@ -37,12 +40,19 @@ export default function PublishCompletePage() {
     };
   }, [invitationId]);
 
-  return (
+  const body = (
     <RequireAuth nextPath={`/my-invitations/${invitationId}/complete`}>
       {error && <p style={{ padding: 24, color: 'var(--gi-danger)' }}>{error}</p>}
       {!error && shareUrl && (
         <PublishCompleteScreen invitationId={invitationId} shareUrl={shareUrl} title={title} />
       )}
     </RequireAuth>
+  );
+
+  return (
+    <ResponsivePlatformBoundary
+      mobile={<MobileShell>{body}</MobileShell>}
+      desktop={<PcShell>{body}</PcShell>}
+    />
   );
 }

@@ -3,12 +3,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import RequireAuth from '@/src/features/auth/ui/shared/RequireAuth';
 import {
   CONCEPT_OPTIONS,
   type ConceptType,
   useCreateInvitation,
 } from '@/src/features/templates/model/useCreateInvitation';
+import { appPath, resolveAppNavPrefix } from '@/src/shared/platform/appNavPrefix';
 import styles from './TemplatesPage.module.css';
 
 /**
@@ -17,9 +19,13 @@ import styles from './TemplatesPage.module.css';
 export default function TemplatesPage() {
   const { creatingConcept, error, start } = useCreateInvitation();
   const [selected, setSelected] = useState<ConceptType>('WEDDING');
+  const pathname = usePathname() ?? '';
+  const prefix = resolveAppNavPrefix(pathname);
+  const myInvitationsHref = appPath(prefix, '/my-invitations');
+  const templatesHref = appPath(prefix, '/templates');
 
   return (
-    <RequireAuth nextPath="/pc/templates">
+    <RequireAuth nextPath={templatesHref}>
       <section className={styles.root}>
         <header className={styles.header}>
           <p className={styles.eyebrow}>초대장 만들기</p>
@@ -57,7 +63,7 @@ export default function TemplatesPage() {
         </div>
 
         <div className={styles.footerBar}>
-          <Link href="/pc/my-invitations" className={styles.footerLink}>
+          <Link href={myInvitationsHref} className={styles.footerLink}>
             내 초대장 관리 →
           </Link>
           <button

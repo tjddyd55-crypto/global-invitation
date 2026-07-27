@@ -1,105 +1,126 @@
 /**
- * 공개 초대장(/i) 레이아웃.
- * - 모바일: full-width 초대장 (외곽 카드 없음)
- * - PC: 가운데 375px 초대장 + 오른쪽 공유 카드
- */
-
-.pageRoot {
-  min-height: 100vh;
-  background: transparent;
-}
-
-.layout {
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-  padding: 0;
-}
-
-.inviteColumn {
-  min-width: 0;
-  width: 100%;
-}
-
-.shell {
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  background: transparent;
-}
-
-.desktopAside {
-  display: none;
-}
-
-.shareSectionMobile {
-  margin-top: 24px;
-  padding: 0 16px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.shareButton {
-  box-sizing: border-box;
-  width: 100%;
-  height: 48px;
-  padding: 0 16px;
-  border-radius: 12px;
-  border: none;
-  background: var(--gi-primary, #5b4fd6);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.shareButtonMusic {
-  background: #2f2f2f;
-}
-
-.asideHint {
-  margin-top: 12px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: #fff;
-  border: 1px solid #e5dfd4;
-  color: #5c6478;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-@media (min-width: 960px) {
-  .pageRoot {
-    padding: 32px 24px 64px;
-  }
-
-  .layout {
-    grid-template-columns: 375px minmax(280px, 1fr);
-    align-items: start;
-    gap: 32px;
-  }
-
-  .shell {
-    max-width: 375px;
-    margin: 0;
-  }
-
-  .desktopAside {
-    display: block;
-    position: sticky;
-    top: 24px;
-  }
-
-  .shareSectionMobile {
-    display: none;
-  }
-}
+ * 공개 초대장(/i) 레이아웃.
+ * - 모바일: full-width 초대장 (외곽 카드 없음)
+ * - PC: 가운데 375px 초대장 + 오른쪽 공유 카드
+ */
+
+.pageRoot {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.layout {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  padding: 0;
+}
+
+.inviteColumn {
+  min-width: 0;
+  width: 100%;
+}
+
+.shell {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+.desktopAside {
+  display: none;
+}
+
+.shareSectionMobile {
+  margin-top: 24px;
+  padding: 0 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shareButton {
+  box-sizing: border-box;
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--gi-primary, #5b4fd6);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shareButtonMusic {
+  background: #2f2f2f;
+}
+
+.asideHint {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e5dfd4;
+  color: #5c6478;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (min-width: 1024px) {
+  .pageRoot {
+    padding: 40px 24px 64px;
+    background: #f5f0ed;
+  }
+
+  .layout {
+    max-width: none;
+    grid-template-columns: 1fr 375px minmax(240px, 280px) 1fr;
+    align-items: start;
+    gap: 24px;
+  }
+
+  .inviteColumn {
+    grid-column: 2;
+  }
+
+  .shell {
+    max-width: 375px;
+    margin: 0;
+    box-shadow: 0 8px 48px rgba(0, 0, 0, 0.12);
+  }
+
+  .desktopAside {
+    display: block;
+    grid-column: 3;
+    position: sticky;
+    top: 80px;
+  }
+
+  .desktopAside > :first-child {
+    border-radius: 20px;
+    padding: 20px;
+    border: 1px solid #f9d7e6;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    background: #fff;
+  }
+
+  .asideHint {
+    border-radius: 16px;
+    margin-top: 12px;
+  }
+
+  .shareSectionMobile {
+    display: none;
+  }
+}

@@ -1,10 +1,12 @@
 /**
- * 에디터 플랫폼 분기용 viewport breakpoint (CSS와 동일 SSOT).
- * - 이하: mobile editor (/m/editor)
- * - 초과: desktop editor (/pc/editor)
+ * @deprecated `viewportBreakpoint.ts` 로 이관.
+ * 기존 import 경로 호환을 위해 re-export 만 유지한다.
  */
-export const EDITOR_VIEWPORT_BREAKPOINT_PX = 768;
-
-export function resolveEditorPlatformFromWidth(width: number): 'mobile' | 'desktop' {
-  return width <= EDITOR_VIEWPORT_BREAKPOINT_PX ? 'mobile' : 'desktop';
-}
+export {
+  VIEWPORT_BREAKPOINT_PX as EDITOR_VIEWPORT_BREAKPOINT_PX,
+  resolveViewportPlatformFromWidth as resolveEditorPlatformFromWidth,
+  VIEWPORT_BREAKPOINT_PX,
+  resolveViewportPlatformFromWidth,
+  VIEWPORT_DESKTOP_MEDIA,
+  VIEWPORT_MOBILE_MEDIA,
+} from './viewportBreakpoint';

@@ -3,12 +3,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import RequireAuth from '@/src/features/auth/ui/shared/RequireAuth';
 import {
   CONCEPT_OPTIONS,
   type ConceptType,
   useCreateInvitation,
 } from '@/src/features/templates/model/useCreateInvitation';
+import { appPath, resolveAppNavPrefix } from '@/src/shared/platform/appNavPrefix';
 import styles from './TemplatesScreen.module.css';
 
 /**
@@ -18,9 +20,13 @@ import styles from './TemplatesScreen.module.css';
 export default function TemplatesScreen() {
   const { creatingConcept, error, start } = useCreateInvitation();
   const [selected, setSelected] = useState<ConceptType>('WEDDING');
+  const pathname = usePathname() ?? '';
+  const prefix = resolveAppNavPrefix(pathname);
+  const myInvitationsHref = appPath(prefix, '/my-invitations');
+  const templatesHref = appPath(prefix, '/templates');
 
   return (
-    <RequireAuth nextPath="/m/templates">
+    <RequireAuth nextPath={templatesHref}>
       <section className={styles.screen} data-testid="mobile-concept-screen">
         <header className={styles.header}>
           <p className={styles.eyebrow}>초대장 만들기</p>
@@ -71,7 +77,7 @@ export default function TemplatesScreen() {
         </button>
 
         <p className={styles.footer}>
-          이미 만든 초대장은 <Link href="/m/my-invitations">내 초대장</Link>에서 확인하세요.
+          이미 만든 초대장은 <Link href={myInvitationsHref}>내 초대장</Link>에서 확인하세요.
         </p>
       </section>
     </RequireAuth>

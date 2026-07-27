@@ -1,25 +1,26 @@
 'use client';
 
 import ResponsivePlatformBoundary from '@/src/shared/platform/ResponsivePlatformBoundary';
-import DashboardScreen from '@/src/features/dashboard/ui/mobile/DashboardScreen';
+import TemplatesScreen from '@/src/features/templates/ui/mobile/TemplatesScreen';
+import TemplatesPage from '@/src/features/templates/ui/pc/TemplatesPage';
 import MobileShell from '@/src/ui/mobile/MobileShell';
 import PcShell from '@/src/ui/pc/PcShell';
-import DashboardLegacyContent from '@/src/features/dashboard/ui/pc/DashboardLegacyContent';
 
 /**
- * 공식 Dashboard — viewport(1024) shell 전환.
+ * 공식 Concept Selection — viewport(1024) shell 전환.
+ * /m/templates · /pc/templates 는 QA용.
  */
-export default function DashboardPage() {
+export default function ConceptSelectionPage() {
   return (
     <ResponsivePlatformBoundary
       mobile={
         <MobileShell>
-          <DashboardScreen />
+          <TemplatesScreen />
         </MobileShell>
       }
       desktop={
         <PcShell>
-          <DashboardLegacyContent />
+          <TemplatesPage />
         </PcShell>
       }
     />

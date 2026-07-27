@@ -41,7 +41,7 @@
   display: contents;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .sharePanel {
     margin: 0.5rem 0.75rem 0;
     padding: 12px 16px;

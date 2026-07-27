@@ -71,4 +71,7 @@
   /* Layout */
   --gi-mobile-invite-width: 375px;
   --gi-content-max: 1120px;
+
+  /* Viewport SSOT — Figma Make useIsDesktop (>= 1024 = Desktop) */
+  --gi-breakpoint-desktop: 1024px;
 }

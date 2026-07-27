@@ -191,7 +191,7 @@
   color: #666;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .headerInner {
     flex-wrap: wrap;
     gap: 10px;

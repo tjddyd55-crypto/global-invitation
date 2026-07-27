@@ -219,6 +219,30 @@ export default function WeddingEditor({
     }
   };
 
+  if (shell === null) {
+    return (
+      <div
+        className={styles.editorPage}
+        data-testid="wedding-editor-root"
+        data-editor-shell="pending"
+      >
+        <div
+          data-testid="viewport-shell-fallback"
+          style={{
+            minHeight: '40vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#6B7280',
+            fontSize: 14,
+          }}
+        >
+          에디터 준비 중…
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`${styles.editorPage} ${shell === 'mobile' ? styles.editorPageMobile : ''}`}
@@ -256,7 +280,12 @@ export default function WeddingEditor({
             />
           </div>
           <main className={styles.mobileFormColumn} data-testid="mobile-editor-form">
-            <div className={styles.sectionStack}>{renderStep()}</div>
+            <div className={styles.formCard}>
+              <h2 className={styles.formCardTitle}>
+                {visibleSections[currentStep]?.title ?? '편집'}
+              </h2>
+              <div className={styles.sectionStack}>{renderStep()}</div>
+            </div>
           </main>
           <div className={styles.mobileEditorActions} data-testid="mobile-editor-actions">
             <button
@@ -269,7 +298,7 @@ export default function WeddingEditor({
             </button>
             <button
               type="button"
-              className={styles.mobileActionPrimary}
+              className={styles.mobileActionPreview}
               onClick={() => setFullscreenPreviewOpen(true)}
             >
               미리보기
@@ -277,63 +306,107 @@ export default function WeddingEditor({
             <button
               type="button"
               className={styles.mobileActionPrimary}
-              onClick={() =>
-                setCurrentStep((step) => Math.min(visibleSections.length - 1, step + 1))
-              }
-              disabled={currentStep >= visibleSections.length - 1}
+              onClick={() => {
+                if (currentStep >= visibleSections.length - 1) {
+                  void handlePublish();
+                  return;
+                }
+                setCurrentStep((step) => Math.min(visibleSections.length - 1, step + 1));
+              }}
             >
-              다음
+              {currentStep >= visibleSections.length - 1 ? '공개하기' : '다음'}
             </button>
           </div>
         </div>
       ) : (
         <div className={styles.editorLayout} data-testid="desktop-editor-layout">
           <aside className={styles.navColumn} data-testid="desktop-editor-sidebar">
+            <p className={styles.navColumnLabel}>편집 단계</p>
             <UnifiedStepperNav
               steps={visibleSections}
               currentStep={currentStep}
               onStepSelect={setCurrentStep}
               orientation="vertical"
             />
+            <div className={styles.progressCard}>
+              <div className={styles.progressHeader}>
+                <span>완성도</span>
+                <strong>
+                  {Math.round((currentStep / Math.max(visibleSections.length - 1, 1)) * 100)}%
+                </strong>
+              </div>
+              <div className={styles.progressTrack}>
+                <div
+                  className={styles.progressFill}
+                  style={{
+                    width: `${Math.round((currentStep / Math.max(visibleSections.length - 1, 1)) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
           </aside>
 
           <main className={styles.formColumn} data-testid="desktop-editor-form">
-            <div className={styles.sectionStack}>{renderStep()}</div>
+            <div className={styles.formCard}>
+              <h2 className={styles.formCardTitle}>
+                {visibleSections[currentStep]?.title ?? '편집'}
+              </h2>
+              <div className={styles.sectionStack}>{renderStep()}</div>
+            </div>
+            <div className={styles.desktopStepNav}>
+              <button
+                type="button"
+                className={styles.desktopPrevBtn}
+                onClick={() => setCurrentStep((step) => Math.max(0, step - 1))}
+                disabled={currentStep <= 0}
+              >
+                ← 이전
+              </button>
+              <button
+                type="button"
+                className={styles.desktopNextBtn}
+                onClick={() => {
+                  if (currentStep >= visibleSections.length - 1) {
+                    void handlePublish();
+                    return;
+                  }
+                  setCurrentStep((step) => Math.min(visibleSections.length - 1, step + 1));
+                }}
+              >
+                {currentStep >= visibleSections.length - 1
+                  ? '완료하고 공개하기'
+                  : '다음 단계로 →'}
+              </button>
+            </div>
           </main>
 
           <aside className={styles.previewColumn} data-testid="desktop-editor-preview">
-            <div className={styles.previewFrameWrap}>
-              <LivePreviewPanel title="라이브 미리보기" data={previewData} />
-            </div>
+            <LivePreviewPanel
+              title="실시간 미리보기"
+              data={previewData}
+              editingStepLabel={visibleSections[currentStep]?.title}
+            />
           </aside>
         </div>
       )}
 
-      {shell === 'desktop' ? (
-        <button
-          type="button"
-          className={styles.previewFloatingButton}
-          onClick={() => setFullscreenPreviewOpen(true)}
-        >
-          Preview
-        </button>
-      ) : null}
-
       {fullscreenPreviewOpen && (
         <div className={styles.fullscreenPreviewOverlay} data-testid="mobile-preview-overlay">
-          <div className={styles.fullscreenPreviewHeader}>
-            <button
-              type="button"
-              className={styles.previewBackButton}
-              onClick={() => setFullscreenPreviewOpen(false)}
-              aria-label="미리보기 닫기"
-            >
-              ←
-            </button>
-            <strong>라이브 미리보기</strong>
-          </div>
-          <div className={styles.fullscreenPreviewBody}>
-            <LivePreviewPanel data={previewData} fullscreen />
+          <div className={styles.previewModal}>
+            <div className={styles.fullscreenPreviewHeader}>
+              <strong>미리보기</strong>
+              <button
+                type="button"
+                className={styles.previewBackButton}
+                onClick={() => setFullscreenPreviewOpen(false)}
+                aria-label="미리보기 닫기"
+              >
+                ✕
+              </button>
+            </div>
+            <div className={styles.fullscreenPreviewBody}>
+              <LivePreviewPanel data={previewData} fullscreen />
+            </div>
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import type { Invitation } from '@/src/lib/api';
 import {
   cloneTemplateInvitation,
@@ -44,7 +44,6 @@ import { ensureGuestToken, getStoredSession, setGuestToken, setLastDraftSlug } f
 import {
   getTemplateEditorPath,
 } from '@/src/templates/registry';
-import { resolveEditorPlatformFromWidth } from '@/src/shared/platform/editorViewport';
 import shareBannerStyles from './editorShareBanner.module.css';
 
 type EditorError = {
@@ -203,7 +202,6 @@ function buildFullDataFromFuneralState(state: FuneralEditorState): WeddingInvita
 export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
-  const pathname = usePathname() ?? '';
   const searchParams = useSearchParams();
   const slugParam = params.slug;
   const slug = typeof slugParam === 'string' ? slugParam : Array.isArray(slugParam) ? slugParam[0] : '';
@@ -214,10 +212,6 @@ export default function EditorPage() {
   const editorLoggedRef = useRef(false);
   const saveNoticeTimerRef = useRef<number | null>(null);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
-  const [platformRedirectPending, setPlatformRedirectPending] = useState(
-    () => pathname === `/editor/${slug}` || pathname.startsWith('/editor/')
-  );
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -238,26 +232,10 @@ export default function EditorPage() {
   const isFuneralDemo = isFuneralClassicDemoSlug(slug);
 
   /**
-   * `/editor/{slug}` 진입 시 viewport 기준으로 /m 또는 /pc 에디터로 1회 이동.
-   * UA middleware 분기와 달리 Playwright 좁은 viewport 도 모바일 셸을 탄다.
+   * Canonical `/editor/{slug}` 유지.
+   * Mobile/Desktop 셸은 WeddingEditor → useEditorShell(viewport 1024) 로만 전환.
+   * /m/editor · /pc/editor 는 QA용 고정 셸.
    */
-  useEffect(() => {
-    if (!slug) {
-      setPlatformRedirectPending(false);
-      return;
-    }
-    const isBareEditorPath = pathname === `/editor/${slug}`;
-    if (!isBareEditorPath) {
-      setPlatformRedirectPending(false);
-      return;
-    }
-
-    const platform = resolveEditorPlatformFromWidth(window.innerWidth);
-    const prefix = platform === 'mobile' ? '/m' : '/pc';
-    const qs = window.location.search || '';
-    router.replace(`${prefix}/editor/${slug}${qs}`);
-  }, [pathname, router, slug]);
-
   useEffect(() => {
     ensureGuestToken();
     const session = getStoredSession();
@@ -645,14 +623,6 @@ export default function EditorPage() {
     if (typeof window === 'undefined') return;
     window.print();
   };
-
-  if (platformRedirectPending) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>에디터 준비 중...</p>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

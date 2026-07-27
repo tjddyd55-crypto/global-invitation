@@ -1,17 +1,19 @@
+/* Figma Make horizontal / vertical stepper */
+
 .stepper {
   display: flex;
-  gap: 10px;
 }
 
 .horizontal {
+  flex-direction: row;
+  gap: 8px;
+  padding: 12px 16px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 0 20px;
-  gap: 10px;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  scroll-snap-type: none;
+  background: #fff;
+  border-bottom: 1px solid #e5e1d8;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
 .horizontal::-webkit-scrollbar {
@@ -20,62 +22,83 @@
 
 .vertical {
   flex-direction: column;
-  padding: 0;
+  gap: 4px;
 }
 
 .item {
-  min-width: 140px;
-  width: auto;
-  min-height: 68px;
-  height: 68px;
-  border-radius: 16px;
-  border: 1px solid var(--gi-border);
-  background: var(--gi-surface);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  text-align: left;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 2px solid #e5e1d8;
+  background: #fff;
   cursor: pointer;
-  flex: 0 0 auto;
   flex-shrink: 0;
-  box-sizing: border-box;
+  white-space: nowrap;
+  text-align: left;
+  font: inherit;
+  color: inherit;
 }
 
 .vertical .item {
-  min-width: 0;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
   width: 100%;
-  height: auto;
+  border-radius: 12px;
 }
 
 .itemActive {
-  border: 1.5px solid var(--gi-text);
-  box-shadow: inset 0 -4px 0 var(--gi-primary);
-  background: var(--gi-primary-soft);
+  border-color: #4f46e5;
+  background: rgba(79, 70, 229, 0.06);
+}
+
+.vertical .itemActive {
+  border-color: #4f46e5;
+}
+
+.itemCompleted {
+  background: #f9f9f9;
 }
 
 .index {
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  background: var(--gi-surface-muted);
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: #e5e7eb;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--gi-text);
-  flex: 0 0 auto;
+  flex-shrink: 0;
 }
 
-.itemActive .index {
-  background: var(--gi-primary);
+.vertical .index {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+}
+
+.itemActive .index,
+.itemCompleted .index {
+  background: #4f46e5;
   color: #fff;
 }
 
 .title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--gi-text);
-  line-height: 1.3;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.itemActive .title {
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.itemCompleted .title {
+  color: #374151;
 }

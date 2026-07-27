@@ -27,9 +27,13 @@ type EditorHeaderProps = {
   shell?: 'mobile' | 'desktop';
 };
 
+/**
+ * Figma Make DesktopEditor / EditorScreen header.
+ * - Desktop: 72px single sticky bar (back · title · badge · save · publish · more)
+ * - Mobile: sticky single row (back · title · badge · save · more)
+ */
 export default function EditorHeader({
   title,
-  conceptLabel,
   draftStatus = 'draft',
   lastSavedAt,
   saveNotice,
@@ -41,18 +45,14 @@ export default function EditorHeader({
   onSave,
   onSaveAndExit,
   onPublish,
-  onPreview,
   language,
   onLanguageChange,
   shell = 'desktop',
 }: EditorHeaderProps) {
   const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
-  const settingsRef = useRef<HTMLDivElement>(null);
   const moreMenuId = useId();
-  const settingsMenuId = useId();
 
   const statusLabel = draftStatus === 'published' ? '공개됨' : '초안';
   const statusClassName =
@@ -60,21 +60,15 @@ export default function EditorHeader({
   const lastSavedLabel = formatEditorSavedAtLabel(lastSavedAt);
 
   useEffect(() => {
-    if (!moreOpen && !settingsOpen) return;
-
+    if (!moreOpen) return;
     const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (moreOpen && moreRef.current && !moreRef.current.contains(target)) {
+      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
         setMoreOpen(false);
       }
-      if (settingsOpen && settingsRef.current && !settingsRef.current.contains(target)) {
-        setSettingsOpen(false);
-      }
     };
-
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [moreOpen, settingsOpen]);
+  }, [moreOpen]);
 
   const handleSave = async () => {
     if (!onSave) return;
@@ -93,258 +87,165 @@ export default function EditorHeader({
     await onPublish();
   };
 
-  const showLanguageSettings = Boolean(language && onLanguageChange);
-  const showMoreMenu = Boolean(onSaveAndExit || onPublish);
+  const moreItems: Array<{ key: string; label: string; onClick: () => void; danger?: boolean }> = [];
+  if (shell === 'mobile' && onPublish) {
+    moreItems.push({
+      key: 'publish',
+      label: publishing ? '공개 중...' : '공개하기',
+      onClick: () => void handlePublish(),
+    });
+  }
+  if (onSaveAndExit) {
+    moreItems.push({
+      key: 'exit',
+      label: '저장하고 나가기',
+      onClick: () => void handleSaveAndExit(),
+    });
+  }
+  if (language && onLanguageChange) {
+    moreItems.push({
+      key: 'lang-ko',
+      label: '언어: 한국어',
+      onClick: () => {
+        onLanguageChange('ko');
+        setMoreOpen(false);
+      },
+    });
+    moreItems.push({
+      key: 'lang-en',
+      label: '언어: English',
+      onClick: () => {
+        onLanguageChange('en');
+        setMoreOpen(false);
+      },
+    });
+  }
 
   if (shell === 'mobile') {
     return (
-      <header className={`${styles.editorHeader} ${styles.editorHeaderMobile}`} data-testid="editor-header-mobile">
-        <div className={styles.mobileTopRow}>
+      <header className={styles.mobileHeader} data-testid="editor-header-mobile">
+        <button
+          type="button"
+          className={styles.iconButton}
+          aria-label="뒤로"
+          onClick={() => router.back()}
+        >
+          ←
+        </button>
+        <div className={styles.mobileTitleWrap}>
+          <h1 className={styles.mobileTitle}>{title}</h1>
+          <span className={statusClassName}>{statusLabel}</span>
+        </div>
+        <button
+          type="button"
+          className={styles.mobileSave}
+          onClick={() => void handleSave()}
+          disabled={saving || !onSave || saveDisabled}
+          data-testid="editor-save-button"
+          data-saving={saving ? 'true' : 'false'}
+        >
+          {saving ? '저장 중' : saveLabel}
+        </button>
+        <div className={styles.menuWrap} ref={moreRef}>
           <button
             type="button"
             className={styles.iconButton}
-            aria-label="뒤로"
-            onClick={() => router.back()}
+            aria-label="더보기"
+            aria-expanded={moreOpen}
+            aria-controls={moreMenuId}
+            onClick={() => setMoreOpen((open) => !open)}
           >
-            ←
+            ···
           </button>
-          <h1 className={styles.editorTitleMobile}>{title}</h1>
-          <div className={styles.menuWrap} ref={moreRef}>
-            <button
-              type="button"
-              className={styles.iconButton}
-              aria-label="더보기"
-              aria-expanded={moreOpen}
-              aria-controls={moreMenuId}
-              onClick={() => {
-                setMoreOpen((open) => !open);
-                setSettingsOpen(false);
-              }}
-            >
-              ···
-            </button>
-            {moreOpen && showMoreMenu ? (
-              <div id={moreMenuId} className={styles.menuPanel} role="menu">
-                {onSaveAndExit && (
-                  <button
-                    type="button"
-                    className={styles.menuItem}
-                    onClick={handleSaveAndExit}
-                    disabled={saving}
-                    role="menuitem"
-                  >
-                    저장하고 나가기
-                  </button>
-                )}
-                {onPublish && (
-                  <button
-                    type="button"
-                    className={styles.menuItem}
-                    onClick={handlePublish}
-                    disabled={saving || publishing}
-                    data-testid="editor-publish-button"
-                    role="menuitem"
-                  >
-                    {publishing ? '공개 중...' : '공개하기'}
-                  </button>
-                )}
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div className={styles.mobileStatusRow}>
-          <span className={statusClassName}>{statusLabel}</span>
-          <span className={styles.statusMeta}>{lastSavedLabel}</span>
-        </div>
-
-        <div className={styles.mobileActionRow}>
-          {showLanguageSettings ? (
-            <div className={styles.menuWrap} ref={settingsRef}>
-              <button
-                type="button"
-                className={styles.buttonGhostCompact}
-                aria-expanded={settingsOpen}
-                aria-controls={settingsMenuId}
-                onClick={() => {
-                  setSettingsOpen((open) => !open);
-                  setMoreOpen(false);
-                }}
-              >
-                설정
-              </button>
-              {settingsOpen ? (
-                <div id={settingsMenuId} className={styles.menuPanel} role="menu">
-                  <label className={styles.languageField}>
-                    <span>언어</span>
-                    <select
-                      value={language}
-                      onChange={(event) =>
-                        onLanguageChange?.(event.target.value as EditorLanguageOption)
-                      }
-                    >
-                      <option value="ko">한국어</option>
-                      <option value="en">English</option>
-                      <option value="mn">Монгол</option>
-                    </select>
-                  </label>
-                </div>
-              ) : null}
+          {moreOpen && moreItems.length > 0 ? (
+            <div id={moreMenuId} className={styles.menuPanel} role="menu">
+              {moreItems.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={styles.menuItem}
+                  onClick={item.onClick}
+                  role="menuitem"
+                  data-testid={item.key === 'publish' ? 'editor-publish-button' : undefined}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
           ) : null}
-          <button
-            type="button"
-            className={`${styles.buttonPrimaryCompact} ${styles.saveButton}`}
-            onClick={handleSave}
-            disabled={saving || !onSave || saveDisabled}
-            data-testid="editor-save-button"
-            data-saving={saving ? 'true' : 'false'}
-          >
-            {saving ? '저장 중...' : saveLabel}
-          </button>
-          {onPreview ? (
-            <button type="button" className={styles.buttonGhostCompact} onClick={onPreview}>
-              미리보기
-            </button>
-          ) : null}
         </div>
-
-        {saveNotice && <p className={styles.noticeText}>{saveNotice}</p>}
-        {saveError && <p className={styles.errorText}>{saveError}</p>}
+        {(saveNotice || saveError || lastSavedLabel) && (
+          <p className={styles.mobileMeta}>
+            {saveError || saveNotice || lastSavedLabel}
+          </p>
+        )}
       </header>
     );
   }
 
   return (
-    <header className={styles.editorHeader} data-testid="editor-header-desktop">
-      <div className={styles.headerMain}>
-        <h1 className={styles.editorTitle}>{title}</h1>
-        <p className={styles.editorSubtitle}>입력 즉시 미리보기에 반영됩니다.</p>
-        <div className={styles.statusLine}>
-          <span className={statusClassName}>{statusLabel}</span>
-          <span className={styles.conceptBadge}>{conceptLabel}</span>
-          <span className={styles.statusMeta}>{lastSavedLabel}</span>
-        </div>
-        {saveNotice && <p className={styles.noticeText}>{saveNotice}</p>}
-        {saveError && <p className={styles.errorText}>{saveError}</p>}
+    <header className={styles.desktopHeader} data-testid="editor-header-desktop">
+      <button type="button" className={styles.backButton} onClick={() => router.back()}>
+        ← 뒤로
+      </button>
+      <div className={styles.desktopDivider} aria-hidden />
+      <div className={styles.desktopTitleGroup}>
+        <span className={styles.desktopTitle}>{title}</span>
+        <span className={statusClassName}>{statusLabel}</span>
+        {lastSavedLabel ? <span className={styles.desktopMeta}>{lastSavedLabel}</span> : null}
       </div>
-
-      <div className={styles.headerActions}>
-        {showLanguageSettings && (
-          <div className={styles.menuWrap} ref={settingsRef}>
-            <button
-              type="button"
-              className={styles.buttonGhost}
-              aria-expanded={settingsOpen}
-              aria-controls={settingsMenuId}
-              onClick={() => {
-                setSettingsOpen((open) => !open);
-                setMoreOpen(false);
-              }}
-            >
-              설정
-            </button>
-            {settingsOpen && (
-              <div id={settingsMenuId} className={styles.menuPanel} role="menu">
-                <label className={styles.languageField}>
-                  <span>언어</span>
-                  <select
-                    value={language}
-                    onChange={(event) =>
-                      onLanguageChange?.(event.target.value as EditorLanguageOption)
-                    }
-                  >
-                    <option value="ko">한국어</option>
-                    <option value="en">English</option>
-                    <option value="mn">Монгол</option>
-                  </select>
-                </label>
-              </div>
-            )}
-          </div>
-        )}
-
+      <div className={styles.desktopActions}>
         <button
           type="button"
-          className={`${styles.buttonPrimary} ${styles.saveButton}`}
-          onClick={handleSave}
+          className={styles.desktopSave}
+          onClick={() => void handleSave()}
           disabled={saving || !onSave || saveDisabled}
           data-testid="editor-save-button"
           data-saving={saving ? 'true' : 'false'}
         >
           {saving ? '저장 중...' : saveLabel}
         </button>
-
-        {(onSaveAndExit || onPublish) && (
-          <div className={styles.desktopExtraActions}>
-            {onSaveAndExit && (
-              <button
-                type="button"
-                className={styles.buttonGhost}
-                onClick={handleSaveAndExit}
-                disabled={saving}
-              >
-                저장하고 나가기
-              </button>
-            )}
-            {onPublish && (
-              <button
-                type="button"
-                className={styles.buttonPrimary}
-                onClick={handlePublish}
-                disabled={saving || publishing}
-                data-testid="editor-publish-button"
-              >
-                {publishing ? '공개 중...' : '공개하기'}
-              </button>
-            )}
-          </div>
-        )}
-
-        {showMoreMenu && (
-          <div className={`${styles.menuWrap} ${styles.mobileMoreWrap}`} ref={moreRef}>
-            <button
-              type="button"
-              className={styles.buttonGhost}
-              aria-expanded={moreOpen}
-              aria-controls={moreMenuId}
-              onClick={() => {
-                setMoreOpen((open) => !open);
-                setSettingsOpen(false);
-              }}
-            >
-              더보기
-            </button>
-            {moreOpen && (
-              <div id={moreMenuId} className={styles.menuPanel} role="menu">
-                {onSaveAndExit && (
-                  <button
-                    type="button"
-                    className={styles.menuItem}
-                    onClick={handleSaveAndExit}
-                    disabled={saving}
-                    role="menuitem"
-                  >
-                    저장하고 나가기
-                  </button>
-                )}
-                {onPublish && (
-                  <button
-                    type="button"
-                    className={styles.menuItem}
-                    onClick={handlePublish}
-                    disabled={saving || publishing}
-                    data-testid="editor-publish-button"
-                    role="menuitem"
-                  >
-                    {publishing ? '공개 중...' : '공개하기'}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        {onPublish ? (
+          <button
+            type="button"
+            className={styles.desktopPublish}
+            onClick={() => void handlePublish()}
+            disabled={saving || publishing}
+            data-testid="editor-publish-button"
+          >
+            {publishing ? '공개 중...' : '공개하기'}
+          </button>
+        ) : null}
+        <div className={styles.menuWrap} ref={moreRef}>
+          <button
+            type="button"
+            className={styles.desktopMore}
+            aria-label="더보기"
+            aria-expanded={moreOpen}
+            aria-controls={moreMenuId}
+            onClick={() => setMoreOpen((open) => !open)}
+          >
+            ···
+          </button>
+          {moreOpen && moreItems.length > 0 ? (
+            <div id={moreMenuId} className={styles.menuPanel} role="menu">
+              {moreItems.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={styles.menuItem}
+                  onClick={item.onClick}
+                  role="menuitem"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </div>
+      {saveNotice ? <p className={styles.desktopNotice}>{saveNotice}</p> : null}
+      {saveError ? <p className={styles.desktopError}>{saveError}</p> : null}
     </header>
   );
 }

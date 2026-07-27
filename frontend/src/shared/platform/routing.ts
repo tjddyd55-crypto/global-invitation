@@ -1,10 +1,10 @@
 /**
  * 플랫폼 라우팅 규칙.
  *
- * - "앱 라우트"(APP_PREFIXES) 는 middleware 에서 /m 또는 /pc 로 리다이렉트한다.
- * - 공개 URL / API / 정적 파일은 절대 건드리지 않는다 (PUBLIC_PREFIXES).
- *
- * 이 목록이 단일 진실 원천이다. 새 앱 라우트가 추가되면 반드시 여기에도 등록한다.
+ * - 공식 URL은 canonical 경로를 유지하고, Mobile/Desktop 은 viewport(1024) shell 로 전환한다.
+ * - /m · /pc 는 QA·직접 테스트용. middleware 는 UA로 /m|/pc 강제 리다이렉트하지 않는다.
+ * - buildPlatformRedirect 는 레거시/테스트 헬퍼로만 유지한다.
+ * - 공개 URL / API / 정적 파일은 PUBLIC_PREFIXES.
  */
 
 import type { Platform } from './detect';
@@ -25,7 +25,8 @@ export const APP_ROUTE_PREFIXES: readonly string[] = [
   '/dashboard',
   '/my',
   '/my-invitations',
-  // `/editor` 는 viewport 기준 클라이언트 분기 (UA middleware 제외). /m/editor · /pc/editor 유지.
+  // `/editor` 는 canonical + viewport shell. /m/editor · /pc/editor 는 QA용.
+  '/editor',
   '/create',
   '/templates',
   '/settings',

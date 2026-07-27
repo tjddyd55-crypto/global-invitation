@@ -4,38 +4,39 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { appPath, resolveAppNavPrefix } from '@/src/shared/platform/appNavPrefix';
 import { shouldShowMobileBottomNavigation } from '@/src/shared/platform/mobileBottomNavigation';
 import { useServiceWorker } from '@/src/shared/platform/useServiceWorker';
 import styles from './MobileShell.module.css';
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: string;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { href: '/m', label: '홈', icon: '🏠' },
-  { href: '/m/templates', label: '만들기', icon: '✨' },
-  { href: '/m/my-invitations', label: '내 초대장', icon: '📬' },
-  { href: '/m/dashboard', label: '대시보드', icon: '📊' },
-];
-
 /**
  * PWA 스타일 모바일 쉘.
  * Bottom Navigation 표시는 shouldShowMobileBottomNavigation SSOT만 따른다.
+ * 링크는 현재가 /m QA면 /m/*, canonical이면 공식 경로를 쓴다.
  */
 export default function MobileShell({ children }: { children: ReactNode }) {
   useServiceWorker();
   const pathname = usePathname() ?? '';
+  const prefix = resolveAppNavPrefix(pathname);
   const showBottomNav = shouldShowMobileBottomNavigation(pathname);
   const isEditorChrome = pathname.includes('/editor');
   const isConceptChrome =
+    pathname === '/templates' ||
+    pathname.startsWith('/templates/') ||
     pathname === '/m/templates' ||
     pathname.startsWith('/m/templates/') ||
+    pathname === '/create' ||
+    pathname.startsWith('/create/') ||
     pathname === '/m/create' ||
     pathname.startsWith('/m/create/');
   const chrome = isEditorChrome ? 'editor' : isConceptChrome ? 'concept' : 'default';
+
+  const navItems = [
+    { href: appPath(prefix, '/'), label: '홈', icon: '🏠' },
+    { href: appPath(prefix, '/templates'), label: '만들기', icon: '✨' },
+    { href: appPath(prefix, '/my-invitations'), label: '내 초대장', icon: '📬' },
+    { href: appPath(prefix, '/dashboard'), label: '대시보드', icon: '📊' },
+  ];
 
   return (
     <div
@@ -46,8 +47,8 @@ export default function MobileShell({ children }: { children: ReactNode }) {
       <main className={styles.content}>{children}</main>
       {showBottomNav ? (
         <nav className={styles.bottomNav} aria-label="primary" data-testid="mobile-bottom-nav">
-          {NAV_ITEMS.map((item) => {
-            const active = isActiveNav(pathname, item.href);
+          {navItems.map((item) => {
+            const active = isActiveNav(pathname, item.href, prefix);
             return (
               <Link
                 key={item.href}
@@ -68,7 +69,8 @@ export default function MobileShell({ children }: { children: ReactNode }) {
   );
 }
 
-function isActiveNav(pathname: string, href: string): boolean {
-  if (href === '/m') return pathname === '/m';
+function isActiveNav(pathname: string, href: string, prefix: '' | '/m' | '/pc'): boolean {
+  const home = appPath(prefix, '/');
+  if (href === home) return pathname === home;
   return pathname === href || pathname.startsWith(`${href}/`);
 }

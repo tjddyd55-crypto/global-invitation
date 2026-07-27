@@ -1,17 +1,21 @@
 /* 모바일 기준: 375px 캔버스, 구조는 컨셉 공통 · 스타일만 분기 */
 
 .page {
+  width: 100%;
   max-width: 375px;
   margin: 0 auto;
   box-sizing: border-box;
-  background: #f7f5f2;
-  color: #3b3b3b;
-  font-family: "Noto Serif KR", "Times New Roman", serif;
+  background: #fff8f3;
+  color: #1f2937;
+  font-family: "Noto Serif KR", "Pretendard", "Noto Sans KR", serif;
   padding: 0 0 80px;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
 }
 
 .page img {
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .page .heroMedia img,
@@ -83,7 +87,13 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.65));
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.08) 0%,
+    rgba(0, 0, 0, 0.25) 40%,
+    rgba(0, 0, 0, 0.78) 78%,
+    rgba(0, 0, 0, 0.88) 100%
+  );
 }
 
 .heroContent {
@@ -449,25 +459,124 @@
   color: #9ca3af;
 }
 
-.galleryGrid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  margin-top: 16px;
+/* Figma GalleryCarousel — full-width, ~420px main */
+.albumSection {
+  width: 100%;
+  padding: 48px 0 0;
+  margin: 0;
+  box-sizing: border-box;
 }
 
-.galleryImage {
+.scriptLabel {
+  margin: 0 0 28px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-align: center;
+  color: #b5704a;
+  opacity: 0.7;
+}
+
+.galleryCarousel {
+  position: relative;
   width: 100%;
-  height: 160px;
-  border-radius: 12px;
+}
+
+.galleryMainImage {
+  width: 100%;
+  height: 420px;
   object-fit: cover;
   object-position: center center;
   display: block;
-  transition: transform 0.2s ease;
+  border-radius: 0;
 }
 
-.galleryImage:hover {
-  transform: scale(1.03);
+.galleryArrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.galleryArrowPrev {
+  left: 10px;
+}
+
+.galleryArrowNext {
+  right: 10px;
+}
+
+.galleryCount {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  z-index: 2;
+}
+
+.galleryHint {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.galleryDots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 0;
+}
+
+.galleryDot,
+.galleryDotActive {
+  height: 6px;
+  border-radius: 3px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: #d1d5db;
+  transition: all 0.25s;
+}
+
+.galleryDot {
+  width: 6px;
+}
+
+.galleryDotActive {
+  width: 20px;
+  background: #b5704a;
+}
+
+.galleryGrid {
+  display: none;
+}
+
+.galleryImage {
+  display: none;
 }
 
 .galleryEmpty {
