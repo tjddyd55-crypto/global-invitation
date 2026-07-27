@@ -21,6 +21,7 @@ export default function LocationConfirmationCard({
 }: LocationConfirmationCardProps) {
   return (
     <div className={styles.card} data-testid="location-confirmation-card">
+      <p className={styles.selectedLabel}>{confirmed ? '확정된 위치' : '선택된 위치'}</p>
       <div className={styles.row}>
         <span className={styles.label}>장소명</span>
         <strong className={styles.value}>{location.venueName || '—'}</strong>

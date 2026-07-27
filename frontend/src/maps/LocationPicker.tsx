@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GoogleMapsExternalLinks from './GoogleMapsExternalLinks';
 import { GoogleMapsProvider, useGoogleMaps } from './GoogleMapsProvider';
 import LocationConfirmationCard from './LocationConfirmationCard';
@@ -46,7 +46,7 @@ function placeToPending(place: google.maps.places.PlaceResult, venueNameFallback
 }
 
 function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: LocationPickerProps) {
-  const { hasApiKey, error: mapsError, loading } = useGoogleMaps();
+  const { hasApiKey, error: mapsError, loading, ready, maps } = useGoogleMaps();
   const [venueName, setVenueName] = useState(value.venueName || '');
   const [detailAddress, setDetailAddress] = useState(value.detailAddress || '');
   const [searchText, setSearchText] = useState(value.formattedAddress || '');
@@ -66,6 +66,65 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
     Boolean(value.formattedAddress?.trim() && hasValidCoordinates(value.latitude, value.longitude))
   );
   const [needsPlaceSelection, setNeedsPlaceSelection] = useState(false);
+  const restoreAttemptedRef = useRef(false);
+
+  // 저장값 복원 (재진입 / 부모 value 갱신)
+  useEffect(() => {
+    setVenueName(value.venueName || '');
+    setDetailAddress(value.detailAddress || '');
+    if (value.formattedAddress?.trim()) {
+      setSearchText(value.formattedAddress);
+    }
+    if (hasValidCoordinates(value.latitude, value.longitude)) {
+      setPending({
+        venueName: value.venueName,
+        formattedAddress: value.formattedAddress,
+        detailAddress: value.detailAddress,
+        googlePlaceId: value.googlePlaceId,
+        latitude: value.latitude,
+        longitude: value.longitude,
+      });
+      setConfirmed(Boolean(value.formattedAddress?.trim()));
+      setNeedsPlaceSelection(false);
+    }
+  }, [
+    value.venueName,
+    value.detailAddress,
+    value.formattedAddress,
+    value.googlePlaceId,
+    value.latitude,
+    value.longitude,
+  ]);
+
+  // placeId / 주소 geocode fallback (좌표 없을 때)
+  useEffect(() => {
+    if (!ready || !maps || restoreAttemptedRef.current) return;
+    if (hasValidCoordinates(value.latitude, value.longitude)) return;
+    const placeId = value.googlePlaceId?.trim();
+    const address = value.formattedAddress?.trim();
+    if (!placeId && !address) return;
+
+    restoreAttemptedRef.current = true;
+    const geocoder = new maps.Geocoder();
+    const request: google.maps.GeocoderRequest = placeId
+      ? { placeId }
+      : { address: address as string };
+
+    geocoder.geocode(request, (results, status) => {
+      if (status !== 'OK' || !results?.[0]?.geometry?.location) return;
+      const loc = results[0].geometry.location;
+      setPending({
+        venueName: value.venueName || '',
+        formattedAddress: value.formattedAddress || results[0].formatted_address || '',
+        detailAddress: value.detailAddress,
+        googlePlaceId: value.googlePlaceId || results[0].place_id,
+        latitude: loc.lat(),
+        longitude: loc.lng(),
+      });
+      setConfirmed(Boolean(value.formattedAddress?.trim() || results[0].formatted_address));
+      setNeedsPlaceSelection(false);
+    });
+  }, [ready, maps, value]);
 
   const preview = useMemo<PendingInvitationLocation | null>(() => {
     if (pending) {
@@ -88,13 +147,16 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
     return null;
   }, [pending, venueName, detailAddress, value]);
 
-  const handleSearchChange = useCallback((text: string) => {
-    setSearchText(text);
-    setConfirmed(false);
-    setNeedsPlaceSelection(true);
-    setPending(null);
-    onAddressFallbackChange?.(text);
-  }, [onAddressFallbackChange]);
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      setSearchText(text);
+      setConfirmed(false);
+      setNeedsPlaceSelection(true);
+      setPending(null);
+      onAddressFallbackChange?.(text);
+    },
+    [onAddressFallbackChange]
+  );
 
   const handlePlaceSelected = useCallback(
     (place: google.maps.places.PlaceResult) => {
@@ -139,10 +201,12 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
   const statusMessage = needsPlaceSelection
     ? '검색 결과에서 위치를 선택해 주세요.'
     : !confirmed && preview
-      ? '지도를 확인한 뒤 위치를 확정해 주세요.'
+      ? '검색 결과에서 위치를 선택하면 지도에서 정확한 위치를 확인할 수 있습니다.'
       : null;
 
-  const canConfirm = Boolean(preview && hasValidCoordinates(preview.latitude, preview.longitude) && !needsPlaceSelection);
+  const canConfirm = Boolean(
+    preview && hasValidCoordinates(preview.latitude, preview.longitude) && !needsPlaceSelection
+  );
 
   if (!hasApiKey) {
     return (
@@ -158,11 +222,11 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
             type="text"
             value={venueName}
             onChange={(e) => setVenueName(e.target.value)}
-            placeholder="예: 더 웨딩홀"
+            placeholder="예: Grand Ballroom"
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>주소</span>
+          <span className={styles.fieldLabel}>장소명 또는 주소 검색</span>
           <input
             type="text"
             value={searchText}
@@ -170,7 +234,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
               setSearchText(e.target.value);
               onAddressFallbackChange?.(e.target.value);
             }}
-            placeholder="예: 서울 구로구 경인로 610"
+            placeholder="예: 1 Infinite Loop, Cupertino"
           />
         </label>
         <label className={styles.field}>
@@ -179,7 +243,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
             type="text"
             value={detailAddress}
             onChange={(e) => setDetailAddress(e.target.value)}
-            placeholder="예: 그랜드볼룸 3층"
+            placeholder="예: Floor 3"
           />
         </label>
         <button
@@ -194,7 +258,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
             setConfirmed(true);
           }}
         >
-          이 주소로 확정
+          이 위치로 확정
         </button>
       </div>
     );
@@ -211,19 +275,23 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
             setVenueName(e.target.value);
             setConfirmed(false);
           }}
-          placeholder="예: 더 웨딩홀"
+          placeholder="예: Grand Ballroom"
           data-testid="location-venue-name"
         />
       </label>
 
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>주소 검색</span>
+        <span className={styles.fieldLabel}>장소명 또는 주소 검색</span>
         <PlaceSearchInput
           value={searchText}
           onChange={handleSearchChange}
           onPlaceSelected={handlePlaceSelected}
           disabled={loading}
+          placeholder="장소명 또는 주소 검색"
         />
+        <p className={styles.hint}>
+          검색 결과에서 위치를 선택하면 지도에서 정확한 위치를 확인할 수 있습니다.
+        </p>
         {mapsError ? <p className={styles.error}>{mapsError}</p> : null}
       </label>
 
@@ -240,7 +308,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
             setDetailAddress(e.target.value);
             setConfirmed(false);
           }}
-          placeholder="예: 그랜드볼룸 3층"
+          placeholder="예: Floor 3"
           data-testid="location-detail-address"
         />
       </label>
@@ -261,7 +329,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
           onConfirm={handleConfirm}
         />
       ) : (
-        <p className={styles.hint}>주소 검색 후 결과에서 위치를 선택하면 지도가 표시됩니다.</p>
+        <p className={styles.hint}>검색 결과에서 위치를 선택해 주세요.</p>
       )}
 
       {confirmed && preview ? (

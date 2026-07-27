@@ -14,15 +14,14 @@ type PlaceSearchInputProps = {
 };
 
 /**
- * Places Autocomplete — KR / ko 우선.
- * 사용자는 예측 결과를 선택해야 확정 가능.
+ * Places Autocomplete — 전 세계 장소/주소 (country 제한 없음).
  */
 export default function PlaceSearchInput({
   value,
   onChange,
   onPlaceSelected,
   disabled,
-  placeholder = '주소 또는 장소명 검색',
+  placeholder = '장소명 또는 주소 검색',
 }: PlaceSearchInputProps) {
   const { ready, maps } = useGoogleMaps();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,7 +33,6 @@ export default function PlaceSearchInput({
 
     const autocomplete = new maps.places.Autocomplete(inputRef.current, {
       fields: ['place_id', 'name', 'formatted_address', 'geometry'],
-      componentRestrictions: { country: 'kr' },
     });
 
     const listener = autocomplete.addListener('place_changed', () => {

@@ -7,7 +7,8 @@
     "build": "node ./scripts/build-with-identity.mjs",
     "start": "node --max-old-space-size=2048 ./node_modules/next/dist/bin/next start --hostname 0.0.0.0",
     "lint": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next lint",
-    "assert:no-legacy-ui": "node ../scripts/assert-no-legacy-ui.mjs"
+    "assert:no-legacy-ui": "node ../scripts/assert-no-legacy-ui.mjs",
+    "assert:google-only-maps": "node ../scripts/assert-google-only-maps.mjs"
   },
   "dependencies": {
     "autoprefixer": "^10.4.27",

@@ -60,7 +60,7 @@ export default function Step6Location({
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>위치 안내</h2>
-        <p>주소를 검색해 지도에서 확인한 뒤 위치를 확정합니다.</p>
+        <p>장소명 또는 주소를 검색해 지도에서 확인한 뒤 위치를 확정합니다.</p>
       </div>
 
       <LocationPicker

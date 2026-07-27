@@ -8,6 +8,15 @@
   background: #fff;
 }
 
+.selectedLabel {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #4f46e5;
+  text-transform: none;
+}
+
 .row {
   display: grid;
   grid-template-columns: 64px 1fr;

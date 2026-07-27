@@ -18,7 +18,8 @@ type PublicGoogleMapProps = {
 
 /**
  * Public invitation map — Maps Embed API (place mode).
- * 좌표/placeId/주소를 사용자에게 노출하지 않음.
+ * query 우선순위: placeId → lat,lng → formattedAddress
+ * 좌표/placeId는 사용자에게 노출하지 않음.
  */
 export default function PublicGoogleMap({
   location,
@@ -48,7 +49,12 @@ export default function PublicGoogleMap({
     );
   }
 
-  const src = `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(apiKey)}&q=${encodeURIComponent(query)}&zoom=16&language=ko`;
+  const language =
+    typeof document !== 'undefined'
+      ? (document.documentElement.lang || 'en').slice(0, 2)
+      : 'en';
+
+  const src = `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(apiKey)}&q=${encodeURIComponent(query)}&zoom=16&language=${encodeURIComponent(language)}`;
 
   return (
     <iframe
@@ -60,6 +66,7 @@ export default function PublicGoogleMap({
       referrerPolicy="no-referrer-when-downgrade"
       allowFullScreen
       data-testid="public-google-map"
+      data-embed-query={query.startsWith('place_id:') ? 'place_id' : 'geo-or-address'}
     />
   );
 }

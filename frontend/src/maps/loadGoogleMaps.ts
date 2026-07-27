@@ -6,8 +6,20 @@ type GoogleMapsWindow = Window & {
   __giMapsInit?: () => void;
 };
 
+function resolveMapsLanguage(): string {
+  if (typeof document === 'undefined') return 'en';
+  const lang = (document.documentElement.lang || navigator.language || 'en').toLowerCase();
+  if (lang.startsWith('ko')) return 'ko';
+  if (lang.startsWith('mn')) return 'mn';
+  if (lang.startsWith('ja')) return 'ja';
+  if (lang.startsWith('zh')) return 'zh-TW';
+  if (lang.startsWith('fr')) return 'fr';
+  return 'en';
+}
+
 /**
- * Maps JavaScript API 싱글톤 로더 (Places 포함).
+ * Maps JavaScript API 싱글톤 로더 (Places + Marker library).
+ * 전 세계 Places — region/country 강제 없음.
  */
 export function loadGoogleMaps(): Promise<typeof google.maps> {
   if (typeof window === 'undefined') {
@@ -26,6 +38,8 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
   if (!apiKey) {
     return Promise.reject(new Error('NEXT_PUBLIC_GOOGLE_MAPS_API_KEY가 없습니다.'));
   }
+
+  const language = resolveMapsLanguage();
 
   w.__giMapsPromise = new Promise((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>('script[data-gi-google-maps="1"]');
@@ -53,7 +67,8 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
     script.dataset.giGoogleMaps = '1';
     script.async = true;
     script.defer = true;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places&language=ko&region=KR&v=weekly&callback=__giMapsInit`;
+    // places + marker (AdvancedMarkerElement). Map ID는 선택 — 없어도 classic Marker 사용.
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places,marker&language=${encodeURIComponent(language)}&v=weekly&callback=__giMapsInit`;
     script.onerror = () => {
       w.__giMapsPromise = undefined;
       reject(new Error('Google Maps 스크립트 로드에 실패했습니다.'));

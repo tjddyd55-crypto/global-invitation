@@ -151,11 +151,6 @@ export default function FuneralClassicInvitation({
             address={data.funeralHall.address}
             mapImage={data.funeralHall.mapImage}
             mapImageAlt={t(I18N_KEYS.common.mapAlt)}
-            navLabels={{
-              tmap: t(I18N_KEYS.weddingClassic.navTmap),
-              kakao: t(I18N_KEYS.weddingClassic.navKakao),
-              naver: t(I18N_KEYS.weddingClassic.navNaver),
-            }}
           />
         </section>
       )}

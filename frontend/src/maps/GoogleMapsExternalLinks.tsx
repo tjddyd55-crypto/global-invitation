@@ -10,6 +10,10 @@ type GoogleMapsExternalLinksProps = {
   className?: string;
 };
 
+/**
+ * Google-only 외부 지도 링크.
+ * 네이버/카카오/티맵 등 국내 앱은 사용하지 않는다.
+ */
 export default function GoogleMapsExternalLinks({ location, className }: GoogleMapsExternalLinksProps) {
   const viewUrl = buildGoogleMapsViewUrl(location);
   const directionsUrl = buildGoogleMapsDirectionsUrl(location);
@@ -28,7 +32,7 @@ export default function GoogleMapsExternalLinks({ location, className }: GoogleM
         Google 지도에서 보기
       </a>
       <a className={styles.link} href={directionsUrl} target="_blank" rel="noopener noreferrer">
-        길찾기
+        Google Maps 길찾기
       </a>
     </div>
   );

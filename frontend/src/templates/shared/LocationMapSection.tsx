@@ -2,17 +2,10 @@
 
 import styles from './LocationMapSection.module.css';
 import { cdnImageSrc } from '@/src/lib/image';
-import { buildMapNavigationUrls } from '@/src/templates/shared/mapNavigation';
 import GoogleMapsExternalLinks from '@/src/maps/GoogleMapsExternalLinks';
 import PublicGoogleMap from '@/src/maps/PublicGoogleMap';
 import { hasGoogleMapsApiKey } from '@/src/maps/config';
 import type { InvitationLocation } from '@/src/maps/types';
-
-type LocationNavLabels = {
-  tmap?: string;
-  kakao?: string;
-  naver?: string;
-};
 
 type LocationMapSectionProps = {
   sectionTitle?: string;
@@ -24,7 +17,8 @@ type LocationMapSectionProps = {
   mapLng?: number;
   mapImage?: string;
   mapImageAlt?: string;
-  navLabels?: LocationNavLabels;
+  /** @deprecated Google-only — ignored (네이버/카카오/티맵 제거) */
+  navLabels?: unknown;
   transportTitle?: string;
   transportInfo?: string[];
   parkingTitle?: string;
@@ -35,6 +29,9 @@ type LocationMapSectionProps = {
   layoutMapPlaceholder?: boolean;
 };
 
+/**
+ * Public location section — Google Maps only (view + directions).
+ */
 export default function LocationMapSection({
   sectionTitle,
   title,
@@ -45,7 +42,6 @@ export default function LocationMapSection({
   mapLng,
   mapImage,
   mapImageAlt = 'Map',
-  navLabels,
   transportTitle,
   transportInfo,
   parkingTitle,
@@ -62,21 +58,6 @@ export default function LocationMapSection({
     longitude: mapLng,
   };
 
-  const navUrls = buildMapNavigationUrls({
-    address: address || '',
-    mapLat,
-    mapLng,
-    label: title || address,
-  });
-
-  const navItems = navLabels
-    ? [
-        { key: 'tmap', label: navLabels.tmap, href: navUrls.tmap },
-        { key: 'kakao', label: navLabels.kakao, href: navUrls.kakao },
-        { key: 'naver', label: navLabels.naver, href: navUrls.naver },
-      ].filter((item) => Boolean(item.label && item.href))
-    : [];
-  const hasNavButtons = navItems.length > 0;
   const hasTransportInfo = Boolean(transportTitle && transportInfo && transportInfo.length > 0);
   const hasParkingInfo = Boolean(parkingTitle && parkingInfo && parkingInfo.length > 0);
 
@@ -112,21 +93,6 @@ export default function LocationMapSection({
 
       <GoogleMapsExternalLinks location={invitationLocation} />
 
-      {hasNavButtons && (
-        <div className={styles.navButtons}>
-          {navItems.map((item) => (
-            <a
-              key={item.key}
-              className={styles.navButton}
-              href={item.href}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {item.label}
-            </a>
-          ))}
-        </div>
-      )}
       {hasTransportInfo && (
         <div className={styles.infoList}>
           <strong>{transportTitle}</strong>

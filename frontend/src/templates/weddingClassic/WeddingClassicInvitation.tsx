@@ -466,11 +466,6 @@ export default function WeddingClassicInvitation({
             mapImage={r.mapImage}
             mapImageAlt={t(I18N_KEYS.weddingClassic.mapAlt)}
             tone={mapToneFuneralLike ? 'dark' : 'light'}
-            navLabels={{
-              tmap: t(I18N_KEYS.weddingClassic.navTmap),
-              kakao: t(I18N_KEYS.weddingClassic.navKakao),
-              naver: t(I18N_KEYS.weddingClassic.navNaver),
-            }}
             transportTitle={t(I18N_KEYS.weddingClassic.transportTitle)}
             transportInfo={safeArray(r.transportInfo)}
             parkingTitle={t(I18N_KEYS.weddingClassic.parkingTitle)}
