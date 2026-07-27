@@ -37,14 +37,14 @@ test.describe('Figma entry/auth desktop', () => {
 
   test('Concept /create/concept — auth gate or concept cards', async ({ page }) => {
     await page.goto(`${FE}/create/concept`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-    await page.waitForTimeout(800);
+    // RequireAuth 로딩 중 null 렌더 후 미인증이면 /auth/email 로 replace 된다.
+    await page.waitForURL(/\/(create\/concept|auth\/email)/, { timeout: 30_000 });
+    await expect(page.getByText(/어떤 초대장을|이메일 인증이 필요합니다/).first()).toBeVisible({
+      timeout: 20_000,
+    });
     expect(await page.locator('aside').count()).toBe(0);
     const body = await page.locator('body').innerText();
     expect(body).not.toContain('Global Invitation 데스크톱');
-    // Either auth redirect/gate or concept UI
-    const hasConcept = body.includes('어떤 초대장을');
-    const hasAuth = body.includes('이메일') || page.url().includes('/auth/');
-    expect(hasConcept || hasAuth).toBeTruthy();
   });
 
   test('Email Start /auth/email — Invite + auth card', async ({ page }) => {
