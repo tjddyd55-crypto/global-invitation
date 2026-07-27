@@ -515,7 +515,11 @@ export default function WeddingClassicInvitation({
                     </div>
                     <span className={styles.guestbookAuthor}>{msg.name}</span>
                   </div>
-                  {msg.createdAt ? <span className={styles.guestbookTime}>{msg.createdAt}</span> : null}
+                  {msg.createdAt ? (
+                    <span className={styles.guestbookTime}>
+                      {msg.createdAt.includes(' ') ? msg.createdAt.split(' ')[0] : msg.createdAt}
+                    </span>
+                  ) : null}
                 </div>
                 <p className={styles.guestbookBody}>{msg.content}</p>
               </article>

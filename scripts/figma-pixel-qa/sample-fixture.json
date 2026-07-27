@@ -1,0 +1,49 @@
+{
+  "groomName": "이준혁",
+  "brideName": "김지은",
+  "title": "이준혁 ♥ 김지은",
+  "eventDate": "2025-11-15T14:30:00+09:00",
+  "eventDateLabel": "2025년 11월 15일 토요일 오후 2시 30분",
+  "venue": "더 웨딩홀 그랜드볼룸",
+  "locationText": "더 웨딩홀 그랜드볼룸 · 서울 강남구",
+  "address": "서울 구로구 경인로 610",
+  "greeting": "봄날의 햇살 아래, 결혼합니다.",
+  "groomParents": "유갑성 · 우재한 의 아들",
+  "brideParents": "이상금 · 형명숙 의 딸",
+  "groomPhone": "010-1234-5678",
+  "bridePhone": "010-9876-5432",
+  "accounts": [
+    { "role": "신랑", "bank": "국민은행", "number": "123456-78-901234", "holder": "이준혁" },
+    { "role": "신부", "bank": "신한은행", "number": "987654-32-109876", "holder": "김지은" }
+  ],
+  "messages": [
+    {
+      "name": "서문교",
+      "content": "두 분 결혼 축하드려요~ 알콩달콩 이쁘게 잘 살아요^^",
+      "createdAt": "2025.04.13"
+    },
+    {
+      "name": "스윙 이소영",
+      "content": "소식 전해줘서 고마워요! 행복하게 잘 살아줘요.",
+      "createdAt": "2025.04.12"
+    }
+  ],
+  "shareHint": "사용 중인 기기의 공유 기능으로\n원하는 앱에 바로 보낼 수 있습니다.",
+  "assets": {
+    "hero": "/images/wedding/classic/hero.jpg",
+    "groom": "/images/wedding/classic/groom.jpg",
+    "bride": "/images/wedding/classic/bride.jpg",
+    "map": "/images/wedding/classic/map.jpg",
+    "gallery": [
+      "/images/wedding/classic/gallery_01.jpg",
+      "/images/wedding/classic/gallery_02.jpg"
+    ]
+  },
+  "layoutColors": {
+    "hero": "#D9D4CC",
+    "couple": "#E6E1DA",
+    "gallery": "#D8D2C9",
+    "map": "#ECE8E1"
+  },
+  "fontStack": "\"Noto Sans KR\", \"Apple SD Gothic Neo\", \"Malgun Gothic\", system-ui, sans-serif"
+}

@@ -13,6 +13,7 @@ import {
 import { trackInvitationView } from '@/src/lib/trackInvitationView';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import GlobalSharePanel from '@/src/components/share/GlobalSharePanel';
+import InvitationShareBlock from '@/src/components/share/InvitationShareBlock';
 import {
   fetchTemplateDefinitionById,
   getTemplateRegistryEntry,
@@ -277,11 +278,10 @@ export default function PublicShareInvitationPage() {
             {showRsvp ? <RSVPForm invitationSlug={baseSlug} /> : null}
 
             <section className={publicInvitationMobile.shareSectionMobile}>
-              <GlobalSharePanel
+              <InvitationShareBlock
                 shareUrl={sharePageUrl}
                 title={sharePresentation.metaTitle}
                 text={sharePresentation.metaDescription}
-                variant="sheet"
               />
               {invitation.musicKey ? (
                 <button

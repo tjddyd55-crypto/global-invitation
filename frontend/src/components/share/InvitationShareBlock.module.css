@@ -1,0 +1,145 @@
+.section {
+  padding: 56px 24px;
+  background: transparent;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.scriptLabel {
+  margin: 0 0 28px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #b5704a;
+  opacity: 0.7;
+}
+
+.hint {
+  margin: 0 0 24px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #6b7280;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.primary,
+.secondary {
+  flex: 1;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.primary {
+  border: none;
+  background: #b5704a;
+  color: #fff;
+}
+
+.secondary {
+  border: 1.5px solid #eeece8;
+  background: transparent;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.sheetBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 20px 20px 44px;
+  box-sizing: border-box;
+}
+
+.sheetHandle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: #e5e7eb;
+  margin: 0 auto 20px;
+}
+
+.sheetHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.sheetTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.sheetClose {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 20px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.appGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.appItem {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.appIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.appLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.3;
+}

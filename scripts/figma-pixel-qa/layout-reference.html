@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Figma Layout Reference</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+      --bg: #FFF8F3;
+      --accent: #B5704A;
+      --text: #1F2937;
+      --muted: #6B7280;
+      --divider: #EEECE8;
+      --hero: #D9D4CC;
+      --couple: #E6E1DA;
+      --gallery: #D8D2C9;
+      --map: #ECE8E1;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); }
+    .screen { width: 375px; margin: 0 auto; background: var(--bg); min-height: 100vh; }
+    .label {
+      margin: 0 0 28px; font-size: 10px; font-weight: 700; letter-spacing: 3px;
+      text-transform: uppercase; text-align: center; color: var(--accent); opacity: .7;
+    }
+    .hero {
+      position: relative; width: 100%; height: 520px; display: flex; align-items: flex-end;
+      padding: 24px 24px 40px; overflow: hidden;
+    }
+    .hero-media {
+      position: absolute; inset: 0; background: var(--hero);
+    }
+    .hero::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.55) 100%);
+    }
+    .hero-text { position: relative; z-index: 1; color: #fff; text-align: left; }
+    .hero-text h1 { margin: 0 0 8px; font-size: 28px; font-weight: 700; line-height: 1.2; }
+    .hero-text p { margin: 0; font-size: 14px; opacity: .9; line-height: 1.4; }
+
+    .couple { padding: 56px 24px; }
+    .couple-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+      max-width: 320px; margin: 0 auto;
+    }
+    .person { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+    .photo {
+      width: 120px; height: 160px; border-radius: 16px; background: var(--couple);
+      box-shadow: 0 6px 24px rgba(181,112,74,.16); flex-shrink: 0;
+    }
+    .role { margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--accent); }
+    .name { margin: 0; font-size: 17px; font-weight: 700; line-height: 24px; }
+    .detail { margin: 0; font-size: 11px; line-height: 1.5; color: var(--muted); }
+    .contact {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 6px 14px; border-radius: 20px; background: var(--accent); color: #fff;
+      font-size: 11px; font-weight: 600; text-decoration: none; line-height: 1.2;
+    }
+
+    .album { padding-top: 48px; }
+    .gallery {
+      position: relative; width: 100%; height: 420px; background: var(--gallery);
+    }
+    .gallery-count {
+      position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,.45); color: #fff;
+      font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 12px;
+    }
+    .gallery-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px;
+      border-radius: 18px; border: none; background: rgba(0,0,0,.35); color: #fff; font-size: 22px;
+    }
+    .gallery-arrow.prev { left: 10px; }
+    .gallery-arrow.next { right: 10px; }
+    .gallery-dots { display: flex; justify-content: center; gap: 6px; padding: 12px 0 0; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #d1d5db; }
+    .dot.active { background: var(--accent); }
+
+    .map-wrap { padding: 56px 0 0; }
+    .map { width: 100%; height: 280px; background: var(--map); border-radius: 0; }
+
+    .guestbook { padding: 56px 20px; }
+    .cards { display: flex; flex-direction: column; gap: 12px; max-width: 340px; margin: 0 auto 20px; }
+    .card {
+      background: #fff; border: 1px solid var(--divider); border-radius: 8px; padding: 16px 18px; text-align: left;
+    }
+    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .author { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+      background: rgba(181,112,74,.25); color: var(--accent); font-weight: 700; font-size: 13px;
+    }
+    .time { font-size: 11px; color: var(--muted); }
+    .body { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+    .actions { display: flex; gap: 10px; max-width: 340px; margin: 0 auto; }
+    .btn {
+      flex: 1; height: 44px; border-radius: 10px; font-size: 13px; font-weight: 600;
+      border: 1px solid var(--divider); background: transparent; color: var(--muted);
+    }
+    .btn-primary { background: var(--accent); border: none; color: #fff; }
+
+    .share { padding: 56px 24px; text-align: center; }
+    .share-hint { margin: 0 0 24px; font-size: 13px; line-height: 1.6; color: var(--muted); }
+    .share-actions { display: flex; gap: 10px; max-width: 320px; margin: 0 auto; }
+    .share-primary {
+      flex: 1; height: 48px; border: none; border-radius: 12px; background: var(--accent); color: #fff;
+      font-size: 14px; font-weight: 700;
+    }
+    .share-secondary {
+      flex: 1; height: 48px; border: 1.5px solid var(--divider); border-radius: 12px;
+      background: transparent; color: var(--muted); font-size: 14px; font-weight: 600;
+    }
+
+    .editor-desktop {
+      width: 1440px; min-height: 768px; margin: 0 auto; background: #F7F3EC;
+    }
+    .ed-header {
+      height: 72px; display: flex; align-items: center; gap: 12px; padding: 0 32px;
+      background: #fff; border-bottom: 1px solid var(--divider); font-family: var(--font);
+    }
+    .badge {
+      padding: 4px 10px; border-radius: 999px; background: #EEF2FF; color: #4F46E5;
+      font-size: 12px; font-weight: 700;
+    }
+    .ed-body {
+      max-width: 1240px; margin: 0 auto; padding: 32px;
+      display: grid; grid-template-columns: 240px 1fr 340px; gap: 24px;
+    }
+    .panel {
+      background: #fff; border-radius: 24px; padding: 32px; min-height: 420px;
+    }
+    .field { margin-bottom: 16px; text-align: left; }
+    .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #374151; }
+    .field input, .field textarea {
+      width: 100%; height: 44px; border: 1px solid #e5e7eb; border-radius: 12px; padding: 0 12px;
+      font: inherit; font-size: 14px; background: #fff;
+    }
+    .field textarea { height: 88px; padding: 10px 12px; }
+    .preview {
+      width: 340px; border-radius: 28px; background: #fff; border: 1px solid var(--divider);
+      min-height: 520px; padding: 16px; overflow: hidden;
+    }
+    .preview-hero { height: 200px; background: var(--hero); border-radius: 16px; }
+
+    .editor-mobile { width: 375px; margin: 0 auto; min-height: 812px; background: #F7F3EC; position: relative; }
+    .m-header {
+      height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 16px;
+      background: #fff; border-bottom: 1px solid var(--divider);
+    }
+    .m-form { margin: 16px 20px; background: #fff; border-radius: 24px; padding: 24px; min-height: 360px; }
+    .m-bottom {
+      position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px;
+      padding: 12px 16px; background: #fff; border-top: 1px solid var(--divider);
+    }
+    .m-bottom .prev { flex: 1; height: 44px; border-radius: 12px; border: 1px solid #E5E7EB; background: #fff; }
+    .m-bottom .preview-btn { width: 80px; height: 44px; border-radius: 12px; border: 1px solid #E5E7EB; background: #fff; }
+    .m-bottom .next { flex: 1; height: 44px; border-radius: 12px; border: none; background: #4F46E5; color: #fff; font-weight: 600; }
+
+    [data-screen] { display: none; }
+    [data-screen].active { display: block; }
+  </style>
+</head>
+<body>
+  <div id="public-hero" data-screen class="screen active">
+    <section class="hero" data-testid="ref-hero">
+      <div class="hero-media" data-qa-mask="hero"></div>
+      <div class="hero-text">
+        <h1>이준혁 ♥ 김지은</h1>
+        <p>2025년 11월 15일 토요일 오후 2시 30분</p>
+        <p>더 웨딩홀 그랜드볼룸 · 서울 강남구</p>
+      </div>
+    </section>
+  </div>
+
+  <div id="public-couple" data-screen class="screen">
+    <section class="couple" data-testid="ref-couple">
+      <p class="label">The Couple</p>
+      <div class="couple-grid">
+        <div class="person">
+          <div class="photo" data-qa-mask="couple"></div>
+          <p class="role">신랑</p>
+          <p class="name">이준혁</p>
+          <p class="detail">유갑성 · 우재한 의 아들</p>
+          <a class="contact" href="#">연락하기</a>
+        </div>
+        <div class="person">
+          <div class="photo" data-qa-mask="couple"></div>
+          <p class="role">신부</p>
+          <p class="name">김지은</p>
+          <p class="detail">이상금 · 형명숙 의 딸</p>
+          <a class="contact" href="#">연락하기</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="public-guestbook" data-screen class="screen">
+    <section class="guestbook" data-testid="ref-guestbook">
+      <p class="label">Guestbook</p>
+      <div class="cards">
+        <article class="card">
+          <div class="card-head">
+            <div class="author"><span class="avatar">서</span>서문교</div>
+            <span class="time">2025.04.13</span>
+          </div>
+          <p class="body">두 분 결혼 축하드려요~ 알콩달콩 이쁘게 잘 살아요^^</p>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <div class="author"><span class="avatar">스</span>스윙 이소영</div>
+            <span class="time">2025.04.12</span>
+          </div>
+          <p class="body">소식 전해줘서 고마워요! 행복하게 잘 살아줘요.</p>
+        </article>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button">전체보기</button>
+        <button class="btn btn-primary" type="button">작성하기</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="public-gallery" data-screen class="screen">
+    <section class="album" data-testid="ref-gallery">
+      <p class="label">Album</p>
+      <div class="gallery" data-qa-mask="gallery">
+        <div class="gallery-count">1 / 2</div>
+        <button class="gallery-arrow prev" type="button">‹</button>
+        <button class="gallery-arrow next" type="button">›</button>
+      </div>
+      <div class="gallery-dots">
+        <span class="dot active"></span>
+        <span class="dot"></span>
+      </div>
+    </section>
+  </div>
+
+  <div id="public-map" data-screen class="screen">
+    <section class="map-wrap" data-testid="ref-map">
+      <p class="label">Location</p>
+      <div class="map" data-qa-mask="map"></div>
+    </section>
+  </div>
+
+  <div id="public-share" data-screen class="screen">
+    <section class="share" data-testid="ref-share">
+      <p class="label">Share</p>
+      <p class="share-hint">사용 중인 기기의 공유 기능으로<br />원하는 앱에 바로 보낼 수 있습니다.</p>
+      <div class="share-actions">
+        <button class="share-primary" type="button">공유하기</button>
+        <button class="share-secondary" type="button">링크 복사</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="editor-desktop-basic" data-screen>
+    <div class="editor-desktop" data-testid="ref-editor-desktop">
+      <header class="ed-header">
+        <strong>초대장 편집</strong>
+        <span class="badge">초안</span>
+        <span style="margin-left:auto"></span>
+        <button type="button">저장</button>
+        <button type="button" style="background:#4F46E5;color:#fff;border:none;border-radius:10px;padding:8px 14px;font-weight:700">공개하기</button>
+      </header>
+      <div class="ed-body">
+        <aside class="panel">
+          <div style="font-weight:700;margin-bottom:12px">단계</div>
+          <div>1. 기본 정보</div>
+        </aside>
+        <main class="panel">
+          <div class="field"><label>제목</label><input value="이준혁 ♥ 김지은" readonly /></div>
+          <div class="field"><label>일시</label><input value="2025-11-15T14:30" readonly /></div>
+          <div class="field"><label>장소</label><input value="더 웨딩홀 그랜드볼룸" readonly /></div>
+          <div class="field"><label>인사말</label><textarea readonly>봄날의 햇살 아래, 결혼합니다.</textarea></div>
+        </main>
+        <aside class="preview">
+          <div class="preview-hero" data-qa-mask="hero"></div>
+          <p style="margin:12px 0 0;font-weight:700">이준혁 ♥ 김지은</p>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div id="editor-mobile-basic" data-screen>
+    <div class="editor-mobile" data-testid="ref-editor-mobile">
+      <header class="m-header">
+        <span>←</span>
+        <strong style="flex:1">편집</strong>
+        <span class="badge">초안</span>
+        <button type="button">저장</button>
+        <span>···</span>
+      </header>
+      <div class="m-form">
+        <div class="field"><label>제목</label><input value="이준혁 ♥ 김지은" readonly /></div>
+        <div class="field"><label>일시</label><input value="2025-11-15T14:30" readonly /></div>
+        <div class="field"><label>장소</label><input value="더 웨딩홀 그랜드볼룸" readonly /></div>
+      </div>
+      <div class="m-bottom">
+        <button class="prev" type="button">이전</button>
+        <button class="preview-btn" type="button">미리보기</button>
+        <button class="next" type="button">다음</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const screen = params.get('screen') || 'public-hero';
+    document.querySelectorAll('[data-screen]').forEach((el) => {
+      el.classList.toggle('active', el.id === screen);
+    });
+    document.fonts.ready.then(() => {
+      document.documentElement.dataset.fontsReady = '1';
+    });
+  </script>
+</body>
+</html>

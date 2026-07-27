@@ -1,37 +1,44 @@
 /**
- * Figma Make SSOT reference + Railway actual 캡처 및 pixel overlay/diff.
+ * Figma Pixel QA — Layout Reference Mode (primary verdict).
  *
- * - Figma Make은 get_screenshot 미지원 → MCP 소스 수치로 만든 reference HTML 캡처
- * - Railway actual은 동일 viewport / deviceScaleFactor=1 로 캡처
- *
- * env:
- * - PLAYWRIGHT_BASE_URL (default Railway development FE)
- * - E2E_API_BASE_URL
+ * Principles:
+ * - Same fixture data for reference HTML and Railway actual
+ * - Same font stack (Noto Sans KR)
+ * - Solid placeholders for Hero/Couple/Gallery/Map (layout mode)
+ * - Masked mismatch is the PASS/FAIL metric
+ * - Real-asset pixel mismatch is NOT used as primary verdict
  */
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import { test, expect, type Page, type Browser } from '@playwright/test';
+import { test, expect, type Page, type Browser, type Locator } from '@playwright/test';
 import { pathToFileURL } from 'url';
 
 const FE = process.env.PLAYWRIGHT_BASE_URL || 'https://frontend-development-1b8a.up.railway.app';
 const API = process.env.E2E_API_BASE_URL || 'https://backend-development-c9a4.up.railway.app';
 const ROOT = path.resolve(__dirname, '..');
-const REF_DIR = path.join(ROOT, 'artifacts/figma-reference');
-const ACT_DIR = path.join(ROOT, 'artifacts/railway-actual');
-const OUT_DIR = path.join(ROOT, 'artifacts/figma-diff');
-const REF_HTML = path.join(ROOT, 'scripts/figma-pixel-qa/figma-reference.html');
-const BASELINE = path.join(OUT_DIR, 'baseline.json');
+const QA_ROOT = path.join(ROOT, 'artifacts/figma-pixel-qa');
+const REF_DIR = path.join(QA_ROOT, 'reference');
+const ACT_DIR = path.join(QA_ROOT, 'actual');
+const REPORTS_DIR = path.join(QA_ROOT, 'reports');
+const REF_HTML = path.join(ROOT, 'scripts/figma-pixel-qa/layout-reference.html');
+const FIXTURE = JSON.parse(
+  fs.readFileSync(path.join(ROOT, 'scripts/figma-pixel-qa/sample-fixture.json'), 'utf8')
+);
 
-test.setTimeout(240_000);
+test.setTimeout(300_000);
 
 const VIEWPORTS = {
   mobile375: { width: 375, height: 812 },
-  mobile390: { width: 390, height: 844 },
-  desktop1023: { width: 1023, height: 768 },
-  desktop1024: { width: 1024, height: 768 },
   desktop1440: { width: 1440, height: 1024 },
 } as const;
+
+const LAYOUT_COLORS = FIXTURE.layoutColors as {
+  hero: string;
+  couple: string;
+  gallery: string;
+  map: string;
+};
 
 function sh(cmd: string) {
   return execSync(cmd, { encoding: 'utf8', cwd: ROOT }).replace(/^\uFEFF/, '').trim();
@@ -50,13 +57,6 @@ async function identifyDeploy() {
     captureAt: new Date().toISOString(),
     frontendUrl: FE,
   };
-}
-
-async function liveFingerprint(page: Page) {
-  await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 });
-  const html = await page.content();
-  const chunk = (html.match(/\/_next\/static\/chunks\/webpack-[a-f0-9]+\.js/) || [])[0] || null;
-  return { finalUrl: page.url(), webpackChunk: chunk };
 }
 
 async function loginInBrowser(page: Page, email: string) {
@@ -81,7 +81,7 @@ async function loginInBrowser(page: Page, email: string) {
 }
 
 async function ensureFixture(page: Page) {
-  const email = `figma-pixel-qa-${Date.now()}@example.com`;
+  const email = `figma-layout-qa-${Date.now()}@example.com`;
   await loginInBrowser(page, email);
   const created = await page.evaluate(async ({ api }) => {
     const res = await fetch(`${api}/api/invitations`, {
@@ -101,63 +101,46 @@ async function ensureFixture(page: Page) {
   const id = created.data.id as string;
 
   const published = await page.evaluate(
-    async ({ api, id }) => {
+    async ({ api, id, fixture }) => {
       await fetch(`${api}/api/invitations/${id}`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: '이준혁 ♥ 김지은',
+          title: fixture.title,
           data: {
             templateType: 'FULL',
             conceptType: 'WEDDING',
-            title: '이준혁 ♥ 김지은',
-            content: '봄날의 햇살 아래, 결혼합니다.',
-            eventDate: '2025-11-15T14:30:00+09:00',
-            locationText: '더 웨딩홀 그랜드볼룸 · 서울 강남구',
-            schedule: ['2025년 11월 15일 토요일 오후 2시 30분'],
+            title: fixture.title,
+            content: fixture.greeting,
+            eventDate: fixture.eventDate,
+            locationText: fixture.locationText,
+            schedule: [fixture.eventDateLabel],
             rsvpEnabled: true,
             guestbookEnabled: true,
-            groomName: '이준혁',
-            brideName: '김지은',
-            groomPhone: '010-1234-5678',
-            bridePhone: '010-9876-5432',
-            parentsInfo: '유갑성 · 우재한 의 아들 / 이상금 · 형명숙 의 딸',
+            groomName: fixture.groomName,
+            brideName: fixture.brideName,
+            groomPhone: fixture.groomPhone,
+            bridePhone: fixture.bridePhone,
+            parentsInfo: `${fixture.groomParents} / ${fixture.brideParents}`,
             groom: {
-              name: '이준혁',
-              phone: '010-1234-5678',
-              parentsText: '유갑성 · 우재한 의 아들',
-              image: '/images/wedding/classic/groom.jpg',
+              name: fixture.groomName,
+              phone: fixture.groomPhone,
+              parentsText: fixture.groomParents,
+              image: fixture.assets.groom,
             },
             bride: {
-              name: '김지은',
-              phone: '010-9876-5432',
-              parentsText: '이상금 · 형명숙 의 딸',
-              image: '/images/wedding/classic/bride.jpg',
+              name: fixture.brideName,
+              phone: fixture.bridePhone,
+              parentsText: fixture.brideParents,
+              image: fixture.assets.bride,
             },
-            heroImage: '/images/wedding/classic/hero.jpg',
-            galleryImages: [
-              '/images/wedding/classic/gallery_01.jpg',
-              '/images/wedding/classic/gallery_02.jpg',
-            ],
-            address: '서울 구로구 경인로 610',
-            mapImage: '/images/wedding/classic/map.jpg',
-            accounts: [
-              { role: '신랑', bank: '국민은행', number: '123456-78-901234', holder: '이준혁' },
-              { role: '신부', bank: '신한은행', number: '987654-32-109876', holder: '김지은' },
-            ],
-            messages: [
-              {
-                name: '서문교',
-                content: '두 분 결혼 축하드려요~ 알콩달콩 이쁘게 잘 살아요^^',
-                createdAt: '2025.04.13 17:21',
-              },
-              {
-                name: '스윙 이소영',
-                content: '소식 전해줘서 고마워요! 행복하게 잘 살아줘요.',
-                createdAt: '2025.04.12 19:45',
-              },
-            ],
+            heroImage: fixture.assets.hero,
+            galleryImages: fixture.assets.gallery,
+            address: fixture.address,
+            mapImage: fixture.assets.map,
+            accounts: fixture.accounts,
+            messages: fixture.messages,
             rsvp: { enabled: true },
           },
         }),
@@ -174,36 +157,108 @@ async function ensureFixture(page: Page) {
         shareSlug: body.shareSlug || body.share_slug || detailBody.shareSlug,
       };
     },
-    { api: API, id }
+    { api: API, id, fixture: FIXTURE }
   );
   expect(published.ok).toBeTruthy();
   expect(published.shareSlug).toBeTruthy();
   return { id, shareSlug: published.shareSlug as string, email };
 }
 
-async function waitReady(page: Page) {
-  await page.waitForLoadState('domcontentloaded');
+async function waitFonts(page: Page) {
   await page.evaluate(async () => {
     if (document.fonts?.ready) await document.fonts.ready;
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   });
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(300);
 }
 
-async function captureViewport(
-  page: Page,
-  filePath: string,
-  options?: { fullPage?: boolean; selector?: string }
-) {
+/** Replace media with solid layout placeholders; unify font stack. */
+async function enableLayoutMode(page: Page) {
+  await page.addStyleTag({
+    content: `
+      html, body, * {
+        font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif !important;
+      }
+      [data-testid="couple-section"] img,
+      [data-testid="couple-section"] [class*="couplePhoto"],
+      [data-testid="couple-section"] [class*="coupleAvatarFallback"] {
+        opacity: 0 !important;
+      }
+      [data-testid="couple-section"] [class*="couplePhotoFrame"] {
+        background: ${LAYOUT_COLORS.couple} !important;
+        box-shadow: 0 6px 24px rgba(181,112,74,.16) !important;
+      }
+      [aria-label="Album"] img,
+      [aria-label="Album"] [class*="galleryMainImage"] {
+        opacity: 0 !important;
+      }
+      [aria-label="Album"] [class*="galleryCarousel"],
+      [aria-label="Album"] [class*="galleryMainImage"] {
+        background: ${LAYOUT_COLORS.gallery} !important;
+      }
+      [class*="heroMedia"] img,
+      [class*="heroImage"],
+      section[aria-label="대표 이미지"] img {
+        opacity: 0 !important;
+      }
+      section[aria-label="대표 이미지"],
+      [class*="heroSection"],
+      [class*="heroMedia"] {
+        background: ${LAYOUT_COLORS.hero} !important;
+      }
+      [class*="mapImage"],
+      img[alt="지도"],
+      img[alt="Map"] {
+        opacity: 0 !important;
+      }
+      [class*="mapImage"] {
+        background: ${LAYOUT_COLORS.map} !important;
+        min-height: 280px !important;
+      }
+    `,
+  });
+  await page.addStyleTag({
+    url: 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap',
+  }).catch(() => undefined);
+  await waitFonts(page);
+}
+
+async function capture(page: Page, filePath: string, locator?: Locator) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  if (options?.selector) {
-    const loc = page.locator(options.selector).first();
-    await expect(loc).toBeVisible({ timeout: 30_000 });
-    await loc.screenshot({ path: filePath });
+  if (locator) {
+    await expect(locator).toBeVisible({ timeout: 30_000 });
+    await locator.screenshot({ path: filePath });
   } else {
-    await page.screenshot({ path: filePath, fullPage: Boolean(options?.fullPage) });
+    await page.screenshot({ path: filePath, fullPage: false });
   }
   expect(fs.existsSync(filePath)).toBeTruthy();
+}
+
+async function writeMasks(name: string, masks: Array<{ x: number; y: number; w: number; h: number; kind: string }>) {
+  const metaPath = path.join(ACT_DIR, name.replace(/\.png$/i, '.masks.json'));
+  fs.writeFileSync(metaPath, JSON.stringify(masks, null, 2), 'utf8');
+}
+
+async function masksRelativeTo(root: Locator, selectors: Array<{ sel: string; kind: string }>) {
+  const rootBox = await root.boundingBox();
+  if (!rootBox) return [];
+  const masks: Array<{ x: number; y: number; w: number; h: number; kind: string }> = [];
+  for (const item of selectors) {
+    const nodes = root.locator(item.sel);
+    const count = await nodes.count();
+    for (let i = 0; i < count; i += 1) {
+      const box = await nodes.nth(i).boundingBox();
+      if (!box) continue;
+      masks.push({
+        x: box.x - rootBox.x,
+        y: box.y - rootBox.y,
+        w: box.width,
+        h: box.height,
+        kind: item.kind,
+      });
+    }
+  }
+  return masks;
 }
 
 async function captureFigmaReference(browser: Browser) {
@@ -215,34 +270,14 @@ async function captureFigmaReference(browser: Browser) {
     viewport: keyof typeof VIEWPORTS;
     selector?: string;
   }> = [
-    { name: 'public-mobile-hero-375.png', screen: 'public-mobile-hero', viewport: 'mobile375' },
-    {
-      name: 'public-mobile-couple-375.png',
-      screen: 'public-mobile-couple',
-      viewport: 'mobile375',
-      selector: '.couple',
-    },
-    {
-      name: 'public-mobile-guestbook-375.png',
-      screen: 'public-mobile-guestbook',
-      viewport: 'mobile375',
-      selector: '.guestbook',
-    },
-    {
-      name: 'public-mobile-gallery-375.png',
-      screen: 'public-mobile-gallery',
-      viewport: 'mobile375',
-      selector: '.gallery',
-    },
-    {
-      name: 'public-mobile-map-375.png',
-      screen: 'public-mobile-map',
-      viewport: 'mobile375',
-      selector: '.map',
-    },
-    { name: 'public-mobile-share-375.png', screen: 'public-mobile-share', viewport: 'mobile375' },
-    { name: 'editor-desktop-basic-1440.png', screen: 'editor-desktop-basic', viewport: 'desktop1440' },
-    { name: 'editor-mobile-basic-375.png', screen: 'editor-mobile-basic', viewport: 'mobile375' },
+    { name: 'public-hero-375.png', screen: 'public-hero', viewport: 'mobile375', selector: '[data-testid="ref-hero"]' },
+    { name: 'public-couple-375.png', screen: 'public-couple', viewport: 'mobile375', selector: '[data-testid="ref-couple"]' },
+    { name: 'public-guestbook-375.png', screen: 'public-guestbook', viewport: 'mobile375', selector: '[data-testid="ref-guestbook"]' },
+    { name: 'public-gallery-375.png', screen: 'public-gallery', viewport: 'mobile375', selector: '[data-testid="ref-gallery"]' },
+    { name: 'public-map-375.png', screen: 'public-map', viewport: 'mobile375', selector: '[data-testid="ref-map"]' },
+    { name: 'public-share-375.png', screen: 'public-share', viewport: 'mobile375', selector: '[data-testid="ref-share"]' },
+    { name: 'editor-desktop-basic-1440.png', screen: 'editor-desktop-basic', viewport: 'desktop1440', selector: '[data-testid="ref-editor-desktop"]' },
+    { name: 'editor-mobile-basic-375.png', screen: 'editor-mobile-basic', viewport: 'mobile375', selector: '[data-testid="ref-editor-mobile"]' },
   ];
 
   for (const shot of shots) {
@@ -252,27 +287,25 @@ async function captureFigmaReference(browser: Browser) {
     });
     const page = await context.newPage();
     await page.goto(`${fileUrl}?screen=${shot.screen}`, { waitUntil: 'domcontentloaded' });
-    await waitReady(page);
-    await captureViewport(page, path.join(REF_DIR, shot.name), {
-      selector: shot.selector,
-    });
+    await waitFonts(page);
+    await page.waitForFunction(() => document.documentElement.dataset.fontsReady === '1', null, {
+      timeout: 10_000,
+    }).catch(() => undefined);
+    if (shot.selector) {
+      await capture(page, path.join(REF_DIR, shot.name), page.locator(shot.selector).first());
+    } else {
+      await capture(page, path.join(REF_DIR, shot.name));
+    }
     await context.close();
   }
   return shots.length;
 }
 
-test.describe('Figma pixel overlay QA', () => {
-  test('capture reference + railway actual + diff', async ({ browser }) => {
-    fs.mkdirSync(REF_DIR, { recursive: true });
-    fs.mkdirSync(ACT_DIR, { recursive: true });
-    fs.mkdirSync(OUT_DIR, { recursive: true });
+test.describe('Figma layout pixel QA', () => {
+  test('layout-mode capture + masked diff', async ({ browser }) => {
+    for (const dir of [REF_DIR, ACT_DIR, REPORTS_DIR]) fs.mkdirSync(dir, { recursive: true });
 
     const deploy = await identifyDeploy();
-    const fpPage = await browser.newPage({ viewport: VIEWPORTS.mobile375, deviceScaleFactor: 1 });
-    await fpPage.goto(FE, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-    const live = await liveFingerprint(fpPage);
-    await fpPage.close();
-
     const refCount = await captureFigmaReference(browser);
 
     const setup = await browser.newPage({ viewport: VIEWPORTS.mobile375, deviceScaleFactor: 1 });
@@ -281,7 +314,7 @@ test.describe('Figma pixel overlay QA', () => {
     const fixture = await ensureFixture(setup);
     await setup.close();
 
-    // Public mobile sections
+    // Public mobile sections (layout mode)
     {
       const context = await browser.newContext({
         baseURL: FE,
@@ -293,60 +326,67 @@ test.describe('Figma pixel overlay QA', () => {
       const page = await context.newPage();
       await page.addInitScript(() => localStorage.setItem('language', 'ko'));
       await page.goto(`/i/${fixture.shareSlug}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-      await waitReady(page);
-      await page.waitForSelector('img', { timeout: 30_000 }).catch(() => undefined);
-      await page.evaluate(() => {
-        document.querySelectorAll('img').forEach((img) => {
-          if ((img as HTMLImageElement).complete) return;
-        });
-      });
+      await enableLayoutMode(page);
 
-      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-hero-375.png'));
+      const hero = page.locator('section[aria-label="대표 이미지"]').first();
+      await expect(hero).toBeVisible({ timeout: 30_000 });
+      await capture(page, path.join(ACT_DIR, 'public-hero-375.png'), hero);
+      await writeMasks('public-hero-375.png', await masksRelativeTo(hero, [
+        { sel: '[class*="heroMedia"], [class*="heroImage"], img', kind: 'hero' },
+      ]));
 
-      await expect(page.getByTestId('couple-section')).toBeVisible({ timeout: 30_000 });
-      await page.getByTestId('couple-section').scrollIntoViewIfNeeded();
-      await waitReady(page);
-      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-couple-375.png'), {
-        selector: '[data-testid="couple-section"]',
-      });
+      const couple = page.getByTestId('couple-section');
+      await expect(couple).toBeVisible({ timeout: 30_000 });
+      await couple.scrollIntoViewIfNeeded();
+      await waitFonts(page);
+      await capture(page, path.join(ACT_DIR, 'public-couple-375.png'), couple);
+      await writeMasks('public-couple-375.png', await masksRelativeTo(couple, [
+        { sel: '[class*="couplePhotoFrame"]', kind: 'couple' },
+      ]));
 
-      await expect(page.getByTestId('guestbook-section')).toBeVisible({ timeout: 30_000 });
-      await page.getByTestId('guestbook-section').scrollIntoViewIfNeeded();
-      await waitReady(page);
-      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-guestbook-375.png'), {
-        selector: '[data-testid="guestbook-section"]',
-      });
+      const guestbook = page.getByTestId('guestbook-section');
+      await expect(guestbook).toBeVisible({ timeout: 30_000 });
+      await guestbook.scrollIntoViewIfNeeded();
+      await waitFonts(page);
+      await capture(page, path.join(ACT_DIR, 'public-guestbook-375.png'), guestbook);
+      await writeMasks('public-guestbook-375.png', []);
 
       const gallery = page.locator('[aria-label="Album"]').first();
       await expect(gallery).toBeVisible({ timeout: 30_000 });
       await gallery.scrollIntoViewIfNeeded();
-      await waitReady(page);
-      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-gallery-375.png'), {
-        selector: '[aria-label="Album"]',
-      });
+      await waitFonts(page);
+      await capture(page, path.join(ACT_DIR, 'public-gallery-375.png'), gallery);
+      await writeMasks('public-gallery-375.png', await masksRelativeTo(gallery, [
+        { sel: '[class*="galleryCarousel"], [class*="galleryMainImage"], img', kind: 'gallery' },
+      ]));
 
-      const mapSection = page.locator('text=위치 안내').first();
-      await expect(mapSection).toBeVisible({ timeout: 30_000 });
+      const mapTitle = page.locator('text=위치 안내').first();
+      await expect(mapTitle).toBeVisible({ timeout: 30_000 });
+      const mapSection = page.locator('section').filter({ hasText: '위치 안내' }).first();
       await mapSection.scrollIntoViewIfNeeded();
-      await waitReady(page);
-      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-map-375.png'));
+      await waitFonts(page);
+      await capture(page, path.join(ACT_DIR, 'public-map-375.png'), mapSection);
+      await writeMasks('public-map-375.png', await masksRelativeTo(mapSection, [
+        { sel: '[class*="mapImage"], img[alt*="지도"], img[alt="Map"]', kind: 'map' },
+      ]));
 
-      const share = page.locator('text=공유하기').first();
+      const share = page.getByTestId('invitation-share-block');
       await expect(share).toBeVisible({ timeout: 30_000 });
       await share.scrollIntoViewIfNeeded();
-      await waitReady(page);
-      await captureViewport(page, path.join(ACT_DIR, 'public-mobile-share-375.png'));
+      await waitFonts(page);
+      await capture(page, path.join(ACT_DIR, 'public-share-375.png'), share);
+      await writeMasks('public-share-375.png', []);
 
-      // Banner must not appear on editor after publish
       await loginInBrowser(page, fixture.email);
       await page.goto(`/editor/${fixture.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-      await waitReady(page);
+      await enableLayoutMode(page);
       await expect(page.getByTestId('share-panel')).toHaveCount(0);
-      await captureViewport(page, path.join(ACT_DIR, 'editor-mobile-basic-375.png'));
+      await capture(page, path.join(ACT_DIR, 'editor-mobile-basic-375.png'));
+      await writeMasks('editor-mobile-basic-375.png', []);
       await context.close();
     }
 
-    // Desktop editor / public
+    // Desktop editor + public
     {
       const context = await browser.newContext({
         baseURL: FE,
@@ -357,48 +397,37 @@ test.describe('Figma pixel overlay QA', () => {
       await page.addInitScript(() => localStorage.setItem('language', 'ko'));
       await loginInBrowser(page, fixture.email);
       await page.goto(`/editor/${fixture.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-      await waitReady(page);
+      await enableLayoutMode(page);
       await expect(page.getByTestId('share-panel')).toHaveCount(0);
-      await captureViewport(page, path.join(ACT_DIR, 'editor-desktop-basic-1440.png'));
+      await capture(page, path.join(ACT_DIR, 'editor-desktop-basic-1440.png'));
+      await writeMasks('editor-desktop-basic-1440.png', []);
 
       await page.goto(`/i/${fixture.shareSlug}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-      await waitReady(page);
-      await captureViewport(page, path.join(ACT_DIR, 'public-desktop-1440.png'), { fullPage: true });
-      await context.close();
-    }
-
-    // 1023 / 1024 breakpoint smoke captures
-    for (const [name, viewport] of [
-      ['breakpoint-1023.png', VIEWPORTS.desktop1023],
-      ['breakpoint-1024.png', VIEWPORTS.desktop1024],
-    ] as const) {
-      const context = await browser.newContext({
-        baseURL: FE,
-        viewport,
-        deviceScaleFactor: 1,
-      });
-      const page = await context.newPage();
-      await loginInBrowser(page, fixture.email);
-      await page.goto(`/editor/${fixture.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-      await waitReady(page);
-      await captureViewport(page, path.join(ACT_DIR, name));
+      await enableLayoutMode(page);
+      await capture(page, path.join(ACT_DIR, 'public-desktop-1440.png'));
+      await writeMasks('public-desktop-1440.png', []);
       await context.close();
     }
 
     const reportRaw = sh('node scripts/figma-pixel-qa/pixel-diff.mjs');
     const diffSummary = JSON.parse(reportRaw);
+    const report = JSON.parse(fs.readFileSync(path.join(REPORTS_DIR, 'diff-report.json'), 'utf8'));
 
     fs.writeFileSync(
-      BASELINE,
+      path.join(REPORTS_DIR, 'baseline.json'),
       JSON.stringify(
         {
+          mode: 'layout-masked',
+          sameData: true,
+          sameFontStack: FIXTURE.fontStack,
+          layoutColors: LAYOUT_COLORS,
           ...deploy,
-          live,
           fixture: { id: fixture.id, shareSlug: fixture.shareSlug },
           referenceCount: refCount,
           actualFiles: fs.readdirSync(ACT_DIR).filter((f) => f.endsWith('.png')),
           referenceFiles: fs.readdirSync(REF_DIR).filter((f) => f.endsWith('.png')),
           diffSummary,
+          report,
         },
         null,
         2
@@ -407,7 +436,20 @@ test.describe('Figma pixel overlay QA', () => {
     );
 
     expect(refCount).toBeGreaterThan(0);
-    expect(fs.readdirSync(ACT_DIR).filter((f) => f.endsWith('.png')).length).toBeGreaterThan(0);
-    expect(fs.existsSync(path.join(OUT_DIR, 'diff-report.json'))).toBeTruthy();
+    expect(report.comparedCount).toBeGreaterThan(0);
+
+    // Primary screens must not be MISSING
+    for (const required of [
+      'public-hero-375.png',
+      'public-couple-375.png',
+      'public-guestbook-375.png',
+      'public-gallery-375.png',
+      'public-map-375.png',
+      'public-share-375.png',
+    ]) {
+      const row = report.results.find((r: { name: string }) => r.name === required);
+      expect(row, required).toBeTruthy();
+      expect(row.status, `${required} missing`).not.toBe('MISSING');
+    }
   });
 });

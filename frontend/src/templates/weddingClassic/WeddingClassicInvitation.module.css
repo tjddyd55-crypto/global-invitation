@@ -480,6 +480,7 @@
   font-size: 13px;
   font-weight: 700;
   color: #1f2937;
+  font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
 }
 
 .conceptFuneral .guestbookAuthor {
@@ -490,6 +491,7 @@
   font-size: 11px;
   color: #6b7280;
   flex-shrink: 0;
+  font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
 }
 
 .guestbookBody {
@@ -497,6 +499,7 @@
   font-size: 13px;
   line-height: 1.6;
   color: #6b7280;
+  font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
 }
 
 .conceptFuneral .guestbookBody {
