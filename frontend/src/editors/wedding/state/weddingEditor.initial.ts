@@ -222,6 +222,9 @@ export function createWeddingEditorState(
     },
     location: {
       address: '서울 구로구 경인로 610',
+      venueName: undefined,
+      detailAddress: undefined,
+      googlePlaceId: undefined,
       mapLat: undefined,
       mapLng: undefined,
       transportInfo: [...DEFAULT_TRANSPORT],
@@ -302,7 +305,10 @@ export function createWeddingEditorStateFromDraft(
     },
     location: {
       ...base.location,
-      address: runtimeData.locationText || runtimeData.address || base.location.address,
+      address: runtimeData.formattedAddress || runtimeData.address || runtimeData.locationText || base.location.address,
+      venueName: runtimeData.venueName || base.location.venueName,
+      detailAddress: runtimeData.detailAddress || runtimeData.venueDetail || base.location.detailAddress,
+      googlePlaceId: runtimeData.googlePlaceId || base.location.googlePlaceId,
       mapLat: runtimeData.mapLat ?? base.location.mapLat,
       mapLng: runtimeData.mapLng ?? base.location.mapLng,
       transportInfo:

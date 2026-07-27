@@ -1,0 +1,14 @@
+.map {
+  width: 100%;
+  height: 280px;
+  border: 0;
+  border-radius: 0;
+  display: block;
+  margin: 24px 0 12px;
+  background: #ece8e1;
+}
+
+.placeholder {
+  /* Figma / layout QA solid plane */
+  background: #ece8e1;
+}

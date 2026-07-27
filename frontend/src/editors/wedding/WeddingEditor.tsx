@@ -201,7 +201,15 @@ export default function WeddingEditor({
           />
         );
       case 'location':
-        return <Step6Location value={state.location} onChange={(payload) => dispatch({ type: 'SET_LOCATION', payload })} />;
+        return (
+          <Step6Location
+            value={state.location}
+            venueName={state.basic.venueName}
+            venueDetail={state.basic.venueDetail}
+            onChange={(payload) => dispatch({ type: 'SET_LOCATION', payload })}
+            onVenueChange={(payload) => dispatch({ type: 'SET_BASIC', payload })}
+          />
+        );
       case 'accounts':
         return <Step7Accounts accounts={state.accounts} onChange={(accounts) => dispatch({ type: 'SET_ACCOUNTS', payload: accounts })} />;
       case 'rsvp':

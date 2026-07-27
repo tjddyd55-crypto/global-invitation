@@ -267,12 +267,21 @@ async function enableLayoutMode(page: Page) {
       }
       [class*="LocationMapSection_mapImage"],
       img[alt="지도"],
-      img[alt="Map"] {
+      img[alt="Map"],
+      [data-testid="public-google-map"] {
         background: ${LAYOUT_COLORS.map} !important;
         min-height: 280px !important;
         height: 280px !important;
         opacity: 1 !important;
         object-fit: none !important;
+        content: "" !important;
+        border: 0 !important;
+      }
+      iframe[data-testid="public-google-map"] {
+        visibility: hidden !important;
+        position: relative !important;
+      }
+      iframe[data-testid="public-google-map"]::after {
         content: "" !important;
       }
     `,
@@ -284,6 +293,17 @@ async function enableLayoutMode(page: Page) {
       const value = input.value;
       input.type = 'text';
       input.value = value;
+    });
+    document.querySelectorAll('[data-testid="public-google-map"]').forEach((node) => {
+      const canvas = document.createElement('div');
+      canvas.setAttribute('data-qa-map-placeholder', '1');
+      canvas.setAttribute('data-testid', 'public-google-map');
+      canvas.style.width = '100%';
+      canvas.style.height = '280px';
+      canvas.style.background = mapColor;
+      canvas.style.margin = '24px 0 12px';
+      canvas.style.borderRadius = '0';
+      node.replaceWith(canvas);
     });
     document.querySelectorAll('img').forEach((img) => {
       const alt = (img.getAttribute('alt') || '').toLowerCase();

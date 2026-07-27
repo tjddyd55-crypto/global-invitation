@@ -45,7 +45,13 @@ export type WeddingEditorGallery = {
 };
 
 export type WeddingEditorLocation = {
+  /** 지도/공개 섹션 장소명 (내부·표시용) */
+  venueName?: string;
+  /** formattedAddress — 공개 초대장 address 호환 */
   address: string;
+  detailAddress?: string;
+  googlePlaceId?: string;
+  /** 내부 좌표 — UI 미노출 */
   mapLat?: number;
   mapLng?: number;
   transportInfo?: string[];

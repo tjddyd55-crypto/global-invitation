@@ -1,0 +1,21 @@
+.wrap {
+  width: 100%;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e1d8;
+  background: #f9f9f9;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #1f2937;
+}
+
+.input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

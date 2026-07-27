@@ -1,11 +1,15 @@
 'use client';
 
+import LocationPicker, { type LocationPickerValue } from '@/src/maps/LocationPicker';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorLocation } from '../state/weddingEditor.types';
 
 type Step6LocationProps = {
   value: WeddingEditorLocation;
+  venueName: string;
+  venueDetail?: string;
   onChange: (value: Partial<WeddingEditorLocation>) => void;
+  onVenueChange: (value: { venueName?: string; venueDetail?: string }) => void;
 };
 
 function toLines(text: string): string[] {
@@ -15,43 +19,56 @@ function toLines(text: string): string[] {
     .filter(Boolean);
 }
 
-export default function Step6Location({ value, onChange }: Step6LocationProps) {
+function toPickerValue(
+  value: WeddingEditorLocation,
+  venueName: string,
+  venueDetail?: string
+): LocationPickerValue {
+  return {
+    venueName: (value.venueName || venueName || '').trim(),
+    formattedAddress: (value.address || '').trim(),
+    detailAddress: (value.detailAddress || venueDetail || '').trim() || undefined,
+    googlePlaceId: value.googlePlaceId,
+    latitude: value.mapLat,
+    longitude: value.mapLng,
+  };
+}
+
+export default function Step6Location({
+  value,
+  venueName,
+  venueDetail,
+  onChange,
+  onVenueChange,
+}: Step6LocationProps) {
+  const handleConfirm = (next: LocationPickerValue) => {
+    onChange({
+      venueName: next.venueName,
+      address: next.formattedAddress,
+      detailAddress: next.detailAddress,
+      googlePlaceId: next.googlePlaceId,
+      mapLat: next.latitude,
+      mapLng: next.longitude,
+    });
+    onVenueChange({
+      venueName: next.venueName || venueName,
+      venueDetail: next.detailAddress,
+    });
+  };
+
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>위치 안내</h2>
-        <p>주소, 지도 미리보기, 교통/주차 안내를 입력합니다.</p>
+        <p>주소를 검색해 지도에서 확인한 뒤 위치를 확정합니다.</p>
       </div>
-      <label className={styles.field}>
-        <span className={styles.fieldLabel}>주소</span>
-        <input
-          type="text"
-          value={value.address}
-          onChange={(event) => onChange({ address: event.target.value })}
-          placeholder="예: 서울 구로구 경인로 610"
-          required
-        />
-      </label>
-      <div className={styles.fieldGrid}>
-        <label className={styles.field}>
-          <span className={styles.fieldLabel}>지도 위도 (선택)</span>
-          <input
-            type="number"
-            value={value.mapLat ?? ''}
-            onChange={(event) => onChange({ mapLat: event.target.value ? Number(event.target.value) : undefined })}
-            placeholder="예: 37.507"
-          />
-        </label>
-        <label className={styles.field}>
-          <span className={styles.fieldLabel}>지도 경도 (선택)</span>
-          <input
-            type="number"
-            value={value.mapLng ?? ''}
-            onChange={(event) => onChange({ mapLng: event.target.value ? Number(event.target.value) : undefined })}
-            placeholder="예: 126.889"
-          />
-        </label>
-      </div>
+
+      <LocationPicker
+        value={toPickerValue(value, venueName, venueDetail)}
+        onConfirm={handleConfirm}
+        onAddressFallbackChange={(address) => onChange({ address })}
+      />
+
       <label className={styles.field}>
         <span className={styles.fieldLabel}>교통 안내 (선택)</span>
         <textarea

@@ -457,8 +457,10 @@ export default function WeddingClassicInvitation({
         <section className={`${styles.section} ${styles.locationSection}`}>
           <LocationMapSection
             sectionTitle={locationTitle}
-            title=""
+            title={locationText || ''}
             address={addressForMap}
+            detailAddress={(r.detailAddress || venueDetail || '').trim() || undefined}
+            googlePlaceId={r.googlePlaceId}
             mapLat={r.mapLat}
             mapLng={r.mapLng}
             mapImage={r.mapImage}

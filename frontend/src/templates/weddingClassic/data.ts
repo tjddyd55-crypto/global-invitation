@@ -79,7 +79,13 @@ export type WeddingClassicData = {
   weddingDate?: Date;
   calendarTitle?: string;
   address: string;
-  /** WGS84 (에디터 STEP6), 저장 시 JSON에 포함 */
+  /** Google Places place_id (내부) */
+  googlePlaceId?: string;
+  /** 층/홀 등 상세 (지도 좌표와 무관) */
+  detailAddress?: string;
+  /** formattedAddress alias (address와 동기화 가능) */
+  formattedAddress?: string;
+  /** WGS84 (에디터 STEP6), 저장 시 JSON에 포함 — UI 미노출 */
   mapLat?: number;
   mapLng?: number;
   mapImage?: string;

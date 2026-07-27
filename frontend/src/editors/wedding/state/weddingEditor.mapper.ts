@@ -37,8 +37,8 @@ function buildPreviewMapImage(mapLat?: number, mapLng?: number): string {
  */
 export function buildWeddingClassicPreviewData(state: WeddingEditorState): WeddingInvitationData {
   const weddingDate = parseWeddingDate(state.basic.eventDateTime);
-  const venueName = state.basic.venueName.trim();
-  const venueDetail = (state.basic.venueDetail ?? '').trim();
+  const venueName = (state.location.venueName || state.basic.venueName).trim();
+  const venueDetail = (state.location.detailAddress || state.basic.venueDetail || '').trim();
   const locationText = venueName;
   const venueLineForMap = resolveVenueLine(venueName, venueDetail || undefined);
   const title = state.basic.title.trim();
@@ -52,6 +52,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     .filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
   const defaultLabels = getWeddingClassicDefaultLabels(state.setup.language);
   const mapImage = buildPreviewMapImage(state.location.mapLat, state.location.mapLng);
+  const formattedAddress = state.location.address.trim();
 
   const groomPhoto = (state.groom.photo ?? '').trim();
   const bridePhoto = (state.bride.photo ?? '').trim();
@@ -84,7 +85,10 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
       number: account.number,
       holder: account.holder,
     })),
-    address: state.location.address.trim(),
+    address: formattedAddress,
+    formattedAddress,
+    detailAddress: venueDetail || undefined,
+    googlePlaceId: state.location.googlePlaceId,
     mapLat: state.location.mapLat,
     mapLng: state.location.mapLng,
     mapImage,

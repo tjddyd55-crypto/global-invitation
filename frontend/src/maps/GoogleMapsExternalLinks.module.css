@@ -1,0 +1,28 @@
+.row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.link {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:active {
+  transform: scale(0.98);
+  opacity: 0.92;
+}
