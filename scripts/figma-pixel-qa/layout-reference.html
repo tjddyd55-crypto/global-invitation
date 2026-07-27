@@ -239,9 +239,15 @@
   </div>
 
   <div id="public-map" data-screen class="screen">
-    <section class="map-wrap" data-testid="ref-map">
-      <p class="label">Location</p>
-      <div class="map" data-qa-mask="map"></div>
+    <section class="map-wrap" data-testid="ref-map" style="padding:48px 24px 24px">
+      <div style="font-weight:700;font-size:18px;line-height:24px;margin-bottom:12px;text-align:left">위치 안내</div>
+      <div style="font-size:14px;line-height:22px;color:#6B7280;text-align:left;margin-bottom:12px">서울 구로구 경인로 610</div>
+      <div class="map" data-qa-mask="map" style="margin:24px 0 12px"></div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;height:40px;border:1px solid #E5E7EB;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:#fff">티맵</div>
+        <div style="flex:1;height:40px;border:1px solid #E5E7EB;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:#fff">카카오내비</div>
+        <div style="flex:1;height:40px;border:1px solid #E5E7EB;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:#fff">네이버지도</div>
+      </div>
     </section>
   </div>
 

@@ -176,47 +176,72 @@ async function waitFonts(page: Page) {
 async function enableLayoutMode(page: Page) {
   await page.addStyleTag({
     content: `
-      html, body, * {
+      html, body, button, input, textarea {
         font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif !important;
       }
-      [data-testid="couple-section"] img,
-      [data-testid="couple-section"] [class*="couplePhoto"],
-      [data-testid="couple-section"] [class*="coupleAvatarFallback"] {
-        opacity: 0 !important;
-      }
+      /* Couple: keep frame geometry, hide leaf only (do NOT match couplePhotoFrame) */
       [data-testid="couple-section"] [class*="couplePhotoFrame"] {
         background: ${LAYOUT_COLORS.couple} !important;
         box-shadow: 0 6px 24px rgba(181,112,74,.16) !important;
       }
-      [aria-label="Album"] img,
-      [aria-label="Album"] [class*="galleryMainImage"] {
+      [data-testid="couple-section"] [class*="couplePhotoFrame"] > *,
+      [data-testid="couple-section"] [class*="coupleAvatarFallback"] {
         opacity: 0 !important;
       }
-      [aria-label="Album"] [class*="galleryCarousel"],
-      [aria-label="Album"] [class*="galleryMainImage"] {
+      /* Gallery */
+      [aria-label="Album"] [class*="galleryCarousel"] {
         background: ${LAYOUT_COLORS.gallery} !important;
+        min-height: 420px !important;
       }
-      [class*="heroMedia"] img,
-      [class*="heroImage"],
+      [aria-label="Album"] [class*="galleryMainImage"],
+      [aria-label="Album"] img {
+        opacity: 0 !important;
+      }
+      /* Hero */
+      section[aria-label="대표 이미지"] {
+        background: ${LAYOUT_COLORS.hero} !important;
+      }
+      section[aria-label="대표 이미지"] [class*="heroMedia"],
+      section[aria-label="대표 이미지"] [class*="heroImage"],
       section[aria-label="대표 이미지"] img {
         opacity: 0 !important;
       }
-      section[aria-label="대표 이미지"],
-      [class*="heroSection"],
-      [class*="heroMedia"] {
-        background: ${LAYOUT_COLORS.hero} !important;
-      }
-      [class*="mapImage"],
+      /* Map */
+      [class*="LocationMapSection_mapImage"],
       img[alt="지도"],
       img[alt="Map"] {
-        opacity: 0 !important;
-      }
-      [class*="mapImage"] {
         background: ${LAYOUT_COLORS.map} !important;
         min-height: 280px !important;
+        height: 280px !important;
+        opacity: 1 !important;
+        object-fit: none !important;
+        content: "" !important;
+      }
+      img[alt="지도"],
+      img[alt="Map"],
+      [class*="LocationMapSection_mapImage"] {
+        -webkit-mask-image: none !important;
       }
     `,
   });
+  // Force map images to solid color via evaluate (img can't use background alone reliably)
+  await page.evaluate((mapColor) => {
+    document.querySelectorAll('img').forEach((img) => {
+      const alt = (img.getAttribute('alt') || '').toLowerCase();
+      const cls = img.className || '';
+      if (alt.includes('map') || alt.includes('지도') || cls.includes('mapImage')) {
+        const canvas = document.createElement('div');
+        canvas.setAttribute('data-qa-map-placeholder', '1');
+        canvas.style.width = '100%';
+        canvas.style.height = '280px';
+        canvas.style.background = mapColor;
+        canvas.style.borderRadius = '0';
+        canvas.style.margin = getComputedStyle(img).margin;
+        img.replaceWith(canvas);
+      }
+    });
+  }, LAYOUT_COLORS.map);
+
   await page.addStyleTag({
     url: 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap',
   }).catch(() => undefined);
@@ -276,6 +301,7 @@ async function captureFigmaReference(browser: Browser) {
     { name: 'public-gallery-375.png', screen: 'public-gallery', viewport: 'mobile375', selector: '[data-testid="ref-gallery"]' },
     { name: 'public-map-375.png', screen: 'public-map', viewport: 'mobile375', selector: '[data-testid="ref-map"]' },
     { name: 'public-share-375.png', screen: 'public-share', viewport: 'mobile375', selector: '[data-testid="ref-share"]' },
+    { name: 'public-desktop-1440.png', screen: 'public-hero', viewport: 'desktop1440', selector: '[data-testid="ref-hero"]' },
     { name: 'editor-desktop-basic-1440.png', screen: 'editor-desktop-basic', viewport: 'desktop1440', selector: '[data-testid="ref-editor-desktop"]' },
     { name: 'editor-mobile-basic-375.png', screen: 'editor-mobile-basic', viewport: 'mobile375', selector: '[data-testid="ref-editor-mobile"]' },
   ];
@@ -367,7 +393,7 @@ test.describe('Figma layout pixel QA', () => {
       await waitFonts(page);
       await capture(page, path.join(ACT_DIR, 'public-map-375.png'), mapSection);
       await writeMasks('public-map-375.png', await masksRelativeTo(mapSection, [
-        { sel: '[class*="mapImage"], img[alt*="지도"], img[alt="Map"]', kind: 'map' },
+        { sel: '[data-qa-map-placeholder], [class*="mapImage"], img[alt*="지도"], img[alt="Map"]', kind: 'map' },
       ]));
 
       const share = page.getByTestId('invitation-share-block');
