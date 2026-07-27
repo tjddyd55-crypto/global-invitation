@@ -65,6 +65,7 @@ function InvitationCard({ item }: { item: InvitationSummary }) {
   const editorHref = `/editor/${item.id}`;
   const viewHref = item.shareSlug ? `/i/${item.shareSlug}` : editorHref;
   const rsvpHref = `/my-invitations/${item.id}/rsvp`;
+  const commentsHref = `/my-invitations/${item.id}/comments`;
   const completeHref = `/my-invitations/${item.id}/complete`;
 
   return (
@@ -85,7 +86,8 @@ function InvitationCard({ item }: { item: InvitationSummary }) {
         </Link>
       </div>
       <div className={styles.actions}>
-        <Link href={rsvpHref} className={styles.actionSecondary}>RSVP 관리</Link>
+        <Link href={rsvpHref} className={styles.actionSecondary}>참석 관리</Link>
+        <Link href={commentsHref} className={styles.actionSecondary}>댓글 관리</Link>
         {item.shareSlug ? (
           <Link href={completeHref} className={styles.actionSecondary}>공유</Link>
         ) : null}

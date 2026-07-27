@@ -24,6 +24,7 @@ import notificationsRouter from './routes/notifications';
 import { startCleanupWorker } from './workers/cleanupWorker';
 import { attachGuestSession } from './middleware/guestSessionMiddleware';
 import { guestRateLimit } from './middleware/guestRateLimit';
+import { getBackendBuildIdentity } from './lib/buildIdentity';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -100,10 +101,16 @@ app.get('/health', async (req, res) => {
       status: 'ok',
       database: 'connected',
       email: getEmailDiagnostics(),
+      build: getBackendBuildIdentity(),
     });
   } catch (error) {
     res.status(500).json({ status: 'error', database: 'disconnected', error: error instanceof Error ? error.message : 'Unknown error' });
   }
+});
+
+/** Deploy verification — sha/branch only (no secrets). */
+app.get('/api/build-identity', (_req, res) => {
+  res.status(200).json(getBackendBuildIdentity());
 });
 
 // API routes

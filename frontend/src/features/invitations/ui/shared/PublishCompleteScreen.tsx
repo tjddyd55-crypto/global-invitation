@@ -44,7 +44,10 @@ export default function PublishCompleteScreen({
             완성 초대장 보기
           </Link>
           <Link href={`/my-invitations/${invitationId}/rsvp`} className={styles.secondaryLink}>
-            RSVP 관리
+            참석 관리
+          </Link>
+          <Link href={`/my-invitations/${invitationId}/comments`} className={styles.secondaryLink}>
+            댓글 관리
           </Link>
           <Link href={`/editor/${invitationId}`} className={styles.secondaryLink}>
             에디터로 돌아가기

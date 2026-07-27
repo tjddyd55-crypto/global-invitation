@@ -119,7 +119,7 @@ function InvitationRow({ item }: { item: InvitationSummary }) {
           {item.status === 'published' ? '공개됨' : '초안'}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
         <Link href={`/editor/${item.id}`} style={{ color: '#4F46E5', fontWeight: 600, fontSize: 13 }}>
           수정
         </Link>
@@ -128,6 +128,12 @@ function InvitationRow({ item }: { item: InvitationSummary }) {
             보기
           </Link>
         ) : null}
+        <Link href={`/my-invitations/${item.id}/rsvp`} style={{ color: '#6B7280', fontWeight: 600, fontSize: 13 }}>
+          참석 관리
+        </Link>
+        <Link href={`/my-invitations/${item.id}/comments`} style={{ color: '#6B7280', fontWeight: 600, fontSize: 13 }}>
+          댓글 관리
+        </Link>
       </div>
     </li>
   );
