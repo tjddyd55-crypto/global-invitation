@@ -51,11 +51,25 @@ test.describe('Figma entry/auth desktop', () => {
     await page.goto(`${FE}/auth/email?next=/create/concept`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await page.waitForTimeout(600);
     const body = await page.locator('body').innerText();
-    expect(body).toMatch(/Invite|이메일/);
-    expect(body).toContain('이메일');
+    expect(body).toContain('Invite');
+    expect(body).toContain('이메일 인증이 필요합니다');
+    expect(body).toContain('회원가입과 로그인을 따로 구분하지 않습니다');
+    expect(body).toContain('홈으로 돌아가기');
     expect(body).not.toMatch(/^GLOBAL INVITATION$/m);
     expect(await page.locator('aside').count()).toBe(0);
+    expect(await page.getByTestId('auth-decorative-cards').count()).toBe(1);
     await assertNoHorizontalOverflow(page);
+  });
+
+  test('Main hero copy matches Figma', async ({ page }) => {
+    await page.goto(`${FE}/`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.waitForTimeout(600);
+    const body = await page.locator('body').innerText();
+    expect(body).toContain('소중한 순간을');
+    expect(body).toContain('가장 쉽게 전하세요');
+    expect(body).toContain('이메일 인증 하나로 시작');
+    expect(body).not.toContain('모두를 위한');
+    expect(body).not.toContain('테스트룸');
   });
 });
 
