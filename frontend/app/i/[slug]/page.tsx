@@ -12,8 +12,8 @@ import {
 } from '@/src/lib/invitationShareMeta';
 import { trackInvitationView } from '@/src/lib/trackInvitationView';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
-import GlobalSharePanel from '@/src/components/share/GlobalSharePanel';
 import InvitationShareBlock from '@/src/components/share/InvitationShareBlock';
+import DesktopPublicSharePanel from '@/src/components/share/DesktopPublicSharePanel';
 import {
   fetchTemplateDefinitionById,
   getTemplateRegistryEntry,
@@ -297,15 +297,15 @@ export default function PublicShareInvitationPage() {
         </div>
 
         <aside className={publicInvitationMobile.desktopAside}>
-          <GlobalSharePanel
+          <DesktopPublicSharePanel
             shareUrl={sharePageUrl}
             title={sharePresentation.metaTitle}
             text={sharePresentation.metaDescription}
-            variant="card"
           />
           {showRsvp ? (
             <div className={publicInvitationMobile.asideHint}>
-              참석은 왼쪽 초대장에서 로그인 없이 응답할 수 있습니다.
+              <div className={publicInvitationMobile.asideHintTitle}>RSVP 바로가기</div>
+              참석 여부를 알려주세요
             </div>
           ) : null}
         </aside>

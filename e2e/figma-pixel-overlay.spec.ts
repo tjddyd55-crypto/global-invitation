@@ -6,7 +6,8 @@
  * - Same font stack (Noto Sans KR)
  * - Solid placeholders for Hero/Couple/Gallery/Map (layout mode)
  * - Masked mismatch is the PASS/FAIL metric
- * - Real-asset pixel mismatch is NOT used as primary verdict
+ * - Editor: per-step formCard capture (not full wireframe page)
+ * - Desktop Public: 375 center + 280 sticky share panel
  */
 import fs from 'fs';
 import path from 'path';
@@ -25,11 +26,15 @@ const REF_HTML = path.join(ROOT, 'scripts/figma-pixel-qa/layout-reference.html')
 const FIXTURE = JSON.parse(
   fs.readFileSync(path.join(ROOT, 'scripts/figma-pixel-qa/sample-fixture.json'), 'utf8')
 );
+const DESKTOP_PUBLIC_LAYOUT = JSON.parse(
+  fs.readFileSync(path.join(ROOT, 'scripts/figma-pixel-qa/desktop-public-layout.json'), 'utf8')
+);
 
-test.setTimeout(300_000);
+test.setTimeout(420_000);
 
 const VIEWPORTS = {
   mobile375: { width: 375, height: 812 },
+  mobile390: { width: 390, height: 844 },
   desktop1440: { width: 1440, height: 1024 },
 } as const;
 
@@ -39,6 +44,15 @@ const LAYOUT_COLORS = FIXTURE.layoutColors as {
   gallery: string;
   map: string;
 };
+
+/** Wedding editor step ids for required QA steps */
+const EDITOR_STEPS = [
+  { key: 'basic', stepId: 0, title: '기본 정보' },
+  { key: 'hero', stepId: 2, title: '대표 이미지' },
+  { key: 'couple', stepId: 3, title: '신랑 · 신부' },
+  { key: 'gallery', stepId: 4, title: '갤러리' },
+  { key: 'share', stepId: 8, title: '공유 설정' },
+] as const;
 
 function sh(cmd: string) {
   return execSync(cmd, { encoding: 'utf8', cwd: ROOT }).replace(/^\uFEFF/, '').trim();
@@ -56,6 +70,7 @@ async function identifyDeploy() {
     localHead: sh('git rev-parse HEAD'),
     captureAt: new Date().toISOString(),
     frontendUrl: FE,
+    desktopPublicLayout: DESKTOP_PUBLIC_LAYOUT,
   };
 }
 
@@ -179,7 +194,6 @@ async function enableLayoutMode(page: Page) {
       html, body, button, input, textarea {
         font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif !important;
       }
-      /* Couple: keep frame geometry, hide leaf only (do NOT match couplePhotoFrame) */
       [data-testid="couple-section"] [class*="couplePhotoFrame"] {
         background: ${LAYOUT_COLORS.couple} !important;
         box-shadow: 0 6px 24px rgba(181,112,74,.16) !important;
@@ -188,7 +202,6 @@ async function enableLayoutMode(page: Page) {
       [data-testid="couple-section"] [class*="coupleAvatarFallback"] {
         opacity: 0 !important;
       }
-      /* Gallery */
       [aria-label="Album"] [class*="galleryCarousel"] {
         background: ${LAYOUT_COLORS.gallery} !important;
         min-height: 420px !important;
@@ -197,7 +210,6 @@ async function enableLayoutMode(page: Page) {
       [aria-label="Album"] img {
         opacity: 0 !important;
       }
-      /* Hero */
       section[aria-label="대표 이미지"] {
         background: ${LAYOUT_COLORS.hero} !important;
       }
@@ -206,7 +218,23 @@ async function enableLayoutMode(page: Page) {
       section[aria-label="대표 이미지"] img {
         opacity: 0 !important;
       }
-      /* Map */
+      /* Editor upload previews */
+      [data-testid="desktop-editor-form"] [class*="uploaderPreview"] img,
+      [data-testid="mobile-editor-form"] [class*="uploaderPreview"] img,
+      [data-testid="desktop-editor-form"] [class*="galleryItem"] img,
+      [data-testid="mobile-editor-form"] [class*="galleryItem"] img,
+      [data-testid="desktop-editor-form"] [class*="ogPreviewImage"] img,
+      [data-testid="mobile-editor-form"] [class*="ogPreviewImage"] img,
+      [data-testid="desktop-editor-preview"] img {
+        opacity: 0 !important;
+      }
+      [data-testid="desktop-editor-form"] [class*="uploaderPreview"],
+      [data-testid="mobile-editor-form"] [class*="uploaderPreview"],
+      [data-testid="desktop-editor-form"] [class*="galleryItem"],
+      [data-testid="mobile-editor-form"] [class*="galleryItem"],
+      [data-testid="desktop-editor-form"] [class*="ogPreviewImage"] {
+        background: ${LAYOUT_COLORS.hero} !important;
+      }
       [class*="LocationMapSection_mapImage"],
       img[alt="지도"],
       img[alt="Map"] {
@@ -217,14 +245,8 @@ async function enableLayoutMode(page: Page) {
         object-fit: none !important;
         content: "" !important;
       }
-      img[alt="지도"],
-      img[alt="Map"],
-      [class*="LocationMapSection_mapImage"] {
-        -webkit-mask-image: none !important;
-      }
     `,
   });
-  // Force map images to solid color via evaluate (img can't use background alone reliably)
   await page.evaluate((mapColor) => {
     document.querySelectorAll('img').forEach((img) => {
       const alt = (img.getAttribute('alt') || '').toLowerCase();
@@ -286,6 +308,40 @@ async function masksRelativeTo(root: Locator, selectors: Array<{ sel: string; ki
   return masks;
 }
 
+async function goEditorStep(page: Page, stepId: number) {
+  const item = page.getByTestId(`stepper-item-${stepId}`);
+  await expect(item).toBeVisible({ timeout: 30_000 });
+  await item.click();
+  await waitFonts(page);
+  await page.waitForTimeout(200);
+}
+
+async function captureEditorForm(
+  page: Page,
+  name: string,
+  formTestId: 'desktop-editor-form' | 'mobile-editor-form'
+) {
+  const form = page.getByTestId(formTestId);
+  const card = form.locator('[class*="formCard"]').first();
+  await expect(card).toBeVisible({ timeout: 30_000 });
+  await card.scrollIntoViewIfNeeded();
+  await waitFonts(page);
+  await capture(page, path.join(ACT_DIR, name), card);
+  await writeMasks(
+    name,
+    await masksRelativeTo(card, [
+      { sel: '[class*="uploaderPreview"], [class*="galleryItem"], [class*="ogPreviewImage"], [data-qa-mask]', kind: 'media' },
+    ])
+  );
+}
+
+async function captureRegion(page: Page, name: string, testId: string) {
+  const loc = page.getByTestId(testId);
+  if ((await loc.count()) === 0) return;
+  await capture(page, path.join(ACT_DIR, name), loc.first());
+  await writeMasks(name, []);
+}
+
 async function captureFigmaReference(browser: Browser) {
   fs.mkdirSync(REF_DIR, { recursive: true });
   const fileUrl = pathToFileURL(REF_HTML).href;
@@ -301,9 +357,25 @@ async function captureFigmaReference(browser: Browser) {
     { name: 'public-gallery-375.png', screen: 'public-gallery', viewport: 'mobile375', selector: '[data-testid="ref-gallery"]' },
     { name: 'public-map-375.png', screen: 'public-map', viewport: 'mobile375', selector: '[data-testid="ref-map"]' },
     { name: 'public-share-375.png', screen: 'public-share', viewport: 'mobile375', selector: '[data-testid="ref-share"]' },
-    { name: 'public-desktop-1440.png', screen: 'public-hero', viewport: 'desktop1440', selector: '[data-testid="ref-hero"]' },
-    { name: 'editor-desktop-basic-1440.png', screen: 'editor-desktop-basic', viewport: 'desktop1440', selector: '[data-testid="ref-editor-desktop"]' },
-    { name: 'editor-mobile-basic-375.png', screen: 'editor-mobile-basic', viewport: 'mobile375', selector: '[data-testid="ref-editor-mobile"]' },
+    { name: 'public-desktop-1440.png', screen: 'public-desktop', viewport: 'desktop1440', selector: '[data-testid="ref-public-desktop"]' },
+    { name: 'editor-desktop-basic-form-1440.png', screen: 'editor-form-basic', viewport: 'desktop1440', selector: '[data-testid="ref-editor-form-basic"]' },
+    { name: 'editor-desktop-hero-form-1440.png', screen: 'editor-form-hero', viewport: 'desktop1440', selector: '[data-testid="ref-editor-form-hero"]' },
+    { name: 'editor-desktop-couple-form-1440.png', screen: 'editor-form-couple', viewport: 'desktop1440', selector: '[data-testid="ref-editor-form-couple"]' },
+    { name: 'editor-desktop-gallery-form-1440.png', screen: 'editor-form-gallery', viewport: 'desktop1440', selector: '[data-testid="ref-editor-form-gallery"]' },
+    { name: 'editor-desktop-share-form-1440.png', screen: 'editor-form-share', viewport: 'desktop1440', selector: '[data-testid="ref-editor-form-share"]' },
+    { name: 'editor-mobile-basic-form-375.png', screen: 'editor-form-basic-mobile', viewport: 'mobile375', selector: '[data-testid="ref-editor-form-basic-mobile"]' },
+    { name: 'editor-mobile-hero-form-375.png', screen: 'editor-form-hero-mobile', viewport: 'mobile375', selector: '[data-testid="ref-editor-form-hero-mobile"]' },
+    { name: 'editor-mobile-couple-form-375.png', screen: 'editor-form-couple-mobile', viewport: 'mobile375', selector: '[data-testid="ref-editor-form-couple-mobile"]' },
+    { name: 'editor-mobile-gallery-form-375.png', screen: 'editor-form-gallery-mobile', viewport: 'mobile375', selector: '[data-testid="ref-editor-form-gallery-mobile"]' },
+    { name: 'editor-mobile-share-form-375.png', screen: 'editor-form-share-mobile', viewport: 'mobile375', selector: '[data-testid="ref-editor-form-share-mobile"]' },
+    { name: 'editor-mobile-basic-form-390.png', screen: 'editor-form-basic-mobile', viewport: 'mobile390', selector: '[data-testid="ref-editor-form-basic-mobile"]' },
+    { name: 'editor-desktop-header-1440.png', screen: 'editor-desktop-regions', viewport: 'desktop1440', selector: '[data-testid="ref-editor-header"]' },
+    { name: 'editor-desktop-sidebar-1440.png', screen: 'editor-desktop-regions', viewport: 'desktop1440', selector: '[data-testid="ref-editor-sidebar"]' },
+    { name: 'editor-desktop-preview-1440.png', screen: 'editor-desktop-regions', viewport: 'desktop1440', selector: '[data-testid="ref-editor-preview"]' },
+    { name: 'editor-desktop-bottom-nav-1440.png', screen: 'editor-desktop-regions', viewport: 'desktop1440', selector: '[data-testid="ref-editor-bottom-nav"]' },
+    { name: 'editor-mobile-header-375.png', screen: 'editor-mobile-regions', viewport: 'mobile375', selector: '[data-testid="ref-mobile-header"]' },
+    { name: 'editor-mobile-stepper-375.png', screen: 'editor-mobile-regions', viewport: 'mobile375', selector: '[data-testid="ref-mobile-stepper"]' },
+    { name: 'editor-mobile-actions-375.png', screen: 'editor-mobile-regions', viewport: 'mobile375', selector: '[data-testid="ref-mobile-actions"]' },
   ];
 
   for (const shot of shots) {
@@ -330,6 +402,17 @@ async function captureFigmaReference(browser: Browser) {
 test.describe('Figma layout pixel QA', () => {
   test('layout-mode capture + masked diff', async ({ browser }) => {
     for (const dir of [REF_DIR, ACT_DIR, REPORTS_DIR]) fs.mkdirSync(dir, { recursive: true });
+
+    // Drop legacy whole-page editor / wrong desktop public pairs so they don't fail the suite
+    for (const stale of [
+      'editor-desktop-basic-1440.png',
+      'editor-mobile-basic-375.png',
+    ]) {
+      for (const dir of [REF_DIR, ACT_DIR]) {
+        const p = path.join(dir, stale);
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      }
+    }
 
     const deploy = await identifyDeploy();
     const refCount = await captureFigmaReference(browser);
@@ -403,16 +486,51 @@ test.describe('Figma layout pixel QA', () => {
       await capture(page, path.join(ACT_DIR, 'public-share-375.png'), share);
       await writeMasks('public-share-375.png', []);
 
+      // Mobile editor per-step form cards
       await loginInBrowser(page, fixture.email);
       await page.goto(`/editor/${fixture.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
       await enableLayoutMode(page);
       await expect(page.getByTestId('share-panel')).toHaveCount(0);
-      await capture(page, path.join(ACT_DIR, 'editor-mobile-basic-375.png'));
-      await writeMasks('editor-mobile-basic-375.png', []);
+      await expect(page.getByTestId('mobile-editor-form')).toBeVisible({ timeout: 30_000 });
+
+      for (const step of EDITOR_STEPS) {
+        await goEditorStep(page, step.stepId);
+        await captureEditorForm(page, `editor-mobile-${step.key}-form-375.png`, 'mobile-editor-form');
+      }
+
+      await captureRegion(page, 'editor-mobile-header-375.png', 'mobile-editor-layout');
+      // Prefer header / stepper / actions if present
+      const headerCandidate = page.locator('header').first();
+      if (await headerCandidate.count()) {
+        await capture(page, path.join(ACT_DIR, 'editor-mobile-header-375.png'), headerCandidate);
+        await writeMasks('editor-mobile-header-375.png', []);
+      }
+      await captureRegion(page, 'editor-mobile-stepper-375.png', 'mobile-editor-stepper');
+      await captureRegion(page, 'editor-mobile-actions-375.png', 'mobile-editor-actions');
+
       await context.close();
     }
 
-    // Desktop editor + public
+    // Mobile 390 smoke (basic form)
+    {
+      const context = await browser.newContext({
+        baseURL: FE,
+        viewport: VIEWPORTS.mobile390,
+        deviceScaleFactor: 1,
+        isMobile: true,
+        hasTouch: true,
+      });
+      const page = await context.newPage();
+      await page.addInitScript(() => localStorage.setItem('language', 'ko'));
+      await loginInBrowser(page, fixture.email);
+      await page.goto(`/editor/${fixture.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+      await enableLayoutMode(page);
+      await goEditorStep(page, 0);
+      await captureEditorForm(page, 'editor-mobile-basic-form-390.png', 'mobile-editor-form');
+      await context.close();
+    }
+
+    // Desktop editor steps + public full-page
     {
       const context = await browser.newContext({
         baseURL: FE,
@@ -425,13 +543,52 @@ test.describe('Figma layout pixel QA', () => {
       await page.goto(`/editor/${fixture.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
       await enableLayoutMode(page);
       await expect(page.getByTestId('share-panel')).toHaveCount(0);
-      await capture(page, path.join(ACT_DIR, 'editor-desktop-basic-1440.png'));
-      await writeMasks('editor-desktop-basic-1440.png', []);
+      await expect(page.getByTestId('desktop-editor-form')).toBeVisible({ timeout: 30_000 });
+
+      // Region crops at basic step (mismatch breakdown)
+      await goEditorStep(page, 0);
+      const header = page.locator('header').first();
+      if (await header.count()) {
+        await capture(page, path.join(ACT_DIR, 'editor-desktop-header-1440.png'), header);
+        await writeMasks('editor-desktop-header-1440.png', []);
+      }
+      await captureRegion(page, 'editor-desktop-sidebar-1440.png', 'desktop-editor-sidebar');
+      await captureRegion(page, 'editor-desktop-preview-1440.png', 'desktop-editor-preview');
+      const bottomNav = page.locator('[class*="desktopStepNav"]').first();
+      if (await bottomNav.count()) {
+        await capture(page, path.join(ACT_DIR, 'editor-desktop-bottom-nav-1440.png'), bottomNav);
+        await writeMasks('editor-desktop-bottom-nav-1440.png', []);
+      }
+
+      for (const step of EDITOR_STEPS) {
+        await goEditorStep(page, step.stepId);
+        await captureEditorForm(page, `editor-desktop-${step.key}-form-1440.png`, 'desktop-editor-form');
+      }
 
       await page.goto(`/i/${fixture.shareSlug}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
       await enableLayoutMode(page);
+      await expect(page.getByTestId('desktop-public-share-panel')).toBeVisible({ timeout: 30_000 });
+      await page.evaluate(() => {
+        const urlEl = document.querySelector('[data-testid="desktop-public-share-panel"] [class*="urlText"]');
+        if (urlEl) urlEl.textContent = 'https://example.com/i/sample';
+        // Collapse below-fold content so viewport matches Figma top composition
+        document.querySelectorAll('[data-testid="couple-section"], [data-testid="guestbook-section"], [aria-label="Album"], [data-testid="invitation-share-block"]').forEach((el) => {
+          (el as HTMLElement).style.display = 'none';
+        });
+        document.querySelectorAll('section').forEach((sec) => {
+          if (sec.textContent?.includes('위치 안내') || sec.getAttribute('aria-label') === 'Guestbook') {
+            (sec as HTMLElement).style.display = 'none';
+          }
+        });
+      });
+      await page.evaluate(() => window.scrollTo(0, 0));
       await capture(page, path.join(ACT_DIR, 'public-desktop-1440.png'));
-      await writeMasks('public-desktop-1440.png', []);
+      await writeMasks(
+        'public-desktop-1440.png',
+        await masksRelativeTo(page.locator('body'), [
+          { sel: 'section[aria-label="대표 이미지"] [class*="heroMedia"], section[aria-label="대표 이미지"] img, section[aria-label="대표 이미지"]', kind: 'hero' },
+        ])
+      );
       await context.close();
     }
 
@@ -447,6 +604,8 @@ test.describe('Figma layout pixel QA', () => {
           sameData: true,
           sameFontStack: FIXTURE.fontStack,
           layoutColors: LAYOUT_COLORS,
+          desktopPublicLayout: DESKTOP_PUBLIC_LAYOUT,
+          editorSteps: EDITOR_STEPS,
           ...deploy,
           fixture: { id: fixture.id, shareSlug: fixture.shareSlug },
           referenceCount: refCount,
@@ -464,7 +623,6 @@ test.describe('Figma layout pixel QA', () => {
     expect(refCount).toBeGreaterThan(0);
     expect(report.comparedCount).toBeGreaterThan(0);
 
-    // Primary screens must not be MISSING
     for (const required of [
       'public-hero-375.png',
       'public-couple-375.png',
@@ -472,6 +630,9 @@ test.describe('Figma layout pixel QA', () => {
       'public-gallery-375.png',
       'public-map-375.png',
       'public-share-375.png',
+      'public-desktop-1440.png',
+      'editor-desktop-basic-form-1440.png',
+      'editor-mobile-basic-form-375.png',
     ]) {
       const row = report.results.find((r: { name: string }) => r.name === required);
       expect(row, required).toBeTruthy();

@@ -1,0 +1,21 @@
+{
+  "_comment": "Figma DesktopPublicInvitationPage SSOT — keep in sync with publicInvitationMobile.module.css + DesktopPublicSharePanel",
+  "viewportBreakpointPx": 1024,
+  "background": "#F5F0ED",
+  "wrapperPaddingX": 24,
+  "wrapperPaddingBottom": 64,
+  "centerColumnWidth": 375,
+  "centerColumnMarginTop": 40,
+  "centerColumnShadow": "0 8px 48px rgba(0,0,0,0.12)",
+  "rightPanelWidth": 280,
+  "columnGapViaAsidePaddingLeft": 24,
+  "asidePaddingTop": 80,
+  "stickyTop": 80,
+  "panelRadius": 20,
+  "panelPadding": 20,
+  "panelBorder": "#F9D7E6",
+  "copyButtonHeight": 40,
+  "shareAppIconSize": 38,
+  "rsvpHintRadius": 16,
+  "rsvpHintMarginTop": 12
+}

@@ -71,27 +71,48 @@
   padding: 14px 16px;
   border-radius: 16px;
   background: #fff;
-  border: 1px solid #e5dfd4;
-  color: #5c6478;
-  font-size: 13px;
+  border: 1px solid #f9d7e6;
+  color: #6b7280;
+  font-size: 11px;
   line-height: 1.5;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.asideHintTitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4f46e5;
 }
 
 @media (min-width: 1024px) {
   .pageRoot {
-    padding: 40px 24px 64px;
+    padding: 0;
     background: #f5f0ed;
+    min-height: 100vh;
   }
 
   .layout {
     max-width: none;
-    grid-template-columns: 1fr 375px minmax(240px, 280px) 1fr;
-    align-items: start;
-    gap: 24px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0;
+    padding: 0 24px 64px;
+    box-sizing: border-box;
   }
 
   .inviteColumn {
-    grid-column: 2;
+    width: 375px;
+    flex-shrink: 0;
+    margin-top: 40px;
   }
 
   .shell {
@@ -102,17 +123,25 @@
 
   .desktopAside {
     display: block;
-    grid-column: 3;
+    width: 280px;
+    max-width: 280px;
+    flex-shrink: 0;
+    margin-top: 0;
+    padding-top: 80px;
+    padding-left: 24px;
+    box-sizing: border-box;
     position: sticky;
     top: 80px;
+    align-self: flex-start;
   }
 
   .desktopAside > :first-child {
-    border-radius: 20px;
-    padding: 20px;
-    border: 1px solid #f9d7e6;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    background: #fff;
+    /* panel styles live on DesktopPublicSharePanel */
+    border-radius: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
   }
 
   .asideHint {
