@@ -28,12 +28,14 @@ export default function MobileShell({ children }: { children: ReactNode }) {
     pathname === '/create' ||
     pathname.startsWith('/create/') ||
     pathname === '/m/create' ||
-    pathname.startsWith('/m/create/');
+    pathname.startsWith('/m/create/') ||
+    pathname === '/pc/create' ||
+    pathname.startsWith('/pc/create/');
   const chrome = isEditorChrome ? 'editor' : isConceptChrome ? 'concept' : 'default';
 
   const navItems = [
     { href: appPath(prefix, '/'), label: '홈', icon: '🏠' },
-    { href: appPath(prefix, '/templates'), label: '만들기', icon: '✨' },
+    { href: appPath(prefix, '/create/concept'), label: '만들기', icon: '✨' },
     { href: appPath(prefix, '/my-invitations'), label: '내 초대장', icon: '📬' },
     { href: appPath(prefix, '/dashboard'), label: '대시보드', icon: '📊' },
   ];

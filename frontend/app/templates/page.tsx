@@ -1,28 +1,9 @@
-'use client';
-
-import ResponsivePlatformBoundary from '@/src/shared/platform/ResponsivePlatformBoundary';
-import TemplatesScreen from '@/src/features/templates/ui/mobile/TemplatesScreen';
-import TemplatesPage from '@/src/features/templates/ui/pc/TemplatesPage';
-import MobileShell from '@/src/ui/mobile/MobileShell';
-import PcShell from '@/src/ui/pc/PcShell';
+import { redirect } from 'next/navigation';
 
 /**
- * 공식 Concept Selection — viewport(1024) shell 전환.
- * /m/templates · /pc/templates 는 QA용.
+ * Compat: legacy `/templates` → canonical `/create/concept`.
+ * Same Figma Concept Selection UI (no separate legacy FULL engine page).
  */
-export default function ConceptSelectionPage() {
-  return (
-    <ResponsivePlatformBoundary
-      mobile={
-        <MobileShell>
-          <TemplatesScreen />
-        </MobileShell>
-      }
-      desktop={
-        <PcShell>
-          <TemplatesPage />
-        </PcShell>
-      }
-    />
-  );
+export default function TemplatesCompatRedirectPage() {
+  redirect('/create/concept');
 }

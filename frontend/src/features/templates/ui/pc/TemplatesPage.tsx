@@ -22,10 +22,10 @@ export default function TemplatesPage() {
   const pathname = usePathname() ?? '';
   const prefix = resolveAppNavPrefix(pathname);
   const myInvitationsHref = appPath(prefix, '/my-invitations');
-  const templatesHref = appPath(prefix, '/templates');
+  const conceptHref = appPath(prefix, '/create/concept');
 
   return (
-    <RequireAuth nextPath={templatesHref}>
+    <RequireAuth nextPath={conceptHref}>
       <section className={styles.root}>
         <header className={styles.header}>
           <p className={styles.eyebrow}>초대장 만들기</p>

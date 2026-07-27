@@ -21,6 +21,7 @@ export function isPlatformAppPath(pathname: string | null | undefined): boolean 
   if (pathname === '/my-invitations' || pathname.startsWith('/my-invitations/')) return true;
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) return true;
   if (pathname === '/create' || pathname.startsWith('/create/')) return true;
+  if (pathname === '/publish' || pathname.startsWith('/publish')) return true;
   if (pathname === '/auth/email' || pathname.startsWith('/auth/email')) return true;
   if (pathname === '/auth/verify' || pathname.startsWith('/auth/verify')) return true;
   if (pathname === '/login' || pathname.startsWith('/login')) return true;

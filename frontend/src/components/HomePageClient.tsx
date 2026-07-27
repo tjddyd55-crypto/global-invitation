@@ -1,88 +1,15 @@
+/**
+ * @deprecated LEGACY marketing landing — DO NOT import from app routes.
+ * Canonical home: MainScreen / DesktopMainScreen via app/page.tsx.
+ * Kept only so git history / assert can detect accidental re-wiring.
+ * Safe to delete once assert:no-legacy-ui + e2e stay green for 1 sprint.
+ */
 'use client';
 
-import Link from 'next/link';
-import styles from './HomePageClient.module.css';
-import { useI18n } from '@/src/contexts/I18nContext';
-import { I18N_KEYS } from '@/src/i18n';
-
-type Translate = (key: string) => string;
-
-type PricingPlan = {
-  nameKey: string;
-  descriptionKey: string;
-};
-
-const PRICING_PLANS: PricingPlan[] = [
-  {
-    nameKey: I18N_KEYS.marketing.pricingPlanFreeName,
-    descriptionKey: I18N_KEYS.marketing.pricingPlanFreeDescription,
-  },
-  {
-    nameKey: I18N_KEYS.marketing.pricingPlanBasicName,
-    descriptionKey: I18N_KEYS.marketing.pricingPlanBasicDescription,
-  },
-  {
-    nameKey: I18N_KEYS.marketing.pricingPlanPlusName,
-    descriptionKey: I18N_KEYS.marketing.pricingPlanPlusDescription,
-  },
-];
-
-function HeroSection({ t }: { t: Translate }) {
-  return (
-    <section className={styles.hero}>
-      <h1 className={styles.heroTitle}>{t(I18N_KEYS.marketing.heroTitle)}</h1>
-      <p className={styles.heroSubtitle}>{t(I18N_KEYS.marketing.heroSubtitle)}</p>
-      <div className={styles.heroActions}>
-        <Link className={styles.primaryButton} href="/auth/email?next=%2Ftemplates">
-          {t(I18N_KEYS.marketing.heroCtaPrimary)}
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-function FeaturesSection({ t }: { t: Translate }) {
-  return (
-    <section className={styles.section}>
-      <h2 className={styles.sectionTitle}>{t(I18N_KEYS.marketing.featuresTitle)}</h2>
-      <ul className={styles.featureList}>
-        <li>{t(I18N_KEYS.marketing.featuresItemOne)}</li>
-        <li>{t(I18N_KEYS.marketing.featuresItemTwo)}</li>
-        <li>{t(I18N_KEYS.marketing.featuresItemThree)}</li>
-      </ul>
-    </section>
-  );
-}
-
-function PricingSummarySection({ t }: { t: Translate }) {
-  return (
-    <section className={styles.section}>
-      <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>{t(I18N_KEYS.marketing.pricingSummaryTitle)}</h2>
-        <Link className={styles.textLink} href="/pricing">
-          {t(I18N_KEYS.marketing.pricingSummaryLink)}
-        </Link>
-      </div>
-      <div className={styles.pricingGrid}>
-        {PRICING_PLANS.map((plan) => (
-          <div key={plan.nameKey} className={styles.pricingCard}>
-            <h3 className={styles.cardTitle}>{t(plan.nameKey)}</h3>
-            <p className={styles.cardDescription}>{t(plan.descriptionKey)}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export default function HomePageClient() {
-  const { t } = useI18n();
-
-  return (
-    <div>
-      <HeroSection t={t} />
-      <FeaturesSection t={t} />
-      <PricingSummarySection t={t} />
-    </div>
-  );
+export default function HomePageClientLegacyArchived() {
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.error('[legacy] HomePageClient must not be mounted on canonical routes');
+  }
+  return null;
 }

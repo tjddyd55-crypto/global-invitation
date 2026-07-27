@@ -18,7 +18,7 @@ export default function PcHomeContent() {
   const { status, user } = useAuth();
   const pathname = usePathname() ?? '';
   const prefix = resolveAppNavPrefix(pathname);
-  const templatesHref = appPath(prefix, '/templates');
+  const templatesHref = appPath(prefix, '/create/concept');
   const myInvitationsHref = appPath(prefix, '/my-invitations');
   const dashboardHref = appPath(prefix, '/dashboard');
   const authNext = encodeURIComponent(templatesHref);

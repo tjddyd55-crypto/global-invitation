@@ -19,7 +19,8 @@
     "test:e2e:report": "playwright show-report",
     "design:qa:screenshots": "playwright test e2e/design-qa-screenshots.spec.ts --project=chromium",
     "figma:pixel:diff": "node scripts/figma-pixel-qa/pixel-diff.mjs",
-    "figma:pixel:qa": "playwright test e2e/figma-pixel-overlay.spec.ts --project=chromium"
+    "figma:pixel:qa": "playwright test e2e/figma-pixel-overlay.spec.ts --project=chromium",
+    "assert:no-legacy-ui": "node scripts/assert-no-legacy-ui.mjs"
   },
   "workspaces": [],
   "devDependencies": {

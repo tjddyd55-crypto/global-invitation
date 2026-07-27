@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next dev",
-    "build": "node --max-old-space-size=6144 ./node_modules/next/dist/bin/next build",
+    "build": "node ./scripts/build-with-identity.mjs",
     "start": "node --max-old-space-size=2048 ./node_modules/next/dist/bin/next start --hostname 0.0.0.0",
-    "lint": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next lint"
+    "lint": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next lint",
+    "assert:no-legacy-ui": "node ../scripts/assert-no-legacy-ui.mjs"
   },
   "dependencies": {
     "autoprefixer": "^10.4.27",

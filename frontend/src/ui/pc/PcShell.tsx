@@ -28,7 +28,7 @@ export default function PcShell({ children }: { children: ReactNode }) {
 
   const sidebarItems = [
     { href: appPath(prefix, '/'), label: '홈' },
-    { href: appPath(prefix, '/templates'), label: '초대장 만들기' },
+    { href: appPath(prefix, '/create/concept'), label: '초대장 만들기' },
     { href: appPath(prefix, '/my-invitations'), label: '내 초대장' },
     { href: appPath(prefix, '/dashboard'), label: '대시보드' },
   ];
