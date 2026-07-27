@@ -13,6 +13,7 @@ type PublishCompleteScreenProps = {
 
 /**
  * 공개 완료 화면 (Figma Make: Publish Complete).
+ * 큰 share banner는 이 화면에서만 사용한다. Editor form 상단 banner는 제거.
  */
 export default function PublishCompleteScreen({
   invitationId,
@@ -20,7 +21,7 @@ export default function PublishCompleteScreen({
   title,
 }: PublishCompleteScreenProps) {
   return (
-    <section className={styles.screen}>
+    <section className={styles.screen} data-testid="share-panel">
       <header className={styles.header}>
         <p className={styles.eyebrow}>Publish Complete</p>
         <h1>초대장이 공개되었습니다</h1>
@@ -29,6 +30,9 @@ export default function PublishCompleteScreen({
 
       <div className={styles.layout}>
         <div className={styles.mainColumn}>
+          <p className={styles.shareUrlLine}>
+            공유 URL: <strong data-testid="share-url">{shareUrl}</strong>
+          </p>
           <GlobalSharePanel
             shareUrl={shareUrl}
             title={title || '초대장'}

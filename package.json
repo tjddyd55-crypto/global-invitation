@@ -17,11 +17,16 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
-    "design:qa:screenshots": "playwright test e2e/design-qa-screenshots.spec.ts --project=chromium"
+    "design:qa:screenshots": "playwright test e2e/design-qa-screenshots.spec.ts --project=chromium",
+    "figma:pixel:diff": "node scripts/figma-pixel-qa/pixel-diff.mjs",
+    "figma:pixel:qa": "playwright test e2e/figma-pixel-overlay.spec.ts --project=chromium"
   },
   "workspaces": [],
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@types/pngjs": "^6.0.5",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

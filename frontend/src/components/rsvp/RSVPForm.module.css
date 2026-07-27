@@ -1,11 +1,11 @@
 .section {
   max-width: 375px;
   margin: 48px auto 0;
-  padding: 24px;
+  padding: 56px 24px;
   box-sizing: border-box;
   border-radius: 0;
   border: none;
-  background: #f9fafb;
+  background: transparent;
 }
 
 .title {

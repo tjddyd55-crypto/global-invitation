@@ -83,13 +83,13 @@ export default function WeddingClassicInvitation({
   void _onShareUnused;
   void _onKakaoShareUnused;
   void _isSharedUnused;
-  void showGuestbook;
   void _showCoupleSectionUnused;
 
   const [failedGallerySrcs, setFailedGallerySrcs] = useState<Record<string, true>>({});
   const [heroFailed, setHeroFailed] = useState(false);
   const [heroPortrait, setHeroPortrait] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [guestbookExpanded, setGuestbookExpanded] = useState(false);
 
   const heroImageSrc =
     data && typeof data.heroImage === 'string' && data.heroImage.trim() ? data.heroImage.trim() : '';
@@ -171,12 +171,25 @@ export default function WeddingClassicInvitation({
   const brideImg = (r.brideImage ?? r.bride?.image ?? '').trim();
   const groomPhone = (r.groomPhone ?? r.groom?.phone ?? '').trim();
   const bridePhone = (r.bridePhone ?? r.bride?.phone ?? '').trim();
+  const groomParents = (r.groom?.parentsText ?? '').trim();
+  const brideParents = (r.bride?.parentsText ?? '').trim();
   const parentsInfo = (r.parentsInfo ?? '').trim();
+  const [parentsGroomFallback, parentsBrideFallback] = parentsInfo
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean);
   /** 커플 섹션: 이름·사진 등 표시 데이터가 하나라도 있으면 true (평탄/중첩 모두 반영) */
   const hasCouple = Boolean(groomDisplay || brideDisplay || groomImg || brideImg);
   const showCoupleBlock = Boolean(hasCouple || groomPhone || bridePhone || parentsInfo);
   /** 장례 일정 데이터가 있으면 리스트, 그 외에는 커플 데이터가 있을 때만 웨딩형 캘린더 */
   const useCalendarSchedule = hasCouple && !mapToneFuneralLike;
+  const guestbookMessages = safeArray(r.messages).filter(
+    (msg) => typeof msg?.name === 'string' && typeof msg?.content === 'string' && msg.content.trim()
+  );
+  const showGuestbookSection = Boolean(showGuestbook && guestbookMessages.length > 0);
+  const visibleGuestbookMessages = guestbookExpanded
+    ? guestbookMessages
+    : guestbookMessages.slice(0, 3);
 
   return (
     <div className={`${styles.page} ${pageConceptClass}`}>
@@ -246,58 +259,66 @@ export default function WeddingClassicInvitation({
       {hasMessage ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
       {showCoupleBlock ? (
-        <section className={styles.section}>
-          {hasCouple ? <h2 className={styles.calendarTitle}>신랑 · 신부</h2> : null}
+        <section className={`${styles.section} ${styles.coupleSection}`} data-testid="couple-section">
+          {hasCouple ? <p className={styles.scriptLabel}>The Couple</p> : null}
           {hasCouple ? (
-            <div className={styles.coupleSimple}>
-              {groomDisplay ? <p className={styles.coupleNamePrimary}>{groomDisplay}</p> : null}
-              {groomDisplay && brideDisplay ? <p className={styles.coupleHeart}>♥</p> : null}
-              {brideDisplay ? <p className={styles.coupleNamePrimary}>{brideDisplay}</p> : null}
+            <div className={styles.coupleGrid}>
+              {groomDisplay || groomImg || groomPhone ? (
+                <div className={styles.couplePerson}>
+                  <div className={styles.couplePhotoFrame}>
+                    <ImageWithFallback
+                      className={styles.couplePhoto}
+                      src={groomImg || null}
+                      alt=""
+                      loading="lazy"
+                      fallback={
+                        <div className={styles.coupleAvatarFallback} aria-hidden>
+                          {(groomDisplay || '신랑').slice(0, 1)}
+                        </div>
+                      }
+                    />
+                  </div>
+                  <p className={styles.coupleRole}>{t(I18N_KEYS.weddingClassic.groomLabel)}</p>
+                  {groomDisplay ? <p className={styles.coupleName}>{groomDisplay}</p> : null}
+                  {(groomParents || parentsGroomFallback) ? (
+                    <p className={styles.coupleDetail}>{groomParents || parentsGroomFallback}</p>
+                  ) : null}
+                  {groomPhone ? (
+                    <a className={styles.coupleContactLink} href={`tel:${groomPhone.replace(/\s+/g, '')}`}>
+                      연락하기
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
+              {brideDisplay || brideImg || bridePhone ? (
+                <div className={styles.couplePerson}>
+                  <div className={styles.couplePhotoFrame}>
+                    <ImageWithFallback
+                      className={styles.couplePhoto}
+                      src={brideImg || null}
+                      alt=""
+                      loading="lazy"
+                      fallback={
+                        <div className={styles.coupleAvatarFallback} aria-hidden>
+                          {(brideDisplay || '신부').slice(0, 1)}
+                        </div>
+                      }
+                    />
+                  </div>
+                  <p className={styles.coupleRole}>{t(I18N_KEYS.weddingClassic.brideLabel)}</p>
+                  {brideDisplay ? <p className={styles.coupleName}>{brideDisplay}</p> : null}
+                  {(brideParents || parentsBrideFallback) ? (
+                    <p className={styles.coupleDetail}>{brideParents || parentsBrideFallback}</p>
+                  ) : null}
+                  {bridePhone ? (
+                    <a className={styles.coupleContactLink} href={`tel:${bridePhone.replace(/\s+/g, '')}`}>
+                      연락하기
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
-          {hasCouple && (groomImg || brideImg || groomDisplay || brideDisplay) ? (
-            <div className={styles.couplePhotosRow}>
-              {groomDisplay || groomImg ? (
-                <div className={styles.couplePhotoWrap}>
-                  <ImageWithFallback
-                    className={styles.couplePhoto}
-                    src={groomImg || null}
-                    alt=""
-                    loading="lazy"
-                    fallback={<div className={styles.coupleAvatarFallback} aria-hidden>{(groomDisplay || '신랑').slice(0, 1)}</div>}
-                  />
-                  {groomDisplay ? <div className={styles.couplePhotoCaption}>{groomDisplay}</div> : null}
-                </div>
-              ) : null}
-              {brideDisplay || brideImg ? (
-                <div className={styles.couplePhotoWrap}>
-                  <ImageWithFallback
-                    className={styles.couplePhoto}
-                    src={brideImg || null}
-                    alt=""
-                    loading="lazy"
-                    fallback={<div className={styles.coupleAvatarFallback} aria-hidden>{(brideDisplay || '신부').slice(0, 1)}</div>}
-                  />
-                  {brideDisplay ? <div className={styles.couplePhotoCaption}>{brideDisplay}</div> : null}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-          {groomPhone || bridePhone ? (
-            <div className={styles.couplePhoneBlock}>
-              {groomPhone ? (
-                <div>
-                  {t(I18N_KEYS.weddingClassic.groomLabel)} {groomPhone}
-                </div>
-              ) : null}
-              {bridePhone ? (
-                <div>
-                  {t(I18N_KEYS.weddingClassic.brideLabel)} {bridePhone}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-          {parentsInfo ? <div className={styles.coupleParentsBlock}>{parentsInfo}</div> : null}
         </section>
       ) : null}
 
@@ -474,6 +495,42 @@ export default function WeddingClassicInvitation({
                 <div>{account.holder}</div>
               </div>
             ))}
+          </div>
+        </section>
+      ) : null}
+
+      {showGuestbookSection ? (
+        <section className={styles.guestbookSection} data-testid="guestbook-section" aria-label="Guestbook">
+          <p className={styles.scriptLabel}>Guestbook</p>
+          <div className={styles.guestbookList}>
+            {visibleGuestbookMessages.map((msg, index) => (
+              <article
+                key={`${msg.name}-${msg.createdAt}-${index}`}
+                className={styles.guestbookCard}
+              >
+                <div className={styles.guestbookCardHeader}>
+                  <div className={styles.guestbookAuthorRow}>
+                    <div className={styles.guestbookAvatar} aria-hidden>
+                      {(msg.name || '?').slice(0, 1)}
+                    </div>
+                    <span className={styles.guestbookAuthor}>{msg.name}</span>
+                  </div>
+                  {msg.createdAt ? <span className={styles.guestbookTime}>{msg.createdAt}</span> : null}
+                </div>
+                <p className={styles.guestbookBody}>{msg.content}</p>
+              </article>
+            ))}
+          </div>
+          <div className={styles.guestbookActions}>
+            {guestbookMessages.length > 3 ? (
+              <button
+                type="button"
+                className={styles.guestbookBtnSecondary}
+                onClick={() => setGuestbookExpanded((prev) => !prev)}
+              >
+                {guestbookExpanded ? '접기' : '전체보기'}
+              </button>
+            ) : null}
           </div>
         </section>
       ) : null}

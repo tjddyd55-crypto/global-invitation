@@ -37,6 +37,20 @@
   align-items: start;
 }
 
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.shareUrlLine {
+  margin: 0;
+  color: var(--gi-text-secondary);
+  font-size: 14px;
+  word-break: break-all;
+}
+
 .sideColumn {
   display: flex;
   flex-direction: column;

@@ -18,6 +18,7 @@ test.describe('초대장 공개/공유', () => {
 
     const sharePanel = page.getByTestId('share-panel');
     await expect(sharePanel).toBeVisible({ timeout: 20000 });
+    await expect(page).toHaveURL(/\/my-invitations\/.+\/complete/);
 
     const shareUrlElement = page.getByTestId('share-url');
     const sharePath = (await shareUrlElement.textContent())?.trim() || '';

@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Figma Make SSOT Reference</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Serif KR", "Pretendard", "Noto Sans KR", serif;
+      background: #FFF8F3;
+      color: #1F2937;
+    }
+    .screen { width: 375px; margin: 0 auto; background: #FFF8F3; min-height: 100vh; }
+    .label {
+      margin: 0 0 28px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-align: center;
+      color: #B5704A;
+      opacity: 0.7;
+    }
+    .hero {
+      position: relative;
+      width: 100%;
+      height: 520px;
+      display: flex;
+      align-items: flex-end;
+      padding: 24px 24px 40px;
+      background: linear-gradient(160deg, #FDF2F8 0%, #EDE9FE 100%);
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,.55) 100%);
+    }
+    .hero-text { position: relative; z-index: 1; color: #fff; }
+    .hero-text h1 { margin: 0 0 8px; font-size: 28px; font-weight: 700; }
+    .hero-text p { margin: 0; font-size: 14px; opacity: .9; }
+    .couple {
+      padding: 56px 24px;
+    }
+    .couple-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+    .person {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      text-align: center;
+    }
+    .photo {
+      width: 120px;
+      height: 160px;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(145deg, #c4b5a0, #e8ddd0);
+      box-shadow: 0 6px 24px rgba(181,112,74,.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      font-weight: 700;
+      color: #B5704A;
+    }
+    .role { margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #B5704A; }
+    .name { margin: 0; font-size: 17px; font-weight: 700; }
+    .detail { margin: 0; font-size: 11px; line-height: 1.5; color: #6B7280; }
+    .contact {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: #B5704A;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .guestbook { padding: 56px 20px; }
+    .cards { display: flex; flex-direction: column; gap: 12px; max-width: 340px; margin: 0 auto 20px; }
+    .card {
+      background: #fff;
+      border: 1px solid #EEECE8;
+      border-radius: 8px;
+      padding: 16px 18px;
+    }
+    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .author { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(181,112,74,.25); color: #B5704A; font-weight: 700;
+    }
+    .time { font-size: 11px; color: #6B7280; }
+    .body { margin: 0; font-size: 13px; line-height: 1.6; color: #6B7280; }
+    .actions { display: flex; gap: 10px; max-width: 340px; margin: 0 auto; }
+    .btn {
+      flex: 1; height: 44px; border-radius: 10px; font-size: 13px; font-weight: 600;
+      border: 1px solid #EEECE8; background: transparent; color: #6B7280;
+    }
+    .btn-primary { background: #B5704A; border: none; color: #fff; }
+    .gallery {
+      width: 100%;
+      height: 420px;
+      background: linear-gradient(135deg, #e8ddd0, #d4c4b0);
+      display: flex; align-items: center; justify-content: center;
+      color: #5c5346; font-weight: 700;
+    }
+    .map {
+      width: 100%;
+      height: 280px;
+      background: #e5e7eb;
+      display: flex; align-items: center; justify-content: center;
+      color: #6b7280; font-weight: 600;
+    }
+    .editor-desktop {
+      width: 1440px; height: 768px; margin: 0 auto;
+      background: #F7F3EC; padding: 0;
+    }
+    .editor-header {
+      height: 72px; display: flex; align-items: center; gap: 16px;
+      padding: 0 32px; background: #fff; border-bottom: 1px solid #EEECE8;
+    }
+    .editor-body {
+      max-width: 1240px; margin: 0 auto; padding: 32px;
+      display: grid; grid-template-columns: 240px 1fr 340px; gap: 24px;
+    }
+    .panel {
+      background: #fff; border-radius: 24px; padding: 32px; min-height: 420px;
+    }
+    .preview {
+      width: 340px; border-radius: 28px; background: #fff; min-height: 520px;
+      border: 1px solid #EEECE8;
+    }
+    .editor-mobile {
+      width: 375px; margin: 0 auto; min-height: 812px; background: #F7F3EC;
+    }
+    .m-header {
+      height: 56px; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; background: #fff; border-bottom: 1px solid #EEECE8;
+    }
+    .m-form { margin: 16px 20px; background: #fff; border-radius: 24px; padding: 24px; min-height: 360px; }
+    .m-bottom {
+      position: fixed; left: 0; right: 0; bottom: 0; max-width: 375px; margin: 0 auto;
+      display: flex; gap: 8px; padding: 12px 16px; background: #fff; border-top: 1px solid #EEECE8;
+    }
+    .m-bottom .prev { flex: 1; height: 44px; border-radius: 12px; border: 1px solid #E5E7EB; background: #fff; }
+    .m-bottom .preview-btn { width: 80px; height: 44px; border-radius: 12px; border: 1px solid #E5E7EB; background: #fff; }
+    .m-bottom .next { flex: 1; height: 44px; border-radius: 12px; border: none; background: #4F46E5; color: #fff; font-weight: 600; }
+    [data-screen] { display: none; }
+    [data-screen].active { display: block; }
+  </style>
+</head>
+<body>
+  <div id="public-mobile-hero" data-screen class="screen active">
+    <section class="hero">
+      <div class="hero-text">
+        <h1>이준혁 ♥ 김지은</h1>
+        <p>2025.11.15 · 더 웨딩홀</p>
+      </div>
+    </section>
+  </div>
+
+  <div id="public-mobile-couple" data-screen class="screen">
+    <section class="couple">
+      <p class="label">The Couple</p>
+      <div class="couple-grid">
+        <div class="person">
+          <div class="photo">준</div>
+          <p class="role">신랑</p>
+          <p class="name">이준혁</p>
+          <p class="detail">유갑성 · 우재한 의 아들</p>
+          <a class="contact" href="#">연락하기</a>
+        </div>
+        <div class="person">
+          <div class="photo">지</div>
+          <p class="role">신부</p>
+          <p class="name">김지은</p>
+          <p class="detail">이상금 · 형명숙 의 딸</p>
+          <a class="contact" href="#">연락하기</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="public-mobile-guestbook" data-screen class="screen">
+    <section class="guestbook">
+      <p class="label">Guestbook</p>
+      <div class="cards">
+        <article class="card">
+          <div class="card-head">
+            <div class="author"><span class="avatar">서</span>서문교</div>
+            <span class="time">2025.04.13</span>
+          </div>
+          <p class="body">두 분 결혼 축하드려요~ 알콩달콩 이쁘게 잘 살아요^^</p>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <div class="author"><span class="avatar">스</span>스윙 이소영</div>
+            <span class="time">2025.04.12</span>
+          </div>
+          <p class="body">소식 전해줘서 고마워요! 행복하게 잘 살아줘요.</p>
+        </article>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button">전체보기</button>
+        <button class="btn btn-primary" type="button">작성하기</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="public-mobile-gallery" data-screen class="screen">
+    <p class="label" style="padding-top:48px">Album</p>
+    <div class="gallery">Gallery 420</div>
+  </div>
+
+  <div id="public-mobile-map" data-screen class="screen">
+    <p class="label" style="padding-top:48px">Location</p>
+    <div class="map">Map 280</div>
+  </div>
+
+  <div id="public-mobile-share" data-screen class="screen">
+    <section style="padding:56px 24px;text-align:center">
+      <p class="label">Share</p>
+      <p style="font-size:13px;color:#6B7280;line-height:1.6">사용 중인 기기의 공유 기능으로<br/>원하는 앱에 바로 보낼 수 있습니다.</p>
+      <div style="display:flex;gap:10px;max-width:320px;margin:24px auto 0">
+        <button class="btn btn-primary" type="button">공유하기</button>
+        <button class="btn" type="button">링크 복사</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="editor-desktop-basic" data-screen>
+    <div class="editor-desktop">
+      <header class="editor-header">
+        <strong>초대장 편집</strong>
+        <span style="padding:4px 10px;border-radius:999px;background:#EEF2FF;color:#4F46E5;font-size:12px;font-weight:700">초안</span>
+        <span style="margin-left:auto"></span>
+        <button type="button">저장</button>
+        <button type="button" style="background:#4F46E5;color:#fff;border:none;border-radius:10px;padding:8px 14px">공개하기</button>
+      </header>
+      <div class="editor-body">
+        <aside class="panel">1~9 Stepper</aside>
+        <main class="panel">기본 정보</main>
+        <aside class="preview">Live Preview 340</aside>
+      </div>
+    </div>
+  </div>
+
+  <div id="editor-mobile-basic" data-screen>
+    <div class="editor-mobile">
+      <header class="m-header">
+        <span>←</span>
+        <strong>편집</strong>
+        <span style="padding:4px 8px;border-radius:999px;background:#EEF2FF;color:#4F46E5;font-size:11px;font-weight:700">초안</span>
+        <button type="button">저장</button>
+        <span>···</span>
+      </header>
+      <div class="m-form">기본 정보</div>
+      <div class="m-bottom">
+        <button class="prev" type="button">이전</button>
+        <button class="preview-btn" type="button">미리보기</button>
+        <button class="next" type="button">다음</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const screen = params.get('screen') || 'public-mobile-hero';
+    document.querySelectorAll('[data-screen]').forEach((el) => {
+      el.classList.toggle('active', el.id === screen);
+    });
+    document.title = 'figma-ref:' + screen;
+  </script>
+</body>
+</html>

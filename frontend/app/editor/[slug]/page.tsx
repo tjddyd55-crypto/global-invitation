@@ -44,7 +44,6 @@ import { ensureGuestToken, getStoredSession, setGuestToken, setLastDraftSlug } f
 import {
   getTemplateEditorPath,
 } from '@/src/templates/registry';
-import shareBannerStyles from './editorShareBanner.module.css';
 
 type EditorError = {
   title: string;
@@ -221,8 +220,6 @@ export default function EditorPage() {
   const [draftStatus, setDraftStatus] = useState<'draft' | 'published'>('draft');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [shareUiNotice, setShareUiNotice] = useState<string | null>(null);
   const [funeralData, setFuneralData] = useState<ReturnType<typeof getFuneralClassicDemoData> | null>(null);
   const [hasSession, setHasSession] = useState(false);
   /** 초대장당 최초 로드 시 한 번만 설정; 에디터·프리뷰 단일 기준 */
@@ -275,8 +272,6 @@ export default function EditorPage() {
       setDraftStatus('draft');
       setLastSavedAt(null);
       setSaveNotice(null);
-      setShareUrl(null);
-      setShareUiNotice(null);
       setInitialConceptType(null);
 
       try {
@@ -330,9 +325,6 @@ export default function EditorPage() {
           requestedConcept || resolveInvitationConceptType(runtimeData, editorInvitation.templateKey)
         );
         setLastSavedAt(editorInvitation.updatedAt ?? null);
-        if (editorInvitation.shareSlug) {
-          setShareUrl(`/i/${editorInvitation.shareSlug}`);
-        }
       } catch {
         if (!isMounted) return;
         setError({
@@ -431,7 +423,6 @@ export default function EditorPage() {
     setError(null);
     setSaveError(null);
     setSaveNotice(null);
-    setShareUiNotice(null);
 
     try {
       const runtimeData = buildWeddingClassicPreviewData(state);
@@ -477,16 +468,14 @@ export default function EditorPage() {
     setPublishing(true);
     setSaveError(null);
     setSaveNotice(null);
-    setShareUiNotice(null);
     try {
       await handleSave(state);
-      const published = await publishInvitationById(invitation.id, requestedToken);
+      await publishInvitationById(invitation.id, requestedToken);
       const updated = await getInvitationForEditor(invitation.id, requestedToken);
       setInvitation(updated);
       setLastDraftSlug(updated.slug);
       setDraftStatus('published');
       setLastSavedAt(updated.updatedAt ?? new Date().toISOString());
-      setShareUrl(published.share_url);
       setSaveNotice('공개가 완료되었습니다. 공유 링크를 복사해 전달해 보세요.');
       router.push(`/my-invitations/${invitation.id}/complete`);
     } catch {
@@ -501,7 +490,6 @@ export default function EditorPage() {
 
     setSaving(true);
     setSaveError(null);
-    setShareUiNotice(null);
 
     const runtimeData = buildFullDataFromFuneralState(state);
     const invitationPayload: Invitation = {
@@ -575,53 +563,6 @@ export default function EditorPage() {
     } finally {
       setPublishing(false);
     }
-  };
-
-  const shareAbsoluteUrl = useMemo(() => {
-    if (!shareUrl) return '';
-    if (typeof window === 'undefined') return shareUrl;
-    return shareUrl.startsWith('http') ? shareUrl : `${window.location.origin}${shareUrl}`;
-  }, [shareUrl]);
-
-  const handleCopyShareUrl = async () => {
-    if (!shareAbsoluteUrl || typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
-      setShareUiNotice('공유 URL 복사 기능을 사용할 수 없습니다.');
-      return;
-    }
-    await navigator.clipboard.writeText(shareAbsoluteUrl);
-    setShareUiNotice('공유 URL이 복사되었습니다.');
-  };
-
-  const handleKakaoShare = () => {
-    if (!shareAbsoluteUrl || typeof window === 'undefined') return;
-    const url = `https://story.kakao.com/share?url=${encodeURIComponent(shareAbsoluteUrl)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleFacebookShare = () => {
-    if (!shareAbsoluteUrl || typeof window === 'undefined') return;
-    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareAbsoluteUrl)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleImageDownload = async () => {
-    if (typeof window === 'undefined' || !invitation) return;
-    const runtimeData = invitation.dataJson ?? invitation.data;
-    if (!isWeddingInvitationData(runtimeData) || !runtimeData.heroImage) {
-      setShareUiNotice('다운로드할 대표 이미지가 없습니다.');
-      return;
-    }
-    const anchor = document.createElement('a');
-    anchor.href = runtimeData.heroImage;
-    anchor.download = `invitation-${invitation.id}.jpg`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-  };
-
-  const handlePdfDownload = () => {
-    if (typeof window === 'undefined') return;
-    window.print();
   };
 
   if (loading) {
@@ -702,51 +643,21 @@ export default function EditorPage() {
 
   if (editorType !== 'FUNERAL' && initialState) {
     return (
-      <>
-        {shareUrl && (
-          <section data-testid="share-panel" className={shareBannerStyles.sharePanel}>
-            <h2 className={shareBannerStyles.shareTitle}>공유</h2>
-            <p className={shareBannerStyles.shareBody}>
-              공개가 완료되었습니다. 공유 URL: <strong data-testid="share-url">{shareAbsoluteUrl}</strong>
-            </p>
-            <div className={shareBannerStyles.shareActions}>
-              <button type="button" onClick={handleCopyShareUrl}>
-                URL 복사
-              </button>
-              <span className={shareBannerStyles.shareActionsExtra}>
-                <button type="button" onClick={handleKakaoShare}>
-                  카카오 공유
-                </button>
-                <button type="button" onClick={handleFacebookShare}>
-                  페이스북 공유
-                </button>
-                <button type="button" onClick={handleImageDownload}>
-                  이미지 다운로드
-                </button>
-                <button type="button" onClick={handlePdfDownload}>
-                  PDF 다운로드
-                </button>
-              </span>
-            </div>
-            {shareUiNotice && <p className={shareBannerStyles.shareNotice}>{shareUiNotice}</p>}
-          </section>
-        )}
-        <WeddingEditor
-          key={invitation.id}
-          initialState={initialState}
-          pageUrl={pageUrl}
-          onSave={handleSave}
-          onSaveAndExit={handleSaveAndExit}
-          onPublish={handlePublish}
-          saving={saving}
-          publishing={publishing}
-          isDemo={false}
-          saveError={saveError}
-          saveNotice={saveNotice}
-          draftStatus={draftStatus}
-          lastSavedAt={lastSavedAt}
-        />
-      </>
+      <WeddingEditor
+        key={invitation.id}
+        initialState={initialState}
+        pageUrl={pageUrl}
+        onSave={handleSave}
+        onSaveAndExit={handleSaveAndExit}
+        onPublish={handlePublish}
+        saving={saving}
+        publishing={publishing}
+        isDemo={false}
+        saveError={saveError}
+        saveNotice={saveNotice}
+        draftStatus={draftStatus}
+        lastSavedAt={lastSavedAt}
+      />
     );
   }
 
