@@ -11,6 +11,10 @@ import adminRouter from './routes/admin';
 import templateRegistryRouter from './routes/templateRegistry';
 import rsvpRouter from './routes/rsvp';
 import invitationAnalyticsRouter from './routes/invitationAnalytics';
+import {
+  ownerInvitationCommentsRouter,
+  publicInvitationCommentsRouter,
+} from './routes/invitationComments';
 import mediaRouter from './routes/media';
 import templateSubmissionsRouter from './routes/templateSubmissions';
 import adminTemplateSubmissionsRouter from './routes/adminTemplateSubmissions';
@@ -104,7 +108,9 @@ app.get('/health', async (req, res) => {
 
 // API routes
 app.use('/api/invitations', invitationsRouter);
+app.use('/api/invitations/:id/comments', ownerInvitationCommentsRouter);
 app.use('/api/invitations', invitationAnalyticsRouter);
+app.use('/api/public/invitations', publicInvitationCommentsRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/notifications', notificationsRouter);

@@ -130,6 +130,7 @@ model Invitation {
   template Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   rsvps          RSVP[]
   views          InvitationView[]
+  comments       InvitationComment[]
   templateUsages TemplateUsage[]
   templateClones TemplateClone[]
 
@@ -138,6 +139,24 @@ model Invitation {
   @@index([templateId])
   @@index([isDeleted])
   @@map("invitations")
+}
+
+model InvitationComment {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invitationId String    @map("invitation_id") @db.Uuid
+  authorName   String    @map("author_name") @db.VarChar(30)
+  message      String    @db.VarChar(500)
+  isVisible    Boolean   @default(true) @map("is_visible")
+  isPinned     Boolean   @default(false) @map("is_pinned")
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([invitationId, createdAt])
+  @@index([invitationId, isVisible, deletedAt])
+  @@map("invitation_comments")
 }
 
 model CleanupJob {
