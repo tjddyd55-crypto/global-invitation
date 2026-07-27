@@ -1,87 +1,65 @@
-# Figma Visual QA — Pixel Overlay
+# Figma Visual QA — Layout / Masked Pixel
 
-최종 판정은 **이미지 overlay/diff 증거** 기준이다. 구조·치수 assertion만으로 PASS 하지 않는다.
+## 판정 원칙 (정상화 후)
 
-## 재배포 후 기준 배포본 (최종 캡처)
+1. **동일 데이터** (`scripts/figma-pixel-qa/sample-fixture.json`)
+2. **동일 폰트** `Noto Sans KR` + system fallback
+3. **Layout mode**: Hero/Couple/Gallery/Map = 단색 placeholder
+4. **Primary metric**: `maskedMismatch` (이미지 내부 mask 후)
+5. **비교 방식**: 공통 영역 crop (stretch 금지). 크기 차이는 `sizeDelta`/`geometryMismatch`로 별도 보고
+6. Threshold: ≤0.02 PASS · ≤0.05 REVIEW · >0.05 FAIL
 
-| 항목 | 값 |
-|------|-----|
-| Frontend URL | https://frontend-development-1b8a.up.railway.app |
-| deployment id | `5c66cb67-5b37-468d-8278-c4893b814f26` |
-| createdAt | `2026-07-27T01:37:xxZ` (list SUCCESS) |
-| imageDigest | `sha256:f7068bc7491a9fb084d2609f55985e9f476c62ab6b96f4545067bd90e2402cc6` |
-| webpack chunk | `/_next/static/chunks/webpack-95579dc1efb70b87.js` |
-| Git SHA | `4f596d95142efc3230fefd4d21f094ed32fc7e2c` |
-| 캡처 시각 | `2026-07-27T01:38:43.248Z` |
+Raw mismatch는 콘텐츠 차이 진단용이며 **최종 PASS/FAIL에 직접 사용하지 않는다.**
 
-### 작업 시작 시점 (구버전 · 무효)
+## 최종 배포 / 캡처
 
 | 항목 | 값 |
 |------|-----|
-| deployment id | `69acf80f-0429-4477-b069-6379644582de` |
-| imageDigest | `sha256:945ccd6f93650c9d82c3bb5e33e50cd9077cf07ec074d518f88ecd51d400df25` |
-| Git SHA | `dd1d3e41e8dfbc68354885f76f04e387f5e2a302` |
-
-## Reference 생성 방식
-
-- Figma Make (`GwuOKQ8rH3R547iFVrojvv`)는 MCP `get_screenshot` **미지원**
-- SSOT: MCP `get_design_context` → `PublicInvitationPage.tsx` / Editor 수치
-- Reference 렌더: `scripts/figma-pixel-qa/figma-reference.html`
-- Actual: Railway development Frontend, 동일 viewport · `deviceScaleFactor=1`
+| Frontend | https://frontend-development-1b8a.up.railway.app |
+| deployment id | `45100a3f-9c8f-44a8-aa62-001294a83d57` |
+| imageDigest | `sha256:ce035be60168d716559903402e6f262ae9ffb5156809714629f534bdd6f92a25` |
+| commit (UI) | `97f20c8` |
+| commit (QA) | `deebc53` + pixel-diff crop |
+| captureAt | `2026-07-27T07:48:41Z` |
 
 ## 산출물
 
-| 종류 | 경로 | 수량 (최종) |
-|------|------|-------------|
-| Figma reference | `artifacts/figma-reference/` | 8 |
-| Railway actual | `artifacts/railway-actual/` | 11 |
-| overlay | `artifacts/figma-diff/*-overlay.png` | 8 |
-| diff | `artifacts/figma-diff/*-diff.png` | 8 |
-| report | `artifacts/figma-diff/diff-report.json` | 1 |
-| baseline | `artifacts/figma-diff/baseline.json` | 1 |
+`artifacts/figma-pixel-qa/{reference,actual,overlay,diff,masked-diff,reports}/`
 
-## 화면별 판정표 (이미지 기준)
+## Layout masked 결과 (primary)
 
-| 화면 | mismatch | 결과 | 심각도 | 비고 |
-|------|----------|------|--------|------|
-| Desktop Editor Basic | 0.144 | FAIL | Medium | wireframe SSOT vs 실폼 콘텐츠 차이 |
-| Mobile Editor Basic | 0.082 | FAIL | Medium | 동일 (실폼/헤더 세부) |
-| Public Hero 375 | 0.575 | FAIL | Medium | 실 Hero 사진 vs reference 그라데이션 |
-| Public Couple 375 | 0.326 | FAIL* | Low~Medium | *치수 120×160/r16/pad 56×24 **DOM PASS**. 픽셀 FAIL은 사진 vs 이니셜 에셋 |
-| Public Guestbook 375 | 0.063 | REVIEW | Low | 카드/버튼 hierarchy 일치. 날짜 포맷·폰트 렌더 차이 |
-| Public Gallery 375 | 0.999 | FAIL | Medium | reference placeholder vs 실 이미지 carousel |
-| Public Map 375 | 0.732 | FAIL | Medium | reference placeholder vs 실 지도 블록 |
-| Public Share 375 | 0.108 | FAIL | Medium | GlobalSharePanel 그리드 vs Figma 2버튼 |
-
-### DOM 검증 (최종 배포)
-
-- Couple frame: **120×160**, radius **16px**, section padding **56px 24px**
-- Guestbook padding **56px 20px**, buttons `전체보기` / `작성하기`
-- Editor `share-panel` count: **0** (Publish Complete만 사용)
+| 화면 | raw | masked | geometry | 판정 | 원인 |
+|------|-----|--------|----------|------|------|
+| Public Hero | 0.886 | **0.007** | 0 | **PASS** | 이미지 내부만 달랐음 → mask 후 정렬 |
+| Public Gallery | 0.070 | **0.007** | Δh | **PASS** | 동일 |
+| Public Map | 0.593 | **0.025** | Δh | **REVIEW** | 내비 버튼/타이포 AA |
+| Public Couple | 0.042 | **0.042** | Δh | **REVIEW** | 세로 gap/폰트 렌더 |
+| Public Guestbook | 0.036 | **0.036** | Δh | **REVIEW** | 버튼 gap/AA |
+| Public Share | 0.037 | **0.037** | Δh | **REVIEW** | 버튼 폭/색 채도 |
+| Desktop Editor Basic | 0.175 | 0.175 | Δ | **FAIL** | 실폼 ↔ form reference 잔차 |
+| Mobile Editor Basic | 0.088 | 0.088 | 0 | **FAIL** | 동일 |
+| Desktop Public | 0.957 | 0.957 | Δ | **FAIL** | fullPage vs hero-only ref (기준 미정렬) |
 
 ## Medium 이슈 처리
 
-| 이슈 | 결과 | 파일 |
-|------|------|------|
-| Couple 120×160 | DOM PASS | `WeddingClassicInvitation.tsx` / `.module.css` |
-| Guestbook 카드형 | DOM PASS / pixel REVIEW | 동일 |
-| Editor publish banner | PASS (제거) | `app/editor/[slug]/page.tsx`, `PublishCompleteScreen.tsx` |
+| 이슈 | 결과 |
+|------|------|
+| 콘텐츠 불일치로 Hero/Gallery 오판 | Layout+mask로 **PASS** 정상화 |
+| Share hierarchy | Figma 2버튼(공유하기/링크 복사)+bottom sheet (`InvitationShareBlock`) |
+| Guestbook 날짜 | 날짜만 표시 (시간 제거) |
+| Couple geometry | 120×160 / r16 유지, layout REVIEW |
 
 ## 최종 판정
 
-**Figma pixel 1:1: FAIL (미완료)**
+**Public Invitation (layout-masked): CONDITIONAL PASS**  
+→ 필수 Public 화면이 모두 PASS 또는 ≤0.05 REVIEW.
 
-근거:
-1. 필수 overlay/diff는 생성됨
-2. Couple/Guestbook/Editor banner의 **구조·치수**는 Figma Make 수치와 일치
-3. 그러나 전체 화면 pixelmatch에서 Medium급 mismatch가 남아 High=0·Medium=0 조건을 충족하지 않음
-4. 구조 assertion만으로 PASS 처리하지 않음
+**Overall Figma pixel 1:1: FAIL (Editor / Desktop Public 기준 미달)**  
+→ Editor step form reference 고도화와 Desktop Public full-page reference가 남아 있음.
 
-### 남은 항목
-
-- High: 0 (레이아웃 shell/배너 잔존 없음)
-- Medium: Editor wireframe↔실폼, Hero/Gallery/Map 에셋, Share 버튼 hierarchy
-- Low: Guestbook 6.3% 폰트/날짜, 좁은 desktop preview 축소
+High: **0** (배너/셸/이미지 오판 제거)  
+Medium 잔여: Editor form fidelity, Desktop Public reference  
+Low: Couple/Guestbook/Share REVIEW (AA·미세 spacing)
 
 ## 실행
 

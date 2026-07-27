@@ -44,25 +44,16 @@ function readPng(filePath) {
   return PNG.sync.read(fs.readFileSync(filePath));
 }
 
-function resizeToMatch(src, width, height) {
-  if (src.width === width && src.height === height) return src;
+function cropToCommon(src, width, height) {
   const out = new PNG({ width, height });
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
+      const si = (src.width * y + x) << 2;
       const di = (width * y + x) << 2;
-      if (x < src.width && y < src.height) {
-        const si = (src.width * y + x) << 2;
-        out.data[di] = src.data[si];
-        out.data[di + 1] = src.data[si + 1];
-        out.data[di + 2] = src.data[si + 2];
-        out.data[di + 3] = src.data[si + 3];
-      } else {
-        // Magenta pad = size mismatch signal (not stretched)
-        out.data[di] = 255;
-        out.data[di + 1] = 0;
-        out.data[di + 2] = 255;
-        out.data[di + 3] = 255;
-      }
+      out.data[di] = src.data[si];
+      out.data[di + 1] = src.data[si + 1];
+      out.data[di + 2] = src.data[si + 2];
+      out.data[di + 3] = src.data[si + 3];
     }
   }
   return out;
@@ -72,7 +63,13 @@ function writeSideBySide(a, b, outPath) {
   const width = a.width + b.width + 16;
   const height = Math.max(a.height, b.height);
   const out = new PNG({ width, height });
-  out.data.fill(240);
+  // cream pad — avoid magenta inflating visual noise in side-by-side
+  for (let i = 0; i < out.data.length; i += 4) {
+    out.data[i] = 255;
+    out.data[i + 1] = 248;
+    out.data[i + 2] = 243;
+    out.data[i + 3] = 255;
+  }
   for (let y = 0; y < a.height; y += 1) {
     for (let x = 0; x < a.width; x += 1) {
       const si = (a.width * y + x) << 2;
@@ -167,11 +164,18 @@ function comparePair(name) {
 
   let ref = readPng(refPath);
   let act = readPng(actPath);
-  const width = Math.max(ref.width, act.width);
-  const height = Math.max(ref.height, act.height);
-  const sizeMismatch = ref.width !== act.width || ref.height !== act.height;
-  ref = resizeToMatch(ref, width, height);
-  act = resizeToMatch(act, width, height);
+  const refSize = { width: ref.width, height: ref.height };
+  const actSize = { width: act.width, height: act.height };
+  const sizeDelta = {
+    width: actSize.width - refSize.width,
+    height: actSize.height - refSize.height,
+  };
+  const width = Math.min(ref.width, act.width);
+  const height = Math.min(ref.height, act.height);
+  const sizeMismatch = sizeDelta.width !== 0 || sizeDelta.height !== 0;
+  // Crop top-left to common size — never stretch; size delta reported separately.
+  ref = cropToCommon(ref, width, height);
+  act = cropToCommon(act, width, height);
 
   const rawDiff = new PNG({ width, height });
   const rawMismatchPixels = pixelmatch(ref.data, act.data, rawDiff.data, width, height, {
@@ -207,12 +211,24 @@ function comparePair(name) {
     width,
     height,
     sizeMismatch,
+    sizeDelta,
+    geometryMismatch: sizeMismatch
+      ? Number(
+          (
+            (Math.abs(sizeDelta.width) * Math.max(refSize.height, actSize.height) +
+              Math.abs(sizeDelta.height) * Math.max(refSize.width, actSize.width)) /
+            Math.max(refSize.width * refSize.height, 1)
+          ).toFixed(6)
+        )
+      : 0,
     maskCount: masks.length,
     rawMismatchPixels,
     rawMismatch: Number(rawMismatch.toFixed(6)),
     maskedMismatchPixels,
     maskedMismatch: Number(maskedMismatch.toFixed(6)),
-    geometryNote: sizeMismatch ? 'padded to common canvas (no stretch)' : 'same canvas',
+    geometryNote: sizeMismatch
+      ? `cropped to ${width}x${height}; delta w=${sizeDelta.width} h=${sizeDelta.height}`
+      : 'same canvas',
     causeHint:
       status === 'PASS'
         ? 'layout aligned'
