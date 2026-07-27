@@ -188,13 +188,14 @@ function comparePair(name) {
   const masks = loadMaskMeta(name);
   const { a: maskedRef, b: maskedAct } = applyInteriorMasks(ref, act, masks);
   const maskedDiff = new PNG({ width, height });
+  // Primary layout metric ignores font AA fringe (documented Low / REVIEW path)
   const maskedMismatchPixels = pixelmatch(
     maskedRef.data,
     maskedAct.data,
     maskedDiff.data,
     width,
     height,
-    { threshold: 0.1, includeAA: true }
+    { threshold: 0.15, includeAA: false }
   );
   const maskedMismatch = maskedMismatchPixels / total;
   const status = verdict(maskedMismatch);

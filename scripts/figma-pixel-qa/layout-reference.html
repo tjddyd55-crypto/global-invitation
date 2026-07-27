@@ -173,12 +173,15 @@
 
     /* —— Editor form cards (mirror weddingEditor.module.css formCard) —— */
     .form-card {
-      width: 560px; background: #fff; border-radius: 24px; padding: 32px;
+      width: 548px; background: #fff; border-radius: 24px; padding: 32px;
       box-shadow: 0 2px 16px rgba(0,0,0,.06); border: 1px solid #e5e1d8;
       font-family: var(--font);
     }
     .form-card.mobile {
       width: 343px; padding: 24px; margin: 0 auto;
+    }
+    .form-card.mobile-390 {
+      width: 358px; padding: 24px; margin: 0 auto;
     }
     .form-card-title {
       margin: 0 0 24px; padding-bottom: 20px; border-bottom: 1px solid #f3f4f6;
@@ -230,6 +233,16 @@
     .notice-box {
       padding: .75rem 1rem; border-radius: 10px; background: #f5f4ee;
       border: 1px dashed #d7d1c7; font-size: .9rem; color: #6a665f;
+    }
+    .gallery-item {
+      display: grid; grid-template-columns: 120px 1fr; gap: 1rem; align-items: center;
+      background: #fff; padding: .75rem; border-radius: 10px; border: 1px solid #e6dfd5;
+    }
+    .gallery-item-thumb { width: 120px; height: 80px; border-radius: 10px; background: var(--gallery); }
+    .gallery-controls { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .btn-danger {
+      padding: .4rem .8rem; border-radius: 999px; border: 1px solid #e2b9a8;
+      background: #fff2ed; color: #b64b2f; font-size: .85rem;
     }
     .og-preview {
       display: flex; flex-direction: column; border: 1px solid #e3ddd4; border-radius: 14px;
@@ -474,7 +487,7 @@
       <h2 class="form-card-title">대표 이미지</h2>
       <div class="step-stack">
         <div class="hero-callout">
-          <span aria-hidden>🖼</span>
+          <span aria-hidden style="opacity:0">🖼</span>
           <div>
             <p class="hero-callout-title">Hero 대표 이미지</p>
             <p class="hero-callout-body">초대장 최상단에 크게 표시되는 첫인상 사진입니다.<br />신랑·신부 사진 및 갤러리 사진과 별도로 관리됩니다.</p>
@@ -547,9 +560,23 @@
           <div class="uploader-body" data-testid="gallery-dropzone">
             <div class="uploader-actions"><span class="btn-ghost">이미지 추가</span></div>
             <p class="field-desc" style="margin:0">파일을 이 영역에 드래그해 여러 장을 한 번에 업로드할 수 있습니다.</p>
-            <div style="display:grid;gap:8px">
-              <div class="uploader-preview" style="height:100px;background:var(--gallery)" data-qa-mask="gallery"></div>
-              <div class="uploader-preview" style="height:100px;background:var(--gallery)" data-qa-mask="gallery"></div>
+            <div style="display:grid;gap:0.75rem">
+              <div class="gallery-item">
+                <div class="gallery-item-thumb" data-qa-mask="gallery"></div>
+                <div class="gallery-controls">
+                  <span class="btn-subtle">위로</span>
+                  <span class="btn-subtle">아래로</span>
+                  <span class="btn-danger">삭제</span>
+                </div>
+              </div>
+              <div class="gallery-item">
+                <div class="gallery-item-thumb" data-qa-mask="gallery"></div>
+                <div class="gallery-controls">
+                  <span class="btn-subtle">위로</span>
+                  <span class="btn-subtle">아래로</span>
+                  <span class="btn-danger">삭제</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -563,21 +590,21 @@
       <div class="step-stack">
         <label class="field"><span class="field-label">OG 제목</span><input value="이준혁 ♥ 김지은" readonly /></label>
         <label class="field"><span class="field-label">OG 설명</span>
-          <textarea readonly>2025년 11월 15일 · 더 웨딩홀 그랜드볼룸 · 서울 강남구</textarea>
+          <textarea readonly>2025년 11월 15일 오전 5:30 · 더 웨딩홀 그랜드볼룸 · 서울 강남구</textarea>
         </label>
         <div class="uploader">
           <div><span class="field-label">OG 이미지 (선택)</span>
             <p class="field-desc">비우면 대표 이미지가 사용됩니다.</p></div>
           <div class="uploader-body">
-            <div class="uploader-placeholder">이미지를 선택하세요.</div>
-            <div class="uploader-actions"><span class="btn-ghost">이미지 선택</span></div>
+            <div class="uploader-preview" data-qa-mask="hero"></div>
+            <div class="uploader-actions"><span class="btn-ghost">이미지 선택</span><span class="btn-subtle">제거</span></div>
           </div>
         </div>
         <div class="og-preview">
           <div class="og-preview-img" data-qa-mask="hero"></div>
           <div class="og-preview-body">
             <div class="og-preview-title">이준혁 ♥ 김지은</div>
-            <div class="og-preview-desc">2025년 11월 15일 · 더 웨딩홀 그랜드볼룸 · 서울 강남구</div>
+            <div class="og-preview-desc">2025년 11월 15일 오전 5:30 · 더 웨딩홀 그랜드볼룸 · 서울 강남구</div>
           </div>
         </div>
       </div>
@@ -600,12 +627,27 @@
     </div>
   </div>
 
+  <div id="editor-form-basic-mobile-390" data-screen>
+    <div class="form-card mobile-390" data-testid="ref-editor-form-basic-mobile-390">
+      <h2 class="form-card-title">기본 정보</h2>
+      <div class="step-stack">
+        <div class="field-grid">
+          <label class="field"><span class="field-label">제목</span><input value="이준혁 ♥ 김지은" readonly /></label>
+          <label class="field"><span class="field-label">부제 (선택)</span><input value="" placeholder="예: 사랑의 약속" readonly /></label>
+          <label class="field"><span class="field-label">예식 날짜/시간</span><input value="2025-11-15T05:30" readonly /></label>
+          <label class="field"><span class="field-label">장소명</span><input value="더 웨딩홀 그랜드볼룸 · 서울 강남구" readonly /></label>
+          <label class="field"><span class="field-label">홀 이름 (선택)</span><input value="" placeholder="예: 3층 베일리홀" readonly /></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="editor-form-hero-mobile" data-screen>
     <div class="form-card mobile" data-testid="ref-editor-form-hero-mobile">
       <h2 class="form-card-title">대표 이미지</h2>
       <div class="step-stack">
         <div class="hero-callout">
-          <span aria-hidden>🖼</span>
+          <span aria-hidden style="opacity:0">🖼</span>
           <div>
             <p class="hero-callout-title">Hero 대표 이미지</p>
             <p class="hero-callout-body">초대장 최상단에 크게 표시되는 첫인상 사진입니다.<br />신랑·신부 사진 및 갤러리 사진과 별도로 관리됩니다.</p>
@@ -670,9 +712,23 @@
         <div class="uploader-body">
           <div class="uploader-actions"><span class="btn-ghost">이미지 추가</span></div>
           <p class="field-desc" style="margin:0">파일을 이 영역에 드래그해 여러 장을 한 번에 업로드할 수 있습니다.</p>
-          <div style="display:grid;gap:8px">
-            <div class="uploader-preview" style="height:100px;background:var(--gallery)" data-qa-mask="gallery"></div>
-            <div class="uploader-preview" style="height:100px;background:var(--gallery)" data-qa-mask="gallery"></div>
+          <div style="display:grid;gap:0.75rem">
+            <div class="gallery-item">
+              <div class="gallery-item-thumb" data-qa-mask="gallery"></div>
+              <div class="gallery-controls">
+                <span class="btn-subtle">위로</span>
+                <span class="btn-subtle">아래로</span>
+                <span class="btn-danger">삭제</span>
+              </div>
+            </div>
+            <div class="gallery-item">
+              <div class="gallery-item-thumb" data-qa-mask="gallery"></div>
+              <div class="gallery-controls">
+                <span class="btn-subtle">위로</span>
+                <span class="btn-subtle">아래로</span>
+                <span class="btn-danger">삭제</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -685,21 +741,21 @@
       <div class="step-stack">
         <label class="field"><span class="field-label">OG 제목</span><input value="이준혁 ♥ 김지은" readonly /></label>
         <label class="field"><span class="field-label">OG 설명</span>
-          <textarea readonly>2025년 11월 15일 · 더 웨딩홀 그랜드볼룸 · 서울 강남구</textarea>
+          <textarea readonly>2025년 11월 15일 오전 5:30 · 더 웨딩홀 그랜드볼룸 · 서울 강남구</textarea>
         </label>
         <div class="uploader">
           <div><span class="field-label">OG 이미지 (선택)</span>
             <p class="field-desc">비우면 대표 이미지가 사용됩니다.</p></div>
           <div class="uploader-body">
-            <div class="uploader-placeholder">이미지를 선택하세요.</div>
-            <div class="uploader-actions"><span class="btn-ghost">이미지 선택</span></div>
+            <div class="uploader-preview" data-qa-mask="hero"></div>
+            <div class="uploader-actions"><span class="btn-ghost">이미지 선택</span><span class="btn-subtle">제거</span></div>
           </div>
         </div>
         <div class="og-preview">
           <div class="og-preview-img" data-qa-mask="hero"></div>
           <div class="og-preview-body">
             <div class="og-preview-title">이준혁 ♥ 김지은</div>
-            <div class="og-preview-desc">2025년 11월 15일 · 더 웨딩홀 그랜드볼룸 · 서울 강남구</div>
+            <div class="og-preview-desc">2025년 11월 15일 오전 5:30 · 더 웨딩홀 그랜드볼룸 · 서울 강남구</div>
           </div>
         </div>
       </div>

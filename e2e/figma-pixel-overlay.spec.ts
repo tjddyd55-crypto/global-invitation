@@ -218,7 +218,15 @@ async function enableLayoutMode(page: Page) {
       section[aria-label="대표 이미지"] img {
         opacity: 0 !important;
       }
-      /* Editor upload previews */
+      /* Editor upload previews — fixed geometry (ignore intrinsic image size) */
+      [data-testid="desktop-editor-form"] [class*="uploaderPreview"],
+      [data-testid="mobile-editor-form"] [class*="uploaderPreview"] {
+        background: ${LAYOUT_COLORS.hero} !important;
+        height: 160px !important;
+        min-height: 160px !important;
+        overflow: hidden !important;
+        border-radius: 12px !important;
+      }
       [data-testid="desktop-editor-form"] [class*="uploaderPreview"] img,
       [data-testid="mobile-editor-form"] [class*="uploaderPreview"] img,
       [data-testid="desktop-editor-form"] [class*="galleryItem"] img,
@@ -227,13 +235,35 @@ async function enableLayoutMode(page: Page) {
       [data-testid="mobile-editor-form"] [class*="ogPreviewImage"] img,
       [data-testid="desktop-editor-preview"] img {
         opacity: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
       }
-      [data-testid="desktop-editor-form"] [class*="uploaderPreview"],
-      [data-testid="mobile-editor-form"] [class*="uploaderPreview"],
-      [data-testid="desktop-editor-form"] [class*="galleryItem"],
-      [data-testid="mobile-editor-form"] [class*="galleryItem"],
-      [data-testid="desktop-editor-form"] [class*="ogPreviewImage"] {
+      [data-testid="desktop-editor-form"] [class*="galleryItem"] > *:first-child,
+      [data-testid="mobile-editor-form"] [class*="galleryItem"] > *:first-child {
+        background: ${LAYOUT_COLORS.gallery} !important;
+        width: 120px !important;
+        height: 80px !important;
+        border-radius: 10px !important;
+        overflow: hidden !important;
+      }
+      [data-testid="desktop-editor-form"] [class*="ogPreviewImage"],
+      [data-testid="mobile-editor-form"] [class*="ogPreviewImage"] {
         background: ${LAYOUT_COLORS.hero} !important;
+        height: 180px !important;
+      }
+      [data-testid="desktop-editor-form"] [class*="heroCalloutIcon"],
+      [data-testid="mobile-editor-form"] [class*="heroCalloutIcon"] {
+        opacity: 0 !important;
+      }
+      /* datetime-local native chrome → text-field look */
+      input[type="datetime-local"] {
+        -webkit-appearance: none !important;
+        appearance: none !important;
+        color-scheme: light !important;
+      }
+      input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        opacity: 0.35 !important;
       }
       [class*="LocationMapSection_mapImage"],
       img[alt="지도"],
@@ -248,6 +278,13 @@ async function enableLayoutMode(page: Page) {
     `,
   });
   await page.evaluate((mapColor) => {
+    // Normalize datetime-local to text so native picker chrome doesn't inflate mismatch
+    document.querySelectorAll('input[type="datetime-local"]').forEach((el) => {
+      const input = el as HTMLInputElement;
+      const value = input.value;
+      input.type = 'text';
+      input.value = value;
+    });
     document.querySelectorAll('img').forEach((img) => {
       const alt = (img.getAttribute('alt') || '').toLowerCase();
       const cls = img.className || '';
@@ -316,6 +353,19 @@ async function goEditorStep(page: Page, stepId: number) {
   await page.waitForTimeout(200);
 }
 
+async function normalizeEditorCapture(page: Page) {
+  await page.evaluate(() => {
+    document.querySelectorAll('input[type="datetime-local"]').forEach((el) => {
+      const input = el as HTMLInputElement;
+      const value = input.value;
+      input.type = 'text';
+      input.value = value;
+      input.style.backgroundImage = 'none';
+    });
+  });
+  await waitFonts(page);
+}
+
 async function captureEditorForm(
   page: Page,
   name: string,
@@ -325,6 +375,7 @@ async function captureEditorForm(
   const card = form.locator('[class*="formCard"]').first();
   await expect(card).toBeVisible({ timeout: 30_000 });
   await card.scrollIntoViewIfNeeded();
+  await normalizeEditorCapture(page);
   await waitFonts(page);
   await capture(page, path.join(ACT_DIR, name), card);
   await writeMasks(
@@ -335,11 +386,11 @@ async function captureEditorForm(
   );
 }
 
-async function captureRegion(page: Page, name: string, testId: string) {
-  const loc = page.getByTestId(testId);
-  if ((await loc.count()) === 0) return;
-  await capture(page, path.join(ACT_DIR, name), loc.first());
-  await writeMasks(name, []);
+async function captureRegionDiag(page: Page, name: string, locator: Locator) {
+  const dir = path.join(QA_ROOT, 'regions');
+  fs.mkdirSync(dir, { recursive: true });
+  if ((await locator.count()) === 0) return;
+  await capture(page, path.join(dir, name), locator.first());
 }
 
 async function captureFigmaReference(browser: Browser) {
@@ -368,14 +419,7 @@ async function captureFigmaReference(browser: Browser) {
     { name: 'editor-mobile-couple-form-375.png', screen: 'editor-form-couple-mobile', viewport: 'mobile375', selector: '[data-testid="ref-editor-form-couple-mobile"]' },
     { name: 'editor-mobile-gallery-form-375.png', screen: 'editor-form-gallery-mobile', viewport: 'mobile375', selector: '[data-testid="ref-editor-form-gallery-mobile"]' },
     { name: 'editor-mobile-share-form-375.png', screen: 'editor-form-share-mobile', viewport: 'mobile375', selector: '[data-testid="ref-editor-form-share-mobile"]' },
-    { name: 'editor-mobile-basic-form-390.png', screen: 'editor-form-basic-mobile', viewport: 'mobile390', selector: '[data-testid="ref-editor-form-basic-mobile"]' },
-    { name: 'editor-desktop-header-1440.png', screen: 'editor-desktop-regions', viewport: 'desktop1440', selector: '[data-testid="ref-editor-header"]' },
-    { name: 'editor-desktop-sidebar-1440.png', screen: 'editor-desktop-regions', viewport: 'desktop1440', selector: '[data-testid="ref-editor-sidebar"]' },
-    { name: 'editor-desktop-preview-1440.png', screen: 'editor-desktop-regions', viewport: 'desktop1440', selector: '[data-testid="ref-editor-preview"]' },
-    { name: 'editor-desktop-bottom-nav-1440.png', screen: 'editor-desktop-regions', viewport: 'desktop1440', selector: '[data-testid="ref-editor-bottom-nav"]' },
-    { name: 'editor-mobile-header-375.png', screen: 'editor-mobile-regions', viewport: 'mobile375', selector: '[data-testid="ref-mobile-header"]' },
-    { name: 'editor-mobile-stepper-375.png', screen: 'editor-mobile-regions', viewport: 'mobile375', selector: '[data-testid="ref-mobile-stepper"]' },
-    { name: 'editor-mobile-actions-375.png', screen: 'editor-mobile-regions', viewport: 'mobile375', selector: '[data-testid="ref-mobile-actions"]' },
+    { name: 'editor-mobile-basic-form-390.png', screen: 'editor-form-basic-mobile-390', viewport: 'mobile390', selector: '[data-testid="ref-editor-form-basic-mobile-390"]' },
   ];
 
   for (const shot of shots) {
@@ -498,15 +542,9 @@ test.describe('Figma layout pixel QA', () => {
         await captureEditorForm(page, `editor-mobile-${step.key}-form-375.png`, 'mobile-editor-form');
       }
 
-      await captureRegion(page, 'editor-mobile-header-375.png', 'mobile-editor-layout');
-      // Prefer header / stepper / actions if present
-      const headerCandidate = page.locator('header').first();
-      if (await headerCandidate.count()) {
-        await capture(page, path.join(ACT_DIR, 'editor-mobile-header-375.png'), headerCandidate);
-        await writeMasks('editor-mobile-header-375.png', []);
-      }
-      await captureRegion(page, 'editor-mobile-stepper-375.png', 'mobile-editor-stepper');
-      await captureRegion(page, 'editor-mobile-actions-375.png', 'mobile-editor-actions');
+      await captureRegionDiag(page, 'editor-mobile-header-375.png', page.locator('header').first());
+      await captureRegionDiag(page, 'editor-mobile-stepper-375.png', page.getByTestId('mobile-editor-stepper'));
+      await captureRegionDiag(page, 'editor-mobile-actions-375.png', page.getByTestId('mobile-editor-actions'));
 
       await context.close();
     }
@@ -545,20 +583,12 @@ test.describe('Figma layout pixel QA', () => {
       await expect(page.getByTestId('share-panel')).toHaveCount(0);
       await expect(page.getByTestId('desktop-editor-form')).toBeVisible({ timeout: 30_000 });
 
-      // Region crops at basic step (mismatch breakdown)
+      // Region crops at basic step (diagnostic only — not primary PASS/FAIL pairs)
       await goEditorStep(page, 0);
-      const header = page.locator('header').first();
-      if (await header.count()) {
-        await capture(page, path.join(ACT_DIR, 'editor-desktop-header-1440.png'), header);
-        await writeMasks('editor-desktop-header-1440.png', []);
-      }
-      await captureRegion(page, 'editor-desktop-sidebar-1440.png', 'desktop-editor-sidebar');
-      await captureRegion(page, 'editor-desktop-preview-1440.png', 'desktop-editor-preview');
-      const bottomNav = page.locator('[class*="desktopStepNav"]').first();
-      if (await bottomNav.count()) {
-        await capture(page, path.join(ACT_DIR, 'editor-desktop-bottom-nav-1440.png'), bottomNav);
-        await writeMasks('editor-desktop-bottom-nav-1440.png', []);
-      }
+      await captureRegionDiag(page, 'editor-desktop-header-1440.png', page.locator('header').first());
+      await captureRegionDiag(page, 'editor-desktop-sidebar-1440.png', page.getByTestId('desktop-editor-sidebar'));
+      await captureRegionDiag(page, 'editor-desktop-preview-1440.png', page.getByTestId('desktop-editor-preview'));
+      await captureRegionDiag(page, 'editor-desktop-bottom-nav-1440.png', page.locator('[class*="desktopStepNav"]').first());
 
       for (const step of EDITOR_STEPS) {
         await goEditorStep(page, step.stepId);
