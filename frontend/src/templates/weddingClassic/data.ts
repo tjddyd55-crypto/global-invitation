@@ -14,6 +14,15 @@ export type WeddingClassicAccount = {
   bank: string;
   number: string;
   holder: string;
+  iban?: string;
+  swiftBic?: string;
+  routingCode?: string;
+  paymentNote?: string;
+  /** alias — bank와 동일 의미로 저장될 수 있음 */
+  financialInstitution?: string;
+  accountNumber?: string;
+  accountHolder?: string;
+  label?: string;
 };
 
 export type WeddingClassicMessage = {
@@ -100,6 +109,8 @@ export type WeddingClassicData = {
   rsvpDescription?: string;
   rsvpButton?: string;
   accountsTitle?: string;
+  /** GENERAL 선택형 계좌 ON/OFF. WEDDING/FUNERAL은 보통 생략(계좌 존재 시 표시). */
+  accountEnabled?: boolean;
   messagesTitle?: string;
   messages?: WeddingClassicMessage[];
 };

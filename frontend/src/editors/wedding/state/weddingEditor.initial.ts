@@ -230,11 +230,17 @@ export function createWeddingEditorState(
       transportInfo: [...DEFAULT_TRANSPORT],
       parkingInfo: [...DEFAULT_PARKING],
     },
-    accounts: buildDefaultAccounts({ groomName, brideName }),
+    accounts:
+      conceptType === 'GENERAL' ? [] : buildDefaultAccounts({ groomName, brideName }),
     extras: {
       rsvpEnabled: true,
       guestbookEnabled: true,
       rsvpButtonText: translate(language, I18N_KEYS.weddingClassic.rsvpButton),
+      accountEnabled: conceptType === 'GENERAL' ? false : true,
+      accountsTitle:
+        conceptType === 'GENERAL'
+          ? '참가비 및 입금 안내'
+          : translate(language, I18N_KEYS.weddingClassic.accountsTitle),
     },
     share: {
       ogTitle: buildOgTitle({ groomName, brideName, language }),
@@ -324,10 +330,14 @@ export function createWeddingEditorStateFromDraft(
       runtimeData.accounts && runtimeData.accounts.length > 0
         ? runtimeData.accounts.map((account, index) => ({
             id: `account-${index + 1}`,
-            role: account.role,
-            bank: account.bank,
-            number: account.number,
-            holder: account.holder,
+            role: account.role || account.label || '',
+            bank: account.financialInstitution || account.bank || '',
+            number: account.accountNumber || account.number || '',
+            holder: account.accountHolder || account.holder || '',
+            iban: account.iban || '',
+            swiftBic: account.swiftBic || '',
+            routingCode: account.routingCode || '',
+            paymentNote: account.paymentNote || '',
           }))
         : base.accounts,
     extras: {
@@ -335,6 +345,11 @@ export function createWeddingEditorStateFromDraft(
       rsvpEnabled: runtimeData.rsvpEnabled ?? runtimeData.rsvp?.enabled ?? base.extras.rsvpEnabled,
       rsvpButtonText: runtimeData.rsvpButton || base.extras.rsvpButtonText,
       guestbookEnabled: runtimeData.guestbookEnabled ?? base.extras.guestbookEnabled,
+      accountEnabled:
+        typeof runtimeData.accountEnabled === 'boolean'
+          ? runtimeData.accountEnabled
+          : base.extras.accountEnabled,
+      accountsTitle: runtimeData.accountsTitle || base.extras.accountsTitle,
     },
     share: {
       ...base.share,

@@ -14,10 +14,14 @@ import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
+import GalleryCarousel from '@/src/templates/shared/GalleryCarousel';
+import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import InvitationCommentsSection from '@/src/features/comments/ui/InvitationCommentsSection';
 import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
+import { getInvitationGalleryItems } from '@/src/invitation/galleryItems';
+import { shouldShowAccountsSection } from '@/src/invitation/accountItems';
 import { useEffect, useState } from 'react';
 
 type WeddingClassicInvitationProps = {
@@ -88,10 +92,8 @@ export default function WeddingClassicInvitation({
   void _isSharedUnused;
   void _showCoupleSectionUnused;
 
-  const [failedGallerySrcs, setFailedGallerySrcs] = useState<Record<string, true>>({});
   const [heroFailed, setHeroFailed] = useState(false);
   const [heroPortrait, setHeroPortrait] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
   const [guestbookExpanded, setGuestbookExpanded] = useState(false);
 
   const heroImageSrc =
@@ -110,8 +112,7 @@ export default function WeddingClassicInvitation({
     return null;
   }
   const heroImage = typeof r.heroImage === 'string' && r.heroImage.trim() ? r.heroImage.trim() : '';
-  const galleryImages = Array.isArray(r.galleryImages) ? r.galleryImages.filter((img) => typeof img === 'string' && img.trim()) : [];
-  const visibleGalleryImages = galleryImages.filter((image) => !failedGallerySrcs[image]);
+  const galleryItems = getInvitationGalleryItems(r, { alt: t(I18N_KEYS.weddingClassic.galleryImageAlt) });
   const title = (r.title || r.heroTitle || '').trim();
   const subtitle = (r.subtitle ?? '').trim();
   const locationText = (r.locationText || r.venueName || '').trim();
@@ -124,7 +125,8 @@ export default function WeddingClassicInvitation({
     Boolean(addressForMap.trim()) || (typeof r.mapLat === 'number' && typeof r.mapLng === 'number');
   const hasSchedule = scheduleList.filter(Boolean).length > 0;
   const showHeroMedia = Boolean(heroImage) && !heroFailed;
-  const hasGallery = visibleGalleryImages.length > 0;
+  const conceptPresentation = getConceptPresentationConfig(conceptType);
+  const hasGallery = conceptPresentation.gallery && galleryItems.length > 0;
   const hasMessage = Boolean(contentText.trim());
   const accounts = safeArray(r?.accounts);
   const weekdays = [
@@ -153,7 +155,6 @@ export default function WeddingClassicInvitation({
         : t(I18N_KEYS.weddingClassic.messageSectionGeneral);
   const scheduleTitle = conceptType === 'GENERAL' ? '행사 일정' : '일정';
   const locationTitle = '위치 안내';
-  const accountsTitle = '마음 전하실 곳';
 
   const scheduleForHero = scheduleList.filter(Boolean);
   const heroDate =
@@ -183,11 +184,10 @@ export default function WeddingClassicInvitation({
     .filter(Boolean);
   /** 커플 섹션: 이름·사진 등 표시 데이터가 하나라도 있으면 true (평탄/중첩 모두 반영) */
   const hasCouple = Boolean(groomDisplay || brideDisplay || groomImg || brideImg);
-  const conceptPresentation = getConceptPresentationConfig(conceptType);
   // GENERAL 등은 couple 정책상 강제 비표시 (legacy wedding 필드 잔존 무시)
   const showCoupleBlock =
     conceptPresentation.couple && Boolean(hasCouple || groomPhone || bridePhone || parentsInfo);
-  const showAccountsBlock = conceptPresentation.account && Array.isArray(accounts) && accounts.length > 0;
+  const showAccountsBlock = shouldShowAccountsSection(r, conceptType);
   /** 장례 일정 데이터가 있으면 리스트, 그 외에는 커플 데이터가 있을 때만 웨딩형 캘린더 */
   const useCalendarSchedule = conceptPresentation.couple && hasCouple && !mapToneFuneralLike;
   const guestbookMessages = safeArray(r.messages).filter(
@@ -400,67 +400,12 @@ export default function WeddingClassicInvitation({
       ) : null}
 
       {hasGallery ? (
-        <section className={styles.albumSection} aria-label="Album">
-          <p className={styles.scriptLabel}>Album</p>
-          <div className={styles.galleryCarousel}>
-            <ImageWithFallback
-              key={visibleGalleryImages[galleryIndex] ?? visibleGalleryImages[0]}
-              className={styles.galleryMainImage}
-              src={visibleGalleryImages[galleryIndex] ?? visibleGalleryImages[0]}
-              alt={t(I18N_KEYS.weddingClassic.galleryImageAlt)}
-              loading="lazy"
-              onFailed={() => {
-                const image = visibleGalleryImages[galleryIndex];
-                if (!image) return;
-                setFailedGallerySrcs((prev) => ({ ...prev, [image]: true }));
-                setGalleryIndex(0);
-              }}
-            />
-            {visibleGalleryImages.length > 1 ? (
-              <>
-                <button
-                  type="button"
-                  className={`${styles.galleryArrow} ${styles.galleryArrowPrev}`}
-                  aria-label="이전 이미지"
-                  onClick={() =>
-                    setGalleryIndex((i) =>
-                      i <= 0 ? visibleGalleryImages.length - 1 : i - 1
-                    )
-                  }
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.galleryArrow} ${styles.galleryArrowNext}`}
-                  aria-label="다음 이미지"
-                  onClick={() =>
-                    setGalleryIndex((i) =>
-                      i >= visibleGalleryImages.length - 1 ? 0 : i + 1
-                    )
-                  }
-                >
-                  ›
-                </button>
-                <div className={styles.galleryCount}>
-                  {galleryIndex + 1} / {visibleGalleryImages.length}
-                </div>
-                <div className={styles.galleryHint}>밀어서 더 많은 이미지 보기</div>
-                <div className={styles.galleryDots}>
-                  {visibleGalleryImages.map((image, i) => (
-                    <button
-                      key={image}
-                      type="button"
-                      className={i === galleryIndex ? styles.galleryDotActive : styles.galleryDot}
-                      aria-label={`${i + 1}번 이미지`}
-                      onClick={() => setGalleryIndex(i)}
-                    />
-                  ))}
-                </div>
-              </>
-            ) : null}
-          </div>
-        </section>
+        <GalleryCarousel
+          items={galleryItems}
+          sectionLabel="Album"
+          tone={conceptType === 'FUNERAL' ? 'funeral' : conceptType === 'GENERAL' ? 'general' : 'wedding'}
+          hintText="밀어서 더 많은 이미지 보기"
+        />
       ) : null}
 
       {hasLocation ? (
@@ -485,25 +430,12 @@ export default function WeddingClassicInvitation({
       ) : null}
 
       {showAccountsBlock ? (
-        <section className={`${styles.section} ${styles.accountsSection}`}>
-          <h2>{accountsTitle}</h2>
-          <div className={styles.accountList}>
-            {accounts.map((account) => (
-              <div key={`${account.role}-${account.number}`} className={styles.accountCard}>
-                <div className={styles.accountHeader}>
-                  <strong>{account.role}</strong>
-                  <button className={styles.copyButton} type="button">
-                    {t(I18N_KEYS.weddingClassic.copyButton)}
-                  </button>
-                </div>
-                <div>
-                  {account.bank} {account.number}
-                </div>
-                <div>{account.holder}</div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <InvitationAccountsSection
+          accounts={accounts}
+          conceptType={conceptType}
+          accountsTitle={r.accountsTitle}
+          className={styles.accountsSection}
+        />
       ) : null}
 
       {showLiveComments ? (

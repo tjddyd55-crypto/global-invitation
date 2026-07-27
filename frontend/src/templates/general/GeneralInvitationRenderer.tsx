@@ -4,8 +4,13 @@
 import InvitationCommentsSection from '@/src/features/comments/ui/InvitationCommentsSection';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
+import GalleryCarousel from '@/src/templates/shared/GalleryCarousel';
+import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
+import { getInvitationGalleryItems } from '@/src/invitation/galleryItems';
+import { shouldShowAccountsSection } from '@/src/invitation/accountItems';
+import { getInvitationSections } from '@/src/invitation/conceptPresentationConfig';
 import styles from './GeneralInvitationRenderer.module.css';
 
 type GeneralInvitationRendererProps = {
@@ -25,7 +30,8 @@ function asLines(text: string): string[] {
 }
 
 /**
- * GENERAL 전용 presentation — Wedding couple/account UI 금지.
+ * GENERAL 전용 presentation — Wedding couple/account 축의금 UI 금지.
+ * 갤러리는 공통 GalleryCarousel, 계좌는 선택형 참가비 섹션.
  */
 export default function GeneralInvitationRenderer({
   data,
@@ -42,29 +48,46 @@ export default function GeneralInvitationRenderer({
   const eventWhen = (data.weddingDateTime || data.eventDate || '').trim();
   const place = (data.locationText || data.venueName || data.address || '').trim();
   const schedule = Array.isArray(data.schedule) ? data.schedule.filter(Boolean) : [];
-  const gallery = Array.isArray(data.galleryImages) ? data.galleryImages.filter(Boolean) : [];
+  const galleryItems = getInvitationGalleryItems(data, { alt: '행사 갤러리' });
   const commentsOn = showComments ?? resolveCommentsEnabled(data);
   const rsvpOn = showRsvp ?? Boolean(data.rsvpEnabled);
+  const showAccounts = shouldShowAccountsSection(data, 'GENERAL');
+  const hasLocation = Boolean(data.address || data.venueName || data.mapLat != null);
+
+  const sections = getInvitationSections('GENERAL', {
+    hasIntroduction: Boolean(intro),
+    hasSchedule: schedule.length > 0 || Boolean(eventWhen),
+    hasGallery: galleryItems.length > 0,
+    hasLocation,
+    hasAccounts: showAccounts,
+    hasRsvp: rsvpOn,
+    hasComments: commentsOn,
+    hasShare: Boolean(onShare),
+  });
+
+  const show = (key: (typeof sections)[number]) => sections.includes(key);
 
   return (
     <div className={styles.page} data-testid="general-invitation" data-concept="GENERAL">
-      <section className={styles.hero}>
-        {heroImage ? (
-          <div className={styles.heroMedia}>
-            <ImageWithFallback className={styles.heroImage} src={heroImage} alt="" loading="eager" />
-            <div className={styles.heroScrim} aria-hidden />
+      {show('hero') ? (
+        <section className={styles.hero}>
+          {heroImage ? (
+            <div className={styles.heroMedia}>
+              <ImageWithFallback className={styles.heroImage} src={heroImage} alt="" loading="eager" />
+              <div className={styles.heroScrim} aria-hidden />
+            </div>
+          ) : null}
+          <div className={styles.heroContent}>
+            <p className={styles.eyebrow}>Event</p>
+            <h1 className={styles.title}>{title}</h1>
+            {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
+            {eventWhen ? <p className={styles.meta}>{eventWhen}</p> : null}
+            {place ? <p className={styles.meta}>{place}</p> : null}
           </div>
-        ) : null}
-        <div className={styles.heroContent}>
-          <p className={styles.eyebrow}>Event</p>
-          <h1 className={styles.title}>{title}</h1>
-          {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
-          {eventWhen ? <p className={styles.meta}>{eventWhen}</p> : null}
-          {place ? <p className={styles.meta}>{place}</p> : null}
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      {intro ? (
+      {show('introduction') ? (
         <section className={styles.section} data-testid="general-introduction">
           <h2 className={styles.sectionTitle}>행사 소개</h2>
           <div className={styles.body}>
@@ -75,7 +98,7 @@ export default function GeneralInvitationRenderer({
         </section>
       ) : null}
 
-      {schedule.length > 0 || eventWhen ? (
+      {show('schedule') ? (
         <section className={styles.section} data-testid="general-schedule">
           <h2 className={styles.sectionTitle}>행사 일정</h2>
           <ul className={styles.scheduleList}>
@@ -87,18 +110,18 @@ export default function GeneralInvitationRenderer({
         </section>
       ) : null}
 
-      {gallery.length > 0 ? (
-        <section className={styles.section} data-testid="general-gallery">
-          <h2 className={styles.sectionTitle}>갤러리</h2>
-          <div className={styles.gallery}>
-            {gallery.map((src, index) => (
-              <ImageWithFallback key={`${src}-${index}`} className={styles.galleryImage} src={src} alt="" loading="lazy" />
-            ))}
-          </div>
-        </section>
+      {show('gallery') ? (
+        <div data-testid="general-gallery">
+          <GalleryCarousel
+            items={galleryItems}
+            sectionLabel="Gallery"
+            tone="general"
+            hintText="밀어서 더 많은 이미지 보기"
+          />
+        </div>
       ) : null}
 
-      {(data.address || data.venueName || data.mapLat != null) && (
+      {show('location') ? (
         <section className={styles.section} data-testid="general-location">
           <LocationMapSection
             sectionTitle="오시는 길"
@@ -111,9 +134,17 @@ export default function GeneralInvitationRenderer({
             mapImage={data.mapImage}
           />
         </section>
-      )}
+      ) : null}
 
-      {rsvpOn ? (
+      {show('account') ? (
+        <InvitationAccountsSection
+          accounts={data.accounts}
+          conceptType="GENERAL"
+          accountsTitle={data.accountsTitle}
+        />
+      ) : null}
+
+      {show('rsvp') ? (
         <section className={styles.section} data-testid="general-rsvp-hint">
           <h2 className={styles.sectionTitle}>참석 여부</h2>
           <p className={styles.bodyLine}>
@@ -124,7 +155,7 @@ export default function GeneralInvitationRenderer({
         </section>
       ) : null}
 
-      {commentsOn ? (
+      {show('comments') ? (
         <InvitationCommentsSection
           invitationSlug={invitationSlug}
           conceptType="GENERAL"
@@ -134,7 +165,7 @@ export default function GeneralInvitationRenderer({
         />
       ) : null}
 
-      {onShare ? (
+      {show('share') && onShare ? (
         <section className={styles.section}>
           <button type="button" className={styles.shareBtn} onClick={onShare}>
             공유하기

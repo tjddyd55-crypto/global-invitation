@@ -16,57 +16,13 @@ import Step9ShareSettings from './steps/Step9ShareSettings';
 import { buildWeddingClassicPreviewData } from './state/weddingEditor.mapper';
 import { weddingEditorReducer } from './state/weddingEditor.reducer';
 import type { WeddingEditorState } from './state/weddingEditor.types';
+import { resolveVisibleSections } from './state/editorSteps';
+import { computeEditorCompleteness } from './state/editorCompleteness';
+import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
 import { logEvent } from '@/src/lib/events';
 import EditorHeader from '@/src/editors/shared/EditorHeader';
-import UnifiedStepperNav, { type UnifiedStepItem } from '@/src/editors/shared/UnifiedStepperNav';
+import UnifiedStepperNav from '@/src/editors/shared/UnifiedStepperNav';
 import { useEditorShell } from '@/src/editors/shared/useEditorShell';
-
-type EditorSectionKey = 'setup' | 'message' | 'hero' | 'couple' | 'schedule' | 'gallery' | 'location' | 'accounts' | 'rsvp' | 'share';
-
-type EditorSectionItem = UnifiedStepItem & {
-  key: EditorSectionKey;
-};
-
-function resolveVisibleSections(conceptType: WeddingEditorState['setup']['conceptType']): EditorSectionItem[] {
-  if (conceptType === 'WEDDING') {
-    return [
-      { id: 0, key: 'setup', title: '기본 정보' },
-      { id: 1, key: 'message', title: '인사말' },
-      { id: 2, key: 'hero', title: '대표 이미지' },
-      { id: 3, key: 'couple', title: '신랑 · 신부' },
-      { id: 4, key: 'gallery', title: '갤러리' },
-      { id: 5, key: 'location', title: '위치 안내' },
-      { id: 6, key: 'accounts', title: '계좌 정보' },
-      { id: 7, key: 'rsvp', title: '참석 여부' },
-      { id: 8, key: 'share', title: '공유 설정' },
-    ];
-  }
-
-  if (conceptType === 'FUNERAL') {
-    return [
-      { id: 0, key: 'setup', title: '기본 정보' },
-      { id: 1, key: 'message', title: '부고문' },
-      { id: 2, key: 'hero', title: '대표 이미지' },
-      { id: 3, key: 'couple', title: '고인 정보' },
-      { id: 4, key: 'schedule', title: '장례 일정' },
-      { id: 5, key: 'location', title: '위치 안내' },
-      { id: 6, key: 'accounts', title: '계좌 정보' },
-      { id: 7, key: 'rsvp', title: '참석 여부' },
-      { id: 8, key: 'share', title: '공유 설정' },
-    ];
-  }
-
-  return [
-    { id: 0, key: 'setup', title: '기본 정보' },
-    { id: 1, key: 'message', title: '행사 소개' },
-    { id: 2, key: 'hero', title: '대표 이미지' },
-    { id: 3, key: 'schedule', title: '일정' },
-    { id: 4, key: 'gallery', title: '갤러리' },
-    { id: 5, key: 'location', title: '위치 안내' },
-    { id: 6, key: 'rsvp', title: '참석 여부' },
-    { id: 7, key: 'share', title: '공유 설정' },
-  ];
-}
 
 type WeddingEditorProps = {
   initialState: WeddingEditorState;
@@ -106,7 +62,9 @@ export default function WeddingEditor({
 
   const previewData = useMemo(() => buildWeddingClassicPreviewData(state), [state]);
   const visibleSections = useMemo(() => resolveVisibleSections(state.setup.conceptType), [state.setup.conceptType]);
+  const completeness = useMemo(() => computeEditorCompleteness(state), [state]);
   const activeSection = visibleSections[currentStep]?.key ?? visibleSections[0]?.key ?? 'setup';
+  const conceptPresentation = getConceptPresentationConfig(state.setup.conceptType);
 
   useEffect(() => {
     if (previewLoggedRef.current || !fullscreenPreviewOpen) return;
@@ -211,7 +169,25 @@ export default function WeddingEditor({
           />
         );
       case 'accounts':
-        return <Step7Accounts accounts={state.accounts} onChange={(accounts) => dispatch({ type: 'SET_ACCOUNTS', payload: accounts })} />;
+        return (
+          <Step7Accounts
+            accounts={state.accounts}
+            onChange={(accounts) => dispatch({ type: 'SET_ACCOUNTS', payload: accounts })}
+            conceptType={state.setup.conceptType}
+            accountEnabled={Boolean(
+              typeof state.extras.accountEnabled === 'boolean'
+                ? state.extras.accountEnabled
+                : conceptPresentation.accountDefaultEnabled
+            )}
+            accountsTitle={state.extras.accountsTitle ?? conceptPresentation.accountsTitle}
+            onAccountEnabledChange={(enabled) =>
+              dispatch({ type: 'SET_EXTRAS', payload: { accountEnabled: enabled } })
+            }
+            onAccountsTitleChange={(title) =>
+              dispatch({ type: 'SET_EXTRAS', payload: { accountsTitle: title } })
+            }
+          />
+        );
       case 'rsvp':
         return <Step8Extras value={state.extras} onChange={(payload) => dispatch({ type: 'SET_EXTRAS', payload })} />;
       case 'share':
@@ -339,15 +315,13 @@ export default function WeddingEditor({
             <div className={styles.progressCard}>
               <div className={styles.progressHeader}>
                 <span>완성도</span>
-                <strong>
-                  {Math.round((currentStep / Math.max(visibleSections.length - 1, 1)) * 100)}%
-                </strong>
+                <strong>{completeness.percent}%</strong>
               </div>
               <div className={styles.progressTrack}>
                 <div
                   className={styles.progressFill}
                   style={{
-                    width: `${Math.round((currentStep / Math.max(visibleSections.length - 1, 1)) * 100)}%`,
+                    width: `${completeness.percent}%`,
                   }}
                 />
               </div>

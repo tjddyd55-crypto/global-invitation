@@ -15,7 +15,8 @@ export type ConceptSectionKey =
   | 'account'
   | 'rsvp'
   | 'comments'
-  | 'share';
+  | 'share'
+  | 'footer';
 
 export type ConceptPresentationConfig = {
   couple: boolean;
@@ -23,6 +24,11 @@ export type ConceptPresentationConfig = {
   schedule: boolean;
   gallery: boolean;
   account: boolean;
+  /** true면 accountEnabled 토글로 공개 여부 제어 */
+  accountOptional: boolean;
+  /** optional일 때 신규 기본값 */
+  accountDefaultEnabled: boolean;
+  accountsTitle: string;
   rsvp: boolean;
   comments: boolean;
   sections: ConceptSectionKey[];
@@ -38,6 +44,9 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     schedule: true,
     gallery: true,
     account: true,
+    accountOptional: false,
+    accountDefaultEnabled: true,
+    accountsTitle: '마음 전하실 곳',
     rsvp: true,
     comments: true,
     sections: [
@@ -51,6 +60,7 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
       'rsvp',
       'comments',
       'share',
+      'footer',
     ],
     commentsTitle: '축하 메시지',
     commentsSubtitle: '두 분께 축하의 마음을 남겨주세요',
@@ -62,9 +72,12 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     schedule: true,
     gallery: false,
     account: true,
+    accountOptional: false,
+    accountDefaultEnabled: true,
+    accountsTitle: '마음 전하실 곳',
     rsvp: false,
     comments: true,
-    sections: ['hero', 'deceased', 'schedule', 'location', 'account', 'comments', 'share'],
+    sections: ['hero', 'deceased', 'schedule', 'location', 'account', 'comments', 'share', 'footer'],
     commentsTitle: '추모 메시지',
     commentsSubtitle: '고인을 기리는 마음을 남겨주세요',
     commentsPlaceholder: '추모의 마음을 남겨주세요',
@@ -74,7 +87,10 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     deceased: false,
     schedule: true,
     gallery: true,
-    account: false,
+    account: true,
+    accountOptional: true,
+    accountDefaultEnabled: false,
+    accountsTitle: '참가비 및 입금 안내',
     rsvp: true,
     comments: true,
     sections: [
@@ -83,9 +99,11 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
       'schedule',
       'gallery',
       'location',
+      'account',
       'rsvp',
       'comments',
       'share',
+      'footer',
     ],
     commentsTitle: '메시지를 남겨주세요',
     commentsSubtitle: '행사에 전할 메시지를 남겨주세요',
@@ -108,4 +126,47 @@ export function conceptAllowsSection(
   section: ConceptSectionKey
 ): boolean {
   return getConceptPresentationConfig(conceptType).sections.includes(section);
+}
+
+/** 섹션 존재 조건 SSOT — 페이지별 개별 조건문 대신 사용 */
+export function getInvitationSections(
+  conceptType: InvitationConceptType | string | null | undefined,
+  flags: {
+    hasIntroduction?: boolean;
+    hasSchedule?: boolean;
+    hasGallery?: boolean;
+    hasLocation?: boolean;
+    hasAccounts?: boolean;
+    hasRsvp?: boolean;
+    hasComments?: boolean;
+    hasShare?: boolean;
+  } = {}
+): ConceptSectionKey[] {
+  const config = getConceptPresentationConfig(conceptType);
+  return config.sections.filter((section) => {
+    switch (section) {
+      case 'introduction':
+        return flags.hasIntroduction !== false;
+      case 'schedule':
+        return config.schedule && flags.hasSchedule !== false;
+      case 'gallery':
+        return config.gallery && Boolean(flags.hasGallery);
+      case 'location':
+        return flags.hasLocation !== false;
+      case 'account':
+        return config.account && Boolean(flags.hasAccounts);
+      case 'rsvp':
+        return config.rsvp && flags.hasRsvp !== false;
+      case 'comments':
+        return config.comments && flags.hasComments !== false;
+      case 'share':
+        return flags.hasShare !== false;
+      case 'couple':
+        return config.couple;
+      case 'deceased':
+        return config.deceased;
+      default:
+        return true;
+    }
+  });
 }

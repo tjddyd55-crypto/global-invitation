@@ -94,18 +94,6 @@
   line-height: 1.7;
 }
 
-.gallery {
-  display: grid;
-  gap: 8px;
-}
-
-.galleryImage {
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-  display: block;
-}
-
 .shareBtn {
   width: 100%;
   height: 48px;

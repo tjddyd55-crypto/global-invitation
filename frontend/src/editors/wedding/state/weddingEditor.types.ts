@@ -60,16 +60,27 @@ export type WeddingEditorLocation = {
 
 export type WeddingEditorAccount = {
   id: string;
+  /** 용도/구분 */
   role: string;
+  /** 은행/금융기관 (글로벌 — 한국 은행 select 제한 금지) */
   bank: string;
+  /** 계좌번호 — 항상 string */
   number: string;
   holder: string;
+  iban?: string;
+  swiftBic?: string;
+  routingCode?: string;
+  paymentNote?: string;
 };
 
 export type WeddingEditorExtras = {
   rsvpEnabled: boolean;
   guestbookEnabled: boolean;
   rsvpButtonText?: string;
+  /** GENERAL 선택형 계좌 — OFF여도 accounts 데이터 유지 가능 */
+  accountEnabled?: boolean;
+  /** 공개 섹션 제목 (미입력 시 concept 기본 라벨) */
+  accountsTitle?: string;
 };
 
 export type WeddingEditorShare = {

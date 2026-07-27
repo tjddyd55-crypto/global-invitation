@@ -1,9 +1,9 @@
 import {
   buildWeddingClassicCalendarTitle,
-  buildWeddingClassicHeroTitle,
   getWeddingClassicDefaultLabels,
 } from '@/src/templates/weddingClassic/data';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
+import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/models/invitation';
 import type { WeddingEditorState } from './weddingEditor.types';
@@ -30,10 +30,21 @@ function buildPreviewMapImage(mapLat?: number, mapLng?: number): string {
   return `https://staticmap.openstreetmap.de/staticmap.php?center=${mapLat},${mapLng}&zoom=16&size=600x400&markers=${mapLat},${mapLng},red-pushpin`;
 }
 
+function mapAccounts(state: WeddingEditorState) {
+  return state.accounts.map((account) => ({
+    role: account.role,
+    bank: account.bank,
+    number: account.number,
+    holder: account.holder,
+    ...(account.iban ? { iban: account.iban } : {}),
+    ...(account.swiftBic ? { swiftBic: account.swiftBic } : {}),
+    ...(account.routingCode ? { routingCode: account.routingCode } : {}),
+    ...(account.paymentNote ? { paymentNote: account.paymentNote } : {}),
+  }));
+}
+
 /**
  * 에디터 state → 공개 템플릿과 동일 스키마의 미리보기 데이터.
- * - 컨셉과 무관하게 state에 있는 표시용 필드는 모두 포함 (조건부 생략 없음).
- * - hero: state.hero, 갤러리: state.gallery, RSVP·방명록: state.extras (스키마상 필드명과 대응).
  */
 export function buildWeddingClassicPreviewData(state: WeddingEditorState): WeddingInvitationData {
   const weddingDate = parseWeddingDate(state.basic.eventDateTime);
@@ -51,12 +62,22 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     .map((image) => image.url)
     .filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
   const defaultLabels = getWeddingClassicDefaultLabels(state.setup.language);
+  const conceptConfig = getConceptPresentationConfig(state.setup.conceptType);
   const mapImage = buildPreviewMapImage(state.location.mapLat, state.location.mapLng);
   const formattedAddress = state.location.address.trim();
 
   const groomPhoto = (state.groom.photo ?? '').trim();
   const bridePhoto = (state.bride.photo ?? '').trim();
   const parentsInfo = [state.groom.parentsText, state.bride.parentsText].filter(Boolean).join(' / ');
+
+  const accountEnabled =
+    typeof state.extras.accountEnabled === 'boolean'
+      ? state.extras.accountEnabled
+      : conceptConfig.accountDefaultEnabled;
+  const accountsTitle =
+    (state.extras.accountsTitle ?? '').trim() ||
+    conceptConfig.accountsTitle ||
+    defaultLabels.accountsTitle;
 
   const base = {
     templateType: 'FULL' as const,
@@ -80,12 +101,8 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     musicKey: 'piano_wedding',
     heroImage,
     galleryImages,
-    accounts: state.accounts.map((account) => ({
-      role: account.role,
-      bank: account.bank,
-      number: account.number,
-      holder: account.holder,
-    })),
+    accounts: mapAccounts(state),
+    accountEnabled,
     address: formattedAddress,
     formattedAddress,
     detailAddress: venueDetail || undefined,
@@ -108,7 +125,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     rsvpTitle: defaultLabels.rsvpTitle,
     rsvpDescription: defaultLabels.rsvpDescription,
     rsvpButton: (state.extras.rsvpButtonText ?? '').trim(),
-    accountsTitle: defaultLabels.accountsTitle,
+    accountsTitle,
     messagesTitle: defaultLabels.messagesTitle,
     messages: [] as WeddingInvitationData['messages'],
     groomName: state.groom.name,
@@ -151,7 +168,6 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     return {
       ...base,
       commentsEnabled: state.extras.guestbookEnabled,
-      // Wedding-only fields — GENERAL renderer ignores; keep empty for preview parity
       coupleNames: '',
       groomName: '',
       brideName: '',
@@ -160,8 +176,8 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
       groomPhone: '',
       bridePhone: '',
       parentsInfo: '',
-      accounts: [],
-      accountsTitle: '',
+      accountsTitle,
+      accountEnabled,
       groom: { image: '', name: '', phone: '', parentsText: '' },
       bride: { image: '', name: '', phone: '', parentsText: '' },
     };
