@@ -2,8 +2,6 @@ import type { Metadata } from 'next';
 import ResponsivePlatformBoundary from '@/src/shared/platform/ResponsivePlatformBoundary';
 import MainScreen from '@/src/features/main/ui/mobile/MainScreen';
 import DesktopMainScreen from '@/src/features/main/ui/pc/DesktopMainScreen';
-import MobileShell from '@/src/ui/mobile/MobileShell';
-import PcShell from '@/src/ui/pc/PcShell';
 import { buildCanonicalUrl, getMetadataBase } from '@/src/lib/siteUrl';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,21 +25,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /**
  * Canonical Main — Figma MainScreen / DesktopMainScreen via viewport SSOT (1024).
- * Do not wire the archived marketing landing component here.
+ * Marketing shell (no legacy app sidebar/bottom-nav) — see src/shared/platform/platformShell.ts.
  */
 export default function HomePage() {
   return (
     <ResponsivePlatformBoundary
-      mobile={
-        <MobileShell>
-          <MainScreen />
-        </MobileShell>
-      }
-      desktop={
-        <PcShell>
-          <DesktopMainScreen />
-        </PcShell>
-      }
+      mobile={<MainScreen />}
+      desktop={<DesktopMainScreen />}
     />
   );
 }

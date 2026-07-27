@@ -1,0 +1,23 @@
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--mk-primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--mk-text);
+}

@@ -1,0 +1,30 @@
+/**
+ * Figma Make 마케팅/인증 화면 전용 토큰 (`--mk-*`).
+ *
+ * 이 파일은 `/`(main), `/create/concept`(concept), `/auth/email`, `/auth/verify`
+ * 화면에서만 사용한다. 에디터·대시보드 등 앱 화면은 `--gi-*` (src/styles/designTokens.css)
+ * 를 계속 사용한다. 두 토큰 세트는 이름이 겹치지 않으므로 안전하게 공존한다.
+ */
+:root {
+  --mk-bg: #f7f3ec;
+  --mk-primary: #4f46e5;
+  --mk-primary-hover: #4338ca;
+  --mk-primary-soft: #eef2ff;
+  --mk-text: #1f2937;
+  --mk-muted: #6b7280;
+  --mk-border: #e5e1d8;
+  --mk-card: #ffffff;
+
+  --mk-wedding: #be185d;
+  --mk-wedding-soft: #fce7f3;
+  --mk-funeral: #374151;
+  --mk-funeral-soft: #f3f4f6;
+  --mk-general: #1d4ed8;
+  --mk-general-soft: #dbeafe;
+
+  --mk-header-h: 72px;
+  --mk-input-h: 52px;
+  --mk-radius-card: 20px;
+  --mk-radius-btn: 14px;
+  --mk-max: 1240px;
+}

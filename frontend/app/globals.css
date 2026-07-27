@@ -1,4 +1,5 @@
 @import '../src/styles/designTokens.css';
+@import '../src/features/marketing/tokens/marketingTokens.css';
 
 @tailwind utilities;
 

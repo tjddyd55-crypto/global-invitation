@@ -1,0 +1,306 @@
+.screen {
+  min-height: 100%;
+  background: var(--mk-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding-bottom: 64px;
+}
+
+.topBar {
+  height: var(--mk-header-h);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--mk-border);
+  background: rgba(247, 243, 236, 0.92);
+}
+
+.myInvitationsLink {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mk-text);
+}
+
+.hero {
+  padding: 8px 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--mk-primary-soft);
+  color: var(--mk-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--mk-text);
+}
+
+.heroDesc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--mk-muted);
+}
+
+.phoneMockup {
+  align-self: center;
+  width: 200px;
+  height: 372px;
+  border-radius: 32px;
+  background: var(--mk-text);
+  padding: 10px;
+  margin: 12px 0;
+  box-shadow: 0 24px 48px rgba(31, 41, 55, 0.2);
+}
+
+.phoneNotch {
+  width: 64px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--mk-text);
+  margin: 0 auto 4px;
+}
+
+.phoneScreen {
+  height: calc(100% - 18px);
+  border-radius: 22px;
+  background: var(--mk-card);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.phoneHero {
+  height: 120px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--mk-primary-soft), var(--mk-wedding-soft));
+}
+
+.phoneLineWide {
+  height: 10px;
+  width: 80%;
+  border-radius: 999px;
+  background: var(--mk-border);
+}
+
+.phoneLineNarrow {
+  height: 8px;
+  width: 55%;
+  border-radius: 999px;
+  background: var(--mk-border);
+}
+
+.phoneButton {
+  margin-top: auto;
+  height: 34px;
+  border-radius: 12px;
+  background: var(--mk-primary);
+}
+
+.primaryCta {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--mk-input-h);
+  border-radius: var(--mk-radius-btn);
+  background: var(--mk-primary);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.trustRow {
+  align-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trustItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--mk-text);
+}
+
+.trustItem svg {
+  color: var(--mk-primary);
+}
+
+.benefits {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.benefitCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  background: var(--mk-card);
+  border: 1px solid var(--mk-border);
+  border-radius: var(--mk-radius-card);
+}
+
+.benefitIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--mk-primary-soft);
+  color: var(--mk-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.benefitTitle {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--mk-text);
+}
+
+.benefitDesc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--mk-muted);
+}
+
+.concepts {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--mk-text);
+}
+
+.conceptList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.conceptCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: var(--mk-card);
+  border: 1.5px solid var(--mk-border);
+  border-radius: var(--mk-radius-card);
+}
+
+.conceptIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.conceptBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.conceptTitle {
+  margin: 0 0 2px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--mk-text);
+}
+
+.conceptDesc {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--mk-muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.conceptChevron {
+  flex: 0 0 auto;
+  color: var(--mk-muted);
+}
+
+.finalCta {
+  margin: 0 20px;
+  padding: 32px 24px;
+  border-radius: var(--mk-radius-card);
+  background: var(--mk-primary);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.finalCtaTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.finalCtaDesc {
+  margin: 0;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.finalCtaButton {
+  margin-top: 6px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--mk-input-h);
+  border-radius: var(--mk-radius-btn);
+  background: #fff;
+  color: var(--mk-primary);
+  font-size: 15px;
+  font-weight: 800;
+}

@@ -1,0 +1,97 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: var(--mk-header-h);
+  background: rgba(247, 243, 236, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--mk-border);
+}
+
+.inner {
+  height: 100%;
+  max-width: var(--mk-max);
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.logoBadge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--mk-primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logoText {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--mk-text);
+}
+
+.nav {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.navSpacer {
+  flex: 1 1 auto;
+}
+
+.navLink {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mk-muted);
+  transition: color 0.15s ease;
+}
+
+.navLink:hover {
+  color: var(--mk-text);
+}
+
+.actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.myInvitationsLink {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mk-text);
+}
+
+.createButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--mk-radius-btn);
+  background: var(--mk-primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background 0.15s ease;
+}
+
+.createButton:hover {
+  background: var(--mk-primary-hover);
+}

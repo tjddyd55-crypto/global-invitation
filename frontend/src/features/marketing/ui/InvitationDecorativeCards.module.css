@@ -1,0 +1,75 @@
+.root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card {
+  position: absolute;
+  width: 132px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--mk-card);
+  border: 1px solid var(--mk-border);
+  border-radius: var(--mk-radius-card);
+  box-shadow: 0 16px 32px rgba(31, 41, 55, 0.06);
+  opacity: 0.9;
+}
+
+.iconWrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lineWide {
+  height: 8px;
+  width: 80%;
+  border-radius: 999px;
+  background: var(--mk-border);
+}
+
+.lineNarrow {
+  height: 8px;
+  width: 50%;
+  border-radius: 999px;
+  background: var(--mk-border);
+}
+
+.cardTopLeft {
+  top: 8%;
+  left: 6%;
+  transform: rotate(-8deg);
+}
+
+.cardTopRight {
+  top: 14%;
+  right: 8%;
+  transform: rotate(6deg);
+}
+
+.cardBottomLeft {
+  bottom: 12%;
+  left: 10%;
+  transform: rotate(5deg);
+}
+
+.cardBottomRight {
+  bottom: 8%;
+  right: 6%;
+  transform: rotate(-6deg);
+}
+
+@media (max-width: 1279px) {
+  .cardTopRight,
+  .cardBottomLeft {
+    display: none;
+  }
+}

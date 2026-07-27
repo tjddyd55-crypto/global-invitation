@@ -30,3 +30,5 @@ export { useViewportPlatform } from './useViewportPlatform';
 export { default as ResponsivePlatformBoundary } from './ResponsivePlatformBoundary';
 export { resolveAppNavPrefix, appPath } from './appNavPrefix';
 export type { AppNavPrefix } from './appNavPrefix';
+export { getPlatformShellForPath } from './platformShell';
+export type { PlatformShell } from './platformShell';
