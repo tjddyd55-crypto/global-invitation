@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/src/shared/hooks';
+import { getCreateInvitationEntryPath } from '@/src/shared/auth/authEntryPaths';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
 import {
   ArrowRightIcon,
@@ -11,9 +12,6 @@ import {
 } from '@/src/ui/icons/MarketingIcons';
 import { HeartIcon as HeartConcept, BookOpenIcon as BookConcept, CalendarDaysIcon as CalConcept } from '@/src/ui/icons/ConceptIcons';
 import styles from './DesktopMainScreen.module.css';
-
-const CONCEPT_CREATE_PATH = '/create/concept';
-const MY_INVITATIONS_PATH = '/my-invitations';
 
 /** Figma DesktopMainScreen conceptCards — GENERAL features include payment account */
 const CONCEPT_CARDS = [
@@ -67,21 +65,12 @@ const TRUST = ['이메일 인증 하나로 시작', '비밀번호 필요 없음'
  */
 export default function DesktopMainScreen() {
   const { status } = useAuth();
-  const isLoggedIn = status === 'authenticated';
-  const createHref = isLoggedIn
-    ? CONCEPT_CREATE_PATH
-    : `/auth/email?next=${encodeURIComponent(CONCEPT_CREATE_PATH)}`;
-  const myInvitationsHref = isLoggedIn
-    ? MY_INVITATIONS_PATH
-    : `/auth/email?next=${encodeURIComponent(MY_INVITATIONS_PATH)}`;
+  const ctaDisabled = status === 'loading';
+  const createHref = getCreateInvitationEntryPath(status === 'loading' ? 'unauthenticated' : status);
 
   return (
     <div className={styles.page} data-testid="desktop-main-screen">
-      <MarketingDesktopHeader
-        isLoggedIn={isLoggedIn}
-        createHref={createHref}
-        myInvitationsHref={myInvitationsHref}
-      />
+      <MarketingDesktopHeader />
 
       <section className={styles.hero}>
         <div className={styles.heroInner}>
@@ -99,7 +88,15 @@ export default function DesktopMainScreen() {
               결혼식, 부고장, 행사 초대장을 이메일 인증 후 간편하게 만들고 공유할 수 있습니다.
             </p>
             <div className={styles.heroActions}>
-              <Link href={createHref} className={styles.primaryCta} data-testid="hero-create-cta">
+              <Link
+                href={ctaDisabled ? '#' : createHref}
+                className={styles.primaryCta}
+                data-testid="hero-create-cta"
+                aria-disabled={ctaDisabled}
+                onClick={(event) => {
+                  if (ctaDisabled) event.preventDefault();
+                }}
+              >
                 초대장 만들기
                 <ArrowRightIcon size={18} />
               </Link>
