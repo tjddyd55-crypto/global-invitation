@@ -15,6 +15,9 @@ import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
+import InvitationCommentsSection from '@/src/features/comments/ui/InvitationCommentsSection';
+import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
+import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
 import { useEffect, useState } from 'react';
 
 type WeddingClassicInvitationProps = {
@@ -180,13 +183,20 @@ export default function WeddingClassicInvitation({
     .filter(Boolean);
   /** 커플 섹션: 이름·사진 등 표시 데이터가 하나라도 있으면 true (평탄/중첩 모두 반영) */
   const hasCouple = Boolean(groomDisplay || brideDisplay || groomImg || brideImg);
-  const showCoupleBlock = Boolean(hasCouple || groomPhone || bridePhone || parentsInfo);
+  const conceptPresentation = getConceptPresentationConfig(conceptType);
+  // GENERAL 등은 couple 정책상 강제 비표시 (legacy wedding 필드 잔존 무시)
+  const showCoupleBlock =
+    conceptPresentation.couple && Boolean(hasCouple || groomPhone || bridePhone || parentsInfo);
+  const showAccountsBlock = conceptPresentation.account && Array.isArray(accounts) && accounts.length > 0;
   /** 장례 일정 데이터가 있으면 리스트, 그 외에는 커플 데이터가 있을 때만 웨딩형 캘린더 */
-  const useCalendarSchedule = hasCouple && !mapToneFuneralLike;
+  const useCalendarSchedule = conceptPresentation.couple && hasCouple && !mapToneFuneralLike;
   const guestbookMessages = safeArray(r.messages).filter(
     (msg) => typeof msg?.name === 'string' && typeof msg?.content === 'string' && msg.content.trim()
   );
   const showGuestbookSection = Boolean(showGuestbook && guestbookMessages.length > 0);
+  const commentsEnabled =
+    showGuestbook !== undefined ? Boolean(showGuestbook) : resolveCommentsEnabled(r);
+  const showLiveComments = Boolean(commentsEnabled && conceptPresentation.comments);
   const visibleGuestbookMessages = guestbookExpanded
     ? guestbookMessages
     : guestbookMessages.slice(0, 3);
@@ -474,7 +484,7 @@ export default function WeddingClassicInvitation({
         </section>
       ) : null}
 
-      {Array.isArray(accounts) && accounts.length > 0 ? (
+      {showAccountsBlock ? (
         <section className={`${styles.section} ${styles.accountsSection}`}>
           <h2>{accountsTitle}</h2>
           <div className={styles.accountList}>
@@ -496,7 +506,18 @@ export default function WeddingClassicInvitation({
         </section>
       ) : null}
 
-      {showGuestbookSection ? (
+      {showLiveComments ? (
+        <InvitationCommentsSection
+          invitationSlug={invitationSlug}
+          conceptType={conceptType}
+          enabled
+          titleOverride={(r.messagesTitle || '').trim() || undefined}
+          previewMode={Boolean(previewMode) || !invitationSlug}
+        />
+      ) : null}
+
+      {/* legacy static sample guestbook — only when live comments off and samples exist */}
+      {!showLiveComments && showGuestbookSection ? (
         <section className={styles.guestbookSection} data-testid="guestbook-section" aria-label="Guestbook">
           <p className={styles.scriptLabel}>Guestbook</p>
           <div className={styles.guestbookList}>
@@ -529,9 +550,6 @@ export default function WeddingClassicInvitation({
               onClick={() => setGuestbookExpanded((prev) => !prev)}
             >
               {guestbookExpanded ? '접기' : '전체보기'}
-            </button>
-            <button type="button" className={styles.guestbookBtnPrimary} disabled>
-              작성하기
             </button>
           </div>
         </section>

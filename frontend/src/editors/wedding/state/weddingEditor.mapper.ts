@@ -71,6 +71,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     schedule: [formatDateTime(state.setup.language, weddingDate)],
     rsvpEnabled: state.extras.rsvpEnabled,
     guestbookEnabled: state.extras.guestbookEnabled,
+    commentsEnabled: state.extras.guestbookEnabled,
     share: {
       ogTitle: state.share.ogTitle.trim(),
       ogDescription: state.share.ogDescription.trim(),
@@ -146,7 +147,30 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     };
   }
 
-  return base;
+  if (state.setup.conceptType === 'GENERAL') {
+    return {
+      ...base,
+      commentsEnabled: state.extras.guestbookEnabled,
+      // Wedding-only fields — GENERAL renderer ignores; keep empty for preview parity
+      coupleNames: '',
+      groomName: '',
+      brideName: '',
+      groomImage: '',
+      brideImage: '',
+      groomPhone: '',
+      bridePhone: '',
+      parentsInfo: '',
+      accounts: [],
+      accountsTitle: '',
+      groom: { image: '', name: '', phone: '', parentsText: '' },
+      bride: { image: '', name: '', phone: '', parentsText: '' },
+    };
+  }
+
+  return {
+    ...base,
+    commentsEnabled: state.extras.guestbookEnabled,
+  };
 }
 
 /** Editor state → Invitation (localStorage 저장용). Backend 전송 금지. */

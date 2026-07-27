@@ -13,8 +13,8 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>참석 여부</h2>
-        <p>참석 여부와 방명록 노출 여부를 설정합니다.</p>
+        <h2>참석 여부 · 메시지</h2>
+        <p>참석 여부와 공개 댓글(축하/추모 메시지) 노출을 설정합니다.</p>
       </div>
       <div className={styles.toggleGroup}>
         <ToggleRow
@@ -24,8 +24,8 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
           onChange={(checked) => onChange({ rsvpEnabled: checked })}
         />
         <ToggleRow
-          label="방명록"
-          description="OFF 시 방명록(메시지) 섹션을 숨깁니다."
+          label="댓글·메시지 받기"
+          description="OFF 시 공개 초대장의 댓글 섹션을 숨깁니다. (RSVP 메시지와 별개)"
           checked={value.guestbookEnabled}
           onChange={(checked) => onChange({ guestbookEnabled: checked })}
         />

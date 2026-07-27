@@ -1,9 +1,7 @@
 'use client';
 
-import type { FuneralInvitationData, InvitationRuntimeData, WeddingInvitationData } from '@/src/invitation/schemas';
-import { isFuneralInvitationData, isWeddingInvitationData } from '@/src/invitation/schemas';
-import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
-import { buildWeddingClassicData, getSampleWeddingInvitation } from '@/src/templates/weddingClassic/data';
+import type { InvitationRuntimeData } from '@/src/invitation/schemas';
+import RenderInvitationByConcept from '@/src/templates/renderInvitationByConcept';
 
 type FullInvitationRendererProps = {
   data: InvitationRuntimeData;
@@ -17,79 +15,10 @@ type FullInvitationRendererProps = {
   isShared?: boolean;
 };
 
-function toWeddingFromFuneral(data: FuneralInvitationData): WeddingInvitationData {
-  const base = buildWeddingClassicData(getSampleWeddingInvitation());
-  const funeralDate = new Date(data.schedule.funeralDate);
-  const normalizedDate = Number.isNaN(funeralDate.getTime()) ? base.weddingDate : funeralDate;
-  return {
-    ...base,
-    templateType: 'FULL',
-    conceptType: 'FUNERAL',
-    title: data.deceasedName ? `${data.deceasedName} 추모 초대` : base.title,
-    content: data.message || base.content,
-    eventDate: data.schedule.funeralDate || base.eventDate,
-    locationText: data.funeralHall.address || data.funeralHall.name || base.locationText,
-    schedule: [data.schedule.wakeStart, data.schedule.funeralDate, data.schedule.burial].filter(
-      (item): item is string => Boolean(item)
-    ),
-    rsvpEnabled: true,
-    guestbookEnabled: base.guestbookEnabled ?? true,
-    heroImage: data.heroImage || base.heroImage,
-    heroTitle: data.deceasedName ? `${data.deceasedName} 추모 초대` : base.heroTitle,
-    heroSubtitle: data.schedule.funeralDate || base.heroSubtitle,
-    venueName: data.funeralHall.name || base.venueName,
-    introQuote: data.message || base.introQuote,
-    introText: data.familyMembers ?? base.introText,
-    weddingDate: normalizedDate,
-    weddingDateTime: data.schedule.funeralDate || base.weddingDateTime,
-    address: data.funeralHall.address || base.address,
-    mapImage: data.funeralHall.mapImage || base.mapImage,
-    mapLat: data.funeralHall.mapLat,
-    mapLng: data.funeralHall.mapLng,
-    deceasedName: data.deceasedName,
-    funeralHall: data.funeralHall.name,
-    funeralDate: data.schedule.funeralDate,
-    contactPerson: data.contact ? `${data.contact.name} ${data.contact.phone}`.trim() : '',
-  };
-}
-
-function resolveWeddingPayload(data: InvitationRuntimeData): WeddingInvitationData | null {
-  if (isWeddingInvitationData(data)) {
-    return data;
-  }
-  if (isFuneralInvitationData(data)) {
-    return toWeddingFromFuneral(data);
-  }
-  return null;
-}
-
-export default function FullInvitationRenderer({
-  data,
-  invitationSlug,
-  showPlayButton,
-  previewMode,
-  showRsvp,
-  showGuestbook,
-  onShare,
-  onKakaoShare,
-  isShared,
-}: FullInvitationRendererProps) {
-  const weddingData = resolveWeddingPayload(data);
-  if (!weddingData) {
-    return null;
-  }
-
-  return (
-    <WeddingClassicInvitation
-      data={weddingData}
-      invitationSlug={invitationSlug}
-      showPlayButton={showPlayButton}
-      previewMode={previewMode}
-      showRsvp={showRsvp ?? weddingData.rsvpEnabled}
-      showGuestbook={showGuestbook ?? Boolean(weddingData.guestbookEnabled)}
-      onShare={onShare}
-      onKakaoShare={onKakaoShare}
-      isShared={isShared}
-    />
-  );
+/**
+ * FULL 엔진 엔트리 — concept SSOT (`renderInvitationByConcept`)로 위임.
+ * GENERAL은 WeddingClassicInvitation을 쓰지 않는다.
+ */
+export default function FullInvitationRenderer(props: FullInvitationRendererProps) {
+  return <RenderInvitationByConcept {...props} />;
 }

@@ -7,9 +7,12 @@ import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { formatDate, formatDateTime } from '@/src/lib/i18n/format';
 import { cdnImageSrc } from '@/src/lib/image';
+import InvitationCommentsSection from '@/src/features/comments/ui/InvitationCommentsSection';
 
 type FuneralClassicInvitationProps = {
   data: FuneralInvitationData;
+  invitationSlug?: string;
+  previewMode?: boolean;
   onShare?: () => void;
   isShared?: boolean;
   onKakaoShare?: () => void;
@@ -57,6 +60,8 @@ function formatDateTimeValue(value: string | undefined, language: string): strin
 
 export default function FuneralClassicInvitation({
   data,
+  invitationSlug,
+  previewMode = false,
   onShare,
   isShared = false,
   onKakaoShare,
@@ -154,6 +159,13 @@ export default function FuneralClassicInvitation({
           />
         </section>
       )}
+
+      <InvitationCommentsSection
+        invitationSlug={invitationSlug}
+        conceptType="FUNERAL"
+        enabled
+        previewMode={previewMode || !invitationSlug}
+      />
 
       {data.contact && (
         <section className={styles.section}>

@@ -36,8 +36,12 @@ export type WeddingClassicData = {
   venueDetail?: string;
   schedule: string[];
   rsvpEnabled: boolean;
-  /** 에디터·미리보기: 방명록 섹션 표시 (미설정 시 false 로 간주) */
+  /** 에디터·미리보기: 방명록/댓글 섹션 표시 (미설정 시 false 로 간주) */
   guestbookEnabled?: boolean;
+  /** Public comments ON/OFF — guestbookEnabled alias 허용 */
+  commentsEnabled?: boolean;
+  commentsTitle?: string;
+  commentsPlaceholder?: string;
   share?: {
     ogTitle?: string;
     ogDescription?: string;
