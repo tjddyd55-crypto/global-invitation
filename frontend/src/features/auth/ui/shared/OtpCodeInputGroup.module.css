@@ -1,29 +1,52 @@
 .group {
   display: flex;
-  gap: 10px;
   justify-content: center;
 }
 
+.groupDesktop {
+  gap: 10px;
+}
+
+.groupMobile {
+  gap: 8px;
+}
+
 .box {
-  width: 48px;
-  height: var(--mk-input-h);
   text-align: center;
+  font-weight: 700;
+  color: #1f2937;
+  background: #f9f9f9;
+  border: 2px solid #e5e1d8;
+  outline: none;
+  cursor: text;
+}
+
+.groupDesktop .box {
+  width: 56px;
+  height: 64px;
+  font-size: 24px;
+  border-radius: 14px;
+}
+
+.groupMobile .box {
+  width: 44px;
+  height: 56px;
   font-size: 22px;
-  font-weight: 800;
-  color: var(--mk-text);
-  background: var(--mk-card);
-  border: 1.5px solid var(--mk-border);
   border-radius: 12px;
 }
 
+.boxFilled {
+  background: rgba(79, 70, 229, 0.06);
+  border-color: #4f46e5;
+}
+
 .box:focus {
-  outline: none;
-  border-color: var(--mk-primary);
-  box-shadow: 0 0 0 3px var(--mk-primary-soft);
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
 }
 
 .boxError {
-  border-color: #dc2626;
+  border-color: #ef4444;
 }
 
 .box:disabled {

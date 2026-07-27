@@ -8,68 +8,78 @@
 
 .card {
   position: absolute;
-  width: 132px;
-  padding: 14px;
+  width: 200px;
+  padding: 14px 16px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e5e1d8;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  opacity: 0.7;
+  box-sizing: border-box;
+}
+
+.cardHead {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: var(--mk-card);
-  border: 1px solid var(--mk-border);
-  border-radius: var(--mk-radius-card);
-  box-shadow: 0 16px 32px rgba(31, 41, 55, 0.06);
-  opacity: 0.9;
-}
-
-.iconWrap {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
-.lineWide {
-  height: 8px;
-  width: 80%;
-  border-radius: 999px;
-  background: var(--mk-border);
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
 }
 
-.lineNarrow {
-  height: 8px;
-  width: 50%;
-  border-radius: 999px;
-  background: var(--mk-border);
+.title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
-.cardTopLeft {
-  top: 8%;
-  left: 6%;
+.bars {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.bars span {
+  height: 4px;
+  flex: 1;
+  background: #f3f4f6;
+  border-radius: 2px;
+}
+
+/* Figma DesktopEmailStartScreen positions */
+.cardWedding {
+  top: 10%;
+  left: 3%;
   transform: rotate(-8deg);
 }
 
-.cardTopRight {
-  top: 14%;
-  right: 8%;
+.cardGeneralLeft {
+  top: 55%;
+  left: 2%;
   transform: rotate(6deg);
 }
 
-.cardBottomLeft {
-  bottom: 12%;
-  left: 10%;
-  transform: rotate(5deg);
+.cardFuneral {
+  top: 20%;
+  right: 3%;
+  transform: rotate(7deg);
 }
 
-.cardBottomRight {
-  bottom: 8%;
-  right: 6%;
+.cardGeneralRight {
+  top: 65%;
+  right: 2%;
   transform: rotate(-6deg);
 }
 
 @media (max-width: 1279px) {
-  .cardTopRight,
-  .cardBottomLeft {
+  .cardGeneralLeft,
+  .cardFuneral {
     display: none;
   }
 }

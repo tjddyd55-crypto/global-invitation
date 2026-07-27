@@ -1,158 +1,133 @@
 .page {
   position: relative;
   min-height: 100vh;
-  background: var(--mk-bg);
-  overflow: hidden;
-}
-
-.content {
-  position: relative;
-  z-index: 1;
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 56px 24px 96px;
+  background: #f7f3ec;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 40px;
+  justify-content: center;
+  overflow: hidden;
+  padding: 80px 24px 48px;
+  box-sizing: border-box;
 }
 
 .card {
+  position: relative;
+  z-index: 10;
   width: 100%;
-  padding: 40px 36px;
-  background: var(--mk-card);
-  border: 1px solid var(--mk-border);
-  border-radius: var(--mk-radius-card);
-  box-shadow: 0 24px 48px rgba(31, 41, 55, 0.08);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  text-align: center;
-}
-
-.iconBadge {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: var(--mk-primary-soft);
-  color: var(--mk-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  max-width: 500px;
+  background: #fff;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e1d8;
+  box-sizing: border-box;
 }
 
 .title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--mk-text);
-  letter-spacing: -0.02em;
+  margin: 0 0 12px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  letter-spacing: -0.3px;
 }
 
 .desc {
-  margin: 0;
-  font-size: 14.5px;
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #6b7280;
   line-height: 1.6;
-  color: var(--mk-muted);
 }
 
 .emailChip {
-  display: inline-flex;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: var(--mk-primary-soft);
-  color: var(--mk-primary);
-  font-size: 13px;
-  font-weight: 700;
+  display: inline-block;
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 7px 14px;
+  margin-bottom: 32px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
 }
 
 .form {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  margin-top: 12px;
+  align-items: stretch;
 }
 
 .timerRow {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--mk-muted);
+  justify-content: center;
+  gap: 5px;
+  margin: 16px 0 24px;
+  font-size: 14px;
+  color: #9ca3af;
 }
 
-.timerExpired {
-  color: #dc2626;
+.timerUrgent {
+  color: #ef4444;
 }
 
 .previewHint {
-  margin: 0;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--mk-bg);
-  border: 1px dashed var(--mk-border);
-  color: var(--mk-muted);
+  margin: 0 0 12px;
+  text-align: center;
   font-size: 12.5px;
+  color: #6b7280;
 }
 
 .error {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #fef2f2;
-  color: #b91c1c;
+  margin: 0 0 16px;
+  text-align: center;
   font-size: 13px;
+  color: #ef4444;
+}
+
+.resent {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 13px;
+  color: #16a34a;
 }
 
 .submitButton {
   width: 100%;
-  height: var(--mk-input-h);
-  border: none;
-  border-radius: var(--mk-radius-btn);
+  height: 52px;
   background: #e5e7eb;
   color: #9ca3af;
+  border: none;
+  border-radius: 14px;
   font-size: 16px;
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  font-weight: 600;
+  margin-bottom: 20px;
   cursor: not-allowed;
-  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .submitButtonActive {
-  background: var(--mk-primary);
+  background: #4f46e5;
   color: #fff;
   cursor: pointer;
 }
 
 .submitButtonActive:hover:not(:disabled) {
-  background: var(--mk-primary-hover);
+  background: #4338ca;
 }
 
 .actions {
-  width: 100%;
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 20px;
-  margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--mk-border);
+  align-items: center;
+  gap: 24px;
 }
 
 .resendButton {
-  border: none;
   background: none;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--mk-primary);
+  border: none;
+  font-size: 14px;
+  color: #4f46e5;
   cursor: pointer;
+  font-weight: 500;
 }
 
 .resendButton:disabled {
@@ -160,8 +135,22 @@
   cursor: not-allowed;
 }
 
+.divider {
+  color: #e5e1d8;
+}
+
 .editLink {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--mk-muted);
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.backLink {
+  position: relative;
+  z-index: 10;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #6b7280;
+  text-decoration: none;
 }

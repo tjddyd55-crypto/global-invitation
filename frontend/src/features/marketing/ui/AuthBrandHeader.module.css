@@ -1,23 +1,31 @@
-.brand {
+.corner {
+  position: absolute;
+  top: 28px;
+  left: 40px;
+  z-index: 20;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  text-decoration: none;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 700;
 }
 
-.badge {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: var(--mk-primary);
-  color: #fff;
+.corner svg {
+  color: #4f46e5;
+}
+
+.inline {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  color: #1f2937;
+  font-size: 16px;
+  font-weight: 700;
 }
 
-.text {
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--mk-text);
+.inline svg {
+  color: #4f46e5;
 }

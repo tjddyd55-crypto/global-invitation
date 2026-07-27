@@ -9,11 +9,12 @@ export interface OtpCodeInputGroupProps {
   length?: number;
   disabled?: boolean;
   hasError?: boolean;
+  /** Figma Desktop 56×64 / Mobile 44×56 */
+  size?: 'desktop' | 'mobile';
 }
 
 /**
- * Figma Make `EmailVerifyScreen` — 6칸 OTP 입력.
- * 숫자 입력 시 다음 칸으로 자동 이동, backspace 는 이전 칸으로 이동한다.
+ * Figma Make EmailVerify — 6칸 OTP 입력.
  */
 export default function OtpCodeInputGroup({
   value,
@@ -21,6 +22,7 @@ export default function OtpCodeInputGroup({
   length = 6,
   disabled,
   hasError,
+  size = 'desktop',
 }: OtpCodeInputGroupProps) {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
@@ -62,7 +64,11 @@ export default function OtpCodeInputGroup({
   };
 
   return (
-    <div className={styles.group} role="group" aria-label="인증번호 6자리">
+    <div
+      className={`${styles.group} ${size === 'mobile' ? styles.groupMobile : styles.groupDesktop}`}
+      role="group"
+      aria-label="인증번호 6자리"
+    >
       {digits.map((digit, index) => (
         <input
           // eslint-disable-next-line react/no-array-index-key -- 고정 길이 슬롯
@@ -70,7 +76,7 @@ export default function OtpCodeInputGroup({
           ref={(el) => {
             inputRefs.current[index] = el;
           }}
-          className={`${styles.box} ${hasError ? styles.boxError : ''}`}
+          className={`${styles.box} ${digit ? styles.boxFilled : ''} ${hasError ? styles.boxError : ''}`}
           type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
