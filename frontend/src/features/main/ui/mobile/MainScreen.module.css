@@ -28,6 +28,16 @@
   cursor: pointer;
 }
 
+.loginLink {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4f46e5;
+  text-decoration: none;
+  background: rgba(79, 70, 229, 0.08);
+  border-radius: 20px;
+  padding: 8px 14px;
+}
+
 .brand {
   display: flex;
   align-items: center;

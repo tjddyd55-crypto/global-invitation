@@ -6,6 +6,11 @@ import { requestEmailVerificationCode, setStoredSession, verifyEmailVerification
 import { useAuth } from '@/src/shared/hooks';
 import { resolveAuthNextPath } from './authNextPath';
 import { clearAuthEmail, readAuthEmail, saveAuthEmail } from './authEmailStorage';
+import {
+  clearDevOtpPreviewCode,
+  consumeDevOtpPreviewCode,
+  saveDevOtpPreviewCode,
+} from './devOtpPreviewStore';
 
 export const OTP_CODE_LENGTH = 6;
 const CODE_EXPIRY_SECONDS = 10 * 60;
@@ -31,9 +36,7 @@ function formatRemaining(totalSeconds: number): string {
 }
 
 /**
- * Figma Make `EmailVerifyScreen` / `DesktopEmailVerifyScreen` 전용 모델 (OTP 입력).
- * 이메일은 `/auth/email` 에서 저장한 sessionStorage 값을 우선 사용하고,
- * 새로고침 등으로 유실된 경우 `?email=` 쿼리로 폴백한다.
+ * Figma Make Email Verify 전용 모델 (OTP 입력).
  */
 export function useEmailVerifyForm(): UseEmailVerifyFormResult {
   const router = useRouter();
@@ -46,7 +49,7 @@ export function useEmailVerifyForm(): UseEmailVerifyFormResult {
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [previewCode, setPreviewCode] = useState<string | null>(null);
+  const [previewCode, setPreviewCode] = useState<string | null>(() => consumeDevOtpPreviewCode());
   const [remainingSeconds, setRemainingSeconds] = useState(CODE_EXPIRY_SECONDS);
 
   useEffect(() => {
@@ -78,6 +81,7 @@ export function useEmailVerifyForm(): UseEmailVerifyFormResult {
       const result = await verifyEmailVerificationCode({ email, code });
       setStoredSession({ token: result.token, user: result.user });
       clearAuthEmail();
+      clearDevOtpPreviewCode();
       await refresh();
       router.replace(nextPath);
     } catch (err) {
@@ -94,7 +98,9 @@ export function useEmailVerifyForm(): UseEmailVerifyFormResult {
     setCode('');
     try {
       const result = await requestEmailVerificationCode(email);
-      setPreviewCode(result.previewCode ?? null);
+      const nextPreview = result.previewCode?.trim() || null;
+      saveDevOtpPreviewCode(nextPreview);
+      setPreviewCode(nextPreview);
       setRemainingSeconds(CODE_EXPIRY_SECONDS);
     } catch (err) {
       setError(err instanceof Error ? err.message : '인증번호 재발송에 실패했습니다.');

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AuthBrandHeader from '@/src/features/marketing/ui/AuthBrandHeader';
 import { useEmailVerifyForm, formatRemaining } from '@/src/features/auth/model/useEmailVerifyForm';
 import OtpCodeInputGroup from '@/src/features/auth/ui/shared/OtpCodeInputGroup';
+import DevOtpPreviewPanel from '@/src/features/auth/ui/shared/DevOtpPreviewPanel';
 import { ChevronLeftIcon, ClockIcon } from '@/src/ui/icons/MarketingIcons';
 import styles from './EmailVerifyScreen.module.css';
 
@@ -79,7 +80,13 @@ export default function EmailVerifyScreen() {
               </span>
             </div>
 
-            {previewCode && <p className={styles.previewHint}>개발 미리보기 코드: {previewCode}</p>}
+            {previewCode && (
+              <DevOtpPreviewPanel
+                previewCode={previewCode}
+                variant="verify"
+                onFillInputs={(value) => setCode(value)}
+              />
+            )}
             {error && <p className={styles.error}>{error}</p>}
             {resent && !error && <p className={styles.resent}>✓ 인증번호가 재발송되었습니다.</p>}
 

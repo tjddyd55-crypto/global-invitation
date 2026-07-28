@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/shared/hooks';
 import {
   getCreateInvitationEntryPath,
+  getLoginEntryPath,
   getMyInvitationsEntryPath,
 } from '@/src/shared/auth/authEntryPaths';
 import LogoutConfirmDialog from '@/src/features/auth/ui/shared/LogoutConfirmDialog';
@@ -14,16 +15,10 @@ import { PlusIcon, SparklesIcon } from '@/src/ui/icons/MarketingIcons';
 import styles from './MarketingDesktopHeader.module.css';
 
 export interface MarketingDesktopHeaderProps {
-  /** 컨셉 선택 등 집중이 필요한 화면에서는 nav 를 숨긴다. */
   showNav?: boolean;
-  /**
-   * @deprecated 인증 분기는 헤더 내부 useAuth + authEntryPaths SSOT 사용.
-   * 호환을 위해 남겨 두지만 무시한다.
-   */
+  /** @deprecated 무시 */
   isLoggedIn?: boolean;
-  /** @deprecated SSOT 로 대체. 전달해도 무시. */
   createHref?: string;
-  /** @deprecated SSOT 로 대체. 전달해도 무시. */
   myInvitationsHref?: string;
 }
 
@@ -35,8 +30,7 @@ const NAV_ITEMS = [
 ];
 
 /**
- * Figma Make `DesktopHeader` — marketing/concept 공용 데스크톱 헤더.
- * 로그인 시 작은 「로그아웃」 텍스트 + confirm. Public /i 에서는 사용하지 않는다.
+ * Figma Make DesktopHeader — 비로그인: 로그인 + 만들기 / 로그인: 내 초대장 + 로그아웃 + 만들기
  */
 export default function MarketingDesktopHeader({ showNav = true }: MarketingDesktopHeaderProps) {
   const router = useRouter();
@@ -46,8 +40,8 @@ export default function MarketingDesktopHeader({ showNav = true }: MarketingDesk
 
   const authReady = status !== 'loading';
   const createHref = getCreateInvitationEntryPath(status === 'loading' ? 'unauthenticated' : status);
-  const myInvitationsHref = getMyInvitationsEntryPath(status === 'loading' ? 'unauthenticated' : status);
-  // loading 중에는 concept 직행 금지 — unauthenticated 경로(auth)를 쓰되 CTA는 disabled
+  const myInvitationsHref = getMyInvitationsEntryPath('authenticated');
+  const loginHref = getLoginEntryPath();
   const ctaDisabled = !authReady;
 
   const handleLogout = async () => {
@@ -64,11 +58,7 @@ export default function MarketingDesktopHeader({ showNav = true }: MarketingDesk
 
   return (
     <>
-      <header
-        className={styles.header}
-        data-auth-state={status}
-        data-testid="marketing-desktop-header"
-      >
+      <header className={styles.header} data-auth-state={status} data-testid="marketing-desktop-header">
         <div className={styles.inner}>
           <Link href="/" className={styles.logo} aria-label="Invite 홈으로">
             <span className={styles.logoBadge}>
@@ -90,26 +80,34 @@ export default function MarketingDesktopHeader({ showNav = true }: MarketingDesk
           )}
 
           <div className={styles.actions}>
-            {status === 'authenticated' && (
-              <button
-                type="button"
-                className={styles.logoutLink}
-                onClick={() => setConfirmOpen(true)}
-                data-testid="header-logout-button"
+            {!authReady && <span className={styles.actionsSkeleton} aria-hidden data-testid="header-actions-skeleton" />}
+
+            {status === 'unauthenticated' && (
+              <Link
+                href={loginHref}
+                className={styles.loginLink}
+                data-testid="header-login-button"
               >
-                로그아웃
-              </button>
+                로그인
+              </Link>
             )}
-            <Link
-              href={ctaDisabled ? '#' : myInvitationsHref}
-              className={`${styles.myInvitationsLink} ${ctaDisabled ? styles.ctaDisabled : ''}`}
-              aria-disabled={ctaDisabled}
-              onClick={(event) => {
-                if (ctaDisabled) event.preventDefault();
-              }}
-            >
-              내 초대장
-            </Link>
+
+            {status === 'authenticated' && (
+              <>
+                <Link href={myInvitationsHref} className={styles.myInvitationsLink} data-testid="header-my-invitations">
+                  내 초대장
+                </Link>
+                <button
+                  type="button"
+                  className={styles.logoutLink}
+                  onClick={() => setConfirmOpen(true)}
+                  data-testid="header-logout-button"
+                >
+                  로그아웃
+                </button>
+              </>
+            )}
+
             <Link
               href={ctaDisabled ? '#' : createHref}
               className={`${styles.createButton} ${ctaDisabled ? styles.ctaDisabled : ''}`}

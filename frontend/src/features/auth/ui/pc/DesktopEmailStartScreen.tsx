@@ -6,15 +6,24 @@ import Link from 'next/link';
 import AuthBrandHeader from '@/src/features/marketing/ui/AuthBrandHeader';
 import InvitationDecorativeCards from '@/src/features/marketing/ui/InvitationDecorativeCards';
 import { useEmailStartForm } from '@/src/features/auth/model/useEmailStartForm';
+import DevOtpPreviewPanel from '@/src/features/auth/ui/shared/DevOtpPreviewPanel';
 import { ArrowRightIcon, MailIcon } from '@/src/ui/icons/MarketingIcons';
 import styles from './DesktopEmailStartScreen.module.css';
 
 /**
  * Figma Make `DesktopEmailStartScreen` — MCP 소스 구조/카피 SSOT.
- * OTP request / next query는 useEmailStartForm 유지.
  */
 export default function DesktopEmailStartScreen() {
-  const { email, submitting, error, isValidEmail, setEmail, submit } = useEmailStartForm();
+  const {
+    email,
+    submitting,
+    error,
+    isValidEmail,
+    previewCode,
+    codeSent,
+    setEmail,
+    submit,
+  } = useEmailStartForm();
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -55,19 +64,22 @@ export default function DesktopEmailStartScreen() {
             autoComplete="email"
             inputMode="email"
             required
+            disabled={codeSent}
           />
           {error && <p className={styles.error}>{error}</p>}
 
           <button
             type="submit"
-            className={`${styles.submitButton} ${isValidEmail ? styles.submitButtonActive : ''}`}
-            disabled={submitting || !isValidEmail}
+            className={`${styles.submitButton} ${isValidEmail || codeSent ? styles.submitButtonActive : ''}`}
+            disabled={submitting || (!isValidEmail && !codeSent)}
             data-testid="email-start-submit"
           >
-            {submitting ? '전송 중...' : '인증번호 받기'}
+            {submitting ? '전송 중...' : codeSent ? '인증번호 확인하기' : '인증번호 받기'}
             <ArrowRightIcon size={18} />
           </button>
         </form>
+
+        {previewCode && <DevOtpPreviewPanel previewCode={previewCode} variant="start" />}
 
         <div className={styles.policyBox}>
           <p>

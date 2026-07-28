@@ -1,9 +1,9 @@
 /**
  * Mailer – 이메일 발송.
  *
- * - EMAIL_PROVIDER=mock (기본): 실발송 없이 로그 + (비 production) previewCode
+ * - EMAIL_PROVIDER=mock (기본): 실발송 없음
  * - EMAIL_PROVIDER=smtp + EMAIL_ENABLED=true + SMTP_* : nodemailer 실발송
- * - production 에서는 previewCode 절대 노출하지 않는다
+ * - previewCode 노출은 canExposeEmailPreviewCode() SSOT (로그·health 미포함)
  */
 
 import nodemailer from 'nodemailer';
@@ -56,10 +56,23 @@ export function isEmailMockMode(): boolean {
   return process.env.NODE_ENV !== 'production';
 }
 
-/** UI previewCode 노출 허용 여부. production 에서는 절대 true 가 되면 안 된다. */
+/**
+ * 개발용 OTP previewCode 노출 SSOT.
+ * production / 실 SMTP / EMAIL_ENABLED=true 에서는 절대 true 가 되면 안 된다.
+ * Frontend NEXT_PUBLIC·hostname·query 로는 판단하지 않는다.
+ */
+export function canExposeEmailPreviewCode(): boolean {
+  return (
+    process.env.NODE_ENV !== 'production' &&
+    (process.env.EMAIL_PROVIDER || '').trim().toLowerCase() === 'mock' &&
+    process.env.EMAIL_ENABLED !== 'true' &&
+    process.env.ALLOW_EMAIL_PREVIEW_CODE === 'true'
+  );
+}
+
+/** @deprecated use canExposeEmailPreviewCode */
 export function shouldExposeEmailPreviewCode(): boolean {
-  if (process.env.NODE_ENV === 'production') return false;
-  return isEmailMockMode();
+  return canExposeEmailPreviewCode();
 }
 
 export function getEmailDiagnostics(): EmailDiagnostics {
@@ -131,7 +144,8 @@ export async function sendMagicLinkEmail({ to, link }: MagicLinkEmailParams): Pr
 
 /**
  * 6자리 이메일 인증번호 발송.
- * mock: console 출력 후 false (호출측 previewCode 가능).
+ * mock: 실발송 없이 false 반환 (호출측이 canExpose 시 previewCode 가능).
+ * 원문 인증번호는 서버 로그에 출력하지 않는다.
  * smtp: 실발송 성공 시 true.
  */
 export async function sendVerificationCodeEmail({
@@ -144,9 +158,9 @@ export async function sendVerificationCodeEmail({
   const body = `인증번호는 ${code} 입니다.\n${expiresMinutes}분 안에 입력해 주세요.`;
 
   if (isEmailMockMode()) {
-    console.info(`[mailer:mock] verification code for ${to}: ${code} (expires ${expiresMinutes}m)`);
-    console.info(`[mailer:mock] subject=${subject}`);
-    console.info(`[mailer:mock] body=\n${body}`);
+    console.info(
+      `[mailer:mock] verification code issued for ${to} (expires ${expiresMinutes}m, code redacted)`
+    );
     return false;
   }
 

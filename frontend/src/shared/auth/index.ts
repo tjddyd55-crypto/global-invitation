@@ -33,6 +33,7 @@ export {
   CONCEPT_CREATE_PATH,
   MY_INVITATIONS_PATH,
   getCreateInvitationEntryPath,
+  getLoginEntryPath,
   getMyInvitationsEntryPath,
   requireAuthenticatedNextPath,
 } from './authEntryPaths';

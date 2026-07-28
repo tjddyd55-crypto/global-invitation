@@ -24,7 +24,7 @@ import {
   transferGuestData,
 } from '../lib/auth';
 import { hashPassword, verifyPassword } from '../lib/password';
-import { sendMagicLinkEmail, sendVerificationCodeEmail, shouldExposeEmailPreviewCode } from '../lib/mailer';
+import { sendMagicLinkEmail, sendVerificationCodeEmail, canExposeEmailPreviewCode } from '../lib/mailer';
 
 const router = Router();
 const MIN_PASSWORD_LENGTH = 8;
@@ -500,9 +500,11 @@ router.post('/email/request-code', async (req, res) => {
       console.warn('Failed to send verification code email:', err);
     }
 
-    const exposePreview = shouldExposeEmailPreviewCode() && !delivered;
+    const exposePreview = canExposeEmailPreviewCode() && !delivered;
     return res.status(200).json({
       ok: true,
+      expiresInSeconds: getEmailCodeTtlMinutes() * 60,
+      resendAfterSeconds: getEmailCodeResendCooldownSeconds(),
       ...(exposePreview ? { previewCode: code } : {}),
     });
   } catch (error) {

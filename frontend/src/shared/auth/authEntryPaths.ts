@@ -4,6 +4,13 @@ export const CONCEPT_CREATE_PATH = '/create/concept';
 export const MY_INVITATIONS_PATH = '/my-invitations';
 
 /**
+ * 「로그인」 진입 경로 SSOT — 비로그인 전용.
+ */
+export function getLoginEntryPath(): string {
+  return `/auth/email?next=${encodeURIComponent(MY_INVITATIONS_PATH)}`;
+}
+
+/**
  * 「초대장 만들기」 진입 경로 SSOT.
  * loading 중에는 호출측에서 CTA를 disabled 처리하고, authenticated 전에 concept로 보내지 않는다.
  */

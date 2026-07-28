@@ -72,9 +72,11 @@ npm run dev
 
 ## Email OTP (개발)
 
-- `EMAIL_PROVIDER=mock` 또는 비 production: 실발송 없이 서버 로그에 인증번호 출력
-- 비 production + mock: 응답에 `previewCode` 포함 → UI 미리보기 가능
-- production: `previewCode` 절대 노출 금지
+- `EMAIL_PROVIDER=mock` + `EMAIL_ENABLED=false`: 실발송 없음
+- `ALLOW_EMAIL_PREVIEW_CODE=true` 이고 위 mock 조건일 때만 `POST /api/auth/email/request-code` 응답에 `previewCode` 포함
+- 차단 조건(하나라도 해당 시 미반환): `NODE_ENV=production`, `EMAIL_PROVIDER≠mock`, `EMAIL_ENABLED=true`, `ALLOW_EMAIL_PREVIEW_CODE≠true`
+- DB에는 해시만 저장. URL·로그·health 에 원문 코드를 넣지 않음
+- Railway development: `ALLOW_EMAIL_PREVIEW_CODE=true` / production: 설정하지 않음
 
 ## Railway 전환 시점
 

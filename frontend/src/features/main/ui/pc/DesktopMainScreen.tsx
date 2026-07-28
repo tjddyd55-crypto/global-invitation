@@ -160,10 +160,14 @@ export default function DesktopMainScreen() {
             return (
               <Link
                 key={card.key}
-                href={createHref}
+                href={ctaDisabled ? '#' : createHref}
                 className={styles.conceptCard}
                 style={{ ['--card-accent' as string]: card.color }}
                 data-testid={`main-concept-${card.key}`}
+                aria-disabled={ctaDisabled}
+                onClick={(event) => {
+                  if (ctaDisabled) event.preventDefault();
+                }}
               >
                 <span className={styles.conceptIcon} style={{ background: card.iconBg, color: card.color }}>
                   <Icon size={28} />

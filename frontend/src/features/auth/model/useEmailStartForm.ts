@@ -5,21 +5,25 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { requestEmailVerificationCode } from '@/src/shared/auth';
 import { resolveAuthNextPath } from './authNextPath';
 import { saveAuthEmail } from './authEmailStorage';
+import { saveDevOtpPreviewCode } from './devOtpPreviewStore';
 
 export interface UseEmailStartFormResult {
   email: string;
   submitting: boolean;
   error: string | null;
   isValidEmail: boolean;
+  previewCode: string | null;
+  codeSent: boolean;
   setEmail: (value: string) => void;
   submit: () => Promise<void>;
+  continueToVerify: () => void;
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Figma Make `EmailStartScreen` / `DesktopEmailStartScreen` 전용 모델.
- * 인증번호 발송에 성공하면 이메일을 세션에 저장하고 `/auth/verify` 로 이동한다.
+ * Figma Make Email Start 전용 모델.
+ * 발송 성공 시 development previewCode 가 있으면 화면에 표시한 뒤 Verify 로 이동한다.
  */
 export function useEmailStartForm(): UseEmailStartFormResult {
   const router = useRouter();
@@ -29,23 +33,49 @@ export function useEmailStartForm(): UseEmailStartFormResult {
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewCode, setPreviewCode] = useState<string | null>(null);
+  const [codeSent, setCodeSent] = useState(false);
 
   const isValidEmail = EMAIL_PATTERN.test(email.trim());
 
+  const continueToVerify = useCallback(() => {
+    router.push(`/auth/verify?next=${encodeURIComponent(nextPath)}`);
+  }, [nextPath, router]);
+
   const submit = useCallback(async () => {
     if (submitting || !isValidEmail) return;
+    if (codeSent) {
+      continueToVerify();
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      await requestEmailVerificationCode(email.trim());
+      const result = await requestEmailVerificationCode(email.trim());
       saveAuthEmail(email.trim());
-      router.push(`/auth/verify?next=${encodeURIComponent(nextPath)}`);
+      const nextPreview = result.previewCode?.trim() || null;
+      saveDevOtpPreviewCode(nextPreview);
+      setPreviewCode(nextPreview);
+      setCodeSent(true);
+      if (!nextPreview) {
+        continueToVerify();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '인증번호 발송에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
-  }, [email, isValidEmail, nextPath, router, submitting]);
+  }, [codeSent, continueToVerify, email, isValidEmail, submitting]);
 
-  return { email, submitting, error, isValidEmail, setEmail, submit };
+  return {
+    email,
+    submitting,
+    error,
+    isValidEmail,
+    previewCode,
+    codeSent,
+    setEmail,
+    submit,
+    continueToVerify,
+  };
 }

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/src/shared/hooks';
 import {
   getCreateInvitationEntryPath,
+  getLoginEntryPath,
   getMyInvitationsEntryPath,
 } from '@/src/shared/auth/authEntryPaths';
 import LogoutConfirmDialog from '@/src/features/auth/ui/shared/LogoutConfirmDialog';
@@ -52,7 +53,8 @@ export default function MainScreen() {
   const [loggingOut, setLoggingOut] = useState(false);
   const ctaDisabled = status === 'loading';
   const createHref = getCreateInvitationEntryPath(status === 'loading' ? 'unauthenticated' : status);
-  const myInvitationsHref = getMyInvitationsEntryPath(status === 'loading' ? 'unauthenticated' : status);
+  const myInvitationsHref = getMyInvitationsEntryPath('authenticated');
+  const loginHref = getLoginEntryPath();
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -74,26 +76,26 @@ export default function MainScreen() {
           <span>Invite</span>
         </div>
         <div className={styles.navActions}>
-          {status === 'authenticated' && (
-            <button
-              type="button"
-              className={styles.logoutLink}
-              onClick={() => setConfirmOpen(true)}
-              data-testid="mobile-logout-button"
-            >
-              로그아웃
-            </button>
+          {status === 'unauthenticated' && (
+            <Link href={loginHref} className={styles.loginLink} data-testid="mobile-login-button">
+              로그인
+            </Link>
           )}
-          <Link
-            href={ctaDisabled ? '#' : myInvitationsHref}
-            className={styles.myLink}
-            aria-disabled={ctaDisabled}
-            onClick={(event) => {
-              if (ctaDisabled) event.preventDefault();
-            }}
-          >
-            내 초대장
-          </Link>
+          {status === 'authenticated' && (
+            <>
+              <Link href={myInvitationsHref} className={styles.myLink} data-testid="mobile-my-invitations">
+                내 초대장
+              </Link>
+              <button
+                type="button"
+                className={styles.logoutLink}
+                onClick={() => setConfirmOpen(true)}
+                data-testid="mobile-logout-button"
+              >
+                로그아웃
+              </button>
+            </>
+          )}
         </div>
       </nav>
 

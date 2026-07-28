@@ -110,6 +110,24 @@
   color: var(--mk-text);
 }
 
+.loginLink {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mk-text);
+  text-decoration: none;
+}
+
+.loginLink:hover {
+  color: var(--mk-primary);
+}
+
+.actionsSkeleton {
+  width: 56px;
+  height: 16px;
+  border-radius: 8px;
+  background: rgba(107, 114, 128, 0.15);
+}
+
 .ctaDisabled {
   opacity: 0.55;
   pointer-events: none;
