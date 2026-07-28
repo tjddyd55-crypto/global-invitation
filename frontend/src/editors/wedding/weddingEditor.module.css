@@ -217,17 +217,33 @@
   top: 88px;
   align-self: start;
   width: 340px;
-  max-height: calc(100vh - 104px);
-  overflow-x: hidden;
-  overflow-y: auto;
+  /* Phone Preview 스크롤은 .previewScroll 내부. 컬럼 자체는 페이지 스크롤에 맡김. */
+  height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
-.shareCardPreviewSlot {
-  width: 100%;
-  max-width: 340px;
-  margin-top: 16px;
-  min-width: 0;
+/* 공유 설정 Step 전용 — 내부 scrollbar 금지, 콘텐츠 자동 높이 */
+.previewColumnShare {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+.shareCardPreviewPanel {
+  width: 340px;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
   box-sizing: border-box;
+}
+
+.shareCardPreviewPanel :global([data-testid='invitation-share-card-preview']) {
+  margin-top: 0;
+  max-width: 100%;
 }
 
 .previewFrameWrap {

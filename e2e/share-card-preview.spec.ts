@@ -113,7 +113,11 @@ test('desktop share step shows live card preview with /i URL', async ({ browser,
   await expect(page.getByTestId('og-title-input')).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId('desktop-share-card-preview-slot')).toBeVisible();
   await expect(page.getByTestId('invitation-share-card-preview')).toBeVisible();
-
+  await expect(page.getByTestId('editor-live-preview-viewport')).toHaveCount(0);
+  await expect(page.locator('[data-testid="desktop-editor-preview"]')).toHaveAttribute(
+    'data-preview-mode',
+    'share-card'
+  );
   const liveTitle = `라이브제목-${Date.now().toString().slice(-4)}`;
   const liveDesc = `라이브설명-${Date.now().toString().slice(-4)}`;
   await page.getByTestId('og-title-input').fill(liveTitle);

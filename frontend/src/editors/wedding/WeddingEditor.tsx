@@ -416,15 +416,18 @@ export default function WeddingEditor({
             </div>
           </main>
 
-          <aside className={styles.previewColumn} data-testid="desktop-editor-preview">
-            <LivePreviewPanel
-              title="실시간 미리보기"
-              data={previewData}
-              editingStepLabel={visibleSections[currentStep]?.title}
-              focusSectionId={activeSection}
-            />
+          <aside
+            className={`${styles.previewColumn} ${
+              activeSection === 'share' ? styles.previewColumnShare : ''
+            }`}
+            data-testid="desktop-editor-preview"
+            data-preview-mode={activeSection === 'share' ? 'share-card' : 'phone'}
+          >
             {activeSection === 'share' ? (
-              <div className={styles.shareCardPreviewSlot} data-testid="desktop-share-card-preview-slot">
+              <div
+                className={styles.shareCardPreviewPanel}
+                data-testid="desktop-share-card-preview-slot"
+              >
                 <InvitationShareCardPreview
                   title={sharePreviewModel.title}
                   description={sharePreviewModel.description}
@@ -433,8 +436,20 @@ export default function WeddingEditor({
                   displayUrl={sharePreviewModel.displayUrl}
                   hasPublicUrl={sharePreviewModel.hasPublicUrl}
                 />
+                <div className={styles.editingCard}>
+                  <p>
+                    현재 편집 중: <strong>공유 설정</strong>
+                  </p>
+                </div>
               </div>
-            ) : null}
+            ) : (
+              <LivePreviewPanel
+                title="실시간 미리보기"
+                data={previewData}
+                editingStepLabel={visibleSections[currentStep]?.title}
+                focusSectionId={activeSection}
+              />
+            )}
           </aside>
         </div>
       )}
