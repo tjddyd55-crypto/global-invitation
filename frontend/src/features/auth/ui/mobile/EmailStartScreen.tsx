@@ -4,6 +4,7 @@
 import type { FormEvent } from 'react';
 import Link from 'next/link';
 import AuthBrandHeader from '@/src/features/marketing/ui/AuthBrandHeader';
+import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import { useEmailStartForm } from '@/src/features/auth/model/useEmailStartForm';
 import DevOtpPreviewPanel from '@/src/features/auth/ui/shared/DevOtpPreviewPanel';
 import { ArrowRightIcon, ChevronLeftIcon, MailIcon } from '@/src/ui/icons/MarketingIcons';
@@ -92,6 +93,7 @@ export default function EmailStartScreen() {
             계정이면 로그인되고, 처음이면 자동으로 계정이 생성됩니다.
           </p>
         </div>
+        <SiteBusinessFooter />
       </div>
     </div>
   );

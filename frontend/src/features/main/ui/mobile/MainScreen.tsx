@@ -11,6 +11,7 @@ import {
   getMyInvitationsEntryPath,
 } from '@/src/shared/auth/authEntryPaths';
 import LogoutConfirmDialog from '@/src/features/auth/ui/shared/LogoutConfirmDialog';
+import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import { ArrowRightIcon, SparklesIcon } from '@/src/ui/icons/MarketingIcons';
 import { HeartIcon as HeartConcept, BookOpenIcon as BookConcept, CalendarDaysIcon as CalConcept } from '@/src/ui/icons/ConceptIcons';
 import styles from './MainScreen.module.css';
@@ -158,9 +159,7 @@ export default function MainScreen() {
         </div>
       </div>
 
-      <footer className={styles.footer}>
-        <p>© 2025 Invite · 개인정보처리방침 · 이용약관</p>
-      </footer>
+      <SiteBusinessFooter className={styles.footer} />
 
       <LogoutConfirmDialog
         open={confirmOpen}

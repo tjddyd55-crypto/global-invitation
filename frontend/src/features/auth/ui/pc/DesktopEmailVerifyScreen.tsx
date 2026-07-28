@@ -5,6 +5,7 @@ import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import AuthBrandHeader from '@/src/features/marketing/ui/AuthBrandHeader';
 import InvitationDecorativeCards from '@/src/features/marketing/ui/InvitationDecorativeCards';
+import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import { useEmailVerifyForm, formatRemaining } from '@/src/features/auth/model/useEmailVerifyForm';
 import OtpCodeInputGroup from '@/src/features/auth/ui/shared/OtpCodeInputGroup';
 import DevOtpPreviewPanel from '@/src/features/auth/ui/shared/DevOtpPreviewPanel';
@@ -112,6 +113,7 @@ export default function DesktopEmailVerifyScreen() {
       <Link href={editEmailHref} className={styles.backLink}>
         ← 이전 단계로
       </Link>
+      <SiteBusinessFooter />
     </div>
   );
 }

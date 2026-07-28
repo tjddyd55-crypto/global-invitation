@@ -357,10 +357,12 @@
 .footerInner {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 32px 40px;
+  padding: 28px 40px 32px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
+  text-align: center;
 }
 
 .footerBrand {
@@ -374,6 +376,10 @@
 
 .footerBrand svg {
   color: #4f46e5;
+}
+
+.footerBusiness {
+  padding: 0;
 }
 
 .footerCopy {

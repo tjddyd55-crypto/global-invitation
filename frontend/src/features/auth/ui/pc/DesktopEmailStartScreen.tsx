@@ -5,6 +5,7 @@ import type { FormEvent } from 'react';
 import Link from 'next/link';
 import AuthBrandHeader from '@/src/features/marketing/ui/AuthBrandHeader';
 import InvitationDecorativeCards from '@/src/features/marketing/ui/InvitationDecorativeCards';
+import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import { useEmailStartForm } from '@/src/features/auth/model/useEmailStartForm';
 import DevOtpPreviewPanel from '@/src/features/auth/ui/shared/DevOtpPreviewPanel';
 import { ArrowRightIcon, MailIcon } from '@/src/ui/icons/MarketingIcons';
@@ -92,6 +93,7 @@ export default function DesktopEmailStartScreen() {
       <Link href="/" className={styles.homeLink}>
         ← 홈으로 돌아가기
       </Link>
+      <SiteBusinessFooter />
     </div>
   );
 }

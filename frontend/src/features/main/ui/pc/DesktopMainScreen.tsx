@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/src/shared/hooks';
 import { getCreateInvitationEntryPath } from '@/src/shared/auth/authEntryPaths';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
+import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -199,7 +200,7 @@ export default function DesktopMainScreen() {
             <SparklesIcon size={16} />
             <span>Invite</span>
           </div>
-          <p className={styles.footerCopy}>© 2025 Invite · 개인정보처리방침 · 이용약관 · 고객센터</p>
+          <SiteBusinessFooter className={styles.footerBusiness} />
         </div>
       </footer>
     </div>

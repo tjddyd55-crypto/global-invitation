@@ -57,3 +57,26 @@
   color: inherit;
   text-decoration: none;
 }
+
+.footerBlock {
+  background: #fff;
+  border-top: 1px solid #e6e6e6;
+}
+
+.footerNav {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 16px 24px 0;
+  font-size: 0.9rem;
+}
+
+.footerNav a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.footerBusiness {
+  padding-top: 8px;
+}

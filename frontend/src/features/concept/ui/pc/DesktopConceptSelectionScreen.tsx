@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import RequireAuth from '@/src/features/auth/ui/shared/RequireAuth';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
+import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import {
   CONCEPT_OPTIONS,
   type ConceptType,
@@ -115,6 +116,7 @@ export default function DesktopConceptSelectionScreen() {
             </button>
           </div>
         </main>
+        <SiteBusinessFooter />
       </div>
     </RequireAuth>
   );

@@ -7,6 +7,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/src/shared/hooks';
 import LogoutConfirmDialog from '@/src/features/auth/ui/shared/LogoutConfirmDialog';
 import { appPath, resolveAppNavPrefix } from '@/src/shared/platform/appNavPrefix';
+import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
+import { shouldShowSiteBusinessFooter } from '@/src/components/layout/shouldShowSiteBusinessFooter';
 import styles from './PcShell.module.css';
 
 /**
@@ -21,6 +23,7 @@ export default function PcShell({ children }: { children: ReactNode }) {
   const [loggingOut, setLoggingOut] = useState(false);
   const prefix = resolveAppNavPrefix(pathname);
   const isEditor = pathname.includes('/editor');
+  const showBusinessFooter = shouldShowSiteBusinessFooter(pathname) && !isEditor;
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -81,7 +84,10 @@ export default function PcShell({ children }: { children: ReactNode }) {
           </button>
         )}
       </aside>
-      <main className={styles.main}>{children}</main>
+      <main className={styles.main}>
+        {children}
+        {showBusinessFooter ? <SiteBusinessFooter /> : null}
+      </main>
       <LogoutConfirmDialog
         open={confirmOpen}
         busy={loggingOut}

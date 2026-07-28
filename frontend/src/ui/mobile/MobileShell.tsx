@@ -7,6 +7,8 @@ import type { ReactNode } from 'react';
 import { appPath, resolveAppNavPrefix } from '@/src/shared/platform/appNavPrefix';
 import { shouldShowMobileBottomNavigation } from '@/src/shared/platform/mobileBottomNavigation';
 import { useServiceWorker } from '@/src/shared/platform/useServiceWorker';
+import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
+import { shouldShowSiteBusinessFooter } from '@/src/components/layout/shouldShowSiteBusinessFooter';
 import styles from './MobileShell.module.css';
 
 /**
@@ -32,6 +34,7 @@ export default function MobileShell({ children }: { children: ReactNode }) {
     pathname === '/pc/create' ||
     pathname.startsWith('/pc/create/');
   const chrome = isEditorChrome ? 'editor' : isConceptChrome ? 'concept' : 'default';
+  const showBusinessFooter = shouldShowSiteBusinessFooter(pathname) && !isEditorChrome;
 
   const navItems = [
     { href: appPath(prefix, '/'), label: '홈', icon: '🏠' },
@@ -46,7 +49,10 @@ export default function MobileShell({ children }: { children: ReactNode }) {
       data-bottom-nav={showBottomNav ? 'visible' : 'hidden'}
       data-chrome={chrome}
     >
-      <main className={styles.content}>{children}</main>
+      <main className={styles.content}>
+        {children}
+        {showBusinessFooter ? <SiteBusinessFooter /> : null}
+      </main>
       {showBottomNav ? (
         <nav className={styles.bottomNav} aria-label="primary" data-testid="mobile-bottom-nav">
           {navItems.map((item) => {

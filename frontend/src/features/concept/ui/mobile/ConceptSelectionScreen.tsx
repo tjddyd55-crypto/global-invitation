@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import RequireAuth from '@/src/features/auth/ui/shared/RequireAuth';
 import AuthBrandHeader from '@/src/features/marketing/ui/AuthBrandHeader';
+import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import {
   CONCEPT_OPTIONS,
   type ConceptType,
@@ -100,6 +101,7 @@ export default function ConceptSelectionScreen() {
             <ArrowRightIcon size={18} />
           </button>
         </div>
+        <SiteBusinessFooter />
       </section>
     </RequireAuth>
   );
