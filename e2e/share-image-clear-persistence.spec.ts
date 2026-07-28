@@ -5,7 +5,6 @@ import { test, expect, type Page } from '@playwright/test';
 
 const FE = process.env.PLAYWRIGHT_BASE_URL || 'https://frontend-development-1b8a.up.railway.app';
 const API = process.env.E2E_API_BASE_URL || 'https://backend-development-c9a4.up.railway.app';
-const CDN = 'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg';
 
 test.setTimeout(240_000);
 
@@ -40,57 +39,20 @@ test('clear OG image persists and editor Kakao action is removed', async ({ brow
   const email = `og-clear-${Date.now()}@example.com`;
   await loginInBrowser(page, email);
 
-  const created = await page.evaluate(
-    async ({ api, cdn }) => {
-      const createRes = await fetch(`${api}/api/invitations`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conceptType: 'WEDDING',
-          language: 'ko',
-          templateKey: 'invitation_full',
-        }),
-      });
-      const createdBody = await createRes.json();
-      if (!createRes.ok) return { ok: false as const, status: createRes.status };
-      const id = createdBody.id as string;
-      const detailRes = await fetch(`${api}/api/invitations/${id}`, { credentials: 'include' });
-      const detail = await detailRes.json();
-      const data = detail.dataJson || detail.data || {};
-      const patchRes = await fetch(`${api}/api/invitations/${id}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: 'OG Clear Test',
-          data_json: {
-            ...data,
-            templateType: 'FULL',
-            conceptType: 'WEDDING',
-            title: 'OG Clear Test',
-            heroImage: cdn,
-            openGraph: {
-              title: 'OG Clear Test',
-              description: 'desc',
-              imageMode: 'CUSTOM',
-              imageUrl: cdn,
-              imageRemoved: false,
-            },
-            share: {
-              ogTitle: 'OG Clear Test',
-              ogDescription: 'desc',
-              ogImage: cdn,
-              ogImageMode: 'CUSTOM',
-              ogImageRemoved: false,
-            },
-          },
-        }),
-      });
-      return { ok: patchRes.ok, id, status: patchRes.status };
-    },
-    { api: API, cdn: CDN }
-  );
+  const created = await page.evaluate(async ({ api }) => {
+    const createRes = await fetch(`${api}/api/invitations`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conceptType: 'WEDDING',
+        language: 'ko',
+        templateKey: 'invitation_full',
+      }),
+    });
+    const body = await createRes.json();
+    return { ok: createRes.ok, id: body.id as string, status: createRes.status };
+  }, { api: API });
   expect(created.ok).toBeTruthy();
 
   await page.goto(`/editor/${created.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
@@ -102,9 +64,22 @@ test('clear OG image persists and editor Kakao action is removed', async ({ brow
   await expect(page.getByRole('button', { name: '저장 후 카카오톡 공유' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '완료하고 공개하기' })).toBeVisible();
 
-  await expect(page.getByTestId('share-card-preview-image').locator('img')).toBeVisible();
+  // Explicit hero selection shows image
+  const heroPatch = page.waitForResponse(
+    (res) =>
+      res.url().includes(`/api/invitations/${created.id}`) &&
+      res.request().method() === 'PATCH' &&
+      res.ok(),
+    { timeout: 60_000 }
+  );
+  await page.getByTestId('og-use-hero').click();
+  await heroPatch;
+  await expect(page.getByTestId('share-card-preview-image').locator('img')).toBeVisible({
+    timeout: 20_000,
+  });
 
-  const patchPromise = page.waitForResponse(
+  // Clear → NONE + placeholder + persist
+  const clearPatch = page.waitForResponse(
     (res) =>
       res.url().includes(`/api/invitations/${created.id}`) &&
       res.request().method() === 'PATCH' &&
@@ -112,11 +87,13 @@ test('clear OG image persists and editor Kakao action is removed', async ({ brow
     { timeout: 60_000 }
   );
   await page.getByTestId('og-clear-image').click();
-  const patchRes = await patchPromise;
+  const patchRes = await clearPatch;
   const patchBody = await patchRes.json();
   const dataJson = patchBody.dataJson || patchBody.data || {};
   expect(dataJson.openGraph?.imageMode || dataJson.share?.ogImageMode).toBe('NONE');
   expect(dataJson.openGraph?.imageRemoved === true || dataJson.share?.ogImageRemoved === true).toBeTruthy();
+  expect(String(dataJson.openGraph?.imageUrl || '')).toBe('');
+  expect(String(dataJson.share?.ogImage || '')).toBe('');
 
   await expect(page.getByTestId('share-card-preview-image-placeholder')).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId('share-card-preview-image').locator('img')).toHaveCount(0);
@@ -133,7 +110,6 @@ test('clear OG image persists and editor Kakao action is removed', async ({ brow
   await page.getByTestId('og-clear-image').click();
   await expect(page.getByTestId('share-card-preview-image-placeholder')).toBeVisible({ timeout: 20_000 });
 
-  // Publish complete / public Kakao buttons still exist after publish
   await page.getByRole('button', { name: '완료하고 공개하기' }).click();
   await page.waitForURL(/\/my-invitations\/.+\/complete/, { timeout: 90_000 }).catch(() => null);
   if (page.url().includes('/complete')) {
