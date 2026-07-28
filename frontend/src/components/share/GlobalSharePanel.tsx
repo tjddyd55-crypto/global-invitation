@@ -2,12 +2,14 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useMemo, useState } from 'react';
+import { shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
 import styles from './GlobalSharePanel.module.css';
 
 export type GlobalSharePanelProps = {
   shareUrl: string;
   title?: string;
   text?: string;
+  imageUrl?: string;
   variant?: 'card' | 'sheet';
   onCopied?: () => void;
 };
@@ -16,7 +18,7 @@ type ShareTarget = {
   id: string;
   label: string;
   href?: string;
-  action?: 'copy' | 'native';
+  action?: 'copy' | 'native' | 'kakao';
 };
 
 function resolveFacebookAppId(): string {
@@ -32,6 +34,7 @@ export default function GlobalSharePanel({
   shareUrl,
   title = '초대장',
   text = '초대장을 확인해 주세요.',
+  imageUrl,
   variant = 'card',
   onCopied,
 }: GlobalSharePanelProps) {
@@ -88,8 +91,8 @@ export default function GlobalSharePanel({
       },
       {
         id: 'kakao',
-        label: 'KakaoTalk',
-        href: `https://story.kakao.com/share?url=${encodedUrl}`,
+        label: '카카오톡',
+        action: 'kakao',
       },
     );
 
@@ -118,6 +121,19 @@ export default function GlobalSharePanel({
     await handleCopy();
   };
 
+  const handleKakao = async () => {
+    const result = await shareViaKakaoTalk({
+      title,
+      description: text,
+      imageUrl,
+      canonicalUrl: shareUrl,
+    });
+    if (result === 'copy') {
+      setNotice('카카오톡 공유를 열지 못해 초대장 링크를 복사했습니다.');
+      onCopied?.();
+    }
+  };
+
   return (
     <section className={variant === 'sheet' ? styles.sheet : styles.card}>
       <h2 className={styles.heading}>공유하기</h2>
@@ -143,6 +159,19 @@ export default function GlobalSharePanel({
           if (target.action === 'native') {
             return (
               <button key={target.id} type="button" className={styles.item} onClick={() => void handleNative()}>
+                {target.label}
+              </button>
+            );
+          }
+          if (target.action === 'kakao') {
+            return (
+              <button
+                key={target.id}
+                type="button"
+                className={styles.item}
+                data-testid="share-kakao-talk"
+                onClick={() => void handleKakao()}
+              >
                 {target.label}
               </button>
             );

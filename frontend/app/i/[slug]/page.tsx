@@ -39,9 +39,7 @@ export default function PublicShareInvitationPage() {
   const [error, setError] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [templateDefinition, setTemplateDefinition] = useState<TemplateDefinition | null>(null);
-  const [shared, setShared] = useState(false);
   const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
-  const [isSharing, setIsSharing] = useState(false);
   const analyticsTrackedSlugRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -101,56 +99,12 @@ export default function PublicShareInvitationPage() {
 
   const effectiveShareSlug = invitation?.shareSlug?.trim() || shareSlugParam;
 
-  const markShared = () => {
-    setShared(true);
-    setTimeout(() => setShared(false), 2000);
-  };
-
   useEffect(() => {
     if (!invitation?.slug || loading) return;
     if (analyticsTrackedSlugRef.current === invitation.slug) return;
     analyticsTrackedSlugRef.current = invitation.slug;
     trackInvitationView(invitation.slug);
   }, [invitation?.slug, loading]);
-
-  const handleKakaoShare = () => {
-    if (typeof window === 'undefined' || !invitation) return;
-    const absolute = buildAbsolutePublicInvitationUrl(window.location.origin, effectiveShareSlug);
-    /** 스토리 공유는 요청 URL의 OG/Twitter 메타·동적 OG 이미지(`/i/.../opengraph-image`)를 스크랩한다. */
-    window.open(`https://story.kakao.com/share?url=${encodeURIComponent(absolute)}`, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleShare = async () => {
-    if (isSharing || !invitation) return;
-    if (typeof window === 'undefined') return;
-
-    setShareFallbackUrl(null);
-    setIsSharing(true);
-    try {
-      const pres = extractSharePresentationFromInvitation(invitation);
-      const url = buildAbsolutePublicInvitationUrl(window.location.origin, effectiveShareSlug);
-      const shareText = `${pres.metaTitle}\n${pres.metaDescription}`;
-
-      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-        await navigator.share({
-          title: pres.metaTitle,
-          text: pres.metaDescription,
-          url,
-        });
-        markShared();
-        return;
-      }
-
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(`${shareText}\n${url}`);
-        markShared();
-      } else {
-        setShareFallbackUrl(url);
-      }
-    } finally {
-      setIsSharing(false);
-    }
-  };
 
   const runtimeData = useMemo(() => invitation?.dataJson ?? invitation?.data ?? null, [invitation]);
   const playableMusic = useMemo(
@@ -205,7 +159,10 @@ export default function PublicShareInvitationPage() {
     typeof window !== 'undefined'
       ? buildAbsolutePublicInvitationUrl(window.location.origin, effectiveShareSlug)
       : buildPublicInvitationUrlPath(effectiveShareSlug);
-  const sharePresentation = extractSharePresentationFromInvitation(invitation);
+  const sharePresentation = extractSharePresentationFromInvitation(invitation, {
+    canonicalUrl: sharePageUrl.startsWith('http') ? sharePageUrl : undefined,
+    siteOrigin: typeof window !== 'undefined' ? window.location.origin : undefined,
+  });
   const baseSlug = invitation.slug;
   return (
     <div className={publicInvitationMobile.pageRoot} data-testid="public-route-root">
@@ -249,6 +206,7 @@ export default function PublicShareInvitationPage() {
                 shareUrl={sharePageUrl}
                 title={sharePresentation.metaTitle}
                 text={sharePresentation.metaDescription}
+                imageUrl={sharePresentation.imageUrl}
               />
             </section>
           </div>
@@ -259,6 +217,7 @@ export default function PublicShareInvitationPage() {
             shareUrl={sharePageUrl}
             title={sharePresentation.metaTitle}
             text={sharePresentation.metaDescription}
+            imageUrl={sharePresentation.imageUrl}
           />
           {showRsvp ? (
             <div className={publicInvitationMobile.asideHint}>

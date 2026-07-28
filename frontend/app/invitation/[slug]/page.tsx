@@ -9,6 +9,8 @@ import { logEvent } from '@/src/lib/events';
 import { getShareContent, type ShareTemplateType } from '@/src/lib/share';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import { buildPublicInvitationUrlPath } from '@/src/lib/publicInvitation';
+import { extractSharePresentationFromInvitation } from '@/src/lib/invitationShareMeta';
+import { shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
 import { resolveInvitationBySlug } from '@/src/lib/resolveInvitationData';
 import EditorBackButton from '@/app/_components/EditorBackButton';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
@@ -182,12 +184,23 @@ export default function InvitationPage() {
     }
   };
 
-  const handleKakaoShare = () => {
+  const handleKakaoShare = async () => {
     if (typeof window === 'undefined' || !slug) return;
     const publicShare = invitation?.shareSlug?.trim();
     const path = publicShare ? buildPublicInvitationUrlPath(publicShare) : `/invitation/${slug}`;
     const absolute = `${window.location.origin}${path}`;
-    window.open(`https://story.kakao.com/share?url=${encodeURIComponent(absolute)}`, '_blank', 'noopener,noreferrer');
+    const pres = invitation
+      ? extractSharePresentationFromInvitation(invitation, {
+          canonicalUrl: absolute,
+          siteOrigin: window.location.origin,
+        })
+      : null;
+    await shareViaKakaoTalk({
+      title: pres?.metaTitle || '초대장',
+      description: pres?.metaDescription || '초대장을 확인해 주세요.',
+      imageUrl: pres?.imageUrl,
+      canonicalUrl: absolute,
+    });
   };
 
   if (loading) {
@@ -289,10 +302,10 @@ export default function InvitationPage() {
           </button>
           <button
             type="button"
-            onClick={handleKakaoShare}
+            onClick={() => void handleKakaoShare()}
             className={`${publicInvitationMobile.shareButton} ${publicInvitationMobile.shareButtonSecondary}`}
           >
-            카카오 공유
+            카카오톡
           </button>
         </div>
       </section>

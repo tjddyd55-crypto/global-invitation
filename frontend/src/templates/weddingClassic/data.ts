@@ -56,6 +56,13 @@ export type WeddingClassicData = {
     ogDescription?: string;
     ogImage?: string;
   };
+  /** Canonical Open Graph block (synced with share on save) */
+  openGraph?: {
+    title?: string;
+    description?: string;
+    imageUrl?: string;
+    imageKey?: string;
+  };
   /** 선택형 배경 음악 — enabled=true 일 때만 공개 플레이어 표시 */
   music?: {
     enabled: boolean;

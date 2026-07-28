@@ -5,6 +5,7 @@ import {
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
 import { sanitizeGalleryItems } from '@/src/invitation/galleryAsset';
+import { buildOpenGraphSaveFields } from '@/src/invitation/openGraphSettings';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/models/invitation';
 import type { WeddingEditorState } from './weddingEditor.types';
@@ -93,6 +94,12 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     conceptConfig.accountsTitle ||
     defaultLabels.accountsTitle;
 
+  const ogFields = buildOpenGraphSaveFields({
+    title: state.share.ogTitle,
+    description: state.share.ogDescription,
+    imageUrl: (state.share.ogImage ?? '').trim() || undefined,
+  });
+
   const base = {
     templateType: 'FULL' as const,
     conceptType: state.setup.conceptType,
@@ -107,11 +114,8 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     rsvpEnabled: state.extras.rsvpEnabled,
     guestbookEnabled: state.extras.guestbookEnabled,
     commentsEnabled: state.extras.guestbookEnabled,
-    share: {
-      ogTitle: state.share.ogTitle.trim(),
-      ogDescription: state.share.ogDescription.trim(),
-      ogImage: (state.share.ogImage ?? '').trim(),
-    },
+    openGraph: ogFields.openGraph,
+    share: ogFields.share,
     music: {
       enabled: Boolean(state.extras.musicEnabled),
       musicKey: state.extras.musicEnabled ? state.extras.musicKey || undefined : undefined,

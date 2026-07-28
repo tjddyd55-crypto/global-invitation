@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
 import { extractSharePresentationFromPayload } from '@/src/lib/invitationShareMeta';
 import { fetchSharedInvitationCached } from '@/src/lib/server/fetchSharedInvitationCached';
-import { buildCanonicalUrl, getMetadataBase } from '@/src/lib/siteUrl';
+import { buildCanonicalUrl, getMetadataBase, getSiteBaseUrl } from '@/src/lib/siteUrl';
 import PublicInvitationLayout from '@/src/components/layout/PublicInvitationLayout';
+
+/** Invitation별 OG는 저장 직후 반영 — 장기 static cache 금지 */
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function resolveSafeSlug(value: unknown): string {
   if (typeof value === 'string') return value;
@@ -10,7 +14,7 @@ function resolveSafeSlug(value: unknown): string {
   return '';
 }
 
-function openGraphImageUrl(metadataBase: URL | undefined, slug: string): string {
+function openGraphImageRouteUrl(metadataBase: URL | undefined, slug: string): string {
   const path = `/i/${slug}/opengraph-image`;
   if (!metadataBase) return path;
   try {
@@ -28,6 +32,7 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
   const slug = resolveSafeSlug(params?.slug);
   const canonicalPath = buildCanonicalUrl(slug ? `/i/${slug}` : '/i');
   const metadataBase = getMetadataBase();
+  const siteOrigin = getSiteBaseUrl() || metadataBase?.origin || '';
 
   const fallbackTitle = '초대장';
   const fallbackDescription = '행사에 초대드립니다';
@@ -53,14 +58,18 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
     };
   }
 
-  const ogUrl = openGraphImageUrl(metadataBase, slug);
+  const dynamicOgRoute = openGraphImageRouteUrl(metadataBase, slug);
 
   try {
     const payload = await fetchSharedInvitationCached(slug);
     if (!payload) {
       throw new Error('NOT_FOUND');
     }
-    const pres = extractSharePresentationFromPayload(payload);
+    const pres = extractSharePresentationFromPayload(payload, {
+      canonicalUrl: canonicalPath,
+      siteOrigin,
+    });
+    const imageUrl = pres.imageUrl || dynamicOgRoute;
 
     return {
       metadataBase,
@@ -75,7 +84,7 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
         locale: 'ko_KR',
         images: [
           {
-            url: ogUrl,
+            url: imageUrl,
             width: 1200,
             height: 630,
             alt: pres.metaTitle,
@@ -86,7 +95,7 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
         card: 'summary_large_image',
         title: pres.metaTitle,
         description: pres.metaDescription,
-        images: [ogUrl],
+        images: [imageUrl],
       },
     };
   } catch {
@@ -103,7 +112,7 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
         locale: 'ko_KR',
         images: [
           {
-            url: ogUrl,
+            url: dynamicOgRoute,
             width: 1200,
             height: 630,
             alt: fallbackTitle,
@@ -114,7 +123,7 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
         card: 'summary_large_image',
         title: fallbackTitle,
         description: fallbackDescription,
-        images: [ogUrl],
+        images: [dynamicOgRoute],
       },
     };
   }

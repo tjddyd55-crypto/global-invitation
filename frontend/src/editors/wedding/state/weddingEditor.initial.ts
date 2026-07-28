@@ -418,9 +418,44 @@ export function createWeddingEditorStateFromDraft(
     },
     share: {
       ...base.share,
-      ogImage: runtimeData.heroImage || base.share.ogImage,
+      ogTitle:
+        pickShareString(runtimeData, 'ogTitle') ||
+        base.share.ogTitle,
+      ogDescription:
+        pickShareString(runtimeData, 'ogDescription') ||
+        base.share.ogDescription,
+      ogImage:
+        pickShareString(runtimeData, 'ogImage') ||
+        pickOpenGraphImage(runtimeData) ||
+        base.share.ogImage,
     },
   };
+}
+
+function pickShareString(
+  runtimeData: WeddingInvitationData,
+  key: 'ogTitle' | 'ogDescription' | 'ogImage'
+): string {
+  const share = (runtimeData as { share?: Record<string, unknown> }).share;
+  const openGraph = (runtimeData as { openGraph?: Record<string, unknown> }).openGraph;
+  if (key === 'ogTitle') {
+    const fromOg = typeof openGraph?.title === 'string' ? openGraph.title.trim() : '';
+    const fromShare = typeof share?.ogTitle === 'string' ? share.ogTitle.trim() : '';
+    return fromOg || fromShare;
+  }
+  if (key === 'ogDescription') {
+    const fromOg = typeof openGraph?.description === 'string' ? openGraph.description.trim() : '';
+    const fromShare = typeof share?.ogDescription === 'string' ? share.ogDescription.trim() : '';
+    return fromOg || fromShare;
+  }
+  const fromOg = typeof openGraph?.imageUrl === 'string' ? openGraph.imageUrl.trim() : '';
+  const fromShare = typeof share?.ogImage === 'string' ? share.ogImage.trim() : '';
+  return fromOg || fromShare;
+}
+
+function pickOpenGraphImage(runtimeData: WeddingInvitationData): string {
+  const openGraph = (runtimeData as { openGraph?: { imageUrl?: unknown } }).openGraph;
+  return typeof openGraph?.imageUrl === 'string' ? openGraph.imageUrl.trim() : '';
 }
 
 export const WEDDING_EDITOR_ASSETS = {

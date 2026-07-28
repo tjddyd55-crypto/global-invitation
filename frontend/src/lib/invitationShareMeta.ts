@@ -1,4 +1,5 @@
 import type { Invitation } from '@/src/models/invitation';
+import { getInvitationOpenGraphSettings } from '@/src/invitation/openGraphSettings';
 
 export type InvitationConceptKind = 'WEDDING' | 'FUNERAL' | 'GENERAL';
 
@@ -11,6 +12,8 @@ export type SharePresentation = {
   /** 부제 (날짜·장소·부고 한 줄 등) */
   detailLines: string[];
   heroImageRaw: string | null;
+  /** Absolute CDN/public image preferred for scrapers */
+  imageUrl?: string;
   /** 이미지 하단 작은 문구 (컨셉 톤) */
   toneTagline: string;
 };
@@ -23,7 +26,7 @@ export const OG_IMAGE_FONT_STACK =
 export const OG_TITLE_MAX_CHARS_PER_LINE = 42;
 export const OG_TITLE_MAX_LINES = 2;
 /** 카카오 등 스크랩 설명 길이 상한 */
-export const META_DESCRIPTION_MAX = 60;
+export const META_DESCRIPTION_MAX = 160;
 
 const TONE = {
   WEDDING: '소중한 날에 함께해 주세요',
@@ -77,13 +80,6 @@ function formatWhen(iso: string): string | null {
   }
 }
 
-function clampMetaDescription(text: string, max = META_DESCRIPTION_MAX): string {
-  const t = text.trim();
-  if (t.length <= max) return t;
-  if (max <= 1) return '…';
-  return `${t.slice(0, max - 1)}…`;
-}
-
 /**
  * 공백/구두점에서 우선 줄바꿈 — 없으면 글자 수로 자름(한글 단어 중간 분리 최소화).
  */
@@ -134,34 +130,32 @@ function pushDetailLine(out: string[], line: string) {
 
 /**
  * 공유 API/Invitation JSON에서 메타·OG·스크랩용 문구를 일관되게 계산한다.
+ * 제목/설명/이미지는 openGraphSettings SSOT를 사용한다.
  */
-export function extractSharePresentationFromPayload(invitationLike: unknown): SharePresentation {
+export function extractSharePresentationFromPayload(
+  invitationLike: unknown,
+  options?: { canonicalUrl?: string; siteOrigin?: string }
+): SharePresentation {
   const inv = asRecord(invitationLike);
   const data = asRecord(inv.dataJson ?? inv.data ?? {});
-
   const concept = pickConcept(data, inv);
 
-  let metaTitle = pickString(inv.title, data.title, data.heroTitle, data.coupleNames);
-  if (!metaTitle) {
-    if (concept === 'FUNERAL') {
-      const deceased = pickString(data.deceasedName);
-      metaTitle = deceased ? `${deceased}님 부고` : DEFAULT_TITLE.FUNERAL;
-    } else {
-      metaTitle = DEFAULT_TITLE[concept];
-    }
-  }
+  const og = getInvitationOpenGraphSettings(invitationLike as never, options?.canonicalUrl || '', {
+    siteOrigin: options?.siteOrigin,
+  });
 
-  const rawDescription = TONE[concept];
-  const metaDescription = clampMetaDescription(rawDescription);
-  const toneTagline = rawDescription;
+  const metaTitle = og.title || DEFAULT_TITLE[concept];
+  const metaDescription = og.description || TONE[concept];
+  const toneTagline = metaDescription;
 
   const eventRaw = pickString(inv.eventDate, data.eventDate, data.funeralDate, data.weddingDateTime);
   const eventLine = eventRaw ? formatWhen(eventRaw) : null;
-
   const locationLine = pickString(inv.locationText, data.locationText, data.address, data.venueName);
 
   const shareRec = asRecord(data.share);
-  const heroImageRaw = pickString(data.heroImage, data.ogImage, shareRec.ogImage) || null;
+  const openGraphRec = asRecord(data.openGraph);
+  const heroImageRaw =
+    pickString(openGraphRec.imageUrl, shareRec.ogImage, data.ogImage, data.heroImage) || null;
 
   const titleLines = buildOgTitleLines(metaTitle);
   const detailLines: string[] = [];
@@ -185,12 +179,16 @@ export function extractSharePresentationFromPayload(invitationLike: unknown): Sh
     titleLines,
     detailLines,
     heroImageRaw,
+    imageUrl: og.imageUrl,
     toneTagline,
   };
 }
 
-export function extractSharePresentationFromInvitation(invitation: Invitation): SharePresentation {
-  return extractSharePresentationFromPayload(invitation);
+export function extractSharePresentationFromInvitation(
+  invitation: Invitation,
+  options?: { canonicalUrl?: string; siteOrigin?: string }
+): SharePresentation {
+  return extractSharePresentationFromPayload(invitation, options);
 }
 
 export function resolveHeroImageAbsolute(heroRaw: string | null, siteOrigin: string): string | null {

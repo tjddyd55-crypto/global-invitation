@@ -8,12 +8,14 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useState } from 'react';
+import { shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
 import styles from './InvitationShareBlock.module.css';
 
 export type InvitationShareBlockProps = {
   shareUrl: string;
   title?: string;
   text?: string;
+  imageUrl?: string;
 };
 
 const SHARE_APPS = [
@@ -23,7 +25,7 @@ const SHARE_APPS = [
   { id: 'telegram', label: 'Telegram', initial: 'T', color: '#2AABEE', textColor: '#fff' },
   { id: 'email', label: 'Email', initial: 'E', color: '#6B7280', textColor: '#fff' },
   { id: 'sms', label: 'SMS', initial: 'S', color: '#374151', textColor: '#fff' },
-  { id: 'kakao', label: 'KakaoTalk', initial: 'K', color: '#FEE500', textColor: '#1F2937' },
+  { id: 'kakao', label: '카카오톡', initial: 'K', color: '#FEE500', textColor: '#1F2937' },
   { id: 'copy', label: '링크 복사', initial: '⎘', color: '#4F46E5', textColor: '#fff' },
 ] as const;
 
@@ -31,9 +33,11 @@ export default function InvitationShareBlock({
   shareUrl,
   title = '초대장',
   text = '초대장을 확인해 주세요.',
+  imageUrl,
 }: InvitationShareBlockProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const handleCopy = async () => {
     try {
@@ -65,6 +69,21 @@ export default function InvitationShareBlock({
       setSheetOpen(false);
       return;
     }
+    if (id === 'kakao') {
+      const result = await shareViaKakaoTalk({
+        title,
+        description: text,
+        imageUrl,
+        canonicalUrl: shareUrl,
+      });
+      if (result === 'copy') {
+        setNotice('카카오톡 공유를 열지 못해 초대장 링크를 복사했습니다.');
+      } else {
+        setNotice(null);
+      }
+      setSheetOpen(false);
+      return;
+    }
     const hrefById: Record<string, string> = {
       whatsapp: `https://wa.me/?text=${encodedText}`,
       messenger: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
@@ -72,7 +91,6 @@ export default function InvitationShareBlock({
       telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodeURIComponent(text)}`,
       email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodedText}`,
       sms: `sms:?&body=${encodedText}`,
-      kakao: `https://story.kakao.com/share?url=${encodedUrl}`,
     };
     const href = hrefById[id];
     if (href) window.open(href, '_blank', 'noopener,noreferrer');
@@ -95,6 +113,7 @@ export default function InvitationShareBlock({
           {linkCopied ? '복사됨!' : '링크 복사'}
         </button>
       </div>
+      {notice ? <p className={styles.hint}>{notice}</p> : null}
 
       {sheetOpen ? (
         <div
@@ -121,6 +140,7 @@ export default function InvitationShareBlock({
                   key={app.id}
                   type="button"
                   className={styles.appItem}
+                  data-testid={app.id === 'kakao' ? 'share-kakao-talk' : undefined}
                   onClick={() => void handleApp(app.id)}
                 >
                   <span
