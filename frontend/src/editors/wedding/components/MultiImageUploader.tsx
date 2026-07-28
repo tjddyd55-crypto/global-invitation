@@ -43,6 +43,11 @@ type UploadQueueItem = {
   error?: string;
 };
 
+type PreviewTarget = {
+  url: string;
+  name: string;
+};
+
 export default function MultiImageUploader({
   label,
   description,
@@ -57,6 +62,7 @@ export default function MultiImageUploader({
   const [error, setError] = useState<string | null>(null);
   const [cleanupWarning, setCleanupWarning] = useState<string | null>(null);
   const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
+  const [previewTarget, setPreviewTarget] = useState<PreviewTarget | null>(null);
 
   const visibleImages = useMemo(
     () =>
@@ -74,12 +80,26 @@ export default function MultiImageUploader({
     [images]
   );
 
+  const activeQueue = useMemo(
+    () => uploadQueue.filter((item) => item.status !== 'done'),
+    [uploadQueue]
+  );
+
   useEffect(() => {
     onUploadStateChange?.({
       isUploading: uploading,
       hasError: Boolean(error),
     });
   }, [error, onUploadStateChange, uploading]);
+
+  useEffect(() => {
+    if (!previewTarget) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPreviewTarget(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [previewTarget]);
 
   const updateQueueItem = (itemId: string, next: Partial<UploadQueueItem>) => {
     setUploadQueue((prev) =>
@@ -100,9 +120,8 @@ export default function MultiImageUploader({
       progress: 0,
       status: 'queued',
     }));
-    setUploadQueue((prev) => [...prev, ...queuedItems].slice(-30));
+    setUploadQueue((prev) => [...prev.filter((item) => item.status === 'error'), ...queuedItems].slice(-30));
 
-    // Drop demo/placeholder leftovers; keep confirmed user (and explicit shared) assets only.
     const nextImages = toEditorImages(
       sanitizeGalleryItems(
         images.map((image) => ({
@@ -157,6 +176,7 @@ export default function MultiImageUploader({
     }
     setError(firstError);
     setUploading(false);
+    setUploadQueue((prev) => prev.filter((item) => item.status === 'error'));
   };
 
   const handleAddFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -200,6 +220,10 @@ export default function MultiImageUploader({
     const [moved] = nextImages.splice(from, 1);
     nextImages.splice(to, 0, moved);
     onChange(nextImages);
+  };
+
+  const handleDismissQueueItem = (itemId: string) => {
+    setUploadQueue((prev) => prev.filter((item) => item.id !== itemId));
   };
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -252,9 +276,9 @@ export default function MultiImageUploader({
         <div className={styles.uploadDropHint}>파일을 이 영역에 드래그해 여러 장을 한 번에 업로드할 수 있습니다.</div>
         {error && <p className={styles.fieldDescription}>{error}</p>}
         {cleanupWarning && <p className={styles.fieldDescription}>{cleanupWarning}</p>}
-        {uploadQueue.length > 0 && (
-          <div className={styles.uploadQueue}>
-            {uploadQueue.map((item) => (
+        {activeQueue.length > 0 && (
+          <div className={styles.uploadQueue} data-testid="gallery-upload-queue">
+            {activeQueue.map((item) => (
               <div
                 key={item.id}
                 className={styles.uploadQueueItem}
@@ -262,23 +286,32 @@ export default function MultiImageUploader({
                 data-upload-status={item.status}
               >
                 <div className={styles.uploadQueueMeta}>
-                  <span>{item.fileName}</span>
+                  <span className={styles.editorGalleryFileName}>{item.fileName}</span>
                   <span>
-                    {item.status === 'error'
-                      ? '실패'
-                      : item.status === 'done'
-                        ? '완료'
-                        : `${item.progress}%`}
+                    {item.status === 'error' ? '실패' : `${item.progress}%`}
                   </span>
                 </div>
-                <div className={styles.uploadProgressTrack}>
-                  <div
-                    className={styles.uploadProgressBar}
-                    style={{ width: `${item.progress}%` }}
-                    data-testid="upload-progress-bar"
-                  />
-                </div>
+                {item.status !== 'error' ? (
+                  <div className={styles.uploadProgressTrack}>
+                    <div
+                      className={styles.uploadProgressBar}
+                      style={{ width: `${item.progress}%` }}
+                      data-testid="upload-progress-bar"
+                    />
+                  </div>
+                ) : null}
                 {item.error && <p className={styles.fieldDescription}>{item.error}</p>}
+                {item.status === 'error' ? (
+                  <div className={styles.editorGalleryItemActions}>
+                    <button
+                      type="button"
+                      className={styles.editorGalleryActionButton}
+                      onClick={() => handleDismissQueueItem(item.id)}
+                    >
+                      제거
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
@@ -289,45 +322,111 @@ export default function MultiImageUploader({
           </div>
         ) : (
           <ul
-            className={styles.galleryList}
+            className={styles.editorGalleryList}
             data-testid="gallery-editor-list"
             data-gallery-count={visibleImages.length}
           >
-            {visibleImages.map((image, index) => (
-              <li key={image.id} className={styles.galleryItem} data-testid="gallery-editor-item">
-                <AppImage src={image.url} alt={image.name || `gallery-${index + 1}`} />
-                <div className={styles.galleryControls}>
+            {visibleImages.map((image, index) => {
+              const fileName = image.name || `gallery-${index + 1}`;
+              return (
+                <li
+                  key={image.id}
+                  className={styles.editorGalleryItemCard}
+                  data-testid="gallery-editor-item"
+                >
                   <button
                     type="button"
-                    className={styles.buttonSubtle}
-                    onClick={() => handleMove(index, index - 1)}
-                    disabled={index === 0}
+                    className={styles.editorGalleryThumbnail}
+                    data-testid="gallery-editor-thumbnail"
+                    aria-label={`${fileName} 원본 보기`}
+                    onClick={() => setPreviewTarget({ url: image.url, name: fileName })}
                   >
-                    위로
+                    <AppImage
+                      src={image.url}
+                      alt={fileName}
+                      width={96}
+                      height={112}
+                      className={styles.editorGalleryThumbnailImg}
+                    />
                   </button>
-                  <button
-                    type="button"
-                    className={styles.buttonSubtle}
-                    onClick={() => handleMove(index, index + 1)}
-                    disabled={index === visibleImages.length - 1}
-                  >
-                    아래로
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.buttonDanger}
-                    onClick={() => void handleRemove(index)}
-                    disabled={uploading}
-                    data-testid="gallery-editor-delete"
-                  >
-                    삭제
-                  </button>
-                </div>
-              </li>
-            ))}
+                  <div className={styles.editorGalleryItemMeta}>
+                    <p className={styles.editorGalleryFileName} title={fileName}>
+                      {fileName}
+                    </p>
+                    <p className={styles.editorGalleryItemStatus}>
+                      <span className={styles.editorGalleryDoneBadge}>✓ 업로드 완료</span>
+                      <span aria-hidden>·</span>
+                      <span>{index + 1}번째 이미지</span>
+                    </p>
+                    <div className={styles.editorGalleryItemActions}>
+                      <button
+                        type="button"
+                        className={styles.editorGalleryActionButton}
+                        onClick={() => handleMove(index, index - 1)}
+                        disabled={index === 0}
+                        aria-label="위로 이동"
+                        data-testid="gallery-editor-move-up"
+                      >
+                        위로
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.editorGalleryActionButton}
+                        onClick={() => handleMove(index, index + 1)}
+                        disabled={index === visibleImages.length - 1}
+                        aria-label="아래로 이동"
+                        data-testid="gallery-editor-move-down"
+                      >
+                        아래로
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.editorGalleryDeleteButton}
+                        onClick={() => void handleRemove(index)}
+                        disabled={uploading}
+                        data-testid="gallery-editor-delete"
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
+
+      {previewTarget ? (
+        <div
+          className={styles.editorGalleryLightbox}
+          role="dialog"
+          aria-modal="true"
+          aria-label="갤러리 원본 보기"
+          data-testid="gallery-editor-lightbox"
+          onClick={() => setPreviewTarget(null)}
+        >
+          <div
+            className={styles.editorGalleryLightboxPanel}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.editorGalleryLightboxClose}
+              onClick={() => setPreviewTarget(null)}
+              aria-label="닫기"
+            >
+              닫기
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewTarget.url}
+              alt={previewTarget.name}
+              className={styles.editorGalleryLightboxImage}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

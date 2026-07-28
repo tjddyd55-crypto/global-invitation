@@ -849,26 +849,237 @@
   gap: 0.75rem;
 }
 
+/* Legacy selectors kept for any residual references — prefer editorGallery* */
 .galleryItem {
   display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 1rem;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 14px;
   align-items: center;
   background: #fff;
-  padding: 0.75rem;
-  border-radius: 10px;
+  padding: 12px;
+  border-radius: 14px;
   border: 1px solid #e6dfd5;
+  min-height: 132px;
+  max-height: 148px;
 }
 
 .galleryItem img {
+  display: block;
   width: 100%;
-  border-radius: 10px;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 12px;
 }
 
 .galleryControls {
   display: flex;
-  gap: 0.5rem;
+  gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* Editor gallery management list only — do not reuse on Preview/Public */
+.editorGalleryList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.editorGalleryItemCard {
+  width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  min-height: 132px;
+  max-height: 148px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #e6dfd5;
+  background: #fff;
+  overflow: hidden;
+}
+
+.editorGalleryThumbnail {
+  width: 96px;
+  height: 112px;
+  flex: 0 0 96px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f3f4f6;
+  cursor: zoom-in;
+  display: block;
+  position: relative;
+}
+
+.editorGalleryThumbnail > div {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.editorGalleryThumbnailImg {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  border-radius: 0;
+}
+
+.editorGalleryItemMeta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.editorGalleryFileName {
+  margin: 0;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3f3a34;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.editorGalleryItemStatus {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #766f65;
+}
+
+.editorGalleryDoneBadge {
+  color: #5f7a3c;
+  font-weight: 600;
+}
+
+.editorGalleryItemActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.editorGalleryActionButton,
+.editorGalleryDeleteButton {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.editorGalleryActionButton {
+  border: 1px solid #e0d8cc;
+  background: #f7f5f0;
+  color: #666;
+}
+
+.editorGalleryDeleteButton {
+  border: 1px solid #e2b9a8;
+  background: #fff;
+  color: #b64b2f;
+}
+
+.editorGalleryActionButton:disabled,
+.editorGalleryDeleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.editorGalleryLightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 17, 17, 0.62);
+  box-sizing: border-box;
+}
+
+.editorGalleryLightboxPanel {
+  position: relative;
+  max-width: 90vw;
+  max-height: 80vh;
+  padding: 12px;
+  border-radius: 14px;
+  background: #111;
+  box-sizing: border-box;
+}
+
+.editorGalleryLightboxClose {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.editorGalleryLightboxImage {
+  display: block;
+  max-width: min(90vw, 920px);
+  max-height: calc(80vh - 24px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+@media (max-width: 720px) {
+  .editorGalleryItemCard {
+    grid-template-columns: 84px minmax(0, 1fr);
+    gap: 12px;
+    min-height: 120px;
+    max-height: 144px;
+    padding: 10px 12px;
+  }
+
+  .editorGalleryThumbnail {
+    width: 84px;
+    height: 104px;
+    flex-basis: 84px;
+  }
+
+  .editorGalleryItemActions {
+    width: 100%;
+  }
+
+  .editorGalleryActionButton,
+  .editorGalleryDeleteButton {
+    height: 34px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
 }
 
 .accountEditor {
