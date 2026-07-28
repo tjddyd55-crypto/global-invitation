@@ -125,7 +125,7 @@ export async function GET(
     concept === 'GENERAL' && !heroAbs
       ? {
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'column' as const,
           background: 'rgba(255,255,255,0.94)',
           borderRadius: 28,
           padding: 48,
@@ -136,7 +136,7 @@ export async function GET(
       : concept === 'GENERAL' && heroAbs
         ? {
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'column' as const,
             background: 'rgba(255,255,255,0.92)',
             borderRadius: 28,
             padding: 48,
@@ -187,7 +187,7 @@ export async function GET(
             style={{
               position: 'relative',
               display: 'flex',
-              flexDirection: 'column',
+              flexDirection: 'column' as const,
               justifyContent: 'center',
               alignItems,
               width: 1200,
@@ -196,11 +196,11 @@ export async function GET(
               boxSizing: 'border-box',
             }}
           >
-            <div style={cardWrap ?? { display: 'flex', flexDirection: 'column', alignItems, maxWidth: 1040 }}>
+            <div style={cardWrap ?? { display: 'flex', flexDirection: 'column' as const, alignItems, maxWidth: 1040 }}>
               <div
                 style={{
                   display: 'flex',
-                  flexDirection: 'column',
+                  flexDirection: 'column' as const,
                   gap: 10,
                   alignItems,
                   textAlign,
@@ -239,7 +239,7 @@ export async function GET(
                 <div
                   style={{
                     display: 'flex',
-                    flexDirection: 'column',
+                    flexDirection: 'column' as const,
                     gap: 8,
                     marginTop: 20,
                     alignItems,
@@ -313,7 +313,7 @@ function FallbackOg({
         width: 1200,
         height: 630,
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'column' as const,
         justifyContent: 'center',
         alignItems: 'center',
         background: bg,
