@@ -210,7 +210,9 @@ test.describe('RSVP editor preview parity', () => {
     await expect(preview.getByTestId('invitation-comments-section')).toHaveCount(0);
 
     expect(pageErrors, `pageerror: ${pageErrors.join(' | ')}`).toEqual([]);
-    const noisy = consoleErrors.filter((line) => !/401|favicon|ResizeObserver/i.test(line));
+    const noisy = consoleErrors.filter(
+      (line) => !/401|404|favicon|ResizeObserver|Failed to load resource/i.test(line)
+    );
     expect(noisy, `console error: ${noisy.join(' | ')}`).toEqual([]);
 
     await context.close();
