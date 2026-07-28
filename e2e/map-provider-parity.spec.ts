@@ -28,6 +28,7 @@ async function loginInBrowser(page: Page, email: string) {
       sameSite: 'None',
     },
   ]);
+  await page.goto('/m', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 }
 
 test('editor shows Google/Naver provider switch and Naver fallback without client id', async ({
