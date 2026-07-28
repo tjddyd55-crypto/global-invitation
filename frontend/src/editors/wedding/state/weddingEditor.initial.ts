@@ -316,7 +316,9 @@ export function createWeddingEditorStateFromDraft(
     gallery: {
       images:
         runtimeData.galleryImages && runtimeData.galleryImages.length > 0
-          ? runtimeData.galleryImages.map((url, index) => ({ id: `gallery-${index + 1}`, url }))
+          ? runtimeData.galleryImages
+              .filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
+              .map((url, index) => ({ id: `gallery-${index + 1}`, url: url.trim() }))
           : base.gallery.images,
     },
     location: {

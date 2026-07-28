@@ -4,8 +4,9 @@ import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { isUuid } from '../lib/isUuid';
 import {
-  buildInvitationTempKey,
+  assertCanonicalInvitationUserAssetKey,
   assertNotPathTraversal,
+  buildInvitationTempKey,
   getInvitationAssetPublicUrl,
   isSharedInvitationAssetKey,
   parseInvitationUserAssetKey,
@@ -535,6 +536,9 @@ export async function createMediaPresign(
   assertNotPathTraversal(objectKey);
   if (isSharedInvitationAssetKey(objectKey)) {
     throw new Error('SHARED_ASSET_UPLOAD_DENIED');
+  }
+  if (INVITATION_SCOPES.has(scope)) {
+    assertCanonicalInvitationUserAssetKey(objectKey);
   }
 
   const presigned = await createPresignedUploadUrl({

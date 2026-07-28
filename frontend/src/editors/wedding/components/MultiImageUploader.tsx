@@ -120,11 +120,20 @@ export default function MultiImageUploader({
     const target = images[index];
     if (!target) return;
 
+    const url = (target.url || '').trim();
+    const objectKey = (target.objectKey || '').trim();
+
+    // Empty legacy/local-only items: remove from editor state without calling delete API.
+    if (!url && !objectKey) {
+      onChange(images.filter((_, idx) => idx !== index));
+      return;
+    }
+
     setUploading(true);
     setError(null);
 
     try {
-      await deleteMediaFile(target.url, target.objectKey);
+      await deleteMediaFile(url, objectKey || undefined);
 
       const nextImages = images.filter((_, idx) => idx !== index);
       onChange(nextImages);

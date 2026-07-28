@@ -1,10 +1,15 @@
 import crypto from 'crypto';
-import { buildInvitationAssetKey } from '../invitationAssetKeys';
+import {
+  buildInvitationAssetKey,
+  getInvitationRootPrefix,
+  isInvitationAssetEnvironment,
+  peelLegacyEnvironmentPrefix,
+} from '../invitationAssetKeys';
 
 /**
  * 단일 키 체계: 최종 엔티티 경로는 buildMediaObjectKey, 스테이징은 buildTempObjectKey.
  * invitation/{id}/… | template/{id}/… | temp/{session}/… 만 신규 생성한다.
- * User-scoped SSOT: invitation/users/{userId}/invitations/{invitationId}/…
+ * User-scoped SSOT: invitation/{environment}/users/{userId}/invitations/{invitationId}/…
  */
 
 export type MediaScope =
@@ -108,9 +113,9 @@ export function logR2Key(key: string): void {
 }
 
 /**
- * development 등 공유 버킷 격리용 prefix.
- * 예: R2_KEY_PREFIX=development → development/invitation/...
- * production 에서는 비워 둔다.
+ * 공유 버킷 격리용 전역 prefix (template/legacy common 등).
+ * Global Invitation 사용자 자산 키는 invitationAssetKeys SSOT를 쓰며 R2_KEY_PREFIX를 붙이지 않는다.
+ * 예: R2_KEY_PREFIX=development → development/template/...
  */
 export function getStorageKeyPrefix(): string {
   const raw = (process.env.R2_KEY_PREFIX || '').trim().replace(/^\/+|\/+$/g, '');
@@ -149,10 +154,21 @@ export function buildTempObjectKey(sessionId: string, contentType: string, filen
 }
 
 export function isTempStagingKey(objectKey: string): boolean {
-  const segments = stripStorageKeyPrefix(objectKey).split('/').filter(Boolean);
+  const relative = peelLegacyEnvironmentPrefix(stripStorageKeyPrefix(objectKey));
+  const segments = relative.split('/').filter(Boolean);
   if (segments[0] === 'temp' && segments.length >= 3) return true;
-  // invitation/temp/{userId}/{uploadId}/...
-  if (segments[0] === 'invitation' && segments[1] === 'temp' && segments.length >= 4) return true;
+  const root = getInvitationRootPrefix();
+  // invitation/temp/{userId}/{uploadId}/... (legacy)
+  if (segments[0] === root && segments[1] === 'temp' && segments.length >= 4) return true;
+  // invitation/{env}/temp/{userId}/{uploadId}/...
+  if (
+    segments[0] === root &&
+    isInvitationAssetEnvironment(segments[1]) &&
+    segments[2] === 'temp' &&
+    segments.length >= 5
+  ) {
+    return true;
+  }
   return false;
 }
 
@@ -304,28 +320,51 @@ export function parseInvitationOptimizedOriginalKey(objectKey: string): {
   return null;
 }
 
-function parseEntityInvitationKey(segments: string[]): ParsedMediaObjectKey | null {
-  if (segments[0] !== 'invitation' || segments.length < 3) return null;
+function parseUserScopedInvitationFolder(
+  userId: string,
+  invitationId: string,
+  folder: string,
+  subFolder?: string
+): ParsedMediaObjectKey | null {
+  if (folder === 'hero') return { scope: 'invitationHero', invitationId, userId };
+  if (folder === 'gallery') return { scope: 'invitationGallery', invitationId, userId };
+  if (folder === 'music') return { scope: 'invitationMusic', invitationId, userId };
+  if (folder === 'couple' && subFolder === 'groom') {
+    return { scope: 'invitationCoupleGroom', invitationId, userId };
+  }
+  if (folder === 'couple' && subFolder === 'bride') {
+    return { scope: 'invitationCoupleBride', invitationId, userId };
+  }
+  return null;
+}
 
-  // invitation/users/{userId}/invitations/{invitationId}/{folder}/...
-  if (segments[1] === 'users' && segments[3] === 'invitations' && segments[2] && segments[4]) {
-    const userId = segments[2];
-    const invitationId = segments[4];
-    const folder = segments[5] || '';
-    if (folder === 'hero') return { scope: 'invitationHero', invitationId, userId };
-    if (folder === 'gallery') return { scope: 'invitationGallery', invitationId, userId };
-    if (folder === 'music') return { scope: 'invitationMusic', invitationId, userId };
-    if (folder === 'couple' && segments[6] === 'groom') {
-      return { scope: 'invitationCoupleGroom', invitationId, userId };
-    }
-    if (folder === 'couple' && segments[6] === 'bride') {
-      return { scope: 'invitationCoupleBride', invitationId, userId };
-    }
-    return null;
+function parseEntityInvitationKey(rawSegments: string[]): ParsedMediaObjectKey | null {
+  const peeled = peelLegacyEnvironmentPrefix(rawSegments.join('/'));
+  const segments = peeled.split('/').filter(Boolean);
+  const root = getInvitationRootPrefix();
+  if (segments[0] !== root || segments.length < 3) return null;
+
+  // invitation/{env}/users/{userId}/invitations/{invitationId}/{folder}/...
+  if (
+    isInvitationAssetEnvironment(segments[1]) &&
+    segments[2] === 'users' &&
+    segments[4] === 'invitations' &&
+    segments[3] &&
+    segments[5]
+  ) {
+    return parseUserScopedInvitationFolder(segments[3], segments[5], segments[6] || '', segments[7]);
   }
 
-  // invitation/temp/...
+  // invitation/users/{userId}/invitations/{invitationId}/{folder}/... (legacy)
+  if (segments[1] === 'users' && segments[3] === 'invitations' && segments[2] && segments[4]) {
+    return parseUserScopedInvitationFolder(segments[2], segments[4], segments[5] || '', segments[6]);
+  }
+
+  // invitation/{env}/temp/... or invitation/temp/...
   if (segments[1] === 'temp') {
+    return { scope: 'common' };
+  }
+  if (isInvitationAssetEnvironment(segments[1]) && segments[2] === 'temp') {
     return { scope: 'common' };
   }
 
@@ -333,17 +372,24 @@ function parseEntityInvitationKey(segments: string[]): ParsedMediaObjectKey | nu
   if (segments[1] === 'shared') {
     return null;
   }
+  if (isInvitationAssetEnvironment(segments[1]) && segments[2] === 'shared') {
+    return null;
+  }
 
-  const invitationId = segments[1] || '';
-  const section = segments[2] || '';
-  if (!invitationId) return null;
+  // Skip environment segment for legacy invitation/{id}/hero paths when mis-nested
+  const invitationIdOffset = isInvitationAssetEnvironment(segments[1]) ? 2 : 1;
+  const invitationId = segments[invitationIdOffset] || '';
+  const section = segments[invitationIdOffset + 1] || '';
+  if (!invitationId || invitationId === 'users' || invitationId === 'temp' || invitationId === 'shared') {
+    return null;
+  }
   if (section === 'hero') return { scope: 'invitationHero', invitationId };
   if (section === 'gallery') return { scope: 'invitationGallery', invitationId };
   if (section === 'music') return { scope: 'invitationMusic', invitationId };
-  if (section === 'couple' && segments[3] === 'groom') {
+  if (section === 'couple' && segments[invitationIdOffset + 2] === 'groom') {
     return { scope: 'invitationCoupleGroom', invitationId };
   }
-  if (section === 'couple' && segments[3] === 'bride') {
+  if (section === 'couple' && segments[invitationIdOffset + 2] === 'bride') {
     return { scope: 'invitationCoupleBride', invitationId };
   }
   return null;
@@ -423,7 +469,9 @@ function parseLegacyInvitationKey(segments: string[]): ParsedMediaObjectKey | nu
 }
 
 export function parseMediaObjectKey(objectKey: string): ParsedMediaObjectKey | null {
-  const normalized = stripStorageKeyPrefix(objectKey);
+  // stripStorageKeyPrefix handles legacy `{R2_KEY_PREFIX}/...` for non-invitation keys.
+  // Invitation keys may be canonical (`invitation/{env}/...`) or legacy (`{env}/invitation/...`).
+  const normalized = peelLegacyEnvironmentPrefix(stripStorageKeyPrefix(objectKey));
   const segments = normalized.split('/').filter(Boolean);
 
   const tempCommon = parseTempKeyAsCommon(segments);

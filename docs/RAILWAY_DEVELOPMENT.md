@@ -123,8 +123,13 @@ production 변수·발송 설정 변경 금지.
 
 - 코드 키: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_ENDPOINT`, `R2_REGION`, `R2_PUBLIC_BASE_URL`
 - Frontend: `NEXT_PUBLIC_R2_PUBLIC_BASE_URL` (Backend public base와 일치)
-- **공유 버킷 사용 시** Backend에 `R2_KEY_PREFIX=development` 를 설정한다.  
-  객체 키는 `development/invitation/...` 형태로 기록된다.
+- **Global Invitation 자산 키** (Backend):
+  - `INVITATION_R2_ROOT_PREFIX=invitation`
+  - `INVITATION_ASSET_ENVIRONMENT=development` (production 활성화 시 `production`)
+  - 신규 사용자 업로드: `invitation/{environment}/users/...`
+  - shared: `invitation/shared/...` (environment 없음)
+  - legacy 읽기/삭제만: `development/invitation/users/...`
+- `R2_KEY_PREFIX` 는 Invitation 사용자 자산 builder에서 사용하지 않는다 (다른 서비스/legacy template 용).
 - 이상적으로는 development 전용 버킷을 분리한다.
 
 ---
