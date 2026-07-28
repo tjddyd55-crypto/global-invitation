@@ -4,6 +4,7 @@ import {
 } from '@/src/templates/weddingClassic/data';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
+import { sanitizeGalleryUrls } from '@/src/invitation/galleryAsset';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/models/invitation';
 import type { WeddingEditorState } from './weddingEditor.types';
@@ -58,9 +59,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
   const coupleNames = [state.groom.name.trim(), state.bride.name.trim()].filter(Boolean).join(' ♥ ');
   const content = state.invitationMessage.body;
   const heroImage = (state.hero.heroImage ?? '').trim();
-  const galleryImages = state.gallery.images
-    .map((image) => image.url)
-    .filter((url): url is string => typeof url === 'string' && url.trim().length > 0);
+  const galleryImages = sanitizeGalleryUrls(state.gallery.images.map((image) => image.url));
   const defaultLabels = getWeddingClassicDefaultLabels(state.setup.language);
   const conceptConfig = getConceptPresentationConfig(state.setup.conceptType);
   const mapImage = buildPreviewMapImage(state.location.mapLat, state.location.mapLng);

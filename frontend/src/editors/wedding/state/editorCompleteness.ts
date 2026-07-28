@@ -2,6 +2,7 @@ import {
   getInvitationAccountItems,
   isAccountItemComplete,
 } from '@/src/invitation/accountItems';
+import { sanitizeGalleryItems } from '@/src/invitation/galleryAsset';
 import type { WeddingEditorState } from './weddingEditor.types';
 import { resolveVisibleSections } from './editorSteps';
 
@@ -49,7 +50,17 @@ export function computeEditorCompleteness(state: WeddingEditorState): {
         break;
       case 'gallery':
         total += 1;
-        if (state.gallery.images.some((image) => isNonEmpty(image.url))) completed += 1;
+        if (
+          sanitizeGalleryItems(
+            state.gallery.images.map((image) => ({
+              url: image.url,
+              objectKey: image.objectKey,
+              mediaId: image.mediaId,
+            }))
+          ).length > 0
+        ) {
+          completed += 1;
+        }
         break;
       case 'location':
         total += 1;

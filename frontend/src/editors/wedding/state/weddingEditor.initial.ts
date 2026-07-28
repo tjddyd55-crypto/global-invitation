@@ -3,6 +3,7 @@ import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/lib/api';
 import { buildWeddingClassicHeroTitle } from '@/src/templates/weddingClassic/data';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
+import { sanitizeGalleryItems } from '@/src/invitation/galleryAsset';
 import type {
   WeddingEditorAccount,
   WeddingEditorImage,
@@ -15,7 +16,8 @@ const DEFAULT_HERO_IMAGE = '/images/wedding/classic/hero.jpg';
 const DEFAULT_GROOM_IMAGE = '/images/wedding/classic/groom.jpg';
 const DEFAULT_BRIDE_IMAGE = '/images/wedding/classic/bride.jpg';
 const DEFAULT_MAP_IMAGE = '/images/wedding/classic/map.jpg';
-const DEFAULT_GALLERY_IMAGES = Array.from({ length: 12 }, (_, index) => {
+/** Preview/demo fixture only — never stored in invitation dataJson */
+const PREVIEW_SAMPLE_GALLERY_IMAGES = Array.from({ length: 12 }, (_, index) => {
   const number = String(index + 1).padStart(2, '0');
   return `/images/wedding/classic/gallery_${number}.jpg`;
 });
@@ -109,10 +111,25 @@ function getDefaultQuoteByConcept(conceptType: EditorConceptType): string {
   return DEFAULT_INTRO_QUOTE;
 }
 
-function buildGalleryImages(): WeddingEditorImage[] {
-  return DEFAULT_GALLERY_IMAGES.map((url, index) => ({
-    id: `gallery-${index + 1}`,
-    url,
+function toEditorGalleryImages(
+  urls: Array<string | null | undefined>,
+  mediaByUrl?: Map<string, string>
+): WeddingEditorImage[] {
+  return sanitizeGalleryItems(
+    urls.map((url, index) => {
+      const trimmed = typeof url === 'string' ? url.trim() : '';
+      return {
+        id: `gallery-${index + 1}`,
+        url: trimmed,
+        objectKey: trimmed ? mediaByUrl?.get(trimmed) : undefined,
+      };
+    })
+  ).map((item) => ({
+    id: item.id,
+    url: item.url,
+    name: item.name,
+    mediaId: item.mediaId || item.objectKey,
+    objectKey: item.objectKey,
   }));
 }
 
@@ -218,7 +235,8 @@ export function createWeddingEditorState(
       parentsText: '이상금 · 형명숙 의 딸',
     },
     gallery: {
-      images: buildGalleryImages(),
+      // 신규 초대장: 샘플/placeholder를 data에 넣지 않음
+      images: [],
     },
     location: {
       address: '서울 구로구 경인로 610',
@@ -314,12 +332,23 @@ export function createWeddingEditorStateFromDraft(
       parentsText: runtimeData.bride?.parentsText || runtimeData.parentsInfo || base.bride.parentsText,
     },
     gallery: {
-      images:
-        runtimeData.galleryImages && runtimeData.galleryImages.length > 0
-          ? runtimeData.galleryImages
-              .filter((url): url is string => typeof url === 'string' && url.trim().length > 0)
-              .map((url, index) => ({ id: `gallery-${index + 1}`, url: url.trim() }))
-          : base.gallery.images,
+      images: (() => {
+        const mediaByUrl = new Map<string, string>();
+        const galleryMedia = (runtimeData as { galleryMedia?: unknown }).galleryMedia;
+        if (Array.isArray(galleryMedia)) {
+          galleryMedia.forEach((entry) => {
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return;
+            const record = entry as Record<string, unknown>;
+            const url = typeof record.url === 'string' ? record.url.trim() : '';
+            const key =
+              (typeof record.key === 'string' && record.key.trim()) ||
+              (typeof record.objectKey === 'string' && record.objectKey.trim()) ||
+              '';
+            if (url && key) mediaByUrl.set(url, key);
+          });
+        }
+        return toEditorGalleryImages(runtimeData.galleryImages || [], mediaByUrl);
+      })(),
     },
     location: {
       ...base.location,
@@ -399,5 +428,6 @@ export const WEDDING_EDITOR_ASSETS = {
   DEFAULT_GROOM_IMAGE,
   DEFAULT_BRIDE_IMAGE,
   DEFAULT_MAP_IMAGE,
-  DEFAULT_GALLERY_IMAGES,
+  /** Editor Preview empty UI / sample fixtures only — not invitation defaults */
+  PREVIEW_SAMPLE_GALLERY_IMAGES,
 };

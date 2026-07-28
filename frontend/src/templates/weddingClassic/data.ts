@@ -239,6 +239,11 @@ export function getSampleWeddingInvitation(): Invitation {
   };
 }
 
+function shouldUseDemoGalleryImages(invitation?: Invitation | null): boolean {
+  if (!invitation) return true;
+  return isWeddingClassicDemoSlug(invitation.slug) || isSampleWeddingSlug(invitation.slug);
+}
+
 export function buildWeddingClassicData(
   invitation?: Invitation | null,
   languageOverride?: Language
@@ -252,6 +257,7 @@ export function buildWeddingClassicData(
   const groomLabel = translate(language, I18N_KEYS.relationship.groom);
   const brideLabel = translate(language, I18N_KEYS.relationship.bride);
   const brideFatherLabel = translate(language, I18N_KEYS.relationship.brideFather);
+  const galleryImages = shouldUseDemoGalleryImages(invitation) ? GALLERY_IMAGES : [];
 
   return {
     templateType: 'FULL',
@@ -308,7 +314,7 @@ export function buildWeddingClassicData(
     parentsInfo: '유갑성 · 우재한 의 아들 / 이상금 · 형명숙 의 딸',
     weddingDate,
     calendarTitle: buildWeddingClassicCalendarTitle(weddingDate, language),
-    galleryImages: GALLERY_IMAGES,
+    galleryImages,
     address: '서울 구로구 경인로 610',
     mapImage: MAP_IMAGE,
     transportInfo: ['신도림역 1번 출구 앞'],

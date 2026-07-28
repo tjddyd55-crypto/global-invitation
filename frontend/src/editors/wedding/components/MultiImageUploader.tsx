@@ -1,7 +1,11 @@
 'use client';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import AppImage from '@/src/components/media/AppImage';
+import {
+  sanitizeGalleryItems,
+  shouldDeleteRemoteGalleryAsset,
+} from '@/src/invitation/galleryAsset';
 import { deleteMediaFile, uploadMediaImage } from '@/src/lib/mediaApi';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorImage } from '../state/weddingEditor.types';
@@ -17,6 +21,18 @@ type MultiImageUploaderProps = {
 
 function buildId() {
   return `image-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function toEditorImages(
+  items: ReturnType<typeof sanitizeGalleryItems>
+): WeddingEditorImage[] {
+  return items.map((item) => ({
+    id: item.id || buildId(),
+    url: item.url,
+    name: item.name,
+    mediaId: item.mediaId || item.objectKey,
+    objectKey: item.objectKey,
+  }));
 }
 
 type UploadQueueItem = {
@@ -39,7 +55,24 @@ export default function MultiImageUploader({
   const [uploading, setUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cleanupWarning, setCleanupWarning] = useState<string | null>(null);
   const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
+
+  const visibleImages = useMemo(
+    () =>
+      toEditorImages(
+        sanitizeGalleryItems(
+          images.map((image) => ({
+            id: image.id,
+            url: image.url,
+            objectKey: image.objectKey,
+            mediaId: image.mediaId,
+            name: image.name,
+          }))
+        )
+      ),
+    [images]
+  );
 
   useEffect(() => {
     onUploadStateChange?.({
@@ -59,6 +92,7 @@ export default function MultiImageUploader({
 
     setUploading(true);
     setError(null);
+    setCleanupWarning(null);
 
     const queuedItems: UploadQueueItem[] = files.map((file) => ({
       id: buildId(),
@@ -68,8 +102,20 @@ export default function MultiImageUploader({
     }));
     setUploadQueue((prev) => [...prev, ...queuedItems].slice(-30));
 
-    const nextImages = [...images];
+    // Drop demo/placeholder leftovers; keep confirmed user (and explicit shared) assets only.
+    const nextImages = toEditorImages(
+      sanitizeGalleryItems(
+        images.map((image) => ({
+          id: image.id,
+          url: image.url,
+          objectKey: image.objectKey,
+          mediaId: image.mediaId,
+          name: image.name,
+        }))
+      )
+    );
     let firstError: string | null = null;
+    let uploadedCount = 0;
 
     for (let index = 0; index < files.length; index += 1) {
       const file = files[index];
@@ -93,6 +139,7 @@ export default function MultiImageUploader({
           mediaId: uploaded.fileKey,
           objectKey: uploaded.objectKey,
         });
+        uploadedCount += 1;
         updateQueueItem(queueItem.id, { status: 'done', progress: 100 });
       } catch (uploadError) {
         const message = uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.';
@@ -105,7 +152,9 @@ export default function MultiImageUploader({
       }
     }
 
-    onChange(nextImages);
+    if (uploadedCount > 0 || nextImages.length !== images.length) {
+      onChange(nextImages);
+    }
     setError(firstError);
     setUploading(false);
   };
@@ -117,36 +166,37 @@ export default function MultiImageUploader({
   };
 
   const handleRemove = async (index: number) => {
-    const target = images[index];
+    const target = visibleImages[index];
     if (!target) return;
 
-    const url = (target.url || '').trim();
-    const objectKey = (target.objectKey || '').trim();
+    const nextImages = visibleImages.filter((_, idx) => idx !== index);
+    onChange(nextImages);
+    setCleanupWarning(null);
 
-    // Empty legacy/local-only items: remove from editor state without calling delete API.
-    if (!url && !objectKey) {
-      onChange(images.filter((_, idx) => idx !== index));
+    if (
+      !shouldDeleteRemoteGalleryAsset({
+        url: target.url,
+        objectKey: target.objectKey,
+        mediaId: target.mediaId,
+      })
+    ) {
       return;
     }
 
-    setUploading(true);
-    setError(null);
+    const objectKey = (target.objectKey || target.mediaId || '').trim();
+    const url = (target.url || '').trim();
+    if (!objectKey && !url) return;
 
     try {
       await deleteMediaFile(url, objectKey || undefined);
-
-      const nextImages = images.filter((_, idx) => idx !== index);
-      onChange(nextImages);
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : '이미지 삭제에 실패했습니다.');
-    } finally {
-      setUploading(false);
+    } catch {
+      setCleanupWarning('목록에서는 제거했습니다. 원격 파일 정리에 실패했을 수 있습니다.');
     }
   };
 
   const handleMove = (from: number, to: number) => {
-    if (to < 0 || to >= images.length) return;
-    const nextImages = [...images];
+    if (to < 0 || to >= visibleImages.length) return;
+    const nextImages = [...visibleImages];
     const [moved] = nextImages.splice(from, 1);
     nextImages.splice(to, 0, moved);
     onChange(nextImages);
@@ -201,6 +251,7 @@ export default function MultiImageUploader({
         </div>
         <div className={styles.uploadDropHint}>파일을 이 영역에 드래그해 여러 장을 한 번에 업로드할 수 있습니다.</div>
         {error && <p className={styles.fieldDescription}>{error}</p>}
+        {cleanupWarning && <p className={styles.fieldDescription}>{cleanupWarning}</p>}
         {uploadQueue.length > 0 && (
           <div className={styles.uploadQueue}>
             {uploadQueue.map((item) => (
@@ -232,12 +283,18 @@ export default function MultiImageUploader({
             ))}
           </div>
         )}
-        {images.length === 0 ? (
-          <div className={styles.uploaderPlaceholder}>아직 등록된 이미지가 없습니다.</div>
+        {visibleImages.length === 0 ? (
+          <div className={styles.uploaderPlaceholder} data-testid="gallery-editor-empty">
+            아직 등록된 이미지가 없습니다.
+          </div>
         ) : (
-          <ul className={styles.galleryList}>
-            {images.map((image, index) => (
-              <li key={image.id} className={styles.galleryItem}>
+          <ul
+            className={styles.galleryList}
+            data-testid="gallery-editor-list"
+            data-gallery-count={visibleImages.length}
+          >
+            {visibleImages.map((image, index) => (
+              <li key={image.id} className={styles.galleryItem} data-testid="gallery-editor-item">
                 <AppImage src={image.url} alt={image.name || `gallery-${index + 1}`} />
                 <div className={styles.galleryControls}>
                   <button
@@ -252,7 +309,7 @@ export default function MultiImageUploader({
                     type="button"
                     className={styles.buttonSubtle}
                     onClick={() => handleMove(index, index + 1)}
-                    disabled={index === images.length - 1}
+                    disabled={index === visibleImages.length - 1}
                   >
                     아래로
                   </button>
@@ -261,6 +318,7 @@ export default function MultiImageUploader({
                     className={styles.buttonDanger}
                     onClick={() => void handleRemove(index)}
                     disabled={uploading}
+                    data-testid="gallery-editor-delete"
                   >
                     삭제
                   </button>

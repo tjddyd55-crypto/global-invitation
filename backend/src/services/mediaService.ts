@@ -298,6 +298,13 @@ async function upsertInvitationMediaReference(params: {
     baseData.heroImage = params.publicUrl;
     baseData.heroImageKey = params.objectKey;
   } else {
+    const isDemoGalleryUrl = (url: string): boolean => {
+      const path = url.split('?')[0] || url;
+      return (
+        /^\/images\/(wedding|funeral|general)\/classic\/gallery(_\d+)?\.(jpe?g|png|webp)$/i.test(path) ||
+        (/\/images\//.test(path) && /\/gallery_\d+\.(jpe?g|png|webp)$/i.test(path))
+      );
+    };
     const prevGallery = Array.isArray(baseData.galleryImages) ? baseData.galleryImages : [];
     const normalizedGallery = prevGallery
       .map((item) => {
@@ -307,14 +314,18 @@ async function upsertInvitationMediaReference(params: {
         }
         return '';
       })
-      .filter(Boolean);
+      .filter((url): url is string => Boolean(url) && !isDemoGalleryUrl(url));
     const galleryMedia = Array.isArray(baseData.galleryMedia)
-      ? ([...(baseData.galleryMedia as { url: string; key: string }[])]).filter((m) => m?.url)
+      ? ([...(baseData.galleryMedia as { url: string; key: string }[])]).filter(
+          (m) => m?.url && !isDemoGalleryUrl(String(m.url))
+        )
       : [];
     if (!normalizedGallery.includes(params.publicUrl)) {
       normalizedGallery.push(params.publicUrl);
     }
-    galleryMedia.push({ url: params.publicUrl, key: params.objectKey });
+    if (!galleryMedia.some((m) => m.url === params.publicUrl || m.key === params.objectKey)) {
+      galleryMedia.push({ url: params.publicUrl, key: params.objectKey });
+    }
     baseData.galleryImages = normalizedGallery;
     baseData.galleryMedia = galleryMedia;
   }

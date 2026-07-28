@@ -126,6 +126,8 @@ export default function WeddingClassicInvitation({
   const showHeroMedia = Boolean(heroImage) && !heroFailed;
   const conceptPresentation = getConceptPresentationConfig(conceptType);
   const hasGallery = conceptPresentation.gallery && galleryItems.length > 0;
+  const showGalleryEmptyPlaceholder =
+    Boolean(previewMode) && conceptPresentation.gallery && galleryItems.length === 0;
   const hasMessage = Boolean(contentText.trim());
   const accounts = safeArray(r?.accounts);
   const weekdays = [
@@ -410,6 +412,16 @@ export default function WeddingClassicInvitation({
           tone={conceptType === 'FUNERAL' ? 'funeral' : conceptType === 'GENERAL' ? 'general' : 'wedding'}
           hintText="밀어서 더 많은 이미지 보기"
         />
+      ) : showGalleryEmptyPlaceholder ? (
+        <section
+          aria-label="Gallery"
+          data-testid="gallery-empty-placeholder"
+          style={{ padding: '48px 24px', textAlign: 'center', opacity: 0.7 }}
+        >
+          <p style={{ margin: 0, fontSize: 13, letterSpacing: '0.04em' }}>
+            갤러리 이미지를 추가해 주세요
+          </p>
+        </section>
       ) : null}
 
       {hasLocation ? (

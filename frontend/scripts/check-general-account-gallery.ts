@@ -24,10 +24,38 @@ function test(name: string, fn: () => void) {
 
 test('gallery selector normalizes galleryImages', () => {
   const items = getInvitationGalleryItems({
-    galleryImages: ['https://a.jpg', '', 'https://b.jpg'],
+    galleryImages: [
+      'https://cdn.example.com/invitation/development/users/u/invitations/i/gallery/a.jpg',
+      '',
+      'https://cdn.example.com/invitation/development/users/u/invitations/i/gallery/b.jpg',
+    ],
   });
   assert.equal(items.length, 2);
-  assert.equal(items[0]?.url, 'https://a.jpg');
+  assert.equal(
+    items[0]?.url,
+    'https://cdn.example.com/invitation/development/users/u/invitations/i/gallery/a.jpg'
+  );
+});
+
+test('gallery selector drops demo placeholders', () => {
+  const items = getInvitationGalleryItems({
+    galleryImages: [
+      '/images/wedding/classic/gallery_01.jpg',
+      'https://cdn.example.com/invitation/development/users/u/invitations/i/gallery/a.jpg',
+    ],
+  });
+  assert.equal(items.length, 1);
+  assert.ok(items[0]?.url.includes('/users/'));
+});
+
+test('new editor state starts with empty gallery', () => {
+  const state = createWeddingEditorState(null, { conceptType: 'WEDDING' });
+  assert.equal(state.gallery.images.length, 0);
+  const preview = buildWeddingClassicPreviewData(state);
+  assert.equal(preview.galleryImages.length, 0);
+  const completeness = computeEditorCompleteness(state);
+  // gallery section exists but is incomplete without user images
+  assert.ok(completeness.total > 0);
 });
 
 test('account normalization keeps hyphen/string numbers', () => {

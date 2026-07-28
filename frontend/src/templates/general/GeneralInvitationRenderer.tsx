@@ -69,6 +69,7 @@ export default function GeneralInvitationRenderer({
   });
 
   const show = (key: (typeof sections)[number]) => sections.includes(key);
+  const showGalleryEmptyPlaceholder = Boolean(previewMode) && galleryItems.length === 0;
 
   return (
     <div
@@ -124,6 +125,15 @@ export default function GeneralInvitationRenderer({
           tone="general"
           hintText="밀어서 더 많은 이미지 보기"
         />
+      ) : showGalleryEmptyPlaceholder ? (
+        <section
+          aria-label="Gallery"
+          data-testid="gallery-empty-placeholder"
+          className={styles.section}
+          style={{ textAlign: 'center', opacity: 0.7 }}
+        >
+          <p style={{ margin: 0, fontSize: 13 }}>갤러리 이미지를 추가해 주세요</p>
+        </section>
       ) : null}
 
       {show('location') ? (
