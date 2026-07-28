@@ -42,11 +42,17 @@ const DEFAULT_DESCRIPTION = {
 } as const;
 
 /** Kakao feed 등 imageUrl 권장 시 NONE 상태 concept 공용 fallback */
-const CONCEPT_SHARE_FALLBACK_IMAGE: Record<keyof typeof DEFAULT_TITLE, string> = {
+export const CONCEPT_SHARE_FALLBACK_IMAGE: Record<'WEDDING' | 'FUNERAL' | 'GENERAL', string> = {
   WEDDING: 'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg',
   FUNERAL: 'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg',
   GENERAL: 'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg',
 };
+
+export function getConceptOpenGraphFallbackImage(
+  concept: 'WEDDING' | 'FUNERAL' | 'GENERAL' = 'WEDDING'
+): string {
+  return CONCEPT_SHARE_FALLBACK_IMAGE[concept] || CONCEPT_SHARE_FALLBACK_IMAGE.WEDDING;
+}
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {

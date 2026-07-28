@@ -124,6 +124,8 @@ export async function GET(
   const cardWrap =
     concept === 'GENERAL' && !heroAbs
       ? {
+          display: 'flex',
+          flexDirection: 'column',
           background: 'rgba(255,255,255,0.94)',
           borderRadius: 28,
           padding: 48,
@@ -133,6 +135,8 @@ export async function GET(
         }
       : concept === 'GENERAL' && heroAbs
         ? {
+            display: 'flex',
+            flexDirection: 'column',
             background: 'rgba(255,255,255,0.92)',
             borderRadius: 28,
             padding: 48,

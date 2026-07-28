@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { extractSharePresentationFromPayload } from '@/src/lib/invitationShareMeta';
 import { fetchSharedInvitationCached } from '@/src/lib/server/fetchSharedInvitationCached';
 import { buildCanonicalUrl, getMetadataBase, getSiteBaseUrl } from '@/src/lib/siteUrl';
+import { getConceptOpenGraphFallbackImage } from '@/src/invitation/openGraphSettings';
 import PublicInvitationLayout from '@/src/components/layout/PublicInvitationLayout';
 
 /** Invitation별 OG는 저장 직후 반영 — 장기 static cache 금지 */
@@ -14,20 +15,12 @@ function resolveSafeSlug(value: unknown): string {
   return '';
 }
 
-function openGraphImageRouteUrl(metadataBase: URL | undefined, slug: string): string {
-  // Non-convention route — Next.js opengraph-image.* would override CDN og:image.
-  const path = `/i/${slug}/og-image`;
-  if (!metadataBase) return path;
-  try {
-    return new URL(path, metadataBase).toString();
-  } catch {
-    return path;
-  }
-}
-
 /**
  * 메타/OG URL은 NEXT_PUBLIC_SITE_URL(https 권장) 기준 canonical.
  * 카카오·페이스북은 자체 OG 캐시가 있어, 문구/이미지 변경 후 플랫폼 도구에서 링크 갱신이 필요하다.
+ *
+ * og:image는 Next.js opengraph-image 파일 규칙을 쓰지 않는다( CDN 절대 URL을 덮어쓰기 때문 ).
+ * dynamic PNG보다 concept CDN 절대 URL을 우선한다.
  */
 export async function generateMetadata({ params }: { params: { slug?: string | string[] } }): Promise<Metadata> {
   const slug = resolveSafeSlug(params?.slug);
@@ -37,6 +30,7 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
 
   const fallbackTitle = '초대장';
   const fallbackDescription = '행사에 초대드립니다';
+  const fallbackImage = getConceptOpenGraphFallbackImage('WEDDING');
 
   if (!slug) {
     return {
@@ -49,17 +43,16 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
         description: fallbackDescription,
         type: 'website',
         url: canonicalPath,
+        images: [{ url: fallbackImage, width: 1200, height: 630, alt: fallbackTitle }],
       },
       twitter: {
         card: 'summary_large_image',
         title: fallbackTitle,
         description: fallbackDescription,
-        images: metadataBase ? [{ url: new URL('/default-og.png', metadataBase).toString() }] : undefined,
+        images: [fallbackImage],
       },
     };
   }
-
-  const dynamicOgRoute = openGraphImageRouteUrl(metadataBase, slug);
 
   try {
     const payload = await fetchSharedInvitationCached(slug);
@@ -69,8 +62,9 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
     const pres = extractSharePresentationFromPayload(payload, {
       canonicalUrl: canonicalPath,
       siteOrigin,
+      purpose: 'public-meta',
     });
-    const imageUrl = pres.imageUrl || dynamicOgRoute;
+    const imageUrl = pres.imageUrl || getConceptOpenGraphFallbackImage(pres.concept);
 
     return {
       metadataBase,
@@ -113,7 +107,7 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
         locale: 'ko_KR',
         images: [
           {
-            url: dynamicOgRoute,
+            url: fallbackImage,
             width: 1200,
             height: 630,
             alt: fallbackTitle,
@@ -124,12 +118,12 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
         card: 'summary_large_image',
         title: fallbackTitle,
         description: fallbackDescription,
-        images: [dynamicOgRoute],
+        images: [fallbackImage],
       },
     };
   }
 }
 
-export default function PublicShareLayout({ children }: { children: React.ReactNode }) {
+export default function InvitationSlugLayout({ children }: { children: React.ReactNode }) {
   return <PublicInvitationLayout>{children}</PublicInvitationLayout>;
 }
