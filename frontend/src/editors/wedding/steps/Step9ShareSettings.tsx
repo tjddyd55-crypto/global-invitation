@@ -84,6 +84,7 @@ export default function Step9ShareSettings({
             void applySharePatch({ ogImage: '', ogImageMode: 'NONE' });
           }}
           uploadAssetType="asset"
+          thumbnailRole="openGraph"
           inputTestId="og-image-input"
         />
         <div className={styles.uploaderActions}>

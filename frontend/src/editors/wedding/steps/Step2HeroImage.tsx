@@ -36,6 +36,7 @@ export default function Step2HeroImage({ value, onChange }: Step2HeroImageProps)
         onChange={(heroImage) => onChange({ heroImage })}
         onClear={() => onChange({ heroImage: '' })}
         uploadAssetType="hero"
+        thumbnailRole="hero"
         inputTestId="hero-upload-input"
         required
         priority

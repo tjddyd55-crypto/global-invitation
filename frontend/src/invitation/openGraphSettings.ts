@@ -203,11 +203,9 @@ function resolveImageByMode(params: {
   const { mode, customRaw, heroRaw, concept, purpose, siteOrigin } = params;
 
   if (mode === 'NONE') {
-    // Editor: placeholder. Public: dynamic route fallback at layout. Kakao: concept CDN.
-    if (purpose === 'share-payload') {
-      return resolveAbsoluteOpenGraphImageUrl(CONCEPT_SHARE_FALLBACK_IMAGE[concept], siteOrigin);
-    }
-    return undefined;
+    // Editor: placeholder. Public meta / Kakao: concept CDN (빈 카드·상대 dynamic 회피).
+    if (purpose === 'editor-preview') return undefined;
+    return resolveAbsoluteOpenGraphImageUrl(CONCEPT_SHARE_FALLBACK_IMAGE[concept], siteOrigin);
   }
 
   if (mode === 'CUSTOM') {
@@ -225,13 +223,10 @@ function resolveImageByMode(params: {
   // Editor preview: 빈 입력 = 빈 카드 (자동 Hero 금지)
   if (purpose === 'editor-preview') return undefined;
 
-  // Public/Kakao: 기존처럼 Hero → concept placeholder
+  // Public/Kakao: Hero → concept placeholder
   const hero = resolveAbsoluteOpenGraphImageUrl(heroRaw, siteOrigin);
   if (hero) return hero;
-  if (purpose === 'share-payload') {
-    return resolveAbsoluteOpenGraphImageUrl(CONCEPT_SHARE_FALLBACK_IMAGE[concept], siteOrigin);
-  }
-  return undefined;
+  return resolveAbsoluteOpenGraphImageUrl(CONCEPT_SHARE_FALLBACK_IMAGE[concept], siteOrigin);
 }
 
 /**

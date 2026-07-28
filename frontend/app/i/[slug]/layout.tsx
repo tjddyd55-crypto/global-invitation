@@ -15,7 +15,8 @@ function resolveSafeSlug(value: unknown): string {
 }
 
 function openGraphImageRouteUrl(metadataBase: URL | undefined, slug: string): string {
-  const path = `/i/${slug}/opengraph-image`;
+  // Non-convention route — Next.js opengraph-image.* would override CDN og:image.
+  const path = `/i/${slug}/og-image`;
   if (!metadataBase) return path;
   try {
     return new URL(path, metadataBase).toString();

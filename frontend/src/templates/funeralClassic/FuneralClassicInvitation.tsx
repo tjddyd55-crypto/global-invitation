@@ -76,7 +76,12 @@ export default function FuneralClassicInvitation({
 
   return (
     <div className={styles.page} data-testid="public-invitation-document" data-concept="FUNERAL">
-      <section className={styles.hero} data-testid="public-hero">
+      <section
+        className={styles.hero}
+        data-testid="public-hero"
+        data-section-id="hero"
+        data-preview-section="hero"
+      >
         {data.heroImage && (
           <img
             className={styles.heroImage}
@@ -107,12 +112,12 @@ export default function FuneralClassicInvitation({
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section className={styles.section} data-section-id="greeting" data-preview-section="greeting">
         <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionMessage)}</div>
         <div className={styles.message}>{data.message}</div>
       </section>
 
-      <section className={styles.section}>
+      <section className={styles.section} data-section-id="deceased" data-preview-section="deceased">
         <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionFamily)}</div>
         <div className={styles.infoList}>
           <div>
@@ -129,7 +134,7 @@ export default function FuneralClassicInvitation({
         )}
       </section>
 
-      <section className={styles.section}>
+      <section className={styles.section} data-section-id="schedule" data-preview-section="schedule">
         <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionSchedule)}</div>
         <div className={styles.scheduleGrid}>
           {data.schedule.wakeStart && (
@@ -152,7 +157,11 @@ export default function FuneralClassicInvitation({
       </section>
 
       {hasLocation && (
-        <section className={styles.locationSection}>
+        <section
+          className={styles.locationSection}
+          data-section-id="location"
+          data-preview-section="location"
+        >
           <LocationMapSection
             sectionTitle={t(I18N_KEYS.funeral.sectionHallLocation)}
             title={data.funeralHall.name}
@@ -191,8 +200,12 @@ export default function FuneralClassicInvitation({
         </section>
       )}
 
-      {(onShare || onKakaoShare) && (
-        <section className={styles.shareSection}>
+      {(onShare || onKakaoShare) ? (
+        <section
+          className={styles.shareSection}
+          data-section-id="share"
+          data-preview-section="share"
+        >
           <div className={styles.sectionTitle}>{t(I18N_KEYS.funeral.sectionShare)}</div>
           <div className={styles.shareButtons}>
             {onShare && (
@@ -212,6 +225,13 @@ export default function FuneralClassicInvitation({
           </div>
           <div className={styles.shareHint}>{t(I18N_KEYS.funeral.shareHint)}</div>
         </section>
+      ) : (
+        <section
+          data-section-id="share"
+          data-preview-section="share"
+          aria-hidden
+          style={{ height: 1, margin: 0, padding: 0, border: 0, overflow: 'hidden' }}
+        />
       )}
     </div>
   );

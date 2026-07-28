@@ -1,3 +1,8 @@
+/**
+ * Figma Desktop LivePreviewPanel — 340px column, phone radius 28.
+ * Preview는 draft state 기반 FullInvitationRenderer + previewMode.
+ * Step ↔ section scroll은 editorPreviewSections SSOT.
+ */
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
@@ -6,6 +11,10 @@ import type { InvitationRuntimeData } from '@/src/invitation/schemas';
 import { getMusicByKey } from '@/src/constants/music';
 import { resolvePlayableInvitationMusic } from '@/src/invitation/invitationMusic';
 import InvitationMusicPlayer from '@/src/features/invitation/ui/InvitationMusicPlayer';
+import {
+  findPreviewSectionElement,
+  resolveEditorPreviewSectionId,
+} from '@/src/editors/shared/editorPreviewSections';
 import styles from '../weddingEditor.module.css';
 
 type LivePreviewPanelProps = {
@@ -14,23 +23,13 @@ type LivePreviewPanelProps = {
   fullscreen?: boolean;
   /** Figma: “현재 편집 중: {step}” */
   editingStepLabel?: string;
-  /** Editor active step → Preview section auto-focus (data-section-id) */
+  /** Editor active step key (setup/message/hero/...) */
   focusSectionId?: string | null;
-};
-
-const EDITOR_STEP_TO_SECTION: Record<string, string> = {
-  rsvp: 'rsvp',
-  accounts: 'accounts',
-  gallery: 'gallery',
-  location: 'location',
-  couple: 'couple',
-  comments: 'comments',
+  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL';
 };
 
 /**
  * Figma Desktop LivePreviewPanel — 340px column, phone radius 28.
- * Preview는 draft state 기반 FullInvitationRenderer + previewMode.
- * 음악은 공개와 동일 조건, 자동재생 없음.
  */
 export default function LivePreviewPanel({
   data,
@@ -38,6 +37,7 @@ export default function LivePreviewPanel({
   fullscreen = false,
   editingStepLabel,
   focusSectionId,
+  conceptType = 'WEDDING',
 }: LivePreviewPanelProps) {
   const frameClassName = fullscreen
     ? `${styles.previewFrame} ${styles.previewFrameFullscreen}`
@@ -56,10 +56,9 @@ export default function LivePreviewPanel({
     [data]
   );
 
-  const resolvedFocusId =
-    focusSectionId && EDITOR_STEP_TO_SECTION[focusSectionId]
-      ? EDITOR_STEP_TO_SECTION[focusSectionId]
-      : focusSectionId || null;
+  const resolvedFocusId = focusSectionId
+    ? resolveEditorPreviewSectionId(focusSectionId, conceptType)
+    : null;
 
   useEffect(() => {
     const root = scrollRef.current;
@@ -81,32 +80,51 @@ export default function LivePreviewPanel({
   }, []);
 
   useEffect(() => {
-    if (!resolvedFocusId) return;
+    if (!resolvedFocusId || !focusSectionId) return;
 
     const root = scrollRef.current;
     if (!root) return;
-    if (lastFocusedStepRef.current === resolvedFocusId) return;
+    if (lastFocusedStepRef.current === focusSectionId) return;
 
-    // step 전환 시에는 사용자 스크롤 억제를 무시하고 1회 포커스
     userScrollingRef.current = false;
 
-    const timer = window.setTimeout(() => {
-      const target = root.querySelector(`[data-section-id="${resolvedFocusId}"]`);
-      lastFocusedStepRef.current = resolvedFocusId;
-      if (!target || !(target instanceof HTMLElement)) return;
+    let cancelled = false;
+    let followUp: number | null = null;
+
+    const scrollToTarget = () => {
+      if (cancelled) return;
+      const target = findPreviewSectionElement(root, resolvedFocusId);
+      lastFocusedStepRef.current = focusSectionId;
+      if (!target) return;
 
       const rootRect = root.getBoundingClientRect();
       const targetRect = target.getBoundingClientRect();
-      const nextTop =
-        root.scrollTop + (targetRect.top - rootRect.top) - rootRect.height / 2 + targetRect.height / 2;
+      const nextTop = root.scrollTop + (targetRect.top - rootRect.top) - 12;
       root.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
-    }, 160);
+    };
 
-    return () => window.clearTimeout(timer);
-  }, [resolvedFocusId, data]);
+    const timer = window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollToTarget();
+          followUp = window.setTimeout(scrollToTarget, 280);
+        });
+      });
+    }, 120);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      if (followUp != null) window.clearTimeout(followUp);
+    };
+  }, [resolvedFocusId, focusSectionId, data, conceptType]);
 
   return (
-    <div className={styles.previewPanel} style={{ width: fullscreen ? undefined : 340 }}>
+    <div
+      className={styles.previewPanel}
+      style={{ width: fullscreen ? undefined : 340 }}
+      data-testid="editor-live-preview-panel"
+    >
       {!fullscreen && title ? <p className={styles.previewTitle}>{title}</p> : null}
       <div className={frameClassName} style={{ position: 'relative' }}>
         {!fullscreen ? <div className={styles.previewNotch} aria-hidden /> : null}
@@ -124,7 +142,7 @@ export default function LivePreviewPanel({
         ) : null}
       </div>
       {!fullscreen && editingStepLabel ? (
-        <div className={styles.editingCard}>
+        <div className={styles.editingCard} data-testid="editor-preview-editing-indicator">
           <p>
             현재 편집 중: <strong>{editingStepLabel}</strong>
           </p>

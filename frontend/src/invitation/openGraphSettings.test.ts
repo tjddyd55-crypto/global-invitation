@@ -118,6 +118,42 @@ test('NONE mode never falls back to hero in editor preview', () => {
   assert.equal(settings.imageUrl, undefined);
 });
 
+test('NONE mode uses concept CDN for public-meta and share-payload', () => {
+  const input = {
+    dataJson: {
+      conceptType: 'WEDDING',
+      heroImage: 'https://cdn.example.com/hero.jpg',
+      openGraph: {
+        title: 'T',
+        description: 'D',
+        imageMode: 'NONE',
+        imageUrl: '',
+        imageRemoved: true,
+      },
+      share: {
+        ogTitle: 'T',
+        ogDescription: 'D',
+        ogImage: '',
+        ogImageMode: 'NONE',
+        ogImageRemoved: true,
+      },
+    },
+  };
+  const publicSettings = getInvitationOpenGraphSettings(input, 'https://frontend.example/i/x', {
+    purpose: 'public-meta',
+  });
+  const payloadSettings = getInvitationOpenGraphSettings(input, 'https://frontend.example/i/x', {
+    purpose: 'share-payload',
+  });
+  assert.equal(publicSettings.imageMode, 'NONE');
+  assert.equal(payloadSettings.imageMode, 'NONE');
+  assert.equal(
+    publicSettings.imageUrl,
+    'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg'
+  );
+  assert.equal(publicSettings.imageUrl, payloadSettings.imageUrl);
+});
+
 test('HERO mode uses hero only when explicitly set', () => {
   const settings = getInvitationOpenGraphSettings(
     {

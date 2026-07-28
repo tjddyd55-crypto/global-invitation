@@ -78,7 +78,12 @@ export default function GeneralInvitationRenderer({
       data-concept="GENERAL"
     >
       {show('hero') ? (
-        <section className={styles.hero} data-testid="public-hero">
+        <section
+          className={styles.hero}
+          data-testid="public-hero"
+          data-section-id="hero"
+          data-preview-section="hero"
+        >
           {heroImage ? (
             <div className={styles.heroMedia}>
               <ImageWithFallback className={styles.heroImage} src={heroImage} alt="" loading="eager" />
@@ -96,7 +101,12 @@ export default function GeneralInvitationRenderer({
       ) : null}
 
       {show('introduction') ? (
-        <section className={styles.section} data-testid="general-introduction">
+        <section
+          className={styles.section}
+          data-testid="general-introduction"
+          data-section-id="greeting"
+          data-preview-section="greeting"
+        >
           <h2 className={styles.sectionTitle}>행사 소개</h2>
           <div className={styles.body}>
             {asLines(intro).map((line, index) => (
@@ -107,7 +117,12 @@ export default function GeneralInvitationRenderer({
       ) : null}
 
       {show('schedule') ? (
-        <section className={styles.section} data-testid="general-schedule">
+        <section
+          className={styles.section}
+          data-testid="general-schedule"
+          data-section-id="schedule"
+          data-preview-section="schedule"
+        >
           <h2 className={styles.sectionTitle}>행사 일정</h2>
           <ul className={styles.scheduleList}>
             {(schedule.length > 0 ? schedule : [eventWhen]).map((item, index) => (
@@ -130,6 +145,8 @@ export default function GeneralInvitationRenderer({
           aria-label="Gallery"
           data-testid="gallery-empty-placeholder"
           className={styles.section}
+          data-section-id="gallery"
+          data-preview-section="gallery"
           style={{ textAlign: 'center', opacity: 0.7 }}
         >
           <p style={{ margin: 0, fontSize: 13 }}>갤러리 이미지를 추가해 주세요</p>
@@ -141,6 +158,7 @@ export default function GeneralInvitationRenderer({
           className={styles.locationSection}
           data-testid="general-location"
           data-section-id="location"
+          data-preview-section="location"
         >
           <LocationMapSection
             sectionTitle="오시는 길"
@@ -188,12 +206,23 @@ export default function GeneralInvitationRenderer({
       ) : null}
 
       {show('share') && onShare ? (
-        <section className={styles.section}>
+        <section
+          className={styles.section}
+          data-section-id="share"
+          data-preview-section="share"
+        >
           <button type="button" className={styles.shareBtn} onClick={onShare}>
             공유하기
           </button>
         </section>
-      ) : null}
+      ) : (
+        <section
+          data-section-id="share"
+          data-preview-section="share"
+          aria-hidden
+          style={{ height: 1, margin: 0, padding: 0, border: 0, overflow: 'hidden' }}
+        />
+      )}
     </div>
   );
 }

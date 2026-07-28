@@ -16,6 +16,8 @@ type ImageUploaderProps = {
   inputTestId?: string;
   /** LCP: 대표(히어로) 미리보기에만 사용 */
   priority?: boolean;
+  /** Editor 전용 썸네일 레이아웃 — Public 비율과 분리 */
+  thumbnailRole?: 'default' | 'couple' | 'hero' | 'openGraph';
 };
 
 function revokeIfObjectUrl(url?: string) {
@@ -34,11 +36,13 @@ export default function ImageUploader({
   uploadAssetType = 'gallery',
   inputTestId,
   priority,
+  thumbnailRole = 'default',
 }: ImageUploaderProps) {
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -69,7 +73,6 @@ export default function ImageUploader({
 
   const handleClear = async () => {
     if (!value) return;
-    // Soft remove: clear draft reference only. R2 orphan cleanup is separate.
     revokeIfObjectUrl(value);
     onClear?.();
     if (!onClear) {
@@ -77,8 +80,21 @@ export default function ImageUploader({
     }
   };
 
+  const previewClass =
+    thumbnailRole === 'couple'
+      ? `${styles.uploaderPreview} ${styles.editorCoupleThumbnail}`
+      : thumbnailRole === 'hero'
+        ? `${styles.uploaderPreview} ${styles.editorHeroThumbnail}`
+        : thumbnailRole === 'openGraph'
+          ? `${styles.uploaderPreview} ${styles.editorOgThumbnail}`
+          : styles.uploaderPreview;
+
   return (
-    <div className={styles.uploader}>
+    <div
+      className={
+        thumbnailRole === 'couple' ? `${styles.uploader} ${styles.editorCoupleImageCard}` : styles.uploader
+      }
+    >
       <div className={styles.fieldHeader}>
         <label className={styles.fieldLabel} htmlFor={inputId}>
           {label} {required && <span className={styles.required}>*</span>}
@@ -87,13 +103,25 @@ export default function ImageUploader({
       </div>
       <div className={styles.uploaderBody}>
         {value ? (
-          <div className={styles.uploaderPreview}>
+          <button
+            type="button"
+            className={previewClass}
+            data-testid={thumbnailRole === 'couple' ? 'editor-couple-thumbnail' : undefined}
+            onClick={() => setLightboxOpen(true)}
+            aria-label={`${label} 원본 보기`}
+          >
             <AppImage src={value} alt={`${label} preview`} priority={priority} />
-          </div>
+          </button>
         ) : (
           <div className={styles.uploaderPlaceholder}>이미지를 선택하세요.</div>
         )}
-        <div className={styles.uploaderActions}>
+        <div
+          className={
+            thumbnailRole === 'couple'
+              ? `${styles.uploaderActions} ${styles.editorCoupleImageActions}`
+              : styles.uploaderActions
+          }
+        >
           <label className={styles.buttonGhost} htmlFor={inputId}>
             {uploading ? '업로드 중...' : '이미지 선택'}
           </label>
@@ -119,6 +147,17 @@ export default function ImageUploader({
           disabled={uploading}
         />
       </div>
+      {lightboxOpen && value ? (
+        <div
+          className={styles.editorImageLightbox}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${label} 원본`}
+          onClick={() => setLightboxOpen(false)}
+        >
+          <AppImage src={value} alt="" />
+        </div>
+      ) : null}
     </div>
   );
 }

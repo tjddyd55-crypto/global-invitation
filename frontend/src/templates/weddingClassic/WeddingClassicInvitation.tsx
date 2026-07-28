@@ -129,6 +129,9 @@ export default function WeddingClassicInvitation({
   const showGalleryEmptyPlaceholder =
     Boolean(previewMode) && conceptPresentation.gallery && galleryItems.length === 0;
   const hasMessage = Boolean(contentText.trim());
+  const showGreetingBlock = hasMessage || Boolean(previewMode);
+  const showScheduleBlock = hasSchedule || Boolean(previewMode && conceptPresentation.schedule);
+  const showLocationBlock = hasLocation || Boolean(previewMode);
   const accounts = safeArray(r?.accounts);
   const weekdays = [
     t(I18N_KEYS.weddingClassic.weekdaySun),
@@ -187,7 +190,8 @@ export default function WeddingClassicInvitation({
   const hasCouple = Boolean(groomDisplay || brideDisplay || groomImg || brideImg);
   // GENERAL 등은 couple 정책상 강제 비표시 (legacy wedding 필드 잔존 무시)
   const showCoupleBlock =
-    conceptPresentation.couple && Boolean(hasCouple || groomPhone || bridePhone || parentsInfo);
+    conceptPresentation.couple &&
+    (Boolean(hasCouple || groomPhone || bridePhone || parentsInfo) || Boolean(previewMode));
   const showAccountsBlock = shouldShowAccountsSection(r, conceptType);
   /** 장례 일정 데이터가 있으면 리스트, 그 외에는 커플 데이터가 있을 때만 웨딩형 캘린더 */
   const useCalendarSchedule = conceptPresentation.couple && hasCouple && !mapToneFuneralLike;
@@ -222,6 +226,8 @@ export default function WeddingClassicInvitation({
         className={`${styles.heroSection} ${showHeroMedia ? '' : styles.heroSectionNoImage}`}
         aria-label="대표 이미지"
         data-testid="public-hero"
+        data-section-id="hero"
+        data-preview-section="hero"
       >
         {heroImage && !heroFailed ? (
           <div className={styles.heroMedia}>
@@ -259,15 +265,25 @@ export default function WeddingClassicInvitation({
         </div>
       </section>
 
-      {hasMessage ? (
-        <section className={`${styles.section} ${styles.messageSection}`}>
+      {showGreetingBlock ? (
+        <section
+          className={`${styles.section} ${styles.messageSection}`}
+          data-section-id="greeting"
+          data-preview-section="greeting"
+        >
           <h2 className={styles.calendarTitle}>{messageTitle}</h2>
           <div className={styles.messageBody}>
-            {messageLines.map((line, index) => (
-              <p key={`message-line-${index}`} className={`${styles.messageParagraph} ${styles.textBody}`}>
-                {line}
+            {hasMessage ? (
+              messageLines.map((line, index) => (
+                <p key={`message-line-${index}`} className={`${styles.messageParagraph} ${styles.textBody}`}>
+                  {line}
+                </p>
+              ))
+            ) : (
+              <p className={`${styles.messageParagraph} ${styles.textBody}`} style={{ opacity: 0.55 }}>
+                인사말을 입력해 주세요
               </p>
-            ))}
+            )}
           </div>
         </section>
       ) : null}
@@ -275,7 +291,12 @@ export default function WeddingClassicInvitation({
       {hasMessage ? <hr className={styles.sectionBreak} aria-hidden /> : null}
 
       {showCoupleBlock ? (
-        <section className={styles.coupleSection} data-testid="couple-section">
+        <section
+          className={styles.coupleSection}
+          data-testid="couple-section"
+          data-section-id="couple"
+          data-preview-section="couple"
+        >
           {hasCouple ? <p className={styles.scriptLabel}>The Couple</p> : null}
           {hasCouple ? (
             <div className={styles.coupleGrid}>
@@ -339,7 +360,11 @@ export default function WeddingClassicInvitation({
       ) : null}
 
       {(r.deceasedName ?? '').trim() ? (
-        <section className={`${styles.section} ${styles.funeralBlock}`}>
+        <section
+          className={`${styles.section} ${styles.funeralBlock}`}
+          data-section-id="deceased"
+          data-preview-section="deceased"
+        >
           <h2 className={styles.calendarTitle}>고인</h2>
           <p className={styles.funeralLine}>{(r.deceasedName ?? '').trim()}</p>
         </section>
@@ -366,8 +391,12 @@ export default function WeddingClassicInvitation({
         </section>
       ) : null}
 
-      {hasSchedule ? (
-        <section className={`${styles.section} ${styles.scheduleSection}`}>
+      {showScheduleBlock ? (
+        <section
+          className={`${styles.section} ${styles.scheduleSection}`}
+          data-section-id="schedule"
+          data-preview-section="schedule"
+        >
           <div className={styles.calendarTitle}>{scheduleTitle}</div>
           {useCalendarSchedule ? (
             <div className={styles.calendarGrid}>
@@ -416,6 +445,8 @@ export default function WeddingClassicInvitation({
         <section
           aria-label="Gallery"
           data-testid="gallery-empty-placeholder"
+          data-section-id="gallery"
+          data-preview-section="gallery"
           style={{ padding: '48px 24px', textAlign: 'center', opacity: 0.7 }}
         >
           <p style={{ margin: 0, fontSize: 13, letterSpacing: '0.04em' }}>
@@ -424,11 +455,12 @@ export default function WeddingClassicInvitation({
         </section>
       ) : null}
 
-      {hasLocation ? (
+      {showLocationBlock ? (
         <section
           className={styles.locationSection}
           data-testid="public-location"
           data-section-id="location"
+          data-preview-section="location"
         >
           <LocationMapSection
             sectionTitle={locationTitle}
@@ -461,6 +493,17 @@ export default function WeddingClassicInvitation({
           accountsTitle={r.accountsTitle}
           className={styles.accountsSection}
         />
+      ) : null}
+      {!showAccountsBlock && previewMode && conceptPresentation.account ? (
+        <section
+          className={styles.accountsSection}
+          data-section-id="accounts"
+          data-preview-section="accounts"
+          data-testid="invitation-accounts-placeholder"
+          style={{ padding: '32px 24px', textAlign: 'center', opacity: 0.65 }}
+        >
+          <p style={{ margin: 0, fontSize: 13 }}>계좌 정보를 추가해 주세요</p>
+        </section>
       ) : null}
 
       <InvitationRsvpSection
@@ -518,6 +561,13 @@ export default function WeddingClassicInvitation({
           </div>
         </section>
       ) : null}
+
+      <section
+        data-section-id="share"
+        data-preview-section="share"
+        aria-hidden
+        style={{ height: 1, margin: 0, padding: 0, border: 0, overflow: 'hidden' }}
+      />
     </div>
   );
 }

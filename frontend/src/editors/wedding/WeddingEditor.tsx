@@ -431,8 +431,19 @@ export default function WeddingEditor({
               activeSection === 'share' ? styles.previewColumnShare : ''
             }`}
             data-testid="desktop-editor-preview"
-            data-preview-mode={activeSection === 'share' ? 'share-card' : 'phone'}
+            data-preview-mode={activeSection === 'share' ? 'phone-and-share' : 'phone'}
           >
+            <LivePreviewPanel
+              title="실시간 미리보기"
+              data={previewData}
+              editingStepLabel={visibleSections[currentStep]?.title}
+              focusSectionId={activeSection}
+              conceptType={
+                state.setup.conceptType === 'FUNERAL' || state.setup.conceptType === 'GENERAL'
+                  ? state.setup.conceptType
+                  : 'WEDDING'
+              }
+            />
             {activeSection === 'share' ? (
               <div
                 className={styles.shareCardPreviewPanel}
@@ -447,20 +458,8 @@ export default function WeddingEditor({
                   displayUrl={sharePreviewModel.displayUrl}
                   hasPublicUrl={sharePreviewModel.hasPublicUrl}
                 />
-                <div className={styles.editingCard}>
-                  <p>
-                    현재 편집 중: <strong>공유 설정</strong>
-                  </p>
-                </div>
               </div>
-            ) : (
-              <LivePreviewPanel
-                title="실시간 미리보기"
-                data={previewData}
-                editingStepLabel={visibleSections[currentStep]?.title}
-                focusSectionId={activeSection}
-              />
-            )}
+            ) : null}
           </aside>
         </div>
       )}
@@ -480,7 +479,16 @@ export default function WeddingEditor({
               </button>
             </div>
             <div className={styles.fullscreenPreviewBody}>
-              <LivePreviewPanel data={previewData} fullscreen focusSectionId={activeSection} />
+              <LivePreviewPanel
+                data={previewData}
+                fullscreen
+                focusSectionId={activeSection}
+                conceptType={
+                  state.setup.conceptType === 'FUNERAL' || state.setup.conceptType === 'GENERAL'
+                    ? state.setup.conceptType
+                    : 'WEDDING'
+                }
+              />
             </div>
           </div>
         </div>

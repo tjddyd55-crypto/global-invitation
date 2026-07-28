@@ -9,7 +9,7 @@ import {
 } from '@/src/lib/invitationShareMeta';
 import { getSiteBaseUrl } from '@/src/lib/siteUrl';
 
-/** 크롤러가 매 요청 최신 PNG를 받도록(플랫폼 자체 OG 캐시는 별도 갱신 도구 필요) */
+/** Dynamic OG PNG fallback at /og-image (not opengraph-image convention). */
 export const dynamic = 'force-dynamic';
 
 export const runtime = 'edge';
@@ -73,8 +73,11 @@ function ogImageResponse(body: ReactElement, fonts: Awaited<ReturnType<typeof lo
   });
 }
 
-export default async function OpengraphImage({ params }: { params: { slug?: string | string[] } }) {
-  const slug = resolveSlug(params);
+export async function GET(
+  _request: Request,
+  context: { params: { slug?: string | string[] } }
+) {
+  const slug = resolveSlug(context.params);
   const fonts = await loadNotoFonts();
 
   const fallbackPresentation = extractSharePresentationFromPayload(null);
@@ -93,9 +96,13 @@ export default async function OpengraphImage({ params }: { params: { slug?: stri
     payload = null;
   }
 
-  const pres = payload ? extractSharePresentationFromPayload(payload) : fallbackPresentation;
   const site = getSiteBaseUrl();
-  const heroAbs = resolveHeroImageAbsolute(pres.heroImageRaw, site);
+  const pres = payload
+    ? extractSharePresentationFromPayload(payload, { siteOrigin: site, purpose: 'public-meta' })
+    : fallbackPresentation;
+  const heroAbs =
+    resolveHeroImageAbsolute(pres.imageUrl || null, site) ||
+    resolveHeroImageAbsolute(pres.heroImageRaw, site);
   const concept = pres.concept;
   const bg = FALLBACK_BG[concept];
   const isDark = concept === 'FUNERAL';

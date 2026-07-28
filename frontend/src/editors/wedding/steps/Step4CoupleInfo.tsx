@@ -35,6 +35,7 @@ export default function Step4CoupleInfo({ groom, bride, onGroomChange, onBrideCh
             label="사진 (선택)"
             value={groom.photo}
             uploadAssetType="groom"
+            thumbnailRole="couple"
             onChange={(photo) => onGroomChange({ photo })}
             onClear={() => onGroomChange({ photo: '' })}
           />
@@ -73,6 +74,7 @@ export default function Step4CoupleInfo({ groom, bride, onGroomChange, onBrideCh
             label="사진 (선택)"
             value={bride.photo}
             uploadAssetType="bride"
+            thumbnailRole="couple"
             onChange={(photo) => onBrideChange({ photo })}
             onClear={() => onBrideChange({ photo: '' })}
           />

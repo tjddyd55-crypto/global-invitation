@@ -1,5 +1,5 @@
 /**
- * Share step desktop preview — no inner scrollbar; phone preview hidden.
+ * Share step desktop preview — Phone Preview kept; share card has no inner scrollbar.
  */
 import { test, expect, type Page } from '@playwright/test';
 
@@ -65,6 +65,9 @@ async function assertSharePanelNoInnerScroll(page: Page) {
       (card.querySelector('[data-testid="share-card-preview-url"]') as HTMLElement | null) ||
       (card.querySelector('[data-testid="share-card-preview-url-pending"]') as HTMLElement | null);
     const image = card.querySelector('[data-testid="share-card-preview-image"]') as HTMLElement | null;
+    const phone = document.querySelector(
+      '[data-testid="editor-live-preview-viewport"]'
+    ) as HTMLElement | null;
 
     const fullyVisible = (el: HTMLElement | null) => {
       if (!el) return false;
@@ -78,22 +81,32 @@ async function assertSharePanelNoInnerScroll(page: Page) {
       columnMaxHeight: csColumn.maxHeight,
       panelOverflowY: csPanel.overflowY,
       panelMaxHeight: csPanel.maxHeight,
-      panelHeight: csPanel.height,
       cardOverflowY: csCard.overflowY,
       columnScrollable: column.scrollHeight > column.clientHeight + 1,
       panelScrollable: panel.scrollHeight > panel.clientHeight + 1,
       phonePreviewCount: document.querySelectorAll('[data-testid="editor-live-preview-viewport"]').length,
+      shareBelowPhone: (() => {
+        if (!phone || !panel) return false;
+        return panel.getBoundingClientRect().top >= phone.getBoundingClientRect().top;
+      })(),
       titleVisible: fullyVisible(title),
       descVisible: fullyVisible(desc),
       urlVisible: fullyVisible(url),
       imageVisible: fullyVisible(image),
+      imageAspect: image
+        ? (() => {
+            const r = image.getBoundingClientRect();
+            return r.height > 0 ? r.width / r.height : 0;
+          })()
+        : 0,
     };
   });
 
   expect(metrics.ok).toBeTruthy();
   if (!metrics.ok) return;
 
-  expect(metrics.phonePreviewCount).toBe(0);
+  expect(metrics.phonePreviewCount).toBe(1);
+  expect(metrics.shareBelowPhone).toBeTruthy();
   expect(metrics.columnOverflowY).not.toBe('auto');
   expect(metrics.columnOverflowY).not.toBe('scroll');
   expect(metrics.panelOverflowY).not.toBe('auto');
@@ -108,6 +121,8 @@ async function assertSharePanelNoInnerScroll(page: Page) {
   expect(metrics.descVisible).toBeTruthy();
   expect(metrics.urlVisible).toBeTruthy();
   expect(metrics.imageVisible).toBeTruthy();
+  expect(metrics.imageAspect).toBeGreaterThan(1.1);
+  expect(metrics.imageAspect).toBeLessThan(1.6);
 }
 
 test.describe('share preview no inner scroll', () => {
@@ -130,7 +145,6 @@ test.describe('share preview no inner scroll', () => {
       await page.goto(`/editor/${created.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
       await expect(page.getByTestId('desktop-editor-layout')).toBeVisible({ timeout: 60_000 });
 
-      // Other step keeps phone preview scroll container
       await page.getByTestId('stepper-item-7').click();
       await expect(page.getByTestId('editor-live-preview-viewport')).toBeVisible({ timeout: 20_000 });
       const otherStepScroll = await page.evaluate(() => {
@@ -143,6 +157,7 @@ test.describe('share preview no inner scroll', () => {
       await page.getByTestId('stepper-item-8').click();
       await expect(page.getByTestId('desktop-share-card-preview-slot')).toBeVisible({ timeout: 20_000 });
       await expect(page.getByTestId('invitation-share-card-preview')).toBeVisible();
+      await expect(page.getByTestId('editor-live-preview-viewport')).toBeVisible();
       await assertSharePanelNoInnerScroll(page);
 
       expect(pageErrors).toEqual([]);
