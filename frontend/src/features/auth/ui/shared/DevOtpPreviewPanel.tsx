@@ -31,6 +31,22 @@ export default function DevOtpPreviewPanel({
       await navigator.clipboard.writeText(previewCode);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
+      return;
+    } catch {
+      // clipboard API 미지원/거부 시 fallback
+    }
+    try {
+      const area = document.createElement('textarea');
+      area.value = previewCode;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.left = '-9999px';
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand('copy');
+      document.body.removeChild(area);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
     }

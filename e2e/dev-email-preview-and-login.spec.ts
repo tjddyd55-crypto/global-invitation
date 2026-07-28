@@ -7,7 +7,10 @@ const FE = process.env.PLAYWRIGHT_BASE_URL || 'https://frontend-development-1b8a
 const BE = process.env.PLAYWRIGHT_API_URL || 'https://backend-development-c9a4.up.railway.app';
 
 async function freshPage(browser: Browser, viewport: { width: number; height: number }) {
-  const context = await browser.newContext({ viewport });
+  const context = await browser.newContext({
+    viewport,
+    permissions: ['clipboard-read', 'clipboard-write'],
+  });
   const page = await context.newPage();
   return { context, page };
 }
@@ -50,7 +53,9 @@ test.describe('Dev OTP preview + login desktop', () => {
     const code = (await page.getByTestId('dev-otp-preview-code').innerText()).trim();
     expect(code).toMatch(/^\d{6}$/);
     await page.getByTestId('dev-otp-copy').click();
-    await expect(page.getByTestId('dev-otp-copied-toast')).toBeVisible();
+    await expect(page.getByTestId('dev-otp-copied-toast')).toBeVisible({ timeout: 10_000 });
+    const clipboard = await page.evaluate(async () => navigator.clipboard.readText());
+    expect(clipboard).toBe(code);
     await page.getByTestId('email-start-submit').click();
     await page.waitForURL(/\/auth\/verify/, { timeout: 20_000 });
     await expect(page.getByTestId('dev-otp-preview-panel')).toBeVisible({ timeout: 10_000 });
