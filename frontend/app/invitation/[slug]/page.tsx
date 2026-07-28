@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
@@ -12,6 +12,8 @@ import { buildPublicInvitationUrlPath } from '@/src/lib/publicInvitation';
 import { resolveInvitationBySlug } from '@/src/lib/resolveInvitationData';
 import EditorBackButton from '@/app/_components/EditorBackButton';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
+import InvitationMusicPlayer from '@/src/features/invitation/ui/InvitationMusicPlayer';
+import { resolvePlayableInvitationMusic } from '@/src/invitation/invitationMusic';
 import type { Invitation } from '@/src/lib/api';
 import {
   fetchTemplateDefinitionById,
@@ -59,8 +61,6 @@ export default function InvitationPage() {
   const [shared, setShared] = useState(false);
   const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
-  const [showPlayButton, setShowPlayButton] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const viewLoggedRef = useRef(false);
   const pageUrl = buildCanonicalUrl(`/invitation/${slug}`);
 
@@ -129,39 +129,6 @@ export default function InvitationPage() {
     };
   }, [invitation?.templateId]);
 
-  // 음악 자동 재생 시도
-  useEffect(() => {
-    if (!invitation?.musicKey) return;
-
-    const music = getMusicByKey(invitation.musicKey);
-    if (!music) return;
-
-    const audio = new Audio(music.src);
-    audioRef.current = audio;
-
-    // 자동 재생 시도
-    const playPromise = audio.play();
-
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          // 자동 재생 성공
-          setShowPlayButton(false);
-        })
-        .catch(() => {
-          // 자동 재생 실패 (브라우저 정책)
-          setShowPlayButton(true);
-        });
-    }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, [invitation?.musicKey]);
-
   const markShared = () => {
     setShared(true);
     setTimeout(() => setShared(false), 2000);
@@ -224,15 +191,6 @@ export default function InvitationPage() {
     window.open(`https://story.kakao.com/share?url=${encodeURIComponent(absolute)}`, '_blank', 'noopener,noreferrer');
   };
 
-  const handlePlayMusic = () => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(() => {
-        alert(t(I18N_KEYS.notice.audioPlayFailed));
-      });
-      setShowPlayButton(false);
-    }
-  };
-
   if (loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -285,6 +243,10 @@ export default function InvitationPage() {
   const fallbackTemplateKey =
     conceptType === 'FUNERAL' || templateCategory === 'funeral' ? 'funeral_classic' : 'invitation_full';
   const FallbackTemplate = getTemplateRenderer(fallbackTemplateKey);
+  const playableMusic = resolvePlayableInvitationMusic(runtimeDataOverride, (key) => {
+    const track = getMusicByKey(key);
+    return track ? { src: track.src, title: track.title } : undefined;
+  });
 
   return (
     <>
@@ -339,17 +301,9 @@ export default function InvitationPage() {
           >
             카카오 공유
           </button>
-          {invitation.musicKey ? (
-            <button
-              type="button"
-              onClick={handlePlayMusic}
-              className={`${publicInvitationMobile.shareButton} ${publicInvitationMobile.shareButtonMusic}`}
-            >
-              {showPlayButton ? t('playMusic') : '음악 다시 재생'}
-            </button>
-          ) : null}
         </div>
       </section>
+      {playableMusic ? <InvitationMusicPlayer music={playableMusic} /> : null}
       {shareFallbackUrl ? (
         <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
       ) : null}

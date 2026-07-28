@@ -280,7 +280,7 @@ export default function WeddingClassicInvitation({
             <div className={styles.coupleGrid}>
               {groomDisplay || groomImg || groomPhone ? (
                 <div className={styles.couplePerson}>
-                  <div className={styles.couplePhotoFrame}>
+                  <div className={styles.couplePhotoFrame} data-testid="couple-photo">
                     <ImageWithFallback
                       className={styles.couplePhoto}
                       src={groomImg || null}
@@ -307,7 +307,7 @@ export default function WeddingClassicInvitation({
               ) : null}
               {brideDisplay || brideImg || bridePhone ? (
                 <div className={styles.couplePerson}>
-                  <div className={styles.couplePhotoFrame}>
+                  <div className={styles.couplePhotoFrame} data-testid="couple-photo">
                     <ImageWithFallback
                       className={styles.couplePhoto}
                       src={brideImg || null}

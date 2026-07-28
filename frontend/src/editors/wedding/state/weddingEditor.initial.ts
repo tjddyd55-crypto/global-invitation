@@ -241,6 +241,13 @@ export function createWeddingEditorState(
         conceptType === 'GENERAL'
           ? '참가비 및 입금 안내'
           : translate(language, I18N_KEYS.weddingClassic.accountsTitle),
+      musicEnabled: false,
+      musicKey: undefined,
+      musicFileUrl: undefined,
+      musicFileKey: undefined,
+      musicTitle: undefined,
+      musicLoop: false,
+      musicStartAtSeconds: 0,
     },
     share: {
       ogTitle: buildOgTitle({ groomName, brideName, language }),
@@ -350,6 +357,13 @@ export function createWeddingEditorStateFromDraft(
           ? runtimeData.accountEnabled
           : base.extras.accountEnabled,
       accountsTitle: runtimeData.accountsTitle || base.extras.accountsTitle,
+      musicEnabled: Boolean(runtimeData.music?.enabled),
+      musicKey: runtimeData.music?.musicKey || undefined,
+      musicFileUrl: runtimeData.music?.fileUrl || undefined,
+      musicFileKey: runtimeData.music?.fileKey || undefined,
+      musicTitle: runtimeData.music?.title || undefined,
+      musicLoop: Boolean(runtimeData.music?.loop),
+      musicStartAtSeconds: runtimeData.music?.startAtSeconds ?? 0,
     },
     share: {
       ...base.share,

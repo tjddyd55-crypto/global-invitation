@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { getMusicByKey } from '@/src/constants/music';
-import { useI18n } from '@/src/contexts/I18nContext';
-import { I18N_KEYS } from '@/src/i18n';
 import { getSharedInvitationBySlug, type Invitation } from '@/src/lib/api';
 import { buildAbsolutePublicInvitationUrl, buildPublicInvitationUrlPath } from '@/src/lib/publicInvitation';
 import {
@@ -14,6 +12,8 @@ import { trackInvitationView } from '@/src/lib/trackInvitationView';
 import ShareFallbackNotice from '@/src/components/ShareFallbackNotice';
 import InvitationShareBlock from '@/src/components/share/InvitationShareBlock';
 import DesktopPublicSharePanel from '@/src/components/share/DesktopPublicSharePanel';
+import InvitationMusicPlayer from '@/src/features/invitation/ui/InvitationMusicPlayer';
+import { resolvePlayableInvitationMusic } from '@/src/invitation/invitationMusic';
 import {
   fetchTemplateDefinitionById,
   getTemplateRegistryEntry,
@@ -35,7 +35,6 @@ function resolveSafeSlug(value: unknown): string {
 export default function PublicShareInvitationPage() {
   const params = useParams();
   const shareSlugParam = resolveSafeSlug(params.slug);
-  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
@@ -43,8 +42,6 @@ export default function PublicShareInvitationPage() {
   const [shared, setShared] = useState(false);
   const [shareFallbackUrl, setShareFallbackUrl] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
-  const [showPlayButton, setShowPlayButton] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const analyticsTrackedSlugRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -102,30 +99,6 @@ export default function PublicShareInvitationPage() {
     };
   }, [templateId]);
 
-  useEffect(() => {
-    if (!invitation?.musicKey) return;
-
-    const music = getMusicByKey(invitation.musicKey);
-    if (!music) return;
-
-    const audio = new Audio(music.src);
-    audioRef.current = audio;
-
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => setShowPlayButton(false))
-        .catch(() => setShowPlayButton(true));
-    }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, [invitation?.musicKey]);
-
   const effectiveShareSlug = invitation?.shareSlug?.trim() || shareSlugParam;
 
   const markShared = () => {
@@ -139,15 +112,6 @@ export default function PublicShareInvitationPage() {
     analyticsTrackedSlugRef.current = invitation.slug;
     trackInvitationView(invitation.slug);
   }, [invitation?.slug, loading]);
-
-  const handlePlayMusic = () => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(() => {
-        alert(t(I18N_KEYS.notice.audioPlayFailed));
-      });
-      setShowPlayButton(false);
-    }
-  };
 
   const handleKakaoShare = () => {
     if (typeof window === 'undefined' || !invitation) return;
@@ -189,6 +153,14 @@ export default function PublicShareInvitationPage() {
   };
 
   const runtimeData = useMemo(() => invitation?.dataJson ?? invitation?.data ?? null, [invitation]);
+  const playableMusic = useMemo(
+    () =>
+      resolvePlayableInvitationMusic(runtimeData, (key) => {
+        const track = getMusicByKey(key);
+        return track ? { src: track.src, title: track.title } : undefined;
+      }),
+    [runtimeData]
+  );
 
   if (loading) {
     return (
@@ -283,15 +255,6 @@ export default function PublicShareInvitationPage() {
                 title={sharePresentation.metaTitle}
                 text={sharePresentation.metaDescription}
               />
-              {invitation.musicKey ? (
-                <button
-                  type="button"
-                  onClick={handlePlayMusic}
-                  className={`${publicInvitationMobile.shareButton} ${publicInvitationMobile.shareButtonMusic}`}
-                >
-                  {showPlayButton ? t(I18N_KEYS.fields.playMusic) : '음악 다시 재생'}
-                </button>
-              ) : null}
             </section>
           </div>
         </div>
@@ -310,6 +273,8 @@ export default function PublicShareInvitationPage() {
           ) : null}
         </aside>
       </div>
+
+      {playableMusic ? <InvitationMusicPlayer music={playableMusic} /> : null}
 
       {shareFallbackUrl ? (
         <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />

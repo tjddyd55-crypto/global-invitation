@@ -81,6 +81,14 @@ export type WeddingEditorExtras = {
   accountEnabled?: boolean;
   /** 공개 섹션 제목 (미입력 시 concept 기본 라벨) */
   accountsTitle?: string;
+  /** 배경 음악 — 기본 미사용 */
+  musicEnabled?: boolean;
+  musicKey?: string;
+  musicFileUrl?: string;
+  musicFileKey?: string;
+  musicTitle?: string;
+  musicLoop?: boolean;
+  musicStartAtSeconds?: number;
 };
 
 export type WeddingEditorShare = {

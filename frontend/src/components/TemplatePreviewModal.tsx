@@ -1,9 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { SAMPLE_INVITATION_DATA } from '@/src/constants/templates';
 import type { Template } from '@/src/constants/templates';
-import { getMusicByKey } from '@/src/constants/music';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { getTemplateName } from '@/src/utils/templateI18n';
@@ -17,38 +15,17 @@ interface TemplatePreviewModalProps {
 
 export default function TemplatePreviewModal({ template, onSelect, onClose }: TemplatePreviewModalProps) {
   const { t, language } = useI18n();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // 샘플 데이터 + 템플릿 기본 음악
+  // 샘플 데이터 — 기본 음악 자동 삽입·자동재생 없음
   const previewData = {
     ...SAMPLE_INVITATION_DATA,
     title: t(I18N_KEYS.sample.title),
     locationText: t(I18N_KEYS.sample.location),
     message: t(I18N_KEYS.sample.message),
-    musicKey: template.defaultMusicKey,
+    musicKey: null as string | null,
   };
 
-  useEffect(() => {
-    if (previewData.musicKey) {
-      const music = getMusicByKey(previewData.musicKey);
-      if (music) {
-        const audio = new Audio(music.src);
-        audioRef.current = audio;
-        audio.loop = true;
-        audio.volume = 0.5;
-        audio.play().catch(() => {
-          // Auto-play blocked, ignore
-        });
-      }
-    }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, [previewData.musicKey]);
+  void template.defaultMusicKey;
 
   const formatDate = (dateString: string) => {
     try {

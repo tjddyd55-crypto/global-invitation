@@ -310,10 +310,12 @@
 
 .coupleGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  max-width: 320px;
-  margin: 0 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .couplePerson {
@@ -322,11 +324,14 @@
   align-items: center;
   gap: 10px;
   text-align: center;
+  min-width: 0;
 }
 
 .couplePhotoFrame {
-  width: 120px;
-  height: 160px;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  min-height: 184px;
+  max-height: 210px;
   border-radius: 16px;
   overflow: hidden;
   flex-shrink: 0;

@@ -56,7 +56,17 @@ export type WeddingClassicData = {
     ogDescription?: string;
     ogImage?: string;
   };
-  musicKey?: string;
+  /** 선택형 배경 음악 — enabled=true 일 때만 공개 플레이어 표시 */
+  music?: {
+    enabled: boolean;
+    musicKey?: string;
+    fileUrl?: string;
+    fileKey?: string;
+    title?: string;
+    loop?: boolean;
+    startAtSeconds?: number;
+  };
+  musicKey?: string | null;
   heroImage: string;
   galleryImages: string[];
   accounts: WeddingClassicAccount[];
@@ -203,7 +213,7 @@ export function getWeddingClassicDemoInvitation(): Invitation {
     locationText: '더 웨딩홀 그랜드볼룸 · 서울 강남구',
     message: '봄날의 햇살 아래, 결혼합니다.',
     templateKey: 'wedding_classic',
-    musicKey: 'piano_wedding',
+    musicKey: null,
     countryCode: 'GLOBAL',
     language: 'ko',
     status: 'published',
@@ -254,7 +264,10 @@ export function buildWeddingClassicData(
       ogDescription: `${formatDateTime(language, weddingDate)} · ${invitation?.locationText || '더 웨딩홀 그랜드볼룸 · 서울 강남구'}`,
       ogImage: HERO_IMAGE,
     },
-    musicKey: invitation?.musicKey || 'piano_wedding',
+    music: {
+      enabled: false,
+    },
+    musicKey: invitation?.musicKey || null,
     heroImage: HERO_IMAGE,
     heroOverlayText: translate(language, I18N_KEYS.weddingClassic.heroOverlayText),
     heroTitle,

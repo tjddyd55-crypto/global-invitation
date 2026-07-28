@@ -17,7 +17,7 @@ export const TEMPLATES: Template[] = [
   {
     key: 'invitation_full',
     i18nKey: 'FULL',
-    defaultMusicKey: 'piano_wedding',
+    defaultMusicKey: '',
     thumbnail: '/templates/full.jpg',
     tags: {
       country: ['GLOBAL'],
@@ -41,5 +41,5 @@ export const SAMPLE_INVITATION_DATA = {
   eventDate: '2026-05-16T17:00:00',
   locationText: 'Sample Wedding Hall',
   message: '샘플 인사말 텍스트\n\n함께하는 소중한 순간을\n여러분과 나누고 싶습니다.',
-  musicKey: 'piano_wedding',
+  musicKey: null as string | null,
 };

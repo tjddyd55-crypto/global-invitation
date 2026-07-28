@@ -43,6 +43,11 @@ async function copyText(value: string): Promise<boolean> {
   }
 }
 
+function isLongInternationalNumber(value: string): boolean {
+  const compact = value.replace(/\s+/g, '');
+  return compact.length > 22 || /[A-Za-z]/.test(compact);
+}
+
 function AccountCard({
   account,
   onCopied,
@@ -50,17 +55,23 @@ function AccountCard({
   account: InvitationAccountItem;
   onCopied: () => void;
 }) {
+  const bank = (account.financialInstitution || '').trim();
+  const number = (account.accountNumber || '').trim();
+  const holder = (account.accountHolder || '').trim();
+  const longNumber = isLongInternationalNumber(number);
+  const hasExtras = Boolean(account.iban || account.swiftBic || account.routingCode || account.paymentNote);
+
   return (
     <div className={styles.accountCard} data-testid="account-card">
       <div className={styles.accountHeader}>
         <strong>{account.label || '계좌'}</strong>
-        {account.accountNumber ? (
+        {number ? (
           <button
             className={styles.copyButton}
             type="button"
             data-testid="account-copy"
             onClick={async () => {
-              const ok = await copyText(account.accountNumber);
+              const ok = await copyText(number);
               if (ok) onCopied();
             }}
           >
@@ -68,17 +79,28 @@ function AccountCard({
           </button>
         ) : null}
       </div>
-      {account.financialInstitution ? (
-        <div className={styles.line}>{account.financialInstitution}</div>
-      ) : null}
-      {account.accountNumber ? (
-        <div className={styles.accountNumber}>{account.accountNumber}</div>
-      ) : null}
-      {account.accountHolder ? <div className={styles.line}>{account.accountHolder}</div> : null}
-      {account.iban ? <div className={styles.meta}>IBAN {account.iban}</div> : null}
-      {account.swiftBic ? <div className={styles.meta}>SWIFT/BIC {account.swiftBic}</div> : null}
-      {account.routingCode ? (
-        <div className={styles.meta}>Routing/Sort {account.routingCode}</div>
+
+      <div className={styles.accountSummary} data-testid="account-summary">
+        {bank ? <span className={styles.accountBank}>{bank}</span> : null}
+        {bank && number ? <span className={styles.accountDot}>·</span> : null}
+        {number ? (
+          <span
+            className={longNumber ? styles.accountNumberWrap : styles.accountNumber}
+            data-testid="account-number"
+          >
+            {number}
+          </span>
+        ) : null}
+        {holder ? <span className={styles.accountDot}>·</span> : null}
+        {holder ? <span className={styles.accountHolder}>{holder}</span> : null}
+      </div>
+
+      {hasExtras ? (
+        <div className={styles.metaRow} data-testid="account-extras">
+          {account.iban ? <span>IBAN {account.iban}</span> : null}
+          {account.swiftBic ? <span>SWIFT {account.swiftBic}</span> : null}
+          {account.routingCode ? <span>Routing {account.routingCode}</span> : null}
+        </div>
       ) : null}
       {account.paymentNote ? <p className={styles.note}>{account.paymentNote}</p> : null}
     </div>

@@ -93,7 +93,7 @@ function validateRsvpPayload(payload: NormalizedRsvpPayload): string | null {
     return 'GUEST_NAME_TOO_LONG';
   }
 
-  if (payload.guestCount < 1 || payload.guestCount > 10) {
+  if (payload.guestCount < 1 || payload.guestCount > 99) {
     return 'INVALID_GUEST_COUNT';
   }
 
