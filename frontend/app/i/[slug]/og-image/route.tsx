@@ -14,9 +14,8 @@ export const dynamic = 'force-dynamic';
 
 export const runtime = 'edge';
 
-export const size = { width: 1200, height: 630 };
+const size = { width: 1200, height: 630 };
 
-export const contentType = 'image/png';
 
 /** 텍스트 안전 영역(양쪽·상하) */
 const PAD = 80;
