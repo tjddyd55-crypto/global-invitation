@@ -1,52 +1,39 @@
 'use client';
 
-import { useState } from 'react';
 import ImageUploader from '../components/ImageUploader';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorShare } from '../state/weddingEditor.types';
 import InvitationShareCardPreview from '@/src/components/share/InvitationShareCardPreview';
 import type { InvitationSharePreviewModel } from '@/src/invitation/sharePreviewModel';
-import { KAKAO_SHARE_FALLBACK_NOTICE, type KakaoShareMode } from '@/src/lib/shareKakaoTalk';
 
 type Step9ShareSettingsProps = {
   value: WeddingEditorShare;
   onChange: (value: Partial<WeddingEditorShare>) => void;
+  /** 이미지 모드 변경 후 즉시 PATCH */
+  onPersistShareChange?: (next: Partial<WeddingEditorShare>) => Promise<void>;
   heroImage: string;
   /** Mobile: 폼 아래 카드. Desktop: 우측 컬럼에서 표시하므로 false */
   showInlineShareCardPreview?: boolean;
   sharePreviewModel?: InvitationSharePreviewModel | null;
-  /** save → shareSlug → Kakao.Share.sendDefault (Editor draft만으로 SDK 호출 금지) */
-  onShareKakaoTalk?: () => Promise<KakaoShareMode | null>;
-  sharingKakao?: boolean;
+  persistingShareImage?: boolean;
 };
 
 export default function Step9ShareSettings({
   value,
   onChange,
+  onPersistShareChange,
   heroImage,
   showInlineShareCardPreview = false,
   sharePreviewModel,
-  onShareKakaoTalk,
-  sharingKakao,
+  persistingShareImage,
 }: Step9ShareSettingsProps) {
-  const [shareNotice, setShareNotice] = useState<string | null>(null);
+  const hero = (heroImage || '').trim();
+  const hasHero = Boolean(hero);
 
-  const handleShareKakao = async () => {
-    if (!onShareKakaoTalk) return;
-    setShareNotice(null);
-    try {
-      const mode = await onShareKakaoTalk();
-      if (mode === null) {
-        setShareNotice('공개 링크가 없습니다. 먼저 초대장을 공개한 뒤 공유해 주세요.');
-        return;
-      }
-      if (mode === 'kakao-sdk') {
-        setShareNotice('카카오톡 공유 창을 열었습니다.');
-        return;
-      }
-      setShareNotice(KAKAO_SHARE_FALLBACK_NOTICE);
-    } catch {
-      setShareNotice('저장 또는 카카오톡 공유에 실패했습니다. 다시 시도해 주세요.');
+  const applySharePatch = async (patch: Partial<WeddingEditorShare>) => {
+    onChange(patch);
+    if (onPersistShareChange) {
+      await onPersistShareChange(patch);
     }
   };
 
@@ -85,10 +72,17 @@ export default function Step9ShareSettings({
         </label>
         <ImageUploader
           label="공유 미리보기 이미지"
-          description="카카오톡과 메신저 링크 카드에 표시되는 이미지입니다. 권장 크기 1200×630px. 비우면 대표 이미지가 사용됩니다."
-          value={value.ogImage}
-          onChange={(next) => onChange({ ogImage: next })}
-          onClear={() => onChange({ ogImage: '' })}
+          description="직접 선택한 이미지가 공유 카드에 표시됩니다. 이미지를 선택하지 않으면 미리보기에는 표시되지 않으며, 실제 메신저 공유 시에는 기본 이미지가 사용될 수 있습니다."
+          value={value.ogImageMode === 'NONE' ? '' : value.ogImage}
+          onChange={(next) => {
+            void applySharePatch({
+              ogImage: next,
+              ogImageMode: next.trim() ? 'CUSTOM' : 'NONE',
+            });
+          }}
+          onClear={() => {
+            void applySharePatch({ ogImage: '', ogImageMode: 'NONE' });
+          }}
           uploadAssetType="asset"
           inputTestId="og-image-input"
         />
@@ -96,7 +90,11 @@ export default function Step9ShareSettings({
           <button
             type="button"
             className={styles.buttonSubtle}
-            onClick={() => onChange({ ogImage: (heroImage || '').trim() })}
+            onClick={() => {
+              if (!hasHero) return;
+              void applySharePatch({ ogImage: hero, ogImageMode: 'HERO' });
+            }}
+            disabled={!hasHero || persistingShareImage}
             data-testid="og-use-hero"
           >
             대표 이미지 사용
@@ -104,14 +102,26 @@ export default function Step9ShareSettings({
           <button
             type="button"
             className={styles.buttonSubtle}
-            onClick={() => onChange({ ogImage: '' })}
+            onClick={() => {
+              void applySharePatch({ ogImage: '', ogImageMode: 'NONE' });
+            }}
+            disabled={persistingShareImage}
             data-testid="og-clear-image"
           >
             이미지 제거
           </button>
         </div>
+        {!hasHero ? (
+          <p className={styles.fieldDescription}>대표 이미지가 없어 ‘대표 이미지 사용’을 쓸 수 없습니다.</p>
+        ) : null}
+        {persistingShareImage ? (
+          <p className={styles.fieldDescription} data-testid="og-image-persisting">
+            공유 이미지 설정을 저장하는 중…
+          </p>
+        ) : null}
         {showInlineShareCardPreview && sharePreviewModel ? (
           <InvitationShareCardPreview
+            key={`${sharePreviewModel.imageMode}:${sharePreviewModel.imageUrl || 'none'}`}
             title={sharePreviewModel.title}
             description={sharePreviewModel.description}
             imageUrl={sharePreviewModel.imageUrl}
@@ -120,20 +130,6 @@ export default function Step9ShareSettings({
             hasPublicUrl={sharePreviewModel.hasPublicUrl}
           />
         ) : null}
-        {onShareKakaoTalk ? (
-          <div className={styles.uploaderActions}>
-            <button
-              type="button"
-              className={styles.buttonPrimary}
-              onClick={() => void handleShareKakao()}
-              disabled={sharingKakao}
-              data-testid="og-share-kakao-talk"
-            >
-              {sharingKakao ? '저장 후 공유 중…' : '저장 후 카카오톡 공유'}
-            </button>
-          </div>
-        ) : null}
-        {shareNotice ? <p className={styles.fieldDescription}>{shareNotice}</p> : null}
       </div>
     </section>
   );

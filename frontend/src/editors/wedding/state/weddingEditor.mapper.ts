@@ -98,6 +98,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     title: state.share.ogTitle,
     description: state.share.ogDescription,
     imageUrl: (state.share.ogImage ?? '').trim() || undefined,
+    imageMode: state.share.ogImageMode || 'NONE',
   });
 
   const base = {

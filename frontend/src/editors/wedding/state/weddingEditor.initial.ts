@@ -274,6 +274,7 @@ export function createWeddingEditorState(
       ogTitle: buildOgTitle({ groomName, brideName, language }),
       ogDescription: buildOgDescription(eventDateTime, venueName, language),
       ogImage: undefined,
+      ogImageMode: 'NONE',
     },
   };
 }
@@ -424,11 +425,45 @@ export function createWeddingEditorStateFromDraft(
       ogDescription:
         pickShareString(runtimeData, 'ogDescription') ||
         base.share.ogDescription,
-      ogImage:
-        pickShareString(runtimeData, 'ogImage') ||
-        pickOpenGraphImage(runtimeData) ||
-        base.share.ogImage,
+      ...resolveShareImageFromDraft(runtimeData, base.share),
     },
+  };
+}
+
+function resolveShareImageFromDraft(
+  runtimeData: WeddingInvitationData,
+  baseShare: WeddingEditorState['share']
+): Pick<WeddingEditorState['share'], 'ogImage' | 'ogImageMode'> {
+  const share = (runtimeData as { share?: Record<string, unknown> }).share;
+  const openGraph = (runtimeData as { openGraph?: Record<string, unknown> }).openGraph;
+  const imageRemoved =
+    openGraph?.imageRemoved === true ||
+    share?.ogImageRemoved === true ||
+    openGraph?.imageMode === 'NONE' ||
+    share?.ogImageMode === 'NONE';
+
+  if (imageRemoved) {
+    return { ogImage: '', ogImageMode: 'NONE' };
+  }
+
+  if (openGraph?.imageMode === 'HERO' || share?.ogImageMode === 'HERO') {
+    const hero =
+      typeof (runtimeData as { heroImage?: unknown }).heroImage === 'string'
+        ? String((runtimeData as { heroImage?: string }).heroImage).trim()
+        : '';
+    const stored = pickShareString(runtimeData, 'ogImage') || pickOpenGraphImage(runtimeData);
+    return { ogImage: stored || hero || '', ogImageMode: 'HERO' };
+  }
+
+  const custom = pickShareString(runtimeData, 'ogImage') || pickOpenGraphImage(runtimeData);
+  if (custom || openGraph?.imageMode === 'CUSTOM' || share?.ogImageMode === 'CUSTOM') {
+    return { ogImage: custom || '', ogImageMode: 'CUSTOM' };
+  }
+
+  // Legacy: editor 입력란에 Hero를 채우지 않음 (빈 카드). Public SSOT는 LEGACY hero fallback.
+  return {
+    ogImage: baseShare.ogImage || '',
+    ogImageMode: baseShare.ogImageMode || 'NONE',
   };
 }
 

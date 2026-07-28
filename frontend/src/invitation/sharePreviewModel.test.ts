@@ -59,20 +59,48 @@ test('unpublished invitation does not show root URL', () => {
   assert.equal(model.title, 'Draft Title');
 });
 
-test('hero image fallback when OG image missing', () => {
-  const hero = 'https://cdn.platform-assets.com/invitation/shared/hero.jpg';
+test('legacy empty OG image does not auto-show hero in editor preview', () => {
   const model = buildInvitationSharePreviewModel({
     siteOrigin: SITE,
     shareSlug: 'abc',
     invitationLike: {
       dataJson: {
-        heroImage: hero,
+        heroImage: 'https://cdn.platform-assets.com/invitation/shared/hero.jpg',
         openGraph: { title: 'T', description: 'D' },
         share: { ogTitle: 'T', ogDescription: 'D', ogImage: '' },
       },
     },
   });
-  assert.equal(model.imageUrl, hero);
+  // Editor preview: legacy empty does not auto-show hero
+  assert.equal(model.imageUrl, undefined);
+});
+
+test('NONE mode keeps preview image empty', () => {
+  const model = buildInvitationSharePreviewModel({
+    siteOrigin: SITE,
+    shareSlug: 'abc',
+    invitationLike: {
+      dataJson: {
+        heroImage: 'https://cdn.platform-assets.com/invitation/shared/hero.jpg',
+        openGraph: {
+          title: 'T',
+          description: 'D',
+          imageMode: 'NONE',
+          imageUrl: '',
+          imageRemoved: true,
+        },
+        share: {
+          ogTitle: 'T',
+          ogDescription: 'D',
+          ogImage: '',
+          ogImageMode: 'NONE',
+          ogImageRemoved: true,
+        },
+      },
+    },
+  });
+  assert.equal(model.imageMode, 'NONE');
+  assert.equal(model.imageUrl, undefined);
 });
 
 test('preview model matches KakaoTalk payload fields', () => {

@@ -3,10 +3,13 @@
  * Server Component에서도 import 가능한 순수 TypeScript 모듈.
  */
 
+export type OpenGraphImageMode = 'CUSTOM' | 'HERO' | 'NONE';
+
 export type InvitationOpenGraphSettings = {
   title: string;
   description: string;
   imageUrl?: string;
+  imageMode: OpenGraphImageMode | 'LEGACY';
   canonicalUrl: string;
 };
 
@@ -19,6 +22,9 @@ export type InvitationOpenGraphInput = {
   shareSlug?: string | null;
   slug?: string | null;
 };
+
+/** getInvitationOpenGraphSettings 이미지 해석 목적 */
+export type OpenGraphImagePurpose = 'editor-preview' | 'public-meta' | 'share-payload';
 
 const TITLE_MAX = 80;
 const DESCRIPTION_MAX = 160;
@@ -34,6 +40,13 @@ const DEFAULT_DESCRIPTION = {
   FUNERAL: '삼가 알려드립니다',
   GENERAL: '행사에 초대드립니다',
 } as const;
+
+/** Kakao feed 등 imageUrl 권장 시 NONE 상태 concept 공용 fallback */
+const CONCEPT_SHARE_FALLBACK_IMAGE: Record<keyof typeof DEFAULT_TITLE, string> = {
+  WEDDING: 'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg',
+  FUNERAL: 'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg',
+  GENERAL: 'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg',
+};
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -86,7 +99,6 @@ export function isValidOpenGraphImageUrl(url: string): boolean {
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
     const host = parsed.hostname.toLowerCase();
     if (host === 'localhost' || host === '127.0.0.1' || host === '::1') return false;
-    // Reject obvious short-lived signed PUT/GET markers when used as permanent OG.
     if (/[?&]X-Amz-Signature=/i.test(parsed.search) || /[?&]Signature=/i.test(parsed.search)) {
       return false;
     }
@@ -156,19 +168,86 @@ export function buildPublicCanonicalUrl(siteOrigin: string, shareSlug: string): 
   return `${origin}/i/${encodeURIComponent(slug)}`;
 }
 
+function parseImageMode(value: unknown): OpenGraphImageMode | null {
+  if (value === 'CUSTOM' || value === 'HERO' || value === 'NONE') return value;
+  return null;
+}
+
+/**
+ * openGraph/share 필드에서 이미지 모드를 판정한다.
+ * 명시적 NONE/제거는 Hero 자동 복귀를 막는다.
+ */
+export function resolveOpenGraphImageMode(
+  openGraph: Record<string, unknown>,
+  share: Record<string, unknown>
+): OpenGraphImageMode | 'LEGACY' {
+  if (openGraph.imageRemoved === true || share.ogImageRemoved === true) return 'NONE';
+  const fromOg = parseImageMode(openGraph.imageMode);
+  if (fromOg) return fromOg;
+  const fromShare = parseImageMode(share.ogImageMode);
+  if (fromShare) return fromShare;
+
+  const custom = pickString(openGraph.imageUrl, openGraph.ogImageUrl, share.ogImage, share.ogImageUrl);
+  if (custom) return 'CUSTOM';
+  return 'LEGACY';
+}
+
+function resolveImageByMode(params: {
+  mode: OpenGraphImageMode | 'LEGACY';
+  customRaw: string;
+  heroRaw: string;
+  concept: keyof typeof DEFAULT_TITLE;
+  purpose: OpenGraphImagePurpose;
+  siteOrigin?: string;
+}): string | undefined {
+  const { mode, customRaw, heroRaw, concept, purpose, siteOrigin } = params;
+
+  if (mode === 'NONE') {
+    // Editor: placeholder. Public: dynamic route fallback at layout. Kakao: concept CDN.
+    if (purpose === 'share-payload') {
+      return resolveAbsoluteOpenGraphImageUrl(CONCEPT_SHARE_FALLBACK_IMAGE[concept], siteOrigin);
+    }
+    return undefined;
+  }
+
+  if (mode === 'CUSTOM') {
+    return resolveAbsoluteOpenGraphImageUrl(customRaw, siteOrigin);
+  }
+
+  if (mode === 'HERO') {
+    return resolveAbsoluteOpenGraphImageUrl(heroRaw, siteOrigin);
+  }
+
+  // LEGACY: 명시 모드 없는 기존 데이터
+  const custom = resolveAbsoluteOpenGraphImageUrl(customRaw, siteOrigin);
+  if (custom) return custom;
+
+  // Editor preview: 빈 입력 = 빈 카드 (자동 Hero 금지)
+  if (purpose === 'editor-preview') return undefined;
+
+  // Public/Kakao: 기존처럼 Hero → concept placeholder
+  const hero = resolveAbsoluteOpenGraphImageUrl(heroRaw, siteOrigin);
+  if (hero) return hero;
+  if (purpose === 'share-payload') {
+    return resolveAbsoluteOpenGraphImageUrl(CONCEPT_SHARE_FALLBACK_IMAGE[concept], siteOrigin);
+  }
+  return undefined;
+}
+
 /**
  * Invitation/public payload → Open Graph settings.
  */
 export function getInvitationOpenGraphSettings(
   invitationLike: InvitationOpenGraphInput | null | undefined,
   publicUrl: string,
-  options?: { siteOrigin?: string }
+  options?: { siteOrigin?: string; purpose?: OpenGraphImagePurpose }
 ): InvitationOpenGraphSettings {
   const inv = asRecord(invitationLike);
   const data = asRecord(inv.dataJson ?? invitationLike?.dataJson ?? inv.data ?? invitationLike?.data ?? {});
   const share = asRecord(data.share);
   const openGraph = asRecord(data.openGraph);
   const concept = pickConcept(data, inv);
+  const purpose = options?.purpose || 'public-meta';
 
   const rawTitle = pickString(
     openGraph.title,
@@ -207,22 +286,30 @@ export function getInvitationOpenGraphSettings(
   );
   const description = sanitizeOpenGraphDescription(rawDescription || DEFAULT_DESCRIPTION[concept]);
 
-  const rawImage = pickString(
-    openGraph.imageUrl,
-    openGraph.ogImageUrl,
-    share.ogImage,
-    data.ogImageUrl,
-    data.ogImage,
-    data.heroImage
-  );
-  const imageUrl = resolveAbsoluteOpenGraphImageUrl(rawImage, options?.siteOrigin);
+  const imageMode = resolveOpenGraphImageMode(openGraph, share);
+  const customRaw = pickString(openGraph.imageUrl, openGraph.ogImageUrl, share.ogImage, share.ogImageUrl);
+  const heroRaw = pickString(data.heroImage);
+  const imageUrl = resolveImageByMode({
+    mode: imageMode,
+    customRaw,
+    heroRaw,
+    concept,
+    purpose,
+    siteOrigin: options?.siteOrigin,
+  });
 
-  const canonicalUrl = (publicUrl || '').trim() || buildPublicCanonicalUrl(options?.siteOrigin || '', pickString(inv.shareSlug, invitationLike?.shareSlug, inv.slug, invitationLike?.slug));
+  const canonicalUrl =
+    (publicUrl || '').trim() ||
+    buildPublicCanonicalUrl(
+      options?.siteOrigin || '',
+      pickString(inv.shareSlug, invitationLike?.shareSlug, inv.slug, invitationLike?.slug)
+    );
 
   return {
     title: title || DEFAULT_TITLE[concept],
     description: description || DEFAULT_DESCRIPTION[concept],
     imageUrl,
+    imageMode,
     canonicalUrl,
   };
 }
@@ -232,25 +319,52 @@ export function buildOpenGraphSaveFields(input: {
   title: string;
   description: string;
   imageUrl?: string;
+  imageMode: OpenGraphImageMode;
 }): {
-  openGraph: { title: string; description: string; imageUrl?: string };
-  share: { ogTitle: string; ogDescription: string; ogImage: string };
+  openGraph: {
+    title: string;
+    description: string;
+    imageMode: OpenGraphImageMode;
+    imageUrl: string;
+    imageKey?: string;
+    imageRemoved: boolean;
+  };
+  share: {
+    ogTitle: string;
+    ogDescription: string;
+    ogImage: string;
+    ogImageMode: OpenGraphImageMode;
+    ogImageRemoved: boolean;
+  };
 } {
   const title = sanitizeOpenGraphTitle(input.title);
   const description = sanitizeOpenGraphDescription(input.description);
+  const imageMode = input.imageMode;
   const imageUrl = input.imageUrl?.trim() || '';
-  const safeImage = imageUrl && isValidOpenGraphImageUrl(imageUrl) ? imageUrl : imageUrl.startsWith('/') ? imageUrl : '';
+
+  let safeImage = '';
+  if (imageMode === 'NONE') {
+    safeImage = '';
+  } else if (imageUrl && isValidOpenGraphImageUrl(imageUrl)) {
+    safeImage = imageUrl;
+  } else if (imageUrl.startsWith('/')) {
+    safeImage = imageUrl;
+  }
 
   return {
     openGraph: {
       title,
       description,
-      ...(safeImage ? { imageUrl: safeImage } : {}),
+      imageMode,
+      imageUrl: safeImage,
+      imageRemoved: imageMode === 'NONE',
     },
     share: {
       ogTitle: title,
       ogDescription: description,
       ogImage: safeImage,
+      ogImageMode: imageMode,
+      ogImageRemoved: imageMode === 'NONE',
     },
   };
 }

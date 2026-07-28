@@ -99,6 +99,8 @@ export type WeddingEditorShare = {
   ogTitle: string;
   ogDescription: string;
   ogImage?: string;
+  /** CUSTOM | HERO | NONE — NONE이면 Hero 자동 fallback 금지 */
+  ogImageMode: 'CUSTOM' | 'HERO' | 'NONE';
 };
 
 export type WeddingEditorState = {

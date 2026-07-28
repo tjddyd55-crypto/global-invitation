@@ -9,8 +9,6 @@ import {
   publishInvitationById,
   saveInvitationDraftById,
 } from '@/src/lib/api';
-import { shareKakaoTalkAfterPersist } from '@/src/lib/shareKakaoTalkFromPersisted';
-import type { KakaoShareMode } from '@/src/lib/shareKakaoTalk';
 import WeddingEditor from '@/src/editors/wedding/WeddingEditor';
 import {
   createWeddingEditorState,
@@ -216,7 +214,6 @@ export default function EditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [sharingKakao, setSharingKakao] = useState(false);
   const [error, setError] = useState<EditorError | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
@@ -485,36 +482,6 @@ export default function EditorPage() {
     }
   };
 
-  const handleShareKakaoTalk = async (state: WeddingEditorState): Promise<KakaoShareMode | null> => {
-    if (!invitation?.id) return null;
-    setSharingKakao(true);
-    setSaveError(null);
-    try {
-      const { mode } = await shareKakaoTalkAfterPersist({
-        siteOrigin: window.location.origin,
-        persist: async () => {
-          const saved = await handleSave(state);
-          if (!saved) throw new Error('SAVE_FAILED');
-          // shareSlug는 publish 응답에만 있을 수 있으므로 최신 조회로 보강
-          const latest = await getInvitationForEditor(saved.id, requestedToken);
-          setInvitation(latest);
-          if (!latest.shareSlug?.trim()) {
-            throw new Error('MISSING_SHARE_SLUG');
-          }
-          return latest;
-        },
-      });
-      return mode;
-    } catch (error) {
-      if (error instanceof Error && error.message === 'MISSING_SHARE_SLUG') {
-        return null;
-      }
-      throw error;
-    } finally {
-      setSharingKakao(false);
-    }
-  };
-
   const handleSaveAndExit = async (state: WeddingEditorState) => {
     try {
       await handleSave(state);
@@ -711,11 +678,9 @@ export default function EditorPage() {
         onSave={handleSave}
         onSaveAndExit={handleSaveAndExit}
         onPublish={handlePublish}
-        onShareKakaoTalk={handleShareKakaoTalk}
         shareSlug={invitation.shareSlug}
         saving={saving}
         publishing={publishing}
-        sharingKakao={sharingKakao}
         isDemo={false}
         saveError={saveError}
         saveNotice={saveNotice}

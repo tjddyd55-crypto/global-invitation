@@ -20,6 +20,7 @@ test('prefers openGraph and share.og* over invitation title', () => {
         openGraph: {
           title: 'OG Title',
           description: 'OG Description',
+          imageMode: 'CUSTOM',
           imageUrl: 'https://cdn.example.com/invitation/development/users/u/invitations/i/og/a.jpg',
         },
       },
@@ -34,6 +35,7 @@ test('prefers openGraph and share.og* over invitation title', () => {
     settings.imageUrl,
     'https://cdn.example.com/invitation/development/users/u/invitations/i/og/a.jpg'
   );
+  assert.equal(settings.imageMode, 'CUSTOM');
   assert.equal(settings.canonicalUrl, 'https://frontend.example/i/abc');
 });
 
@@ -55,10 +57,11 @@ test('legacy share.ogTitle is compatible', () => {
   assert.equal(settings.title, 'Legacy Title');
   assert.equal(settings.description, 'Legacy Description');
   assert.equal(settings.imageUrl, 'https://cdn.example.com/hero.jpg');
+  assert.equal(settings.imageMode, 'CUSTOM');
 });
 
-test('hero image fallback when OG image missing', () => {
-  const settings = getInvitationOpenGraphSettings(
+test('legacy missing OG image falls back to hero for public-meta only', () => {
+  const publicSettings = getInvitationOpenGraphSettings(
     {
       dataJson: {
         conceptType: 'WEDDING',
@@ -66,8 +69,69 @@ test('hero image fallback when OG image missing', () => {
         share: { ogTitle: 'T', ogDescription: 'D' },
       },
     },
-    'https://frontend.example/i/x'
+    'https://frontend.example/i/x',
+    { purpose: 'public-meta' }
   );
+  assert.equal(publicSettings.imageUrl, 'https://cdn.example.com/hero.jpg');
+  assert.equal(publicSettings.imageMode, 'LEGACY');
+
+  const editorSettings = getInvitationOpenGraphSettings(
+    {
+      dataJson: {
+        conceptType: 'WEDDING',
+        heroImage: 'https://cdn.example.com/hero.jpg',
+        share: { ogTitle: 'T', ogDescription: 'D' },
+      },
+    },
+    'https://frontend.example/i/x',
+    { purpose: 'editor-preview' }
+  );
+  assert.equal(editorSettings.imageUrl, undefined);
+});
+
+test('NONE mode never falls back to hero in editor preview', () => {
+  const settings = getInvitationOpenGraphSettings(
+    {
+      dataJson: {
+        conceptType: 'WEDDING',
+        heroImage: 'https://cdn.example.com/hero.jpg',
+        openGraph: {
+          title: 'T',
+          description: 'D',
+          imageMode: 'NONE',
+          imageUrl: '',
+          imageRemoved: true,
+        },
+        share: {
+          ogTitle: 'T',
+          ogDescription: 'D',
+          ogImage: '',
+          ogImageMode: 'NONE',
+          ogImageRemoved: true,
+        },
+      },
+    },
+    'https://frontend.example/i/x',
+    { purpose: 'editor-preview' }
+  );
+  assert.equal(settings.imageMode, 'NONE');
+  assert.equal(settings.imageUrl, undefined);
+});
+
+test('HERO mode uses hero only when explicitly set', () => {
+  const settings = getInvitationOpenGraphSettings(
+    {
+      dataJson: {
+        conceptType: 'WEDDING',
+        heroImage: 'https://cdn.example.com/hero.jpg',
+        openGraph: { title: 'T', description: 'D', imageMode: 'HERO', imageUrl: '' },
+        share: { ogTitle: 'T', ogDescription: 'D', ogImage: '', ogImageMode: 'HERO' },
+      },
+    },
+    'https://frontend.example/i/x',
+    { purpose: 'editor-preview' }
+  );
+  assert.equal(settings.imageMode, 'HERO');
   assert.equal(settings.imageUrl, 'https://cdn.example.com/hero.jpg');
 });
 
@@ -82,13 +146,26 @@ test('sanitize clamps title/description', () => {
   assert.ok(sanitizeOpenGraphDescription('b'.repeat(300)).length <= 160);
 });
 
-test('save fields sync openGraph and legacy share', () => {
+test('save fields sync openGraph and legacy share with NONE', () => {
   const fields = buildOpenGraphSaveFields({
     title: '  Hello  ',
     description: ' World ',
     imageUrl: 'https://cdn.example.com/og.jpg',
+    imageMode: 'CUSTOM',
   });
   assert.equal(fields.openGraph.title, 'Hello');
   assert.equal(fields.share.ogTitle, 'Hello');
   assert.equal(fields.share.ogImage, 'https://cdn.example.com/og.jpg');
+  assert.equal(fields.openGraph.imageMode, 'CUSTOM');
+
+  const cleared = buildOpenGraphSaveFields({
+    title: 'Hello',
+    description: 'World',
+    imageUrl: 'https://cdn.example.com/og.jpg',
+    imageMode: 'NONE',
+  });
+  assert.equal(cleared.openGraph.imageUrl, '');
+  assert.equal(cleared.share.ogImage, '');
+  assert.equal(cleared.openGraph.imageRemoved, true);
+  assert.equal(cleared.openGraph.imageMode, 'NONE');
 });

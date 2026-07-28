@@ -33,11 +33,8 @@ type WeddingEditorProps = {
   onSave?: (state: WeddingEditorState) => Promise<unknown> | void;
   onSaveAndExit?: (state: WeddingEditorState) => Promise<unknown> | void;
   onPublish?: (state: WeddingEditorState) => Promise<unknown> | void;
-  /** PATCH 저장 후 persisted OG로 KakaoTalk 공유 (local draft SDK 호출 금지) */
-  onShareKakaoTalk?: (state: WeddingEditorState) => Promise<'kakao-sdk' | 'native-share' | 'clipboard' | null>;
   saving?: boolean;
   publishing?: boolean;
-  sharingKakao?: boolean;
   isDemo?: boolean;
   saveError?: string | null;
   saveNotice?: string | null;
@@ -52,10 +49,8 @@ export default function WeddingEditor({
   onSave,
   onSaveAndExit,
   onPublish,
-  onShareKakaoTalk,
   saving,
   publishing,
-  sharingKakao,
   isDemo,
   saveError,
   saveNotice,
@@ -66,6 +61,7 @@ export default function WeddingEditor({
   const [currentStep, setCurrentStep] = useState(0);
   const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
   const [hasBlockingUploadState, setHasBlockingUploadState] = useState(false);
+  const [persistingShareImage, setPersistingShareImage] = useState(false);
   const [siteOrigin, setSiteOrigin] = useState('');
   const previewLoggedRef = useRef(false);
   const shell = useEditorShell();
@@ -157,6 +153,24 @@ export default function WeddingEditor({
     });
   };
 
+  const handlePersistShareChange = async (payload: Partial<WeddingEditorState['share']>) => {
+    const nextState: WeddingEditorState = {
+      ...state,
+      share: {
+        ...state.share,
+        ...payload,
+      },
+    };
+    dispatch({ type: 'SET_SHARE', payload });
+    if (!onSave) return;
+    setPersistingShareImage(true);
+    try {
+      await onSave(nextState);
+    } finally {
+      setPersistingShareImage(false);
+    }
+  };
+
   const conceptLabel =
     state.setup.conceptType === 'WEDDING'
       ? '결혼식 초대장'
@@ -241,15 +255,11 @@ export default function WeddingEditor({
           <Step9ShareSettings
             value={state.share}
             onChange={(payload) => dispatch({ type: 'SET_SHARE', payload })}
+            onPersistShareChange={onSave ? handlePersistShareChange : undefined}
             heroImage={state.hero.heroImage}
             showInlineShareCardPreview={shell === 'mobile'}
             sharePreviewModel={sharePreviewModel}
-            sharingKakao={sharingKakao}
-            onShareKakaoTalk={
-              onShareKakaoTalk
-                ? async () => onShareKakaoTalk(state)
-                : undefined
-            }
+            persistingShareImage={persistingShareImage}
           />
         );
       default:
@@ -429,6 +439,7 @@ export default function WeddingEditor({
                 data-testid="desktop-share-card-preview-slot"
               >
                 <InvitationShareCardPreview
+                  key={`${sharePreviewModel.imageMode}:${sharePreviewModel.imageUrl || 'none'}`}
                   title={sharePreviewModel.title}
                   description={sharePreviewModel.description}
                   imageUrl={sharePreviewModel.imageUrl}

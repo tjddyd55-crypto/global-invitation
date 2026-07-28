@@ -134,7 +134,11 @@ function pushDetailLine(out: string[], line: string) {
  */
 export function extractSharePresentationFromPayload(
   invitationLike: unknown,
-  options?: { canonicalUrl?: string; siteOrigin?: string }
+  options?: {
+    canonicalUrl?: string;
+    siteOrigin?: string;
+    purpose?: 'editor-preview' | 'public-meta' | 'share-payload';
+  }
 ): SharePresentation {
   const inv = asRecord(invitationLike);
   const data = asRecord(inv.dataJson ?? inv.data ?? {});
@@ -142,6 +146,7 @@ export function extractSharePresentationFromPayload(
 
   const og = getInvitationOpenGraphSettings(invitationLike as never, options?.canonicalUrl || '', {
     siteOrigin: options?.siteOrigin,
+    purpose: options?.purpose || 'public-meta',
   });
 
   const metaTitle = og.title || DEFAULT_TITLE[concept];
@@ -152,10 +157,8 @@ export function extractSharePresentationFromPayload(
   const eventLine = eventRaw ? formatWhen(eventRaw) : null;
   const locationLine = pickString(inv.locationText, data.locationText, data.address, data.venueName);
 
-  const shareRec = asRecord(data.share);
-  const openGraphRec = asRecord(data.openGraph);
-  const heroImageRaw =
-    pickString(openGraphRec.imageUrl, shareRec.ogImage, data.ogImage, data.heroImage) || null;
+  // OG 이미지 카드용 — NONE이면 Hero를 끌어오지 않음
+  const heroImageRaw = og.imageUrl || null;
 
   const titleLines = buildOgTitleLines(metaTitle);
   const detailLines: string[] = [];
@@ -186,7 +189,11 @@ export function extractSharePresentationFromPayload(
 
 export function extractSharePresentationFromInvitation(
   invitation: Invitation,
-  options?: { canonicalUrl?: string; siteOrigin?: string }
+  options?: {
+    canonicalUrl?: string;
+    siteOrigin?: string;
+    purpose?: 'editor-preview' | 'public-meta' | 'share-payload';
+  }
 ): SharePresentation {
   return extractSharePresentationFromPayload(invitation, options);
 }

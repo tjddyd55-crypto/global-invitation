@@ -162,6 +162,7 @@ export default function PublicShareInvitationPage() {
   const sharePresentation = extractSharePresentationFromInvitation(invitation, {
     canonicalUrl: sharePageUrl.startsWith('http') ? sharePageUrl : undefined,
     siteOrigin: typeof window !== 'undefined' ? window.location.origin : undefined,
+    purpose: 'share-payload',
   });
   const baseSlug = invitation.slug;
   return (

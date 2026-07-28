@@ -5,6 +5,7 @@
 import {
   getInvitationOpenGraphSettings,
   type InvitationOpenGraphInput,
+  type OpenGraphImageMode,
 } from './openGraphSettings';
 import { buildAbsolutePublicInvitationUrl } from '../lib/publicInvitation';
 
@@ -12,6 +13,7 @@ export type InvitationSharePreviewModel = {
   title: string;
   description: string;
   imageUrl?: string;
+  imageMode: OpenGraphImageMode | 'LEGACY';
   /** 전체 canonical URL. 미공개면 빈 문자열 (루트 fallback 금지). */
   canonicalUrl: string;
   /** 표시용 host + /i/{slug}. 미공개면 빈 문자열. */
@@ -32,6 +34,7 @@ export function formatShareCardDisplayUrl(canonicalUrl: string): string {
 
 /**
  * Editor draft / persisted invitation → 메신저 공유 카드 preview model.
+ * purpose=editor-preview: NONE/빈 입력 시 Hero 자동 표시 금지.
  */
 export function buildInvitationSharePreviewModel(params: {
   invitationLike: InvitationOpenGraphInput;
@@ -52,13 +55,14 @@ export function buildInvitationSharePreviewModel(params: {
       shareSlug: shareSlug || null,
     },
     canonicalUrl,
-    { siteOrigin }
+    { siteOrigin, purpose: 'editor-preview' }
   );
 
   return {
     title: og.title,
     description: og.description,
     imageUrl: og.imageUrl,
+    imageMode: og.imageMode,
     canonicalUrl,
     displayUrl: hasPublicUrl ? formatShareCardDisplayUrl(canonicalUrl) : '',
     hasPublicUrl,
