@@ -4,7 +4,7 @@
  * ❗ CHANGE BOUNDARY
  * - SIMPLE MVP 수정 금지
  * - Runtime Contract 없는 변경 = BUG
- * - RSVP: 서버 API만 사용 (/api/rsvp + RSVPForm). 이 컴포넌트는 RSVP UI를 렌더하지 않음.
+ * - RSVP: InvitationRsvpSection (Preview/Public 공통). CTA 문구는 getInvitationRsvpSettings.
  * @see docs/INVITATION_RUNTIME_CONTRACT.md
  * @see docs/CHANGE_GOVERNANCE.md
  */
@@ -16,6 +16,7 @@ import { I18N_KEYS } from '@/src/i18n';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import GalleryCarousel from '@/src/templates/shared/GalleryCarousel';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
+import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import InvitationCommentsSection from '@/src/features/comments/ui/InvitationCommentsSection';
 import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
@@ -30,7 +31,7 @@ type WeddingClassicInvitationProps = {
   showPlayButton?: boolean;
   previewMode?: boolean;
   onPlayMusic?: () => void;
-  /** 하위 호환: 과거 템플릿 내 RSVP용. 더 이상 사용하지 않음 (RSVP는 페이지 단 RSVPForm). */
+  /** @deprecated visibility 는 data.rsvpEnabled / getInvitationRsvpSettings 가 SSOT */
   showRsvp?: boolean;
   showGuestbook?: boolean;
   onShare?: () => void;
@@ -84,8 +85,6 @@ export default function WeddingClassicInvitation({
   isShared: _isSharedUnused = false,
 }: WeddingClassicInvitationProps) {
   const { t } = useI18n();
-  void invitationSlug;
-  void previewMode;
   void _showRsvpUnused;
   void _onShareUnused;
   void _onKakaoShareUnused;
@@ -442,6 +441,13 @@ export default function WeddingClassicInvitation({
           className={styles.accountsSection}
         />
       ) : null}
+
+      <InvitationRsvpSection
+        data={data}
+        conceptType={conceptType}
+        invitationSlug={invitationSlug}
+        previewMode={Boolean(previewMode) || !invitationSlug}
+      />
 
       {showLiveComments ? (
         <InvitationCommentsSection

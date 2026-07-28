@@ -114,10 +114,11 @@ export type WeddingClassicData = {
   mapImage?: string;
   transportInfo?: string[];
   parkingInfo?: string[];
-  rsvp?: { enabled?: boolean };
+  rsvp?: { enabled?: boolean; buttonLabel?: string; sectionTitle?: string; description?: string };
   rsvpTitle?: string;
   rsvpDescription?: string;
   rsvpButton?: string;
+  rsvpButtonLabel?: string;
   accountsTitle?: string;
   /** GENERAL 선택형 계좌 ON/OFF. WEDDING/FUNERAL은 보통 생략(계좌 존재 시 표시). */
   accountEnabled?: boolean;

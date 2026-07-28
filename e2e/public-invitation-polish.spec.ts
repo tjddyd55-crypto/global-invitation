@@ -92,6 +92,8 @@ test.describe('Public invitation polish', () => {
   test('rsvp guest count can be cleared and set to 4', async ({ browser }) => {
     const { context, page } = await freshPage(browser, { width: 390, height: 844 });
     await page.goto(`${FE}/i/${WEDDING_SLUG}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await expect(page.getByTestId('invitation-rsvp-section')).toBeVisible({ timeout: 45_000 });
+    await page.getByTestId('invitation-rsvp-cta').click();
     const count = page.getByTestId('rsvp-guest-count');
     await expect(count).toBeVisible({ timeout: 45_000 });
     await expect(count).toHaveValue('1');
@@ -134,6 +136,8 @@ test.describe('Public invitation polish', () => {
   test('rsvp empty guest count is blocked', async ({ browser }) => {
     const { context, page } = await freshPage(browser, { width: 390, height: 844 });
     await page.goto(`${FE}/i/${WEDDING_SLUG}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await expect(page.getByTestId('invitation-rsvp-section')).toBeVisible({ timeout: 45_000 });
+    await page.getByTestId('invitation-rsvp-cta').click();
     await page.locator('#rsvp-guest-name').fill('테스트');
     await page.getByTestId('rsvp-guest-count').fill('');
     await page.getByTestId('rsvp-submit').click();

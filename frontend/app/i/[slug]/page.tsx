@@ -21,9 +21,9 @@ import {
   type TemplateCategory,
   type TemplateDefinition,
 } from '@/src/templates/registry';
-import RSVPForm from '@/src/components/rsvp/RSVPForm';
 import publicInvitationMobile from '@/src/styles/publicInvitationMobile.module.css';
-import { resolveInvitationConceptType, resolveInvitationRsvpEnabled } from '@/src/invitation/schemas';
+import { resolveInvitationConceptType } from '@/src/invitation/schemas';
+import { getInvitationRsvpSettings } from '@/src/invitation/rsvpSettings';
 import SafeCreatorRenderer from '@/src/templates/creator/SafeCreatorRenderer';
 
 function resolveSafeSlug(value: unknown): string {
@@ -190,7 +190,8 @@ export default function PublicShareInvitationPage() {
   }
 
   const conceptType = resolveInvitationConceptType(runtimeData, invitation.templateKey);
-  const showRsvp = resolveInvitationRsvpEnabled(runtimeData);
+  const rsvpSettings = getInvitationRsvpSettings(runtimeData, conceptType);
+  const showRsvp = rsvpSettings.enabled;
   const isCreatorTemplate = /^creator_(wedding|funeral)_[a-z0-9_]+$/.test(invitation.templateKey);
   const hasStudioConfig = Boolean(templateDefinition?.studioConfig);
   const templateCategory =
@@ -222,13 +223,11 @@ export default function PublicShareInvitationPage() {
                   invitationSlug: baseSlug,
                   previewMode: false,
                   showPlayButton: false,
-                  showRsvp: showRsvp ? false : undefined,
                 }}
                 fallbackProps={{
                   data: runtimeData,
                   invitationSlug: baseSlug,
                   showPlayButton: false,
-                  showRsvp: showRsvp ? false : undefined,
                 }}
               />
             ) : isCreatorTemplate && FallbackTemplate ? (
@@ -236,18 +235,14 @@ export default function PublicShareInvitationPage() {
                 data={runtimeData}
                 invitationSlug={baseSlug}
                 showPlayButton={false}
-                showRsvp={showRsvp ? false : undefined}
               />
             ) : (
               <Template
                 data={runtimeData}
                 invitationSlug={baseSlug}
                 showPlayButton={false}
-                showRsvp={showRsvp ? false : undefined}
               />
             )}
-
-            {showRsvp ? <RSVPForm invitationSlug={baseSlug} /> : null}
 
             <section className={publicInvitationMobile.shareSectionMobile}>
               <InvitationShareBlock
@@ -268,7 +263,18 @@ export default function PublicShareInvitationPage() {
           {showRsvp ? (
             <div className={publicInvitationMobile.asideHint}>
               <div className={publicInvitationMobile.asideHintTitle}>RSVP 바로가기</div>
-              참석 여부를 알려주세요
+              <button
+                type="button"
+                className={publicInvitationMobile.asideRsvpButton}
+                data-testid="desktop-aside-rsvp-cta"
+                onClick={() => {
+                  document
+                    .querySelector('[data-section-id="rsvp"]')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+              >
+                {rsvpSettings.buttonLabel}
+              </button>
             </div>
           ) : null}
         </aside>

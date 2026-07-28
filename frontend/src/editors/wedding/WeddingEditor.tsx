@@ -367,6 +367,7 @@ export default function WeddingEditor({
               title="실시간 미리보기"
               data={previewData}
               editingStepLabel={visibleSections[currentStep]?.title}
+              focusSectionId={activeSection}
             />
           </aside>
         </div>
@@ -387,7 +388,7 @@ export default function WeddingEditor({
               </button>
             </div>
             <div className={styles.fullscreenPreviewBody}>
-              <LivePreviewPanel data={previewData} fullscreen />
+              <LivePreviewPanel data={previewData} fullscreen focusSectionId={activeSection} />
             </div>
           </div>
         </div>

@@ -5,6 +5,10 @@ import ToggleRow from '../components/ToggleRow';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorExtras } from '../state/weddingEditor.types';
 import { MUSIC_LIST } from '@/src/constants/music';
+import {
+  RSVP_BUTTON_LABEL_MAX_LENGTH,
+  clampRsvpButtonLabel,
+} from '@/src/invitation/rsvpSettings';
 
 type Step8ExtrasProps = {
   value: WeddingEditorExtras;
@@ -17,6 +21,10 @@ type Step8ExtrasProps = {
  */
 export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
   const musicOn = Boolean(value.musicEnabled);
+  const buttonLabelPreview = clampRsvpButtonLabel(
+    value.rsvpButtonText ?? '',
+    '참석 여부 알리기'
+  );
 
   return (
     <section className={styles.stepSection}>
@@ -27,27 +35,41 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
       <div className={styles.toggleGroup}>
         <ToggleRow
           label="참석 여부"
-          description="OFF 시 참석 여부 섹션을 숨깁니다."
+          description="ON이면 공개 초대장과 미리보기에 참석 여부 섹션이 표시됩니다."
           checked={value.rsvpEnabled}
+          testId="editor-rsvp-toggle"
           onChange={(checked) => onChange({ rsvpEnabled: checked })}
         />
         <ToggleRow
           label="댓글·메시지 받기"
           description="OFF 시 공개 초대장의 댓글 섹션을 숨깁니다. (RSVP 메시지와 별개)"
           checked={value.guestbookEnabled}
+          testId="editor-comments-toggle"
           onChange={(checked) => onChange({ guestbookEnabled: checked })}
         />
       </div>
       {value.rsvpEnabled && (
-        <label className={styles.field}>
-          <span className={styles.fieldLabel}>참석 여부 버튼 문구</span>
-          <input
-            type="text"
-            value={value.rsvpButtonText ?? ''}
-            onChange={(event) => onChange({ rsvpButtonText: event.target.value })}
-            placeholder="예: 참석 여부 전달"
-          />
-        </label>
+        <div className={styles.rsvpButtonField} data-testid="editor-rsvp-button-field">
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>공개 초대장 버튼 문구</span>
+            <input
+              type="text"
+              value={value.rsvpButtonText ?? ''}
+              maxLength={RSVP_BUTTON_LABEL_MAX_LENGTH}
+              data-testid="editor-rsvp-button-label"
+              onChange={(event) => onChange({ rsvpButtonText: event.target.value })}
+              placeholder="예: 참석 여부 알리기"
+            />
+          </label>
+          <p className={styles.helperText}>
+            공개 초대장에 표시되는 참석 여부 CTA 버튼의 문구입니다. 오른쪽 미리보기의 참석 여부
+            버튼에 바로 반영됩니다.
+          </p>
+          <div className={styles.rsvpButtonPreview} data-testid="editor-rsvp-button-preview">
+            <span className={styles.rsvpButtonPreviewLabel}>버튼 미리보기</span>
+            <div className={styles.rsvpButtonPreviewCta}>{buttonLabelPreview}</div>
+          </div>
+        </div>
       )}
 
       <div className={styles.sectionHeader} style={{ marginTop: 28 }}>
@@ -65,7 +87,9 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
               musicEnabled: checked,
               musicKey: checked ? value.musicKey || MUSIC_LIST[0]?.musicKey : undefined,
               musicTitle: checked
-                ? value.musicTitle || MUSIC_LIST.find((m) => m.musicKey === (value.musicKey || MUSIC_LIST[0]?.musicKey))?.title
+                ? value.musicTitle ||
+                  MUSIC_LIST.find((m) => m.musicKey === (value.musicKey || MUSIC_LIST[0]?.musicKey))
+                    ?.title
                 : undefined,
             })
           }

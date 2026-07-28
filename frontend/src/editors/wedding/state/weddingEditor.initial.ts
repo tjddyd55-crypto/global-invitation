@@ -350,7 +350,11 @@ export function createWeddingEditorStateFromDraft(
     extras: {
       ...base.extras,
       rsvpEnabled: runtimeData.rsvpEnabled ?? runtimeData.rsvp?.enabled ?? base.extras.rsvpEnabled,
-      rsvpButtonText: runtimeData.rsvpButton || base.extras.rsvpButtonText,
+      rsvpButtonText:
+        runtimeData.rsvp?.buttonLabel ||
+        runtimeData.rsvpButton ||
+        runtimeData.rsvpButtonLabel ||
+        base.extras.rsvpButtonText,
       guestbookEnabled: runtimeData.guestbookEnabled ?? base.extras.guestbookEnabled,
       accountEnabled:
         typeof runtimeData.accountEnabled === 'boolean'

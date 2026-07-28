@@ -6,11 +6,13 @@ import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import GalleryCarousel from '@/src/templates/shared/GalleryCarousel';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
+import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
 import { getInvitationGalleryItems } from '@/src/invitation/galleryItems';
 import { shouldShowAccountsSection } from '@/src/invitation/accountItems';
 import { getInvitationSections } from '@/src/invitation/conceptPresentationConfig';
+import { getInvitationRsvpSettings } from '@/src/invitation/rsvpSettings';
 import styles from './GeneralInvitationRenderer.module.css';
 
 type GeneralInvitationRendererProps = {
@@ -50,7 +52,8 @@ export default function GeneralInvitationRenderer({
   const schedule = Array.isArray(data.schedule) ? data.schedule.filter(Boolean) : [];
   const galleryItems = getInvitationGalleryItems(data, { alt: '행사 갤러리' });
   const commentsOn = showComments ?? resolveCommentsEnabled(data);
-  const rsvpOn = showRsvp ?? Boolean(data.rsvpEnabled);
+  const rsvpSettings = getInvitationRsvpSettings(data, 'GENERAL');
+  const rsvpOn = rsvpSettings.enabled || Boolean(showRsvp);
   const showAccounts = shouldShowAccountsSection(data, 'GENERAL');
   const hasLocation = Boolean(data.address || data.venueName || data.mapLat != null);
 
@@ -147,14 +150,12 @@ export default function GeneralInvitationRenderer({
       ) : null}
 
       {show('rsvp') ? (
-        <section className={styles.section} data-testid="general-rsvp-hint">
-          <h2 className={styles.sectionTitle}>참석 여부</h2>
-          <p className={styles.bodyLine}>
-            {previewMode
-              ? '공개 페이지에서 참석 여부를 남길 수 있습니다.'
-              : '아래에서 참석 여부를 알려 주세요.'}
-          </p>
-        </section>
+        <InvitationRsvpSection
+          data={data}
+          conceptType="GENERAL"
+          invitationSlug={invitationSlug}
+          previewMode={previewMode || !invitationSlug}
+        />
       ) : null}
 
       {show('comments') ? (

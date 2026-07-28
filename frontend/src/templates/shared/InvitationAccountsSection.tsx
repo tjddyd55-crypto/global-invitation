@@ -125,6 +125,7 @@ export default function InvitationAccountsSection({
     <section
       className={`${styles.section} ${className ?? ''}`.trim()}
       data-testid="invitation-accounts"
+      data-section-id="accounts"
       data-concept={conceptType ?? ''}
     >
       <h2 className={styles.title}>{title}</h2>

@@ -7,11 +7,12 @@ type ToggleRowProps = {
   description?: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  testId?: string;
 };
 
-export default function ToggleRow({ label, description, checked, onChange }: ToggleRowProps) {
+export default function ToggleRow({ label, description, checked, onChange, testId }: ToggleRowProps) {
   return (
-    <label className={styles.toggleRow}>
+    <label className={styles.toggleRow} data-testid={testId}>
       <span className={styles.toggleText}>
         <span className={styles.toggleLabel}>{label}</span>
         {description && <span className={styles.toggleDescription}>{description}</span>}
@@ -21,6 +22,7 @@ export default function ToggleRow({ label, description, checked, onChange }: Tog
           className={styles.toggleInput}
           type="checkbox"
           checked={checked}
+          data-testid={testId ? `${testId}-input` : undefined}
           onChange={(event) => onChange(event.target.checked)}
         />
         <span className={styles.toggleSlider} aria-hidden="true" />

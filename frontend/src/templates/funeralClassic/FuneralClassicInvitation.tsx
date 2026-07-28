@@ -8,6 +8,7 @@ import { I18N_KEYS } from '@/src/i18n';
 import { formatDate, formatDateTime } from '@/src/lib/i18n/format';
 import { cdnImageSrc } from '@/src/lib/image';
 import InvitationCommentsSection from '@/src/features/comments/ui/InvitationCommentsSection';
+import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 
 type FuneralClassicInvitationProps = {
   data: FuneralInvitationData;
@@ -161,6 +162,13 @@ export default function FuneralClassicInvitation({
           />
         </section>
       )}
+
+      <InvitationRsvpSection
+        data={data}
+        conceptType="FUNERAL"
+        invitationSlug={invitationSlug}
+        previewMode={previewMode || !invitationSlug}
+      />
 
       <InvitationCommentsSection
         invitationSlug={invitationSlug}

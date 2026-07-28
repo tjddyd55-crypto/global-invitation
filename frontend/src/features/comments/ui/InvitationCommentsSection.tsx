@@ -131,7 +131,11 @@ export default function InvitationCommentsSection({
   if (!enabled) return null;
 
   return (
-    <section className={styles.root} data-testid="invitation-comments-section">
+    <section
+      className={styles.root}
+      data-testid="invitation-comments-section"
+      data-section-id="comments"
+    >
       <h2 className={styles.title}>{title}</h2>
       <p className={styles.subtitle}>{subtitle}</p>
 

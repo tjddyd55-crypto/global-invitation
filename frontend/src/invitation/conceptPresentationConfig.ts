@@ -75,9 +75,19 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     accountOptional: false,
     accountDefaultEnabled: true,
     accountsTitle: '마음 전하실 곳',
-    rsvp: false,
+    rsvp: true,
     comments: true,
-    sections: ['hero', 'deceased', 'schedule', 'location', 'account', 'comments', 'share', 'footer'],
+    sections: [
+      'hero',
+      'deceased',
+      'schedule',
+      'location',
+      'account',
+      'rsvp',
+      'comments',
+      'share',
+      'footer',
+    ],
     commentsTitle: '추모 메시지',
     commentsSubtitle: '고인을 기리는 마음을 남겨주세요',
     commentsPlaceholder: '추모의 마음을 남겨주세요',
@@ -156,7 +166,7 @@ export function getInvitationSections(
       case 'account':
         return config.account && Boolean(flags.hasAccounts);
       case 'rsvp':
-        return config.rsvp && flags.hasRsvp !== false;
+        return config.rsvp && Boolean(flags.hasRsvp);
       case 'comments':
         return config.comments && flags.hasComments !== false;
       case 'share':

@@ -22,9 +22,8 @@ import {
   type TemplateCategory,
   type TemplateDefinition,
 } from '@/src/templates/registry';
-import RSVPForm from '@/src/components/rsvp/RSVPForm';
 import publicInvitationMobile from '@/src/styles/publicInvitationMobile.module.css';
-import { resolveInvitationConceptType, resolveInvitationRsvpEnabled } from '@/src/invitation/schemas';
+import { resolveInvitationConceptType } from '@/src/invitation/schemas';
 import SafeCreatorRenderer from '@/src/templates/creator/SafeCreatorRenderer';
 
 const EVENT_TRACKING_ENABLED = false;
@@ -234,7 +233,6 @@ export default function InvitationPage() {
   }
 
   const conceptType = resolveInvitationConceptType(runtimeDataOverride, invitation.templateKey);
-  const shouldRenderGuestRsvp = resolveInvitationRsvpEnabled(runtimeDataOverride);
   const isCreatorTemplate = /^creator_(wedding|funeral)_[a-z0-9_]+$/.test(invitation.templateKey);
   const hasStudioConfig = Boolean(templateDefinition?.studioConfig);
   const templateCategory =
@@ -263,13 +261,11 @@ export default function InvitationPage() {
             invitationSlug: slug,
             previewMode: false,
             showPlayButton: false,
-            showRsvp: shouldRenderGuestRsvp ? false : undefined,
           }}
           fallbackProps={{
             data: runtimeDataOverride,
             invitationSlug: slug,
             showPlayButton: false,
-            showRsvp: shouldRenderGuestRsvp ? false : undefined,
           }}
         />
       ) : isCreatorTemplate && FallbackTemplate ? (
@@ -277,17 +273,14 @@ export default function InvitationPage() {
           data={runtimeDataOverride}
           invitationSlug={slug}
           showPlayButton={false}
-          showRsvp={shouldRenderGuestRsvp ? false : undefined}
         />
       ) : (
         <Template
           data={runtimeDataOverride}
           invitationSlug={slug}
           showPlayButton={false}
-          showRsvp={shouldRenderGuestRsvp ? false : undefined}
         />
       )}
-      {shouldRenderGuestRsvp ? <RSVPForm invitationSlug={slug} /> : null}
       <section className={publicInvitationMobile.shareSection}>
         <h2 className={publicInvitationMobile.shareTitle}>공유하기</h2>
         <div className={publicInvitationMobile.shareStack}>

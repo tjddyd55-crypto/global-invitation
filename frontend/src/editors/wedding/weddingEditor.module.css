@@ -585,6 +585,44 @@
   color: #7a756c;
 }
 
+.rsvpButtonField {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.rsvpButtonPreview {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+  padding: 0.85rem 1rem;
+  border: 1px dashed #c4b5fd;
+  border-radius: 12px;
+  background: #faf9ff;
+}
+
+.rsvpButtonPreviewLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.rsvpButtonPreviewCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: keep-all;
+  text-align: center;
+}
+
 .musicPanel {
   display: grid;
   gap: 0.9rem;

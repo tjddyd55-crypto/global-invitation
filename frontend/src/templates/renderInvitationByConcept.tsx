@@ -114,7 +114,7 @@ export default function RenderInvitationByConcept(props: RenderInvitationByConce
           invitationSlug={invitationSlug}
           showPlayButton={showPlayButton}
           previewMode={previewMode}
-          showRsvp={false}
+          showRsvp={showRsvp ?? weddingLike.rsvpEnabled}
           showGuestbook={commentsEnabled}
           onShare={onShare}
           onKakaoShare={onKakaoShare}

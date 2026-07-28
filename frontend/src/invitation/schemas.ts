@@ -185,5 +185,6 @@ export function resolveInvitationRsvpEnabled(value: unknown): boolean {
   if (isRecord(value.rsvp) && typeof value.rsvp.enabled === 'boolean') {
     return value.rsvp.enabled;
   }
+  if (typeof value.attendanceEnabled === 'boolean') return value.attendanceEnabled;
   return false;
 }
