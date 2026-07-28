@@ -6,7 +6,9 @@ import { cdnImageSrc } from '@/src/lib/image';
 import { compressImage } from '@/src/lib/imageCompression';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_AUDIO_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ALLOWED_AUDIO_TYPES = new Set(['audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/x-m4a']);
 
 export type UploadedMediaFile = {
   mediaId?: string;
@@ -21,6 +23,9 @@ export type UploadedMediaFile = {
   usage?:
     | 'INVITATION_HERO'
     | 'INVITATION_GALLERY'
+    | 'INVITATION_COUPLE_GROOM'
+    | 'INVITATION_COUPLE_BRIDE'
+    | 'INVITATION_MUSIC'
     | 'TEMPLATE_COVER'
     | 'TEMPLATE_HERO'
     | 'TEMPLATE_ASSET'
@@ -28,10 +33,20 @@ export type UploadedMediaFile = {
 };
 
 export type MediaUploadContext = 'invitation' | 'template' | 'user';
-export type MediaUploadAssetType = 'asset' | 'thumbnail' | 'hero' | 'gallery';
+export type MediaUploadAssetType =
+  | 'asset'
+  | 'thumbnail'
+  | 'hero'
+  | 'gallery'
+  | 'groom'
+  | 'bride'
+  | 'music';
 type MediaUploadScope =
   | 'invitationHero'
   | 'invitationGallery'
+  | 'invitationCoupleGroom'
+  | 'invitationCoupleBride'
+  | 'invitationMusic'
   | 'templateCover'
   | 'templateHero'
   | 'templateAsset'
@@ -39,6 +54,9 @@ type MediaUploadScope =
 type MediaUsage =
   | 'INVITATION_HERO'
   | 'INVITATION_GALLERY'
+  | 'INVITATION_COUPLE_GROOM'
+  | 'INVITATION_COUPLE_BRIDE'
+  | 'INVITATION_MUSIC'
   | 'TEMPLATE_COVER'
   | 'TEMPLATE_HERO'
   | 'TEMPLATE_ASSET'
@@ -96,6 +114,15 @@ function validateImageFile(file: File) {
   }
 }
 
+function validateAudioFile(file: File) {
+  if (!ALLOWED_AUDIO_TYPES.has(file.type)) {
+    throw new Error('MP3, M4A, AAC 음악만 업로드할 수 있습니다.');
+  }
+  if (file.size > MAX_AUDIO_SIZE_BYTES) {
+    throw new Error('음악 파일 크기는 10MB를 초과할 수 없습니다.');
+  }
+}
+
 function resolveDefaultUploadOptions(): UploadMediaOptions {
   if (typeof window === 'undefined') {
     return { context: 'user' };
@@ -111,7 +138,8 @@ function resolveDefaultUploadOptions(): UploadMediaOptions {
     };
   }
 
-  const invitationMatch = pathname.match(/^\/editor\/([^/]+)$/);
+  const invitationMatch =
+    pathname.match(/^\/editor\/([^/]+)/) || pathname.match(/^\/m\/editor\/([^/]+)/);
   if (invitationMatch) {
     return {
       context: 'invitation',
@@ -200,6 +228,27 @@ function resolveUploadTarget(options: UploadMediaOptions): ResolvedUploadTarget 
       return {
         scope: 'invitationHero',
         usage: 'INVITATION_HERO',
+        invitationId: entityId,
+      };
+    }
+    if (assetType === 'groom') {
+      return {
+        scope: 'invitationCoupleGroom',
+        usage: 'INVITATION_COUPLE_GROOM',
+        invitationId: entityId,
+      };
+    }
+    if (assetType === 'bride') {
+      return {
+        scope: 'invitationCoupleBride',
+        usage: 'INVITATION_COUPLE_BRIDE',
+        invitationId: entityId,
+      };
+    }
+    if (assetType === 'music') {
+      return {
+        scope: 'invitationMusic',
+        usage: 'INVITATION_MUSIC',
         invitationId: entityId,
       };
     }
@@ -389,17 +438,19 @@ async function confirmDirectUpload(params: {
   return response.json() as Promise<ConfirmResponse>;
 }
 
-function normalizeUploadedMedia(confirm: ConfirmResponse): UploadedMediaFile {
+function normalizeUploadedMedia(confirm: ConfirmResponse, allowNonImageUrl = false): UploadedMediaFile {
   const objectKey = (confirm.objectKey || confirm.fileKey || '').trim();
   const rawUrl = normalizePublicUrl((confirm.publicUrl || confirm.url || '').trim());
-  const publicUrl = normalizePublicUrl(cdnImageSrc(rawUrl) || rawUrl);
+  const publicUrl = allowNonImageUrl
+    ? rawUrl
+    : normalizePublicUrl(cdnImageSrc(rawUrl) || rawUrl);
   const mimeType = (confirm.mimeType || '').trim();
   const fileSize = Number(confirm.fileSize ?? confirm.size ?? 0);
 
   if (
     !objectKey ||
     !publicUrl ||
-    !isValidImageUrl(publicUrl) ||
+    (!allowNonImageUrl && !isValidImageUrl(publicUrl)) ||
     !mimeType ||
     !Number.isFinite(fileSize) ||
     fileSize <= 0
@@ -430,17 +481,12 @@ function isUploadTransportError(error: unknown): boolean {
   );
 }
 
-export async function uploadMediaImage(file: File, options?: UploadMediaOptions): Promise<UploadedMediaFile> {
-  validateImageFile(file);
-  const fileToUpload = await compressImage(file);
-  validateImageFile(fileToUpload);
-
-  const resolved = {
-    ...resolveDefaultUploadOptions(),
-    ...(options || {}),
-  };
-  const target = resolveUploadTarget(resolved);
-
+async function runPresignPutConfirm(
+  fileToUpload: File,
+  target: ResolvedUploadTarget,
+  onProgress?: (value: number) => void,
+  opts?: { allowNonImageUrl?: boolean }
+): Promise<UploadedMediaFile> {
   let presigned: PresignResponse;
   try {
     presigned = await requestPresignedUpload(target, fileToUpload);
@@ -449,7 +495,7 @@ export async function uploadMediaImage(file: File, options?: UploadMediaOptions)
     if (typeof failure.errorCode === 'string') {
       throwFriendlyUploadError(failure);
     }
-    throw new Error('presign 요청에 실패했습니다.');
+    throw new Error('업로드 준비에 실패했습니다. 잠시 후 다시 시도해 주세요.');
   }
 
   const uploadUrl = presigned.uploadUrl;
@@ -460,11 +506,11 @@ export async function uploadMediaImage(file: File, options?: UploadMediaOptions)
   }
   const publicUrl = normalizePublicUrl((presigned.publicUrl || presigned.url || '').trim());
   if (!uploadUrl || !stagingObjectKey || !finalObjectKey || !publicUrl) {
-    throw new Error('presign 응답이 올바르지 않습니다.');
+    throw new Error('업로드 준비 응답이 올바르지 않습니다.');
   }
 
   try {
-    await uploadToR2Direct(uploadUrl, fileToUpload, resolved.onProgress);
+    await uploadToR2Direct(uploadUrl, fileToUpload, onProgress);
     const confirmed = await confirmDirectUpload({
       target,
       stagingObjectKey,
@@ -472,11 +518,11 @@ export async function uploadMediaImage(file: File, options?: UploadMediaOptions)
       publicUrl,
       file: fileToUpload,
     });
-    resolved.onProgress?.(100);
-    return normalizeUploadedMedia(confirmed);
+    onProgress?.(100);
+    return normalizeUploadedMedia(confirmed, opts?.allowNonImageUrl);
   } catch (error) {
     if (isUploadTransportError(error)) {
-      throw new Error('R2 업로드(브라우저 PUT)에 실패했습니다.');
+      throw new Error('이미지 업로드에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     }
     const failure = error as ApiFailure;
     if (typeof failure.errorCode === 'string') {
@@ -485,8 +531,32 @@ export async function uploadMediaImage(file: File, options?: UploadMediaOptions)
     if (error instanceof Error && error.message === 'CONFIRM_RESPONSE_INVALID') {
       throw new Error('업로드 완료 응답이 올바르지 않습니다.');
     }
-    throw new Error('이미지 업로드에 실패했습니다.');
+    throw new Error('이미지 업로드에 실패했습니다. 잠시 후 다시 시도해 주세요.');
   }
+}
+
+export async function uploadMediaImage(file: File, options?: UploadMediaOptions): Promise<UploadedMediaFile> {
+  validateImageFile(file);
+  const fileToUpload = await compressImage(file);
+  validateImageFile(fileToUpload);
+
+  const resolved = {
+    ...resolveDefaultUploadOptions(),
+    ...(options || {}),
+  };
+  const target = resolveUploadTarget(resolved);
+  return runPresignPutConfirm(fileToUpload, target, resolved.onProgress);
+}
+
+export async function uploadMediaAudio(file: File, options?: UploadMediaOptions): Promise<UploadedMediaFile> {
+  validateAudioFile(file);
+  const resolved = {
+    ...resolveDefaultUploadOptions(),
+    ...(options || {}),
+    assetType: 'music' as const,
+  };
+  const target = resolveUploadTarget(resolved);
+  return runPresignPutConfirm(file, target, resolved.onProgress, { allowNonImageUrl: true });
 }
 
 export async function deleteMediaFile(fileUrl: string, objectKey?: string) {

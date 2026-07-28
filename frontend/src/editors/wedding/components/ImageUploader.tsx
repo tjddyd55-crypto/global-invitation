@@ -2,7 +2,7 @@
 
 import { useId, useState } from 'react';
 import AppImage from '@/src/components/media/AppImage';
-import { deleteMediaFile, uploadMediaImage, type MediaUploadAssetType } from '@/src/lib/mediaApi';
+import { uploadMediaImage, type MediaUploadAssetType } from '@/src/lib/mediaApi';
 import styles from '../weddingEditor.module.css';
 
 type ImageUploaderProps = {
@@ -69,18 +69,11 @@ export default function ImageUploader({
 
   const handleClear = async () => {
     if (!value) return;
-
-    setUploading(true);
-    setError(null);
-
-    try {
-      await deleteMediaFile(value);
-
-      onClear?.();
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : '이미지 삭제에 실패했습니다.');
-    } finally {
-      setUploading(false);
+    // Soft remove: clear draft reference only. R2 orphan cleanup is separate.
+    revokeIfObjectUrl(value);
+    onClear?.();
+    if (!onClear) {
+      onChange('');
     }
   };
 

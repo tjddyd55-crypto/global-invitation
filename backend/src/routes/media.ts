@@ -317,6 +317,9 @@ router.post('/presign', async (req, res) => {
           scope: scope as
             | 'invitationHero'
             | 'invitationGallery'
+            | 'invitationCoupleGroom'
+            | 'invitationCoupleBride'
+            | 'invitationMusic'
             | 'templateCover'
             | 'templateHero'
             | 'templateAsset'

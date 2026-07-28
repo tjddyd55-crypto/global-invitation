@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
+import { useState } from 'react';
 import ToggleRow from '../components/ToggleRow';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorExtras } from '../state/weddingEditor.types';
@@ -9,6 +10,7 @@ import {
   RSVP_BUTTON_LABEL_MAX_LENGTH,
   clampRsvpButtonLabel,
 } from '@/src/invitation/rsvpSettings';
+import { uploadMediaAudio } from '@/src/lib/mediaApi';
 
 type Step8ExtrasProps = {
   value: WeddingEditorExtras;
@@ -16,8 +18,7 @@ type Step8ExtrasProps = {
 };
 
 /**
- * 참석/댓글 + 선택형 배경 음악.
- * 기본은 사용 안 함. 카탈로그에서 고른 경우에만 공개 플레이어 표시.
+ * 참석/댓글 + 선택형 배경 음악(공유 catalog 또는 사용자 MP3 업로드).
  */
 export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
   const musicOn = Boolean(value.musicEnabled);
@@ -25,6 +26,8 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
     value.rsvpButtonText ?? '',
     '참석 여부 알리기'
   );
+  const [musicUploading, setMusicUploading] = useState(false);
+  const [musicError, setMusicError] = useState<string | null>(null);
 
   return (
     <section className={styles.stepSection}>
@@ -74,7 +77,7 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
 
       <div className={styles.sectionHeader} style={{ marginTop: 28 }}>
         <h2>배경 음악</h2>
-        <p>기본은 사용하지 않습니다. 음악을 추가하면 방문자가 재생 버튼으로 직접 들을 수 있습니다.</p>
+        <p>기본은 사용하지 않습니다. 공용 음악 선택 또는 MP3 업로드가 가능합니다.</p>
       </div>
 
       <div className={styles.toggleGroup} data-testid="editor-music-settings">
@@ -103,9 +106,9 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
       ) : (
         <div className={styles.musicPanel}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>음악 선택</span>
+            <span className={styles.fieldLabel}>공용 음악 선택</span>
             <select
-              value={value.musicKey || ''}
+              value={value.musicFileUrl ? '' : value.musicKey || ''}
               data-testid="editor-music-select"
               onChange={(event) => {
                 const key = event.target.value;
@@ -125,6 +128,44 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>내 음악 업로드 (MP3/M4A/AAC, 최대 10MB)</span>
+            <input
+              type="file"
+              accept="audio/mpeg,audio/mp4,audio/aac,audio/x-m4a,.mp3,.m4a,.aac"
+              data-testid="editor-music-upload"
+              disabled={musicUploading}
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (!file) return;
+                setMusicUploading(true);
+                setMusicError(null);
+                try {
+                  const uploaded = await uploadMediaAudio(file, { assetType: 'music' });
+                  onChange({
+                    musicEnabled: true,
+                    musicKey: undefined,
+                    musicFileUrl: uploaded.publicUrl,
+                    musicFileKey: uploaded.objectKey,
+                    musicTitle: value.musicTitle || file.name.replace(/\.[^.]+$/, ''),
+                  });
+                } catch (err) {
+                  setMusicError(err instanceof Error ? err.message : '음악 업로드에 실패했습니다.');
+                } finally {
+                  setMusicUploading(false);
+                }
+              }}
+            />
+            {musicUploading ? <p className={styles.helperText}>업로드 중…</p> : null}
+            {value.musicFileUrl ? (
+              <p className={styles.helperText} data-testid="editor-music-upload-ok">
+                업로드된 음악이 사용됩니다.
+              </p>
+            ) : null}
+            {musicError ? <p className={styles.errorText}>{musicError}</p> : null}
           </label>
 
           <label className={styles.field}>

@@ -36,23 +36,29 @@ NEXT_PUBLIC_MEDIA_BASE_URL=https://pub-xxxxxxxx.r2.dev
 
 ## R2 CORS 권장 설정
 
-운영/프리뷰/로컬 프론트 도메인을 모두 포함합니다.
+브라우저 PUT은 Express CORS가 아니라 **버킷 CORS**가 필요합니다.
+`platform-assets` 버킷에 아래를 Cloudflare Dashboard → R2 → Settings → CORS 에 적용합니다.
+(API 토큰에 `PutBucketCors` 권한이 없으면 Access Denied — Dashboard에서 적용)
 
 ```json
 [
   {
     "AllowedOrigins": [
-      "https://frontend-production-54bf.up.railway.app",
-      "https://frontend-preview.example.com",
-      "http://localhost:3000"
+      "https://frontend-development-1b8a.up.railway.app",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000"
     ],
-    "AllowedMethods": ["GET", "PUT", "POST", "HEAD"],
-    "AllowedHeaders": ["*"],
-    "ExposeHeaders": ["ETag"],
+    "AllowedMethods": ["GET", "PUT", "HEAD"],
+    "AllowedHeaders": ["Content-Type", "Content-Length", "x-amz-*"],
+    "ExposeHeaders": ["ETag", "Content-Length", "Content-Type"],
     "MaxAgeSeconds": 3600
   }
 ]
 ```
+
+스크립트(권한 있을 때): `cd backend && railway run -s Backend -e development -- npx tsx scripts/apply-r2-cors.ts`
+
+Production origin은 운영 배포 직전에 별도 추가합니다.
 
 ## 캐시 전략
 
@@ -110,10 +116,8 @@ NEXT_PUBLIC_MEDIA_BASE_URL=https://pub-xxxxxxxx.r2.dev
 - `media_files` 저장
 - 대표 이미지 참조(Invitation/Template) 갱신
 
-## 운영 체크리스트
+## 삭제 / orphan 정책
 
-1. R2 CORS 적용
-2. Backend/Frontend env 반영
-3. `/api/media/presign` -> `PUT` -> `/api/media/confirm` 순서 검증
-4. 재배포 후 기존 이미지 URL 유지 확인
-5. 대표 이미지 교체 시 신규 key 발급 여부 확인
+- Editor에서 이미지 제거는 **draft reference만 제거**합니다 (즉시 R2 object 삭제 강제 없음).
+- 저장 후에도 이전 object는 orphan 이 될 수 있으며, 주기적 cleanup 또는 수동 purge로 정리합니다.
+- shared/`invitation/shared/**` 경로는 일반 사용자 업로드·삭제 대상이 아닙니다.

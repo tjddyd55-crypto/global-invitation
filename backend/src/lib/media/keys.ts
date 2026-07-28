@@ -1,13 +1,18 @@
 import crypto from 'crypto';
+import { buildInvitationAssetKey } from '../invitationAssetKeys';
 
 /**
  * 단일 키 체계: 최종 엔티티 경로는 buildMediaObjectKey, 스테이징은 buildTempObjectKey.
  * invitation/{id}/… | template/{id}/… | temp/{session}/… 만 신규 생성한다.
+ * User-scoped SSOT: invitation/users/{userId}/invitations/{invitationId}/…
  */
 
 export type MediaScope =
   | 'invitationHero'
   | 'invitationGallery'
+  | 'invitationCoupleGroom'
+  | 'invitationCoupleBride'
+  | 'invitationMusic'
   | 'templateCover'
   | 'templateHero'
   | 'templateAsset'
@@ -16,6 +21,9 @@ export type MediaScope =
 export type MediaUsage =
   | 'INVITATION_HERO'
   | 'INVITATION_GALLERY'
+  | 'INVITATION_COUPLE_GROOM'
+  | 'INVITATION_COUPLE_BRIDE'
+  | 'INVITATION_MUSIC'
   | 'TEMPLATE_COVER'
   | 'TEMPLATE_HERO'
   | 'TEMPLATE_ASSET'
@@ -23,8 +31,14 @@ export type MediaUsage =
 
 export type BuildMediaObjectKeyParams =
   | {
-      scope: 'invitationHero' | 'invitationGallery';
+      scope:
+        | 'invitationHero'
+        | 'invitationGallery'
+        | 'invitationCoupleGroom'
+        | 'invitationCoupleBride'
+        | 'invitationMusic';
       invitationId: string;
+      userId?: string;
       contentType: string;
       filename?: string;
       now?: Date;
@@ -44,8 +58,11 @@ export type BuildMediaObjectKeyParams =
     };
 
 export type ParsedMediaObjectKey =
-  | { scope: 'invitationHero'; invitationId: string }
-  | { scope: 'invitationGallery'; invitationId: string }
+  | { scope: 'invitationHero'; invitationId: string; userId?: string }
+  | { scope: 'invitationGallery'; invitationId: string; userId?: string }
+  | { scope: 'invitationCoupleGroom'; invitationId: string; userId?: string }
+  | { scope: 'invitationCoupleBride'; invitationId: string; userId?: string }
+  | { scope: 'invitationMusic'; invitationId: string; userId?: string }
   | { scope: 'templateCover'; templateId: string }
   | { scope: 'templateHero'; templateId: string }
   | { scope: 'templateAsset'; templateId: string }
@@ -55,6 +72,10 @@ const MIME_EXTENSION_MAP: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
+  'audio/mpeg': 'mp3',
+  'audio/mp4': 'm4a',
+  'audio/aac': 'aac',
+  'audio/x-m4a': 'm4a',
 };
 
 function sanitizeSegment(value: string): string {
@@ -129,7 +150,10 @@ export function buildTempObjectKey(sessionId: string, contentType: string, filen
 
 export function isTempStagingKey(objectKey: string): boolean {
   const segments = stripStorageKeyPrefix(objectKey).split('/').filter(Boolean);
-  return segments[0] === 'temp' && segments.length >= 3;
+  if (segments[0] === 'temp' && segments.length >= 3) return true;
+  // invitation/temp/{userId}/{uploadId}/...
+  if (segments[0] === 'invitation' && segments[1] === 'temp' && segments.length >= 4) return true;
+  return false;
 }
 
 export function buildMediaObjectKey(params: BuildMediaObjectKeyParams): string {
@@ -139,15 +163,48 @@ export function buildMediaObjectKey(params: BuildMediaObjectKeyParams): string {
 
   let key: string;
 
-  if (params.scope === 'invitationHero') {
+  if (
+    params.scope === 'invitationHero' ||
+    params.scope === 'invitationGallery' ||
+    params.scope === 'invitationCoupleGroom' ||
+    params.scope === 'invitationCoupleBride' ||
+    params.scope === 'invitationMusic'
+  ) {
+    // Prefer user-scoped SSOT when userId is present; otherwise legacy path for compatibility.
     const invitationId = sanitizeSegment(params.invitationId);
     if (!invitationId) throw new Error('INVALID_MEDIA_OWNER');
-    key = `invitation/${invitationId}/hero/original.jpg`;
-  } else if (params.scope === 'invitationGallery') {
-    const invitationId = sanitizeSegment(params.invitationId);
-    if (!invitationId) throw new Error('INVALID_MEDIA_OWNER');
-    const token = buildFileToken(now);
-    key = `invitation/${invitationId}/gallery/${token}.${ext}`;
+    const userId = sanitizeSegment(params.userId || '');
+    if (userId) {
+      const assetType =
+        params.scope === 'invitationHero'
+          ? 'hero'
+          : params.scope === 'invitationGallery'
+            ? 'gallery'
+            : params.scope === 'invitationCoupleGroom'
+              ? 'groom-profile'
+              : params.scope === 'invitationCoupleBride'
+                ? 'bride-profile'
+                : 'user-music';
+      return buildInvitationAssetKey({
+        userId,
+        invitationId,
+        assetType,
+        contentType: params.contentType,
+        filename: params.filename,
+      });
+    }
+    if (params.scope === 'invitationHero') {
+      key = `invitation/${invitationId}/hero/original.jpg`;
+    } else if (params.scope === 'invitationGallery') {
+      const token = buildFileToken(now);
+      key = `invitation/${invitationId}/gallery/${token}.${ext}`;
+    } else if (params.scope === 'invitationCoupleGroom') {
+      key = `invitation/${invitationId}/couple/groom/${tokenFile}`;
+    } else if (params.scope === 'invitationCoupleBride') {
+      key = `invitation/${invitationId}/couple/bride/${tokenFile}`;
+    } else {
+      key = `invitation/${invitationId}/music/${tokenFile}`;
+    }
   } else if (params.scope === 'templateCover') {
     const templateId = sanitizeSegment(params.templateId);
     if (!templateId) throw new Error('INVALID_MEDIA_OWNER');
@@ -176,6 +233,9 @@ export function buildMediaObjectKey(params: BuildMediaObjectKeyParams): string {
 export function usageFromScope(scope: MediaScope): MediaUsage {
   if (scope === 'invitationHero') return 'INVITATION_HERO';
   if (scope === 'invitationGallery') return 'INVITATION_GALLERY';
+  if (scope === 'invitationCoupleGroom') return 'INVITATION_COUPLE_GROOM';
+  if (scope === 'invitationCoupleBride') return 'INVITATION_COUPLE_BRIDE';
+  if (scope === 'invitationMusic') return 'INVITATION_MUSIC';
   if (scope === 'templateCover') return 'TEMPLATE_COVER';
   if (scope === 'templateHero') return 'TEMPLATE_HERO';
   if (scope === 'templateAsset') return 'TEMPLATE_ASSET';
@@ -246,11 +306,46 @@ export function parseInvitationOptimizedOriginalKey(objectKey: string): {
 
 function parseEntityInvitationKey(segments: string[]): ParsedMediaObjectKey | null {
   if (segments[0] !== 'invitation' || segments.length < 3) return null;
+
+  // invitation/users/{userId}/invitations/{invitationId}/{folder}/...
+  if (segments[1] === 'users' && segments[3] === 'invitations' && segments[2] && segments[4]) {
+    const userId = segments[2];
+    const invitationId = segments[4];
+    const folder = segments[5] || '';
+    if (folder === 'hero') return { scope: 'invitationHero', invitationId, userId };
+    if (folder === 'gallery') return { scope: 'invitationGallery', invitationId, userId };
+    if (folder === 'music') return { scope: 'invitationMusic', invitationId, userId };
+    if (folder === 'couple' && segments[6] === 'groom') {
+      return { scope: 'invitationCoupleGroom', invitationId, userId };
+    }
+    if (folder === 'couple' && segments[6] === 'bride') {
+      return { scope: 'invitationCoupleBride', invitationId, userId };
+    }
+    return null;
+  }
+
+  // invitation/temp/...
+  if (segments[1] === 'temp') {
+    return { scope: 'common' };
+  }
+
+  // invitation/shared/... — not a user upload target
+  if (segments[1] === 'shared') {
+    return null;
+  }
+
   const invitationId = segments[1] || '';
   const section = segments[2] || '';
   if (!invitationId) return null;
   if (section === 'hero') return { scope: 'invitationHero', invitationId };
   if (section === 'gallery') return { scope: 'invitationGallery', invitationId };
+  if (section === 'music') return { scope: 'invitationMusic', invitationId };
+  if (section === 'couple' && segments[3] === 'groom') {
+    return { scope: 'invitationCoupleGroom', invitationId };
+  }
+  if (section === 'couple' && segments[3] === 'bride') {
+    return { scope: 'invitationCoupleBride', invitationId };
+  }
   return null;
 }
 

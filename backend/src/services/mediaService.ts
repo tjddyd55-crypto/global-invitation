@@ -4,6 +4,13 @@ import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { isUuid } from '../lib/isUuid';
 import {
+  buildInvitationTempKey,
+  assertNotPathTraversal,
+  getInvitationAssetPublicUrl,
+  isSharedInvitationAssetKey,
+  parseInvitationUserAssetKey,
+} from '../lib/invitationAssetKeys';
+import {
   buildMediaObjectKey,
   buildTempObjectKey,
   isTempStagingKey,
@@ -22,15 +29,28 @@ import { canDeleteByStorageKey, isMediaTemplatePrivilegedRole } from '../lib/med
 import { deleteStoredMediaByObjectKey, resolveStorageKeyFromUrl } from '../storage/mediaStorage';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_AUDIO_SIZE_BYTES = 10 * 1024 * 1024;
 const SHARP_PIXEL_CAP = 60_000_000;
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ALLOWED_AUDIO_TYPES = new Set(['audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/x-m4a']);
 const SUPPORTED_SCOPES = new Set<MediaScope>([
   'invitationHero',
   'invitationGallery',
+  'invitationCoupleGroom',
+  'invitationCoupleBride',
+  'invitationMusic',
   'templateCover',
   'templateHero',
   'templateAsset',
   'common',
+]);
+
+const INVITATION_SCOPES = new Set<MediaScope>([
+  'invitationHero',
+  'invitationGallery',
+  'invitationCoupleGroom',
+  'invitationCoupleBride',
+  'invitationMusic',
 ]);
 
 export type MediaAuthUser = {
@@ -112,20 +132,30 @@ function resolveFileNameFromObjectKey(objectKey: string): string {
   return segments[segments.length - 1] || 'file';
 }
 
-function ensureAllowedContentType(contentType: string): string {
+function ensureAllowedContentType(contentType: string, scope?: MediaScope): string {
   const normalized = normalizeText(contentType).toLowerCase();
-  if (!normalized || !ALLOWED_IMAGE_TYPES.has(normalized)) {
+  if (!normalized) {
+    throw new Error('UNSUPPORTED_MEDIA_TYPE');
+  }
+  if (scope === 'invitationMusic' || (!scope && ALLOWED_AUDIO_TYPES.has(normalized))) {
+    if (!ALLOWED_AUDIO_TYPES.has(normalized)) {
+      throw new Error('UNSUPPORTED_MEDIA_TYPE');
+    }
+    return normalized;
+  }
+  if (!ALLOWED_IMAGE_TYPES.has(normalized)) {
     throw new Error('UNSUPPORTED_MEDIA_TYPE');
   }
   return normalized;
 }
 
-function ensureAllowedSize(size: number): number {
+function ensureAllowedSize(size: number, scope?: MediaScope): number {
   const normalized = normalizePositiveInteger(size);
   if (!normalized) {
     throw new Error('INVALID_MEDIA_SIZE');
   }
-  if (normalized > MAX_IMAGE_SIZE_BYTES) {
+  const max = scope === 'invitationMusic' ? MAX_AUDIO_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES;
+  if (normalized > max) {
     throw new Error('FILE_TOO_LARGE');
   }
   return normalized;
@@ -199,10 +229,10 @@ async function resolveOwnedTemplateId(user: MediaAuthUser, templateId: string): 
 }
 
 function resolveOwnerFromParsedObjectKey(parsed: NonNullable<ReturnType<typeof parseMediaObjectKey>>): ResolvedOwner {
-  if (parsed.scope === 'invitationHero' || parsed.scope === 'invitationGallery') {
+  if (INVITATION_SCOPES.has(parsed.scope)) {
     return {
       ownerType: 'INVITATION',
-      ownerRefId: parsed.invitationId,
+      ownerRefId: (parsed as { invitationId: string }).invitationId,
     };
   }
   if (parsed.scope === 'templateCover' || parsed.scope === 'templateAsset' || parsed.scope === 'templateHero') {
@@ -211,10 +241,7 @@ function resolveOwnerFromParsedObjectKey(parsed: NonNullable<ReturnType<typeof p
       ownerRefId: parsed.templateId,
     };
   }
-  return {
-    ownerType: 'COMMON',
-    ownerRefId: null,
-  };
+  return { ownerType: 'COMMON', ownerRefId: null };
 }
 
 function resolveEffectiveMeta(input: ConfirmMediaInput, head: HeadObjectResult) {
@@ -225,7 +252,8 @@ function resolveEffectiveMeta(input: ConfirmMediaInput, head: HeadObjectResult) 
   if (!fileSize) {
     throw new Error('INVALID_MEDIA_SIZE');
   }
-  if (fileSize > MAX_IMAGE_SIZE_BYTES) {
+  const maxBytes = ALLOWED_AUDIO_TYPES.has(safeContentType) ? MAX_AUDIO_SIZE_BYTES : MAX_IMAGE_SIZE_BYTES;
+  if (fileSize > maxBytes) {
     throw new Error('FILE_TOO_LARGE');
   }
 
@@ -408,13 +436,23 @@ async function assertAuthForFinalKey(
   }
   const owner = resolveOwnerFromParsedObjectKey(parsed);
 
-  if (parsed.scope === 'invitationHero' || parsed.scope === 'invitationGallery') {
-    const invitationId = await resolveOwnedInvitationId(user.id, parsed.invitationId);
-    if (invitationId !== parsed.invitationId) {
+  if (INVITATION_SCOPES.has(parsed.scope)) {
+    const invitationId = await resolveOwnedInvitationId(
+      user.id,
+      (parsed as { invitationId: string }).invitationId
+    );
+    if (invitationId !== (parsed as { invitationId: string }).invitationId) {
       throw new Error('INVALID_MEDIA_OBJECT_KEY');
     }
     if (input.invitationId && normalizeText(input.invitationId) !== invitationId) {
       throw new Error('INVALID_MEDIA_OBJECT_KEY');
+    }
+    const userScoped = parseInvitationUserAssetKey(finalKey);
+    if (userScoped && userScoped.userId !== user.id) {
+      throw new Error('UNAUTHORIZED_MEDIA_ACCESS');
+    }
+    if (isSharedInvitationAssetKey(finalKey)) {
+      throw new Error('SHARED_ASSET_UPLOAD_DENIED');
     }
   }
 
@@ -439,28 +477,43 @@ export async function createMediaPresign(
   if (!SUPPORTED_SCOPES.has(scope)) {
     throw new Error('INVALID_MEDIA_SCOPE');
   }
-  const contentType = ensureAllowedContentType(input.contentType);
-  const size = ensureAllowedSize(input.size);
+  const contentType = ensureAllowedContentType(input.contentType, scope);
+  const size = ensureAllowedSize(input.size, scope);
 
-  if (scope === 'invitationHero' || scope === 'invitationGallery' || scope === 'templateHero') {
+  if (
+    scope === 'invitationHero' ||
+    scope === 'invitationGallery' ||
+    scope === 'invitationCoupleGroom' ||
+    scope === 'invitationCoupleBride' ||
+    scope === 'templateHero'
+  ) {
     if (contentType !== 'image/jpeg') {
       throw new Error('UNSUPPORTED_MEDIA_TYPE');
     }
   }
 
   const presignNow = new Date();
-  const sessionId = crypto.randomBytes(16).toString('hex');
-  const stagingObjectKey = buildTempObjectKey(sessionId, contentType, input.filename);
+  const stagingObjectKey = buildInvitationTempKey({
+    userId: user.id,
+    contentType,
+    filename: input.filename,
+  });
 
   let objectKey: string;
 
   if (scope === 'common') {
     objectKey = stagingObjectKey;
-  } else if (scope === 'invitationHero' || scope === 'invitationGallery') {
+  } else if (INVITATION_SCOPES.has(scope)) {
     const invitationId = await resolveOwnedInvitationId(user.id, input.invitationId || '');
     objectKey = buildMediaObjectKey({
-      scope,
+      scope: scope as
+        | 'invitationHero'
+        | 'invitationGallery'
+        | 'invitationCoupleGroom'
+        | 'invitationCoupleBride'
+        | 'invitationMusic',
       invitationId,
+      userId: user.id,
       contentType,
       filename: input.filename,
       now: presignNow,
@@ -478,13 +531,19 @@ export async function createMediaPresign(
     objectKey = stagingObjectKey;
   }
 
+  assertNotPathTraversal(stagingObjectKey);
+  assertNotPathTraversal(objectKey);
+  if (isSharedInvitationAssetKey(objectKey)) {
+    throw new Error('SHARED_ASSET_UPLOAD_DENIED');
+  }
+
   const presigned = await createPresignedUploadUrl({
     objectKey: stagingObjectKey,
     contentType,
     expiresInSeconds: input.expiresInSeconds,
   });
 
-  const publicUrl = buildCanonicalPublicUrl(objectKey);
+  const publicUrl = getInvitationAssetPublicUrl(objectKey);
   console.log('[R2_KEY]', stagingObjectKey);
   if (objectKey !== stagingObjectKey) {
     console.log('[R2_KEY]', objectKey);
