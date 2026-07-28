@@ -14,11 +14,11 @@ export default function NaverMapsExternalLinks({ settings }: NaverMapsExternalLi
   const directionsUrl = buildNaverMapsDirectionsUrl(settings);
 
   return (
-    <div className={styles.links} data-testid="naver-maps-external-links">
-      <a href={viewUrl} target="_blank" rel="noopener noreferrer">
+    <div className={styles.row} data-testid="naver-maps-external-links">
+      <a className={styles.link} href={viewUrl} target="_blank" rel="noopener noreferrer">
         지도에서 보기
       </a>
-      <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
+      <a className={styles.link} href={directionsUrl} target="_blank" rel="noopener noreferrer">
         길찾기
       </a>
     </div>

@@ -429,6 +429,7 @@ export default function WeddingClassicInvitation({
             mapImage={r.mapImage}
             mapImageAlt={t(I18N_KEYS.weddingClassic.mapAlt)}
             tone={mapToneFuneralLike ? 'dark' : 'light'}
+            previewMode={Boolean(previewMode)}
             transportTitle={t(I18N_KEYS.weddingClassic.transportTitle)}
             transportInfo={safeArray(r.transportInfo)}
             parkingTitle={t(I18N_KEYS.weddingClassic.parkingTitle)}

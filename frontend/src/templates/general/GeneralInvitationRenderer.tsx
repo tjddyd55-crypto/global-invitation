@@ -141,6 +141,7 @@ export default function GeneralInvitationRenderer({
             naverMapUrl={data.naverMapUrl}
             invitationData={data}
             mapImage={data.mapImage}
+            previewMode={Boolean(previewMode)}
           />
         </section>
       ) : null}

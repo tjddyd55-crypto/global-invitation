@@ -61,9 +61,11 @@ export function getInvitationMapSettings(data: unknown): InvitationMapSettings {
   }
 
   const nested = isRecord(data.location) ? data.location : null;
+  const funeralHall = isRecord(data.funeralHall) ? data.funeralHall : null;
   const venueName = readString(
     nested?.venueName,
     data.venueName,
+    funeralHall?.name,
     data.locationText,
     data.heroTitle,
     data.title
@@ -72,7 +74,8 @@ export function getInvitationMapSettings(data: unknown): InvitationMapSettings {
     nested?.formattedAddress,
     nested?.address,
     data.formattedAddress,
-    data.address
+    data.address,
+    funeralHall?.address
   );
   const detailAddress =
     readString(nested?.detailAddress, data.detailAddress, data.venueDetail) || undefined;
@@ -82,8 +85,20 @@ export function getInvitationMapSettings(data: unknown): InvitationMapSettings {
     venueName,
     formattedAddress,
     detailAddress,
-    latitude: readNumber(nested?.latitude, nested?.mapLat, data.mapLat),
-    longitude: readNumber(nested?.longitude, nested?.mapLng, data.mapLng),
+    latitude: readNumber(
+      nested?.latitude,
+      nested?.mapLat,
+      data.mapLat,
+      funeralHall?.mapLat,
+      funeralHall?.latitude
+    ),
+    longitude: readNumber(
+      nested?.longitude,
+      nested?.mapLng,
+      data.mapLng,
+      funeralHall?.mapLng,
+      funeralHall?.longitude
+    ),
     googlePlaceId: readString(nested?.googlePlaceId, data.googlePlaceId) || undefined,
     naverPlaceId: readString(nested?.naverPlaceId, data.naverPlaceId) || undefined,
     naverMapUrl: readString(nested?.naverMapUrl, data.naverMapUrl) || undefined,

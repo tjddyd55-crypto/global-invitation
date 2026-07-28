@@ -4,8 +4,7 @@ import styles from './LocationMapSection.module.css';
 import { cdnImageSrc } from '@/src/lib/image';
 import GoogleMapsExternalLinks from '@/src/maps/GoogleMapsExternalLinks';
 import NaverMapsExternalLinks from '@/src/maps/NaverMapsExternalLinks';
-import PublicGoogleMap from '@/src/maps/PublicGoogleMap';
-import PublicNaverMap from '@/src/maps/PublicNaverMap';
+import InvitationProviderMap from '@/src/maps/InvitationProviderMap';
 import { hasGoogleMapsApiKey } from '@/src/maps/config';
 import { hasNaverMapsClientId } from '@/src/maps/loadNaverMaps';
 import {
@@ -36,12 +35,14 @@ type LocationMapSectionProps = {
   parkingInfo?: string[];
   tone?: 'light' | 'dark';
   layoutMapPlaceholder?: boolean;
+  /** LivePreview: non-interactive map + preview testids */
+  previewMode?: boolean;
   /** Prefer full invitation data when available — selector SSOT */
   invitationData?: unknown;
 };
 
 /**
- * Public/Preview location section — provider SSOT via getInvitationMapSettings.
+ * Public/Preview location section — titles/links here, canvas via InvitationProviderMap.
  */
 export default function LocationMapSection({
   sectionTitle,
@@ -62,22 +63,28 @@ export default function LocationMapSection({
   parkingInfo,
   tone = 'light',
   layoutMapPlaceholder = false,
+  previewMode = false,
   invitationData,
 }: LocationMapSectionProps) {
-  const settings = getInvitationMapSettings(
-    invitationData ?? {
-      mapProvider,
-      venueName: title,
-      formattedAddress: address,
-      address,
-      detailAddress,
-      googlePlaceId,
-      mapLat,
-      mapLng,
-      naverPlaceId,
-      naverMapUrl,
-    }
-  );
+  const mergedSource: Record<string, unknown> = {
+    ...(invitationData && typeof invitationData === 'object'
+      ? (invitationData as Record<string, unknown>)
+      : {}),
+  };
+  if (mapProvider) mergedSource.mapProvider = mapProvider;
+  if (title?.trim()) mergedSource.venueName = title.trim();
+  if (address?.trim()) {
+    mergedSource.formattedAddress = address.trim();
+    mergedSource.address = address.trim();
+  }
+  if (detailAddress?.trim()) mergedSource.detailAddress = detailAddress.trim();
+  if (googlePlaceId) mergedSource.googlePlaceId = googlePlaceId;
+  if (typeof mapLat === 'number') mergedSource.mapLat = mapLat;
+  if (typeof mapLng === 'number') mergedSource.mapLng = mapLng;
+  if (naverPlaceId) mergedSource.naverPlaceId = naverPlaceId;
+  if (naverMapUrl) mergedSource.naverMapUrl = naverMapUrl;
+
+  const settings = getInvitationMapSettings(mergedSource);
 
   const invitationLocation: InvitationLocation = {
     venueName: settings.venueName || (title || '').trim(),
@@ -96,11 +103,15 @@ export default function LocationMapSection({
     hasGoogleMapsApiKey() &&
     (hasMapTarget(settings) || Boolean(title?.trim() || address?.trim()));
   const canShowNaverMap = provider === 'NAVER' && hasMapTarget(settings);
+  const canShowProviderMap =
+    (provider === 'GOOGLE' && (canShowGoogleMap || layoutMapPlaceholder)) ||
+    (provider === 'NAVER' && (canShowNaverMap || layoutMapPlaceholder));
 
   const rootTone = tone === 'dark' ? styles.rootDark : styles.rootLight;
   const displayTitle = settings.venueName || title;
   const displayAddress = settings.formattedAddress || address;
   const displayDetail = settings.detailAddress || detailAddress;
+  const surface = previewMode ? 'preview' : 'public';
 
   return (
     <div className={`${styles.root} ${rootTone}`} data-map-provider={provider}>
@@ -114,22 +125,30 @@ export default function LocationMapSection({
       </div>
 
       <div className={styles.mapBleed} data-testid="public-map">
-        {provider === 'GOOGLE' && (canShowGoogleMap || layoutMapPlaceholder) ? (
-          <PublicGoogleMap location={invitationLocation} layoutPlaceholder={layoutMapPlaceholder} />
-        ) : provider === 'NAVER' && (canShowNaverMap || layoutMapPlaceholder) ? (
-          <PublicNaverMap settings={settings} layoutPlaceholder={layoutMapPlaceholder} />
+        {canShowProviderMap ? (
+          <InvitationProviderMap
+            settings={settings}
+            location={invitationLocation}
+            layoutPlaceholder={layoutMapPlaceholder}
+            interactive={!previewMode}
+            surface={surface}
+          />
         ) : mapImage ? (
           <img className={styles.mapImage} src={cdnImageSrc(mapImage)} alt={mapImageAlt} loading="lazy" />
         ) : (
-          <div className={styles.mapFallback} data-testid="public-map-fallback" data-qa-map-placeholder="1">
+          <div
+            className={styles.mapFallback}
+            data-testid="map-provider-placeholder"
+            data-qa-map-placeholder="1"
+          >
             {provider === 'NAVER' && !hasNaverMapsClientId()
-              ? '선택한 지도 서비스를 불러오지 못했습니다. 주소는 저장되며 외부 지도에서 확인할 수 있습니다.'
+              ? '네이버 지도 설정이 필요합니다.'
               : '지도를 표시할 수 없습니다. 아래 링크로 위치를 확인해 주세요.'}
           </div>
         )}
       </div>
 
-      <div className={styles.locationDetails}>
+      <div className={styles.locationDetails} data-testid="map-provider-nav-links">
         {provider === 'NAVER' ? (
           <NaverMapsExternalLinks settings={settings} />
         ) : (

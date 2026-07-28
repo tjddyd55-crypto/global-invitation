@@ -3,7 +3,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { EDITOR_MAP_HEIGHT_PX } from './config';
-import { loadNaverMaps, hasNaverMapsClientId, didNaverMapsAuthFail } from './loadNaverMaps';
+import {
+  loadNaverMaps,
+  hasNaverMapsClientId,
+  didNaverMapsAuthFail,
+  type NaverMapsMapInstance,
+} from './loadNaverMaps';
 import styles from './LocationPicker.module.css';
 
 export type NaverPendingLocation = {
@@ -44,9 +49,7 @@ export default function NaverLocationPicker({
   onConfirm,
 }: NaverLocationPickerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<{ setCenter: (latlng: unknown) => void; destroy?: () => void } | null>(
-    null
-  );
+  const mapInstanceRef = useRef<NaverMapsMapInstance | null>(null);
   const markerRef = useRef<{ setMap: (map: unknown | null) => void } | null>(null);
 
   const [query, setQuery] = useState(initialQuery);
@@ -231,7 +234,7 @@ export default function NaverLocationPicker({
         ref={mapRef}
         className={styles.mapCanvas}
         style={{ height: EDITOR_MAP_HEIGHT_PX }}
-        data-testid="naver-editor-map"
+        data-testid="editor-naver-map"
       />
 
       {!ready && loading ? <p className={styles.hint}>지도를 불러오는 중…</p> : null}

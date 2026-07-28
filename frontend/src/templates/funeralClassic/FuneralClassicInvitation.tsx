@@ -157,8 +157,12 @@ export default function FuneralClassicInvitation({
             sectionTitle={t(I18N_KEYS.funeral.sectionHallLocation)}
             title={data.funeralHall.name}
             address={data.funeralHall.address}
+            mapLat={data.funeralHall.mapLat}
+            mapLng={data.funeralHall.mapLng}
             mapImage={data.funeralHall.mapImage}
             mapImageAlt={t(I18N_KEYS.common.mapAlt)}
+            invitationData={data}
+            previewMode={Boolean(previewMode)}
           />
         </section>
       )}
