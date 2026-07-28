@@ -64,62 +64,92 @@ async function createWeddingFixture(page: Page) {
   expect(created.ok, `create invitation ${created.status}`).toBeTruthy();
   const id = created.data.id as string;
 
-  await page.evaluate(
+  const published = await page.evaluate(
     async ({ api, id, label }) => {
-      const detail = await fetch(`${api}/api/invitations/${id}`, { credentials: 'include' });
-      const body = await detail.json();
-      const dataJson = {
-        ...(body.dataJson || body.data || {}),
-        conceptType: 'WEDDING',
-        rsvpEnabled: true,
-        rsvp: { enabled: true, buttonLabel: label },
-        rsvpButton: label,
-        commentsEnabled: true,
-        guestbookEnabled: true,
-        title: 'RSVP Parity Wedding',
-        heroTitle: 'RSVP Parity Wedding',
-        content: '참석 여부 테스트',
-      };
-      await fetch(`${api}/api/invitations/${id}`, {
-        method: 'PATCH',
+      const putRes = await fetch(`${api}/api/invitations/${id}`, {
+        method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataJson, title: 'RSVP Parity Wedding' }),
+        body: JSON.stringify({
+          title: 'RSVP Parity Wedding',
+          data: {
+            templateType: 'FULL',
+            conceptType: 'WEDDING',
+            title: 'RSVP Parity Wedding',
+            heroTitle: 'RSVP Parity Wedding',
+            heroSubtitle: '2026.10.10',
+            content: '참석 여부 테스트',
+            eventDate: '2026-10-10T14:00:00+09:00',
+            locationText: '서울',
+            schedule: ['2026-10-10 14:00'],
+            rsvpEnabled: true,
+            guestbookEnabled: true,
+            commentsEnabled: true,
+            rsvp: { enabled: true, buttonLabel: label },
+            rsvpButton: label,
+            rsvpButtonLabel: label,
+            groomName: '신랑',
+            brideName: '신부',
+            groomPhone: '',
+            bridePhone: '',
+            parentsInfo: '',
+            groom: { name: '신랑', phone: '', parentsText: '', image: '' },
+            bride: { name: '신부', phone: '', parentsText: '', image: '' },
+            coupleNames: '신랑 ♥ 신부',
+            heroImage: '',
+            galleryImages: [],
+            address: '서울',
+            mapImage: '',
+            transportInfo: [],
+            parkingInfo: [],
+            accounts: [
+              { role: '신랑', bank: '국민', number: '123', holder: '신랑' },
+            ],
+            messages: [],
+            weddingDateTime: '2026-10-10 14:00',
+            venueName: '서울홀',
+            introQuote: '참석 여부 테스트',
+            introText: [],
+          },
+        }),
       });
-      await fetch(`${api}/api/invitations/${id}/publish`, {
+      const putBody = await putRes.json().catch(() => null);
+      const pub = await fetch(`${api}/api/invitations/${id}/publish`, {
         method: 'POST',
         credentials: 'include',
       });
+      const pubBody = await pub.json().catch(() => null);
+      const detail = await fetch(`${api}/api/invitations/${id}`, { credentials: 'include' });
+      const detailBody = await detail.json();
+      return {
+        putOk: putRes.ok,
+        putStatus: putRes.status,
+        putBody,
+        pubOk: pub.ok,
+        shareSlug: pubBody?.shareSlug || pubBody?.share_slug || detailBody.shareSlug || detailBody.slug,
+        slug: detailBody.slug as string,
+        rsvpEnabled: detailBody.dataJson?.rsvpEnabled ?? detailBody.data?.rsvpEnabled,
+        rsvpButton: detailBody.dataJson?.rsvpButton ?? detailBody.data?.rsvpButton,
+      };
     },
     { api: API, id, label: CUSTOM_LABEL }
   );
 
-  const detail = await page.evaluate(async ({ api, id }) => {
-    const res = await fetch(`${api}/api/invitations/${id}`, { credentials: 'include' });
-    const data = await res.json();
-    return {
-      ok: res.ok,
-      slug: data.slug as string,
-      shareSlug: (data.shareSlug || data.slug) as string,
-    };
-  }, { api: API, id });
-  expect(detail.ok).toBeTruthy();
+  expect(published.putOk, `PUT invitation failed ${published.putStatus}`).toBeTruthy();
+  expect(published.pubOk, 'publish failed').toBeTruthy();
+  expect(published.shareSlug).toBeTruthy();
+  expect(published.rsvpEnabled).toBe(true);
+  expect(published.rsvpButton).toBe(CUSTOM_LABEL);
 
-  return { email, id, slug: detail.slug, shareSlug: detail.shareSlug };
+  return { email, id, slug: published.slug, shareSlug: published.shareSlug as string };
 }
 
 async function goToRsvpStep(page: Page) {
-  const desktopStep = page.getByTestId('stepper-item-7');
-  if (await desktopStep.count()) {
-    await desktopStep.click();
-    await page.waitForTimeout(300);
-    return;
-  }
-  const mobileStep = page.getByTestId('stepper-item-7');
-  if (await mobileStep.count()) {
-    await mobileStep.click();
-    await page.waitForTimeout(300);
-  }
+  await expect(page.getByTestId('wedding-editor-root')).toBeVisible({ timeout: 60_000 });
+  const step = page.getByTestId('stepper-item-7');
+  await expect(step).toBeVisible({ timeout: 30_000 });
+  await step.click();
+  await expect(page.getByTestId('editor-rsvp-toggle')).toBeVisible({ timeout: 20_000 });
 }
 
 test.describe('RSVP editor preview parity', () => {
@@ -152,15 +182,21 @@ test.describe('RSVP editor preview parity', () => {
     await page.getByTestId('editor-rsvp-button-label').fill('새 버튼 문구');
     await expect(preview.getByTestId('invitation-rsvp-cta')).toContainText('새 버튼 문구');
 
-    const focused = await preview.evaluate(() => {
-      const root = document.querySelector('[data-testid="editor-live-preview-viewport"]');
-      const el = root?.querySelector('[data-section-id="rsvp"]');
-      if (!root || !el) return false;
-      const er = el.getBoundingClientRect();
-      const rr = root.getBoundingClientRect();
-      return er.top < rr.bottom && er.bottom > rr.top;
-    });
-    expect(focused).toBeTruthy();
+    // attendance step 진입 시 Preview가 RSVP로 포커스되는지 확인
+    await expect
+      .poll(
+        async () =>
+          preview.evaluate(() => {
+            const root = document.querySelector('[data-testid="editor-live-preview-viewport"]');
+            const el = root?.querySelector('[data-section-id="rsvp"]');
+            if (!root || !el) return false;
+            const er = el.getBoundingClientRect();
+            const rr = root.getBoundingClientRect();
+            return er.top < rr.bottom && er.bottom > rr.top;
+          }),
+        { timeout: 10_000 }
+      )
+      .toBeTruthy();
 
     await page.getByTestId('editor-rsvp-toggle-input').uncheck();
     await expect(preview.getByTestId('invitation-rsvp-section')).toHaveCount(0, { timeout: 15_000 });

@@ -86,17 +86,21 @@ export default function LivePreviewPanel({
     const root = scrollRef.current;
     if (!root) return;
     if (lastFocusedStepRef.current === resolvedFocusId) return;
-    if (userScrollingRef.current) {
-      lastFocusedStepRef.current = resolvedFocusId;
-      return;
-    }
+
+    // step 전환 시에는 사용자 스크롤 억제를 무시하고 1회 포커스
+    userScrollingRef.current = false;
 
     const timer = window.setTimeout(() => {
       const target = root.querySelector(`[data-section-id="${resolvedFocusId}"]`);
       lastFocusedStepRef.current = resolvedFocusId;
-      if (!target) return;
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 80);
+      if (!target || !(target instanceof HTMLElement)) return;
+
+      const rootRect = root.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const nextTop =
+        root.scrollTop + (targetRect.top - rootRect.top) - rootRect.height / 2 + targetRect.height / 2;
+      root.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+    }, 160);
 
     return () => window.clearTimeout(timer);
   }, [resolvedFocusId, data]);
