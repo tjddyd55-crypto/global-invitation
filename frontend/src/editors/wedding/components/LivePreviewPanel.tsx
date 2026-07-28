@@ -30,7 +30,7 @@ export default function LivePreviewPanel({
       {!fullscreen && title ? <p className={styles.previewTitle}>{title}</p> : null}
       <div className={frameClassName}>
         {!fullscreen ? <div className={styles.previewNotch} aria-hidden /> : null}
-        <div className={styles.previewScroll}>
+        <div className={styles.previewScroll} data-testid="editor-live-preview-viewport">
           <FullInvitationRenderer data={data} />
         </div>
       </div>

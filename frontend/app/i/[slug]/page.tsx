@@ -235,10 +235,10 @@ export default function PublicShareInvitationPage() {
   const sharePresentation = extractSharePresentationFromInvitation(invitation);
   const baseSlug = invitation.slug;
   return (
-    <div className={publicInvitationMobile.pageRoot}>
+    <div className={publicInvitationMobile.pageRoot} data-testid="public-route-root">
       <div className={publicInvitationMobile.layout}>
-        <div className={publicInvitationMobile.inviteColumn}>
-          <div className={publicInvitationMobile.shell}>
+        <div className={publicInvitationMobile.inviteColumn} data-testid="desktop-invitation-column">
+          <div className={publicInvitationMobile.shell} data-testid="public-invitation-shell">
             {isCreatorTemplate && hasStudioConfig && FallbackTemplate ? (
               <SafeCreatorRenderer
                 creatorRenderer={Template}

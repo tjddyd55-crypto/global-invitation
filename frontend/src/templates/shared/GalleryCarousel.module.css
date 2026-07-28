@@ -1,18 +1,21 @@
 .albumSection {
   width: 100%;
+  max-width: none;
   padding: 48px 0 0;
   margin: 0;
   box-sizing: border-box;
 }
 
 .scriptLabel {
-  margin: 0 0 28px;
+  margin: 0;
+  padding: 0 24px 28px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
   text-align: center;
   opacity: 0.7;
+  box-sizing: border-box;
 }
 
 .tone_wedding .scriptLabel {
@@ -30,13 +33,16 @@
 .galleryCarousel {
   position: relative;
   width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
   touch-action: pan-y;
   user-select: none;
 }
 
 .galleryMainImage {
   width: 100%;
-  height: clamp(280px, 52vw, 420px);
+  height: 420px;
   max-height: 420px;
   object-fit: cover;
   object-position: center center;

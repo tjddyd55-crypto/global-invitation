@@ -1,36 +1,47 @@
 /**
  * 공개 초대장(/i) 레이아웃.
- * - 모바일: full-width 초대장 (외곽 카드 없음)
- * - PC: 가운데 375px 초대장 + 오른쪽 공유 카드
+ * - 모바일: viewport 전체 폭 (max-width 375 금지, 외곽 카드/그림자 없음)
+ * - PC: 가운데 375px column + 오른쪽 공유 패널
  */
 
 .pageRoot {
   min-height: 100vh;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
   background: transparent;
+  overflow-x: hidden;
 }
 
 .layout {
   width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
+  gap: 0;
   padding: 0;
 }
 
 .inviteColumn {
   min-width: 0;
   width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 .shell {
   width: 100%;
-  max-width: 100%;
+  max-width: none;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
 }
 
 .desktopAside {
@@ -111,14 +122,19 @@
 
   .inviteColumn {
     width: 375px;
-    flex-shrink: 0;
+    flex: 0 0 375px;
     margin-top: 40px;
+    padding: 0;
   }
 
   .shell {
+    width: 375px;
     max-width: 375px;
     margin: 0;
-    box-shadow: 0 8px 48px rgba(0, 0, 0, 0.12);
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
   }
 
   .desktopAside {

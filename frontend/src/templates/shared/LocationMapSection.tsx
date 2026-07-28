@@ -31,6 +31,7 @@ type LocationMapSectionProps = {
 
 /**
  * Public location section — Google Maps only (view + directions).
+ * Header/details 는 내부 padding, 지도는 document full-bleed.
  */
 export default function LocationMapSection({
   sectionTitle,
@@ -74,41 +75,47 @@ export default function LocationMapSection({
 
   return (
     <div className={`${styles.root} ${rootTone}`}>
-      {sectionTitle ? <div className={styles.sectionTitle}>{sectionTitle}</div> : null}
-      <div className={styles.locationBlock}>
-        {title ? <h2>{title}</h2> : null}
-        {address ? <div>{address}</div> : null}
-        {detailAddress?.trim() ? <div className={styles.detailAddress}>{detailAddress}</div> : null}
+      <div className={styles.locationHeader}>
+        {sectionTitle ? <div className={styles.sectionTitle}>{sectionTitle}</div> : null}
+        <div className={styles.locationBlock}>
+          {title ? <h2>{title}</h2> : null}
+          {address ? <div>{address}</div> : null}
+          {detailAddress?.trim() ? <div className={styles.detailAddress}>{detailAddress}</div> : null}
+        </div>
       </div>
 
-      {canShowGoogleMap || layoutMapPlaceholder ? (
-        <PublicGoogleMap location={invitationLocation} layoutPlaceholder={layoutMapPlaceholder} />
-      ) : mapImage ? (
-        <img className={styles.mapImage} src={cdnImageSrc(mapImage)} alt={mapImageAlt} loading="lazy" />
-      ) : (
-        <div className={styles.mapFallback} data-testid="public-map-fallback" data-qa-map-placeholder="1">
-          지도를 표시할 수 없습니다. 아래 링크로 위치를 확인해 주세요.
-        </div>
-      )}
+      <div className={styles.mapBleed} data-testid="public-map">
+        {canShowGoogleMap || layoutMapPlaceholder ? (
+          <PublicGoogleMap location={invitationLocation} layoutPlaceholder={layoutMapPlaceholder} />
+        ) : mapImage ? (
+          <img className={styles.mapImage} src={cdnImageSrc(mapImage)} alt={mapImageAlt} loading="lazy" />
+        ) : (
+          <div className={styles.mapFallback} data-testid="public-map-fallback" data-qa-map-placeholder="1">
+            지도를 표시할 수 없습니다. 아래 링크로 위치를 확인해 주세요.
+          </div>
+        )}
+      </div>
 
-      <GoogleMapsExternalLinks location={invitationLocation} />
+      <div className={styles.locationDetails}>
+        <GoogleMapsExternalLinks location={invitationLocation} />
 
-      {hasTransportInfo && (
-        <div className={styles.infoList}>
-          <strong>{transportTitle}</strong>
-          {transportInfo?.map((line) => (
-            <div key={line}>- {line}</div>
-          ))}
-        </div>
-      )}
-      {hasParkingInfo && (
-        <div className={styles.infoList}>
-          <strong>{parkingTitle}</strong>
-          {parkingInfo?.map((line) => (
-            <div key={line}>- {line}</div>
-          ))}
-        </div>
-      )}
+        {hasTransportInfo && (
+          <div className={styles.infoList}>
+            <strong>{transportTitle}</strong>
+            {transportInfo?.map((line) => (
+              <div key={line}>- {line}</div>
+            ))}
+          </div>
+        )}
+        {hasParkingInfo && (
+          <div className={styles.infoList}>
+            <strong>{parkingTitle}</strong>
+            {parkingInfo?.map((line) => (
+              <div key={line}>- {line}</div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

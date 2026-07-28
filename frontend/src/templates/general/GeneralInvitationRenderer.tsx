@@ -68,9 +68,13 @@ export default function GeneralInvitationRenderer({
   const show = (key: (typeof sections)[number]) => sections.includes(key);
 
   return (
-    <div className={styles.page} data-testid="general-invitation" data-concept="GENERAL">
+    <div
+      className={styles.page}
+      data-testid="public-invitation-document"
+      data-concept="GENERAL"
+    >
       {show('hero') ? (
-        <section className={styles.hero}>
+        <section className={styles.hero} data-testid="public-hero">
           {heroImage ? (
             <div className={styles.heroMedia}>
               <ImageWithFallback className={styles.heroImage} src={heroImage} alt="" loading="eager" />
@@ -111,18 +115,16 @@ export default function GeneralInvitationRenderer({
       ) : null}
 
       {show('gallery') ? (
-        <div data-testid="general-gallery">
-          <GalleryCarousel
-            items={galleryItems}
-            sectionLabel="Gallery"
-            tone="general"
-            hintText="밀어서 더 많은 이미지 보기"
-          />
-        </div>
+        <GalleryCarousel
+          items={galleryItems}
+          sectionLabel="Gallery"
+          tone="general"
+          hintText="밀어서 더 많은 이미지 보기"
+        />
       ) : null}
 
       {show('location') ? (
-        <section className={styles.section} data-testid="general-location">
+        <section className={styles.locationSection} data-testid="general-location">
           <LocationMapSection
             sectionTitle="오시는 길"
             title={(data.venueName || data.locationText || '').trim()}

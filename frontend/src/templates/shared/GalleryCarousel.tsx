@@ -55,7 +55,7 @@ export default function GalleryCarousel({
     <section
       className={`${styles.albumSection} ${styles[`tone_${tone}`]} ${className ?? ''}`.trim()}
       aria-label="Gallery"
-      data-testid="gallery-carousel"
+      data-testid="public-gallery"
       data-gallery-count={visible.length}
     >
       {sectionLabel ? <p className={styles.scriptLabel}>{sectionLabel}</p> : null}

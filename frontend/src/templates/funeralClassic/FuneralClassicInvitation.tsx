@@ -74,8 +74,8 @@ export default function FuneralClassicInvitation({
   );
 
   return (
-    <div className={styles.page}>
-      <section className={styles.hero}>
+    <div className={styles.page} data-testid="public-invitation-document" data-concept="FUNERAL">
+      <section className={styles.hero} data-testid="public-hero">
         {data.heroImage && (
           <img
             className={styles.heroImage}
@@ -85,23 +85,25 @@ export default function FuneralClassicInvitation({
             fetchPriority="high"
           />
         )}
-        <div className={styles.heroTitle}>{t(I18N_KEYS.funeral.heroTitle)}</div>
-        <div className={styles.heroName}>
-          {heroNamePrefix} {data.deceasedName}
-          {heroNameSuffix ? ` ${heroNameSuffix}` : ''}
-        </div>
-        <div className={styles.heroMeta}>
-          {data.birthDate && (
+        <div className={styles.heroCopy}>
+          <div className={styles.heroTitle}>{t(I18N_KEYS.funeral.heroTitle)}</div>
+          <div className={styles.heroName}>
+            {heroNamePrefix} {data.deceasedName}
+            {heroNameSuffix ? ` ${heroNameSuffix}` : ''}
+          </div>
+          <div className={styles.heroMeta}>
+            {data.birthDate && (
+              <span>
+                {formatDateValue(data.birthDate, language)} {t(I18N_KEYS.funeral.birthSuffix)} ·{' '}
+              </span>
+            )}
             <span>
-              {formatDateValue(data.birthDate, language)} {t(I18N_KEYS.funeral.birthSuffix)} ·{' '}
+              {formatDateValue(data.deathDate, language)} {t(I18N_KEYS.funeral.deathSuffix)}
             </span>
-          )}
-          <span>
-            {formatDateValue(data.deathDate, language)} {t(I18N_KEYS.funeral.deathSuffix)}
-          </span>
+          </div>
+          <div className={styles.heroNotice}>{t(I18N_KEYS.funeral.heroNotice)}</div>
+          <div className={styles.heroSubNotice}>{t(I18N_KEYS.funeral.heroSubNotice)}</div>
         </div>
-        <div className={styles.heroNotice}>{t(I18N_KEYS.funeral.heroNotice)}</div>
-        <div className={styles.heroSubNotice}>{t(I18N_KEYS.funeral.heroSubNotice)}</div>
       </section>
 
       <section className={styles.section}>
@@ -149,7 +151,7 @@ export default function FuneralClassicInvitation({
       </section>
 
       {hasLocation && (
-        <section className={styles.section}>
+        <section className={styles.locationSection}>
           <LocationMapSection
             sectionTitle={t(I18N_KEYS.funeral.sectionHallLocation)}
             title={data.funeralHall.name}

@@ -1,0 +1,39 @@
+/**
+ * 공개 초대장 / Editor LivePreview 공통 geometry SSOT.
+ * document 자체가 padding 0 · full-width.
+ * Hero / Gallery image / Map 은 full-bleed.
+ * 텍스트 섹션만 내부 padding.
+ */
+
+.invitationDocument {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.invitationFullBleed {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.invitationContentSection {
+  width: 100%;
+  padding: 56px 24px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 375px) {
+  .invitationContentSection {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}

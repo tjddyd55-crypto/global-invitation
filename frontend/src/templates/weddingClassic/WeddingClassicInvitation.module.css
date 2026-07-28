@@ -1,9 +1,10 @@
-/* 모바일 기준: 375px 캔버스, 구조는 컨셉 공통 · 스타일만 분기 */
+/* document = parent 폭 100% (모바일 viewport / Desktop 375 column). 구조는 컨셉 공통 · 스타일만 분기 */
 
 .page {
   width: 100%;
-  max-width: 375px;
-  margin: 0 auto;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
   box-sizing: border-box;
   background: #fff8f3;
   color: #1f2937;
@@ -44,13 +45,14 @@
   text-align: left;
 }
 
-/* ---- Hero: 520px, 하단 정렬, 읽기용 그라데이션 오버레이 ---- */
+/* ---- Hero: full-bleed 520px, 이미지는 padding 0, 텍스트만 내부 padding ---- */
 .heroSection {
   position: relative;
   width: 100%;
+  max-width: none;
   height: 520px;
   margin: 0;
-  padding: 24px 24px 40px;
+  padding: 0;
   box-sizing: border-box;
   display: flex;
   align-items: flex-end;
@@ -97,9 +99,14 @@
 }
 
 .heroContent {
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 2;
   width: 100%;
+  padding: 24px 28px 32px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -159,11 +166,11 @@
 }
 
 .conceptGeneral .section {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
+  background: transparent;
+  border-radius: 0;
+  padding: 56px 24px;
   box-sizing: border-box;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
 }
 
 .conceptWedding .section {
@@ -742,7 +749,14 @@
 }
 
 .locationSection {
-  padding-bottom: 8px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .accountList {

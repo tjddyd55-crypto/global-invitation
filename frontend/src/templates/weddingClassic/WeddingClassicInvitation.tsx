@@ -202,7 +202,11 @@ export default function WeddingClassicInvitation({
     : guestbookMessages.slice(0, 3);
 
   return (
-    <div className={`${styles.page} ${pageConceptClass}`}>
+    <div
+      className={`${styles.page} ${pageConceptClass}`}
+      data-testid="public-invitation-document"
+      data-concept={conceptType}
+    >
       {showPlayButton && onPlayMusic && (
         <button
           className={styles.audioButton}
@@ -216,6 +220,7 @@ export default function WeddingClassicInvitation({
       <section
         className={`${styles.heroSection} ${showHeroMedia ? '' : styles.heroSectionNoImage}`}
         aria-label="대표 이미지"
+        data-testid="public-hero"
       >
         {heroImage && !heroFailed ? (
           <div className={styles.heroMedia}>
@@ -409,7 +414,7 @@ export default function WeddingClassicInvitation({
       ) : null}
 
       {hasLocation ? (
-        <section className={`${styles.section} ${styles.locationSection}`}>
+        <section className={styles.locationSection} data-testid="public-location">
           <LocationMapSection
             sectionTitle={locationTitle}
             title={locationText || ''}
