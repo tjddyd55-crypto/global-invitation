@@ -18,10 +18,8 @@ import styles from './PublicNaverMap.module.css';
 type PublicNaverMapProps = {
   settings: InvitationMapSettings;
   height?: number;
-  /** Preview: disable pan/zoom gestures */
   interactive?: boolean;
   layoutPlaceholder?: boolean;
-  /** QA surface: preview phone vs public page */
   surface?: 'preview' | 'public';
   className?: string;
 };
@@ -41,10 +39,18 @@ function geocodeAddress(query: string): Promise<{ lat: number; lng: number } | n
       resolve(null);
       return;
     }
+    let settled = false;
+    const finish = (value: { lat: number; lng: number } | null) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      resolve(value);
+    };
+    const timer = window.setTimeout(() => finish(null), 8000);
     window.naver.maps.Service.geocode({ query }, (status, response) => {
       const ok = window.naver?.maps?.Service?.Status?.OK || 'OK';
       if (status !== ok) {
-        resolve(null);
+        finish(null);
         return;
       }
       const payload = response as {
@@ -54,17 +60,31 @@ function geocodeAddress(query: string): Promise<{ lat: number; lng: number } | n
       const lat = Number(first?.y);
       const lng = Number(first?.x);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-        resolve(null);
+        finish(null);
         return;
       }
-      resolve({ lat, lng });
+      finish({ lat, lng });
     });
   });
 }
 
+function applyInteractionOptions(map: NaverMapsMapInstance, interactive: boolean): void {
+  try {
+    map.setOptions?.({
+      draggable: interactive,
+      scrollWheel: interactive,
+      pinchZoom: interactive,
+      keyboardShortcuts: interactive,
+      disableDoubleClickZoom: !interactive,
+    });
+  } catch {
+    // ignore unsupported option keys
+  }
+}
+
 /**
  * Preview/Public shared Naver map canvas (real Maps JS API).
- * Do not render a static mint placeholder when Client ID + coords are available.
+ * Outer shell holds React attributes; inner host is owned by Naver Maps DOM.
  */
 export default function PublicNaverMap({
   settings,
@@ -74,7 +94,7 @@ export default function PublicNaverMap({
   surface = 'public',
   className,
 }: PublicNaverMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
+  const mapHostRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<NaverMapsMapInstance | null>(null);
   const markerRef = useRef<{ setMap: (map: unknown | null) => void } | null>(null);
   const [fallbackReason, setFallbackReason] = useState<FallbackReason | null>(
@@ -85,19 +105,27 @@ export default function PublicNaverMap({
   const mapTestId = surface === 'preview' ? 'preview-naver-map' : 'public-naver-map';
   const viewUrl = buildNaverMapsViewUrl(settings);
   const label = settings.formattedAddress || settings.venueName || '지도에서 보기';
+  const centerKey =
+    typeof settings.latitude === 'number' && typeof settings.longitude === 'number'
+      ? `${settings.latitude.toFixed(6)},${settings.longitude.toFixed(6)}`
+      : `addr:${settings.formattedAddress || settings.venueName || ''}`;
 
   useEffect(() => {
     if (layoutPlaceholder) {
       setFallbackReason('layout');
+      setReady(false);
       return;
     }
     if (!hasNaverMapsClientId()) {
       setFallbackReason('client_id');
+      setReady(false);
       return;
     }
 
     let cancelled = false;
     let resizeObserver: ResizeObserver | null = null;
+    let intersectionObserver: IntersectionObserver | null = null;
+    const readyTimers: number[] = [];
 
     const cleanupMap = () => {
       try {
@@ -108,6 +136,9 @@ export default function PublicNaverMap({
       }
       markerRef.current = null;
       mapInstanceRef.current = null;
+      if (mapHostRef.current) {
+        mapHostRef.current.innerHTML = '';
+      }
     };
 
     const mount = async () => {
@@ -115,7 +146,7 @@ export default function PublicNaverMap({
       setFallbackReason(null);
       try {
         await loadNaverMaps();
-        if (cancelled || !mapRef.current || !window.naver?.maps) return;
+        if (cancelled || !mapHostRef.current || !window.naver?.maps) return;
 
         let lat = settings.latitude;
         let lng = settings.longitude;
@@ -126,51 +157,73 @@ export default function PublicNaverMap({
             return;
           }
           const geocoded = await geocodeAddress(query);
+          if (cancelled) return;
           if (!geocoded) {
-            if (!cancelled) setFallbackReason('coords');
+            setFallbackReason('coords');
             return;
           }
           lat = geocoded.lat;
           lng = geocoded.lng;
         }
 
-        await waitForMapContainerSize(mapRef.current);
-        if (cancelled || !mapRef.current || !window.naver?.maps) return;
+        await waitForMapContainerSize(mapHostRef.current);
+        if (cancelled || !mapHostRef.current || !window.naver?.maps) return;
+
+        if (mapHostRef.current.clientWidth <= 0 || mapHostRef.current.clientHeight <= 0) {
+          mapHostRef.current.style.width = '100%';
+          mapHostRef.current.style.height = `${height}px`;
+          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        }
 
         cleanupMap();
+
         const maps = window.naver.maps;
         const center = new maps.LatLng(lat, lng);
-        const map = new maps.Map(mapRef.current, {
+        const map = new maps.Map(mapHostRef.current, {
           center,
           zoom: 16,
-          draggable: interactive,
-          scrollWheel: interactive,
-          pinchZoom: interactive,
-          keyboardShortcuts: interactive,
-          disableDoubleClickZoom: !interactive,
         });
         mapInstanceRef.current = map;
+        applyInteractionOptions(map, interactive);
         markerRef.current = new maps.Marker({
           position: center,
           map,
           title: settings.venueName || settings.formattedAddress || undefined,
         });
 
-        requestAnimationFrame(() => {
-          refreshNaverMapSize(map, mapRef.current);
+        const markReady = () => {
+          if (cancelled) return;
+          refreshNaverMapSize(map, mapHostRef.current);
           map.setCenter(center);
           map.setZoom?.(16);
-        });
-
-        resizeObserver = new ResizeObserver(() => {
-          refreshNaverMapSize(mapInstanceRef.current, mapRef.current);
-        });
-        resizeObserver.observe(mapRef.current);
-
-        if (!cancelled) {
           setReady(true);
           setFallbackReason(null);
+        };
+
+        markReady();
+        readyTimers.push(window.setTimeout(markReady, 0));
+        readyTimers.push(window.setTimeout(markReady, 200));
+        readyTimers.push(window.setTimeout(markReady, 600));
+
+        if (maps.Event?.addListener) {
+          maps.Event.addListener(map, 'init', markReady);
+          maps.Event.addListener(map, 'idle', markReady);
         }
+
+        resizeObserver = new ResizeObserver(() => {
+          refreshNaverMapSize(mapInstanceRef.current, mapHostRef.current);
+        });
+        resizeObserver.observe(mapHostRef.current);
+
+        intersectionObserver = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              markReady();
+            }
+          },
+          { threshold: 0.05 }
+        );
+        intersectionObserver.observe(mapHostRef.current);
       } catch (error) {
         if (cancelled) return;
         if (didNaverMapsAuthFail() || (error instanceof Error && error.message.includes('AUTH'))) {
@@ -180,6 +233,7 @@ export default function PublicNaverMap({
         } else {
           setFallbackReason('load');
         }
+        setReady(false);
       }
     };
 
@@ -187,10 +241,14 @@ export default function PublicNaverMap({
 
     return () => {
       cancelled = true;
+      readyTimers.forEach((timer) => window.clearTimeout(timer));
       resizeObserver?.disconnect();
+      intersectionObserver?.disconnect();
       cleanupMap();
     };
   }, [
+    centerKey,
+    height,
     interactive,
     layoutPlaceholder,
     settings.formattedAddress,
@@ -233,13 +291,14 @@ export default function PublicNaverMap({
 
   return (
     <div
-      ref={mapRef}
       className={`${styles.publicNaverMap} ${className || ''}`.trim()}
       style={{ height, minHeight: height }}
       data-testid={mapTestId}
       data-map-ready={ready ? '1' : '0'}
       data-map-interactive={interactive ? '1' : '0'}
       aria-label="네이버 지도"
-    />
+    >
+      <div ref={mapHostRef} className={styles.mapHost} />
+    </div>
   );
 }

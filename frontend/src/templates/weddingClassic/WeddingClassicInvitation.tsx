@@ -413,7 +413,11 @@ export default function WeddingClassicInvitation({
       ) : null}
 
       {hasLocation ? (
-        <section className={styles.locationSection} data-testid="public-location">
+        <section
+          className={styles.locationSection}
+          data-testid="public-location"
+          data-section-id="location"
+        >
           <LocationMapSection
             sectionTitle={locationTitle}
             title={locationText || ''}

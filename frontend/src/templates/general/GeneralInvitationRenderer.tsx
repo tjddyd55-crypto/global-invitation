@@ -127,7 +127,11 @@ export default function GeneralInvitationRenderer({
       ) : null}
 
       {show('location') ? (
-        <section className={styles.locationSection} data-testid="general-location">
+        <section
+          className={styles.locationSection}
+          data-testid="general-location"
+          data-section-id="location"
+        >
           <LocationMapSection
             sectionTitle="오시는 길"
             title={(data.venueName || data.locationText || '').trim()}

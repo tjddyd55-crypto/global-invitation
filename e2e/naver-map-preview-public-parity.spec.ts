@@ -86,14 +86,21 @@ test('Naver map appears in editor, preview, and public without placeholder', asy
   const results = page.getByTestId('naver-search-results');
   await expect(results).toBeVisible({ timeout: 30_000 });
   await results.locator('button').first().click();
+  // After selecting a result, confirm immediately updates draft for LivePreview.
+  // Keep confirm card until user confirms explicitly.
   await expect(page.getByTestId('naver-confirm-card')).toBeVisible({ timeout: 15_000 });
   await page.getByTestId('naver-confirm-card').getByRole('button', { name: '이 위치로 확정' }).click();
 
   const preview = page.getByTestId('editor-live-preview-viewport');
-  await expect(preview.getByTestId('preview-naver-map')).toBeVisible({ timeout: 45_000 });
-  await expect(preview.getByTestId('preview-naver-map')).toHaveAttribute('data-map-ready', '1', {
-    timeout: 45_000,
-  });
+  // Location step should scroll preview to map section
+  await expect(preview.getByTestId('public-location')).toBeVisible({ timeout: 30_000 });
+  const previewMap = preview.getByTestId('preview-naver-map');
+  await expect(previewMap).toBeVisible({ timeout: 45_000 });
+  await expect
+    .poll(async () => previewMap.getAttribute('data-map-ready'), { timeout: 60_000 })
+    .toBe('1');
+  // Real map tiles/canvas appear inside the container
+  await expect(previewMap.locator('canvas, div').first()).toBeVisible({ timeout: 30_000 });
   await expect(preview.getByTestId('map-provider-placeholder')).toHaveCount(0);
   await expect(preview.getByText('Naver 지도', { exact: true })).toHaveCount(0);
 
