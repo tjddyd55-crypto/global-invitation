@@ -330,8 +330,18 @@ export function createWeddingEditorStateFromDraft(
       googlePlaceId: runtimeData.googlePlaceId || base.location.googlePlaceId,
       naverPlaceId: runtimeData.naverPlaceId || base.location.naverPlaceId,
       naverMapUrl: runtimeData.naverMapUrl || base.location.naverMapUrl,
-      mapLat: runtimeData.mapLat ?? base.location.mapLat,
-      mapLng: runtimeData.mapLng ?? base.location.mapLng,
+      mapLat:
+        typeof runtimeData.mapLat === 'number'
+          ? runtimeData.mapLat
+          : typeof runtimeData.mapLat === 'string' && Number.isFinite(Number(runtimeData.mapLat))
+            ? Number(runtimeData.mapLat)
+            : base.location.mapLat,
+      mapLng:
+        typeof runtimeData.mapLng === 'number'
+          ? runtimeData.mapLng
+          : typeof runtimeData.mapLng === 'string' && Number.isFinite(Number(runtimeData.mapLng))
+            ? Number(runtimeData.mapLng)
+            : base.location.mapLng,
       transportInfo:
         runtimeData.transportInfo && runtimeData.transportInfo.length > 0
           ? runtimeData.transportInfo

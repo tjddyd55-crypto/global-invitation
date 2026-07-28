@@ -84,7 +84,7 @@ function applyInteractionOptions(map: NaverMapsMapInstance, interactive: boolean
 
 /**
  * Preview/Public shared Naver map canvas (real Maps JS API).
- * Outer shell holds React attributes; inner host is owned by Naver Maps DOM.
+ * Always keep map host mounted so coord updates can remount the SDK map.
  */
 export default function PublicNaverMap({
   settings,
@@ -166,6 +166,7 @@ export default function PublicNaverMap({
           lng = geocoded.lng;
         }
 
+        if (!mapHostRef.current) return;
         await waitForMapContainerSize(mapHostRef.current);
         if (cancelled || !mapHostRef.current || !window.naver?.maps) return;
 
@@ -269,36 +270,35 @@ export default function PublicNaverMap({
     );
   }
 
-  if (fallbackReason) {
-    return (
-      <a
-        className={`${styles.publicNaverMap} ${styles.fallback} ${className || ''}`.trim()}
-        style={{ height }}
-        href={viewUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        data-testid="map-provider-placeholder"
-        data-qa-map-placeholder="1"
-        data-fallback-reason={fallbackReason}
-      >
-        <span className={styles.fallbackInner}>
-          <strong>{resolveFallbackMessage(fallbackReason)}</strong>
-          <span>{label}</span>
-        </span>
-      </a>
-    );
-  }
-
   return (
     <div
       className={`${styles.publicNaverMap} ${className || ''}`.trim()}
       style={{ height, minHeight: height }}
-      data-testid={mapTestId}
-      data-map-ready={ready ? '1' : '0'}
+      data-testid={fallbackReason ? 'map-provider-placeholder' : mapTestId}
+      data-map-ready={ready && !fallbackReason ? '1' : '0'}
       data-map-interactive={interactive ? '1' : '0'}
+      data-fallback-reason={fallbackReason || undefined}
+      data-qa-map-placeholder={fallbackReason ? '1' : undefined}
       aria-label="네이버 지도"
     >
-      <div ref={mapHostRef} className={styles.mapHost} />
+      <div
+        ref={mapHostRef}
+        className={styles.mapHost}
+        style={{ visibility: fallbackReason ? 'hidden' : 'visible' }}
+      />
+      {fallbackReason ? (
+        <a
+          className={styles.fallbackOverlay}
+          href={viewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span className={styles.fallbackInner}>
+            <strong>{resolveFallbackMessage(fallbackReason)}</strong>
+            <span>{label}</span>
+          </span>
+        </a>
+      ) : null}
     </div>
   );
 }

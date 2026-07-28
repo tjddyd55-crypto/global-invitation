@@ -372,23 +372,50 @@ export default function EditorPage() {
 
   const initialState = useMemo(() => {
     if (!invitation || !editorType || editorType === 'FUNERAL') return null;
-    const runtimeData = (invitation.dataJson ?? invitation.data) as WeddingInvitationData | undefined;
-    if (isWeddingInvitationData(runtimeData)) {
-      const draft = createWeddingEditorStateFromDraft(invitation, runtimeData);
-      return {
-        ...draft,
-        setup: {
-          ...draft.setup,
-          conceptType: editorType,
-        },
-      };
-    }
-    const created = createWeddingEditorState(invitation, { conceptType: editorType });
+    const runtimeRaw = (invitation.dataJson ?? invitation.data) as Record<string, unknown> | undefined;
+    const runtimeData = runtimeRaw as WeddingInvitationData | undefined;
+    const draft = isWeddingInvitationData(runtimeData)
+      ? createWeddingEditorStateFromDraft(invitation, runtimeData)
+      : createWeddingEditorState(invitation, { conceptType: editorType });
+
+    const rawLat = runtimeRaw?.mapLat;
+    const rawLng = runtimeRaw?.mapLng;
+    const coercedLat =
+      typeof rawLat === 'number'
+        ? rawLat
+        : typeof rawLat === 'string' && Number.isFinite(Number(rawLat))
+          ? Number(rawLat)
+          : undefined;
+    const coercedLng =
+      typeof rawLng === 'number'
+        ? rawLng
+        : typeof rawLng === 'string' && Number.isFinite(Number(rawLng))
+          ? Number(rawLng)
+          : undefined;
+
     return {
-      ...created,
+      ...draft,
       setup: {
-        ...created.setup,
+        ...draft.setup,
         conceptType: editorType,
+      },
+      location: {
+        ...draft.location,
+        mapProvider: runtimeRaw?.mapProvider === 'NAVER' ? 'NAVER' : draft.location.mapProvider,
+        mapLat: coercedLat ?? draft.location.mapLat,
+        mapLng: coercedLng ?? draft.location.mapLng,
+        address:
+          (typeof runtimeRaw?.formattedAddress === 'string' && runtimeRaw.formattedAddress) ||
+          (typeof runtimeRaw?.address === 'string' && runtimeRaw.address) ||
+          draft.location.address,
+        venueName:
+          (typeof runtimeRaw?.venueName === 'string' && runtimeRaw.venueName) || draft.location.venueName,
+        naverPlaceId:
+          (typeof runtimeRaw?.naverPlaceId === 'string' && runtimeRaw.naverPlaceId) ||
+          draft.location.naverPlaceId,
+        naverMapUrl:
+          (typeof runtimeRaw?.naverMapUrl === 'string' && runtimeRaw.naverMapUrl) ||
+          draft.location.naverMapUrl,
       },
     };
   }, [editorType, invitation]);

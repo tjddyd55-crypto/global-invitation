@@ -34,6 +34,10 @@ function readNumber(...candidates: unknown[]): number | undefined {
     if (typeof candidate === 'number' && Number.isFinite(candidate)) {
       return candidate;
     }
+    if (typeof candidate === 'string' && candidate.trim()) {
+      const parsed = Number(candidate);
+      if (Number.isFinite(parsed)) return parsed;
+    }
   }
   return undefined;
 }
