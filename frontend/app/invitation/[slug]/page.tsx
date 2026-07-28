@@ -187,7 +187,11 @@ export default function InvitationPage() {
   const handleKakaoShare = async () => {
     if (typeof window === 'undefined' || !slug) return;
     const publicShare = invitation?.shareSlug?.trim();
-    const path = publicShare ? buildPublicInvitationUrlPath(publicShare) : `/invitation/${slug}`;
+    if (!publicShare) {
+      setShareFallbackUrl(null);
+      return;
+    }
+    const path = buildPublicInvitationUrlPath(publicShare);
     const absolute = `${window.location.origin}${path}`;
     const pres = invitation
       ? extractSharePresentationFromInvitation(invitation, {
@@ -195,12 +199,16 @@ export default function InvitationPage() {
           siteOrigin: window.location.origin,
         })
       : null;
-    await shareViaKakaoTalk({
-      title: pres?.metaTitle || '초대장',
-      description: pres?.metaDescription || '초대장을 확인해 주세요.',
-      imageUrl: pres?.imageUrl,
-      canonicalUrl: absolute,
-    });
+    try {
+      await shareViaKakaoTalk({
+        title: pres?.metaTitle || '초대장',
+        description: pres?.metaDescription || '초대장을 확인해 주세요.',
+        imageUrl: pres?.imageUrl,
+        canonicalUrl: absolute,
+      });
+    } catch {
+      setShareFallbackUrl(absolute);
+    }
   };
 
   if (loading) {

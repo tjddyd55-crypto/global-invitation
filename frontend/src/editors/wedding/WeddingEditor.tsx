@@ -27,11 +27,14 @@ import { useEditorShell } from '@/src/editors/shared/useEditorShell';
 type WeddingEditorProps = {
   initialState: WeddingEditorState;
   pageUrl: string;
-  onSave?: (state: WeddingEditorState) => Promise<void> | void;
-  onSaveAndExit?: (state: WeddingEditorState) => Promise<void> | void;
-  onPublish?: (state: WeddingEditorState) => Promise<void> | void;
+  onSave?: (state: WeddingEditorState) => Promise<unknown> | void;
+  onSaveAndExit?: (state: WeddingEditorState) => Promise<unknown> | void;
+  onPublish?: (state: WeddingEditorState) => Promise<unknown> | void;
+  /** PATCH 저장 후 persisted OG로 KakaoTalk 공유 (local draft SDK 호출 금지) */
+  onShareKakaoTalk?: (state: WeddingEditorState) => Promise<'kakao-sdk' | 'native-share' | 'clipboard' | null>;
   saving?: boolean;
   publishing?: boolean;
+  sharingKakao?: boolean;
   isDemo?: boolean;
   saveError?: string | null;
   saveNotice?: string | null;
@@ -45,8 +48,10 @@ export default function WeddingEditor({
   onSave,
   onSaveAndExit,
   onPublish,
+  onShareKakaoTalk,
   saving,
   publishing,
+  sharingKakao,
   isDemo,
   saveError,
   saveNotice,
@@ -209,6 +214,12 @@ export default function WeddingEditor({
             value={state.share}
             onChange={(payload) => dispatch({ type: 'SET_SHARE', payload })}
             heroImage={state.hero.heroImage}
+            sharingKakao={sharingKakao}
+            onShareKakaoTalk={
+              onShareKakaoTalk
+                ? async () => onShareKakaoTalk(state)
+                : undefined
+            }
           />
         );
       default:

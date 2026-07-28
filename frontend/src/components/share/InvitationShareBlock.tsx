@@ -8,7 +8,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useState } from 'react';
-import { shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
+import { KAKAO_SHARE_FALLBACK_NOTICE, shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
 import styles from './InvitationShareBlock.module.css';
 
 export type InvitationShareBlockProps = {
@@ -70,16 +70,20 @@ export default function InvitationShareBlock({
       return;
     }
     if (id === 'kakao') {
-      const result = await shareViaKakaoTalk({
-        title,
-        description: text,
-        imageUrl,
-        canonicalUrl: shareUrl,
-      });
-      if (result === 'copy') {
-        setNotice('카카오톡 공유를 열지 못해 초대장 링크를 복사했습니다.');
-      } else {
-        setNotice(null);
+      try {
+        const result = await shareViaKakaoTalk({
+          title,
+          description: text,
+          imageUrl,
+          canonicalUrl: shareUrl,
+        });
+        setNotice(result === 'kakao-sdk' ? null : KAKAO_SHARE_FALLBACK_NOTICE);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          setNotice(null);
+        } else {
+          setNotice('카카오톡 공유 URL이 올바르지 않습니다. 공개 링크를 확인해 주세요.');
+        }
       }
       setSheetOpen(false);
       return;

@@ -1,21 +1,52 @@
 'use client';
 
+import { useState } from 'react';
 import ImageUploader from '../components/ImageUploader';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorShare } from '../state/weddingEditor.types';
 import { cdnImageSrc } from '@/src/lib/image';
+import { KAKAO_SHARE_FALLBACK_NOTICE, type KakaoShareMode } from '@/src/lib/shareKakaoTalk';
 
 type Step9ShareSettingsProps = {
   value: WeddingEditorShare;
   onChange: (value: Partial<WeddingEditorShare>) => void;
   heroImage: string;
+  /** save → shareSlug → Kakao.Share.sendDefault (Editor draft만으로 SDK 호출 금지) */
+  onShareKakaoTalk?: () => Promise<KakaoShareMode | null>;
+  sharingKakao?: boolean;
 };
 
-export default function Step9ShareSettings({ value, onChange, heroImage }: Step9ShareSettingsProps) {
+export default function Step9ShareSettings({
+  value,
+  onChange,
+  heroImage,
+  onShareKakaoTalk,
+  sharingKakao,
+}: Step9ShareSettingsProps) {
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
   const previewImage = (value.ogImage ?? '').trim() || (heroImage ?? '').trim();
   const siteHint =
     (typeof window !== 'undefined' ? window.location.origin : '') ||
     'frontend-development-1b8a.up.railway.app';
+
+  const handleShareKakao = async () => {
+    if (!onShareKakaoTalk) return;
+    setShareNotice(null);
+    try {
+      const mode = await onShareKakaoTalk();
+      if (mode === null) {
+        setShareNotice('공개 링크가 없습니다. 먼저 초대장을 공개한 뒤 공유해 주세요.');
+        return;
+      }
+      if (mode === 'kakao-sdk') {
+        setShareNotice('카카오톡 공유 창을 열었습니다.');
+        return;
+      }
+      setShareNotice(KAKAO_SHARE_FALLBACK_NOTICE);
+    } catch {
+      setShareNotice('저장 또는 카카오톡 공유에 실패했습니다. 다시 시도해 주세요.');
+    }
+  };
 
   return (
     <section className={styles.stepSection}>
@@ -56,7 +87,7 @@ export default function Step9ShareSettings({ value, onChange, heroImage }: Step9
           value={value.ogImage}
           onChange={(next) => onChange({ ogImage: next })}
           onClear={() => onChange({ ogImage: '' })}
-          uploadAssetType="hero"
+          uploadAssetType="asset"
           inputTestId="og-image-input"
         />
         <div className={styles.uploaderActions}>
@@ -94,6 +125,20 @@ export default function Step9ShareSettings({ value, onChange, heroImage }: Step9
             <div className={styles.fieldDescription}>{siteHint}</div>
           </div>
         </div>
+        {onShareKakaoTalk ? (
+          <div className={styles.uploaderActions}>
+            <button
+              type="button"
+              className={styles.buttonPrimary}
+              onClick={() => void handleShareKakao()}
+              disabled={sharingKakao}
+              data-testid="og-share-kakao-talk"
+            >
+              {sharingKakao ? '저장 후 공유 중…' : '저장 후 카카오톡 공유'}
+            </button>
+          </div>
+        ) : null}
+        {shareNotice ? <p className={styles.fieldDescription}>{shareNotice}</p> : null}
       </div>
     </section>
   );

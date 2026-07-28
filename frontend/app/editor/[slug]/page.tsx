@@ -9,6 +9,8 @@ import {
   publishInvitationById,
   saveInvitationDraftById,
 } from '@/src/lib/api';
+import { shareKakaoTalkAfterPersist } from '@/src/lib/shareKakaoTalkFromPersisted';
+import type { KakaoShareMode } from '@/src/lib/shareKakaoTalk';
 import WeddingEditor from '@/src/editors/wedding/WeddingEditor';
 import {
   createWeddingEditorState,
@@ -214,6 +216,7 @@ export default function EditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [sharingKakao, setSharingKakao] = useState(false);
   const [error, setError] = useState<EditorError | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveNotice, setSaveNotice] = useState<string | null>(null);
@@ -443,8 +446,8 @@ export default function EditorPage() {
     return createFuneralEditorState(normalizedData);
   }, [editorType, funeralData, invitation]);
 
-  const handleSave = async (state: WeddingEditorState): Promise<void> => {
-    if (!invitation?.id) return;
+  const handleSave = async (state: WeddingEditorState): Promise<Invitation | null> => {
+    if (!invitation?.id) return null;
 
     setSaving(true);
     setError(null);
@@ -469,15 +472,46 @@ export default function EditorPage() {
       );
       setLastDraftSlug(saved.slug);
       setInvitation(saved);
-      setDraftStatus('draft');
+      setDraftStatus(saved.status === 'published' ? 'published' : 'draft');
       setLastSavedAt(saved.updatedAt ?? new Date().toISOString());
       setSaveNotice('초안이 저장되었습니다.');
       scheduleSaveNoticeClear();
+      return saved;
     } catch (err) {
       setSaveError('저장에 실패했습니다. 권한 또는 네트워크 상태를 확인해 주세요.');
       throw err;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleShareKakaoTalk = async (state: WeddingEditorState): Promise<KakaoShareMode | null> => {
+    if (!invitation?.id) return null;
+    setSharingKakao(true);
+    setSaveError(null);
+    try {
+      const { mode } = await shareKakaoTalkAfterPersist({
+        siteOrigin: window.location.origin,
+        persist: async () => {
+          const saved = await handleSave(state);
+          if (!saved) throw new Error('SAVE_FAILED');
+          // shareSlug는 publish 응답에만 있을 수 있으므로 최신 조회로 보강
+          const latest = await getInvitationForEditor(saved.id, requestedToken);
+          setInvitation(latest);
+          if (!latest.shareSlug?.trim()) {
+            throw new Error('MISSING_SHARE_SLUG');
+          }
+          return latest;
+        },
+      });
+      return mode;
+    } catch (error) {
+      if (error instanceof Error && error.message === 'MISSING_SHARE_SLUG') {
+        return null;
+      }
+      throw error;
+    } finally {
+      setSharingKakao(false);
     }
   };
 
@@ -677,8 +711,10 @@ export default function EditorPage() {
         onSave={handleSave}
         onSaveAndExit={handleSaveAndExit}
         onPublish={handlePublish}
+        onShareKakaoTalk={handleShareKakaoTalk}
         saving={saving}
         publishing={publishing}
+        sharingKakao={sharingKakao}
         isDemo={false}
         saveError={saveError}
         saveNotice={saveNotice}

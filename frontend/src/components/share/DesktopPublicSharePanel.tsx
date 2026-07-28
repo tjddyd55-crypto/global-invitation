@@ -5,7 +5,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useMemo, useState } from 'react';
-import { shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
+import { KAKAO_SHARE_FALLBACK_NOTICE, shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
 import styles from './DesktopPublicSharePanel.module.css';
 
 export type DesktopPublicSharePanelProps = {
@@ -71,17 +71,25 @@ export default function DesktopPublicSharePanel({
   };
 
   const handleKakao = async () => {
-    const result = await shareViaKakaoTalk({
-      title,
-      description: text,
-      imageUrl,
-      canonicalUrl: shareUrl,
-    });
-    if (result === 'copy') {
-      setNotice('카카오톡 공유를 열지 못해 초대장 링크를 복사했습니다.');
-      setCopied(true);
-    } else {
-      setNotice(null);
+    try {
+      const result = await shareViaKakaoTalk({
+        title,
+        description: text,
+        imageUrl,
+        canonicalUrl: shareUrl,
+      });
+      if (result === 'kakao-sdk') {
+        setNotice(null);
+        return;
+      }
+      setNotice(KAKAO_SHARE_FALLBACK_NOTICE);
+      if (result === 'clipboard') setCopied(true);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setNotice(null);
+        return;
+      }
+      setNotice('카카오톡 공유 URL이 올바르지 않습니다. 공개 링크를 확인해 주세요.');
     }
   };
 

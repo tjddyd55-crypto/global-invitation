@@ -9,23 +9,30 @@ type PublishCompleteScreenProps = {
   invitationId: string;
   shareUrl: string;
   title?: string | null;
+  description?: string | null;
+  imageUrl?: string | null;
 };
 
 /**
  * 공개 완료 화면 (Figma Make: Publish Complete).
- * 큰 share banner는 이 화면에서만 사용한다. Editor form 상단 banner는 제거.
+ * KakaoTalk payload는 persisted OG title/description/imageUrl을 그대로 전달한다.
  */
 export default function PublishCompleteScreen({
   invitationId,
   shareUrl,
   title,
+  description,
+  imageUrl,
 }: PublishCompleteScreenProps) {
+  const shareTitle = (title || '').trim() || '초대장';
+  const shareDescription = (description || '').trim() || '초대장을 확인해 주세요.';
+
   return (
     <section className={styles.screen} data-testid="share-panel">
       <header className={styles.header}>
         <p className={styles.eyebrow}>Publish Complete</p>
         <h1>초대장이 공개되었습니다</h1>
-        <p>{title?.trim() || '초대장'}을 공유하고 참석 응답을 관리해 보세요.</p>
+        <p>{shareTitle}을 공유하고 참석 응답을 관리해 보세요.</p>
       </header>
 
       <div className={styles.layout}>
@@ -35,8 +42,9 @@ export default function PublishCompleteScreen({
           </p>
           <GlobalSharePanel
             shareUrl={shareUrl}
-            title={title || '초대장'}
-            text={`${title || '초대장'}을 확인해 주세요.`}
+            title={shareTitle}
+            text={shareDescription}
+            imageUrl={imageUrl || undefined}
           />
         </div>
         <aside className={styles.sideColumn}>
