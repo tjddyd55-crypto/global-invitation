@@ -2,7 +2,7 @@
  * Public invitation mobile full-bleed geometry.
  * Asserts document / hero / gallery / map match viewport width (no side gutters).
  */
-import { test, expect, type Page, type Browser } from '@playwright/test';
+import { test, expect, type Page, type Browser, type Route } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -26,6 +26,16 @@ async function freshPage(browser: Browser, viewport: { width: number; height: nu
   return { context, page, pageErrors, consoleErrors };
 }
 
+async function mockShareInvitation(page: Page, payload: Record<string, unknown>) {
+  await page.route('**/api/invitations/share/**', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(payload),
+    });
+  });
+}
+
 async function waitPublicReady(page: Page) {
   await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 45_000 });
 }
@@ -35,7 +45,12 @@ async function measureFullBleed(page: Page, expectedWidth: number) {
     const box = (el: Element | null) => {
       if (!el) return null;
       const r = el.getBoundingClientRect();
-      return { x: Math.round(r.x), width: Math.round(r.width), y: Math.round(r.y), height: Math.round(r.height) };
+      return {
+        x: Math.round(r.x),
+        width: Math.round(r.width),
+        y: Math.round(r.y),
+        height: Math.round(r.height),
+      };
     };
     return {
       viewport: width,
@@ -89,9 +104,62 @@ async function capture(page: Page, name: string) {
   return file;
 }
 
+const generalPayload = {
+  id: 'mock-general',
+  slug: 'mock-general',
+  shareSlug: 'mock-general',
+  title: '일반 행사',
+  templateKey: 'invitation_full',
+  templateId: null,
+  musicKey: null,
+  data: {
+    conceptType: 'GENERAL',
+    heroTitle: '일반 행사',
+    heroImage: '/images/wedding/classic/hero.jpg',
+    content: '행사에 초대합니다.',
+    weddingDateTime: '2025-11-15T14:30:00+09:00',
+    venueName: '컨퍼런스홀',
+    address: '서울 구로구 경인로 610',
+    galleryImages: ['/images/wedding/classic/gallery_01.jpg'],
+    mapLat: 37.5,
+    mapLng: 126.9,
+  },
+};
+
+const funeralPayload = {
+  id: 'mock-funeral',
+  slug: 'mock-funeral',
+  shareSlug: 'mock-funeral',
+  title: '부고',
+  templateKey: 'funeral_classic',
+  templateId: null,
+  musicKey: null,
+  data: {
+    templateKey: 'funeral_classic',
+    deceasedName: '홍길동',
+    deathDate: '2025-01-01',
+    message: '삼가 고인의 명복을 빕니다.',
+    chiefMourner: '홍철수',
+    familyMembers: ['아들 홍철수'],
+    schedule: { funeralDate: '2025-01-03T09:00:00+09:00' },
+    funeralHall: {
+      name: '서울장례식장',
+      address: '서울 구로구 경인로 610',
+      mapImage: '/images/wedding/classic/map.jpg',
+      mapLat: 37.5,
+      mapLng: 126.9,
+    },
+    heroImage: '/images/wedding/classic/hero.jpg',
+    contact: { name: '홍철수', phone: '010-0000-0000' },
+  },
+};
+
 test.describe('Public invitation full-bleed', () => {
   test('Wedding public 375', async ({ browser }) => {
-    const { context, page, pageErrors, consoleErrors } = await freshPage(browser, { width: 375, height: 812 });
+    const { context, page, pageErrors, consoleErrors } = await freshPage(browser, {
+      width: 375,
+      height: 812,
+    });
     await page.goto(`${FE}/i/${WEDDING_SLUG}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await waitPublicReady(page);
     await page.waitForTimeout(800);
@@ -116,9 +184,13 @@ test.describe('Public invitation full-bleed', () => {
   });
 
   test('General public 375', async ({ browser }) => {
-    test.skip(!GENERAL_SLUG, 'Set PUBLIC_GENERAL_SLUG');
     const { context, page } = await freshPage(browser, { width: 375, height: 812 });
-    await page.goto(`${FE}/i/${GENERAL_SLUG}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    if (GENERAL_SLUG) {
+      await page.goto(`${FE}/i/${GENERAL_SLUG}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    } else {
+      await mockShareInvitation(page, generalPayload);
+      await page.goto(`${FE}/i/mock-general-fullbleed`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    }
     await waitPublicReady(page);
     await measureFullBleed(page, 375);
     await capture(page, 'general-375.png');
@@ -126,9 +198,13 @@ test.describe('Public invitation full-bleed', () => {
   });
 
   test('General public 390', async ({ browser }) => {
-    test.skip(!GENERAL_SLUG, 'Set PUBLIC_GENERAL_SLUG');
     const { context, page } = await freshPage(browser, { width: 390, height: 844 });
-    await page.goto(`${FE}/i/${GENERAL_SLUG}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    if (GENERAL_SLUG) {
+      await page.goto(`${FE}/i/${GENERAL_SLUG}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    } else {
+      await mockShareInvitation(page, generalPayload);
+      await page.goto(`${FE}/i/mock-general-fullbleed`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    }
     await waitPublicReady(page);
     await measureFullBleed(page, 390);
     await capture(page, 'general-390.png');
@@ -136,9 +212,13 @@ test.describe('Public invitation full-bleed', () => {
   });
 
   test('Funeral public mobile', async ({ browser }) => {
-    test.skip(!FUNERAL_SLUG, 'Set PUBLIC_FUNERAL_SLUG');
     const { context, page } = await freshPage(browser, { width: 390, height: 844 });
-    await page.goto(`${FE}/i/${FUNERAL_SLUG}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    if (FUNERAL_SLUG) {
+      await page.goto(`${FE}/i/${FUNERAL_SLUG}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    } else {
+      await mockShareInvitation(page, funeralPayload);
+      await page.goto(`${FE}/i/mock-funeral-fullbleed`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    }
     await waitPublicReady(page);
     await measureFullBleed(page, 390);
     await capture(page, 'funeral-390.png');
