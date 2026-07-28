@@ -41,18 +41,12 @@ const DEFAULT_DESCRIPTION = {
   GENERAL: '행사에 초대드립니다',
 } as const;
 
-/** Kakao feed 등 imageUrl 권장 시 NONE 상태 concept 공용 fallback */
+/** Kakao feed 등 imageUrl 권장 시 NONE 상태 — 인증 없는 정적 이미지 (상대경로는 SITE_URL로 절대화) */
 export const CONCEPT_SHARE_FALLBACK_IMAGE: Record<'WEDDING' | 'FUNERAL' | 'GENERAL', string> = {
-  WEDDING: 'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg',
-  FUNERAL: 'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg',
-  GENERAL: 'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg',
+  WEDDING: '/images/placeholder.png',
+  FUNERAL: '/images/placeholder.png',
+  GENERAL: '/images/placeholder.png',
 };
-
-export function getConceptOpenGraphFallbackImage(
-  concept: 'WEDDING' | 'FUNERAL' | 'GENERAL' = 'WEDDING'
-): string {
-  return CONCEPT_SHARE_FALLBACK_IMAGE[concept] || CONCEPT_SHARE_FALLBACK_IMAGE.WEDDING;
-}
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -131,6 +125,18 @@ export function resolveAbsoluteOpenGraphImageUrl(
     }
   }
   return isValidOpenGraphImageUrl(value) ? value : undefined;
+}
+
+export function getConceptOpenGraphFallbackImage(
+  concept: 'WEDDING' | 'FUNERAL' | 'GENERAL' = 'WEDDING',
+  siteOrigin?: string
+): string {
+  const raw = CONCEPT_SHARE_FALLBACK_IMAGE[concept] || CONCEPT_SHARE_FALLBACK_IMAGE.WEDDING;
+  return (
+    resolveAbsoluteOpenGraphImageUrl(raw, siteOrigin) ||
+    resolveAbsoluteOpenGraphImageUrl(raw, 'https://frontend-development-1b8a.up.railway.app') ||
+    raw
+  );
 }
 
 function pickConcept(data: Record<string, unknown>, inv: Record<string, unknown>): keyof typeof DEFAULT_TITLE {

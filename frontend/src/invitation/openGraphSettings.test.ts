@@ -141,15 +141,17 @@ test('NONE mode uses concept CDN for public-meta and share-payload', () => {
   };
   const publicSettings = getInvitationOpenGraphSettings(input, 'https://frontend.example/i/x', {
     purpose: 'public-meta',
+    siteOrigin: 'https://frontend.example',
   });
   const payloadSettings = getInvitationOpenGraphSettings(input, 'https://frontend.example/i/x', {
     purpose: 'share-payload',
+    siteOrigin: 'https://frontend.example',
   });
   assert.equal(publicSettings.imageMode, 'NONE');
   assert.equal(payloadSettings.imageMode, 'NONE');
   assert.equal(
     publicSettings.imageUrl,
-    'https://cdn.platform-assets.com/invitation/shared/images/wedding/placeholder-og.jpg'
+    'https://frontend.example/images/placeholder.png'
   );
   assert.equal(publicSettings.imageUrl, payloadSettings.imageUrl);
 });

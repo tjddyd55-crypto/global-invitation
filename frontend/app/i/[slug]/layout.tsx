@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
 
   const fallbackTitle = '초대장';
   const fallbackDescription = '행사에 초대드립니다';
-  const fallbackImage = getConceptOpenGraphFallbackImage('WEDDING');
+  const fallbackImage = getConceptOpenGraphFallbackImage('WEDDING', siteOrigin);
 
   if (!slug) {
     return {
@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: { params: { slug?: string | s
       siteOrigin,
       purpose: 'public-meta',
     });
-    const imageUrl = pres.imageUrl || getConceptOpenGraphFallbackImage(pres.concept);
+    const imageUrl = pres.imageUrl || getConceptOpenGraphFallbackImage(pres.concept, siteOrigin);
 
     return {
       metadataBase,
