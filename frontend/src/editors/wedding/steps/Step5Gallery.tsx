@@ -7,21 +7,28 @@ import type { WeddingEditorGallery, WeddingEditorImage } from '../state/weddingE
 type Step5GalleryProps = {
   value: WeddingEditorGallery;
   onChange: (images: WeddingEditorImage[]) => void;
+  onPersist?: (images: WeddingEditorImage[]) => Promise<void>;
   onUploadStateChange?: (state: { isUploading: boolean; hasError: boolean }) => void;
 };
 
-export default function Step5Gallery({ value, onChange, onUploadStateChange }: Step5GalleryProps) {
+export default function Step5Gallery({
+  value,
+  onChange,
+  onPersist,
+  onUploadStateChange,
+}: Step5GalleryProps) {
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>갤러리</h2>
-        <p>다중 이미지 업로드, 순서 변경, 삭제가 가능합니다.</p>
+        <p>다중 이미지 업로드, 순서 변경, 삭제가 가능합니다. 삭제는 즉시 저장됩니다.</p>
       </div>
       <MultiImageUploader
         label="갤러리 이미지"
-        description="초대장 표시 순서가 입력 순서를 그대로 따릅니다."
+        description="초대장 표시 순서가 입력 순서를 그대로 따릅니다. 삭제·순서 변경은 자동 저장됩니다."
         images={value.images}
         onChange={onChange}
+        onPersist={onPersist}
         inputTestId="gallery-upload-input"
         onUploadStateChange={onUploadStateChange}
       />

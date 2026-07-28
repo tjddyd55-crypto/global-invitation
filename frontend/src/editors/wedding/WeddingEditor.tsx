@@ -112,6 +112,18 @@ export default function WeddingEditor({
     setHasBlockingUploadState(uploadState.isUploading || uploadState.hasError);
   };
 
+  const handleGalleryImagesChange = (images: WeddingEditorState['gallery']['images']) => {
+    dispatch({ type: 'SET_GALLERY_IMAGES', payload: images });
+  };
+
+  const handleGalleryPersist = async (images: WeddingEditorState['gallery']['images']) => {
+    if (!onSave) return;
+    await onSave({
+      ...state,
+      gallery: { images },
+    });
+  };
+
   const conceptLabel =
     state.setup.conceptType === 'WEDDING'
       ? '결혼식 초대장'
@@ -154,7 +166,8 @@ export default function WeddingEditor({
         return (
           <Step5Gallery
             value={state.gallery}
-            onChange={(images) => dispatch({ type: 'SET_GALLERY_IMAGES', payload: images })}
+            onChange={handleGalleryImagesChange}
+            onPersist={onSave ? handleGalleryPersist : undefined}
             onUploadStateChange={handleGalleryUploadStateChange}
           />
         );

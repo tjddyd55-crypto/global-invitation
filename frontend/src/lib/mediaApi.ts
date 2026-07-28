@@ -1,6 +1,6 @@
 'use client';
 
-import { buildApiUrl } from '@/src/lib/apiBase';
+import { buildApiUrl, buildRequestInit } from '@/src/lib/apiBase';
 import { buildAuthHeaders } from '@/src/lib/auth';
 import { cdnImageSrc } from '@/src/lib/image';
 import { compressImage } from '@/src/lib/imageCompression';
@@ -559,6 +559,18 @@ export async function uploadMediaAudio(file: File, options?: UploadMediaOptions)
   return runPresignPutConfirm(file, target, resolved.onProgress, { allowNonImageUrl: true });
 }
 
+export class MediaApiError extends Error {
+  readonly status: number;
+  readonly errorCode: string;
+
+  constructor(message: string, status: number, errorCode: string) {
+    super(message);
+    this.name = 'MediaApiError';
+    this.status = status;
+    this.errorCode = errorCode;
+  }
+}
+
 export async function deleteMediaFile(fileUrl: string, objectKey?: string) {
   const trimmedKey = (objectKey || '').trim();
   const trimmedUrl = (fileUrl || '').trim();
@@ -568,32 +580,38 @@ export async function deleteMediaFile(fileUrl: string, objectKey?: string) {
       : { url: trimmedUrl };
 
   if (!trimmedKey && !trimmedUrl) {
-    throw new Error('삭제할 미디어 정보가 없습니다.');
+    throw new MediaApiError('삭제할 미디어 정보가 없습니다.', 400, 'MEDIA_TARGET_REQUIRED');
   }
 
-  const response = await fetch(buildApiUrl('/api/media'), {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildAuthHeaders(),
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await fetch(
+    buildApiUrl('/api/media'),
+    buildRequestInit({
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...buildAuthHeaders(),
+      },
+      body: JSON.stringify(payload),
+    })
+  );
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    const failure = normalizeApiFailure('DELETE', response.status, payload);
-    if (failure.errorCode === 'AUTH_REQUIRED') {
-      throw new Error('이미지 삭제는 로그인 후 사용할 수 있습니다.');
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    const failure = normalizeApiFailure('DELETE', response.status, body);
+    if (failure.errorCode === 'AUTH_REQUIRED' || response.status === 401) {
+      throw new MediaApiError('로그인이 만료되었습니다. 다시 로그인해 주세요.', 401, 'AUTH_REQUIRED');
     }
     if (failure.errorCode === 'R2_STORAGE_NOT_CONFIGURED') {
-      throw new Error('이미지 저장소가 아직 설정되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+      throw new MediaApiError(
+        '이미지 저장소가 아직 설정되지 않았습니다. 잠시 후 다시 시도해 주세요.',
+        503,
+        'R2_STORAGE_NOT_CONFIGURED'
+      );
     }
-    if (failure.errorCode === 'UNAUTHORIZED_MEDIA_ACCESS') {
-      throw new Error('이미지 삭제 권한이 없습니다.');
+    if (failure.errorCode === 'UNAUTHORIZED_MEDIA_ACCESS' || response.status === 403) {
+      throw new MediaApiError('이미지 삭제 권한이 없습니다.', 403, 'UNAUTHORIZED_MEDIA_ACCESS');
     }
-    throw new Error('이미지 삭제에 실패했습니다.');
+    throw new MediaApiError('이미지 삭제에 실패했습니다.', response.status, failure.errorCode || 'DELETE_FAILED');
   }
 
   return response.json() as Promise<{ success: true }>;

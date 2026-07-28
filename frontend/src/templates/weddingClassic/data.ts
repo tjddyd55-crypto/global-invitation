@@ -69,6 +69,8 @@ export type WeddingClassicData = {
   musicKey?: string | null;
   heroImage: string;
   galleryImages: string[];
+  /** Optional R2 metadata synced with galleryImages on save */
+  galleryMedia?: Array<{ url: string; key: string }>;
   accounts: WeddingClassicAccount[];
   /** 컨셉 확장 필드 */
   groomName?: string;

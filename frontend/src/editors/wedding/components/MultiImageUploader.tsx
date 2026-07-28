@@ -6,7 +6,7 @@ import {
   sanitizeGalleryItems,
   shouldDeleteRemoteGalleryAsset,
 } from '@/src/invitation/galleryAsset';
-import { deleteMediaFile, uploadMediaImage } from '@/src/lib/mediaApi';
+import { deleteMediaFile, MediaApiError, uploadMediaImage } from '@/src/lib/mediaApi';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorImage } from '../state/weddingEditor.types';
 
@@ -15,6 +15,8 @@ type MultiImageUploaderProps = {
   description?: string;
   images: WeddingEditorImage[];
   onChange: (images: WeddingEditorImage[]) => void;
+  /** Invitation draft PATCH — gallery persistence SSOT (required for durable deletes). */
+  onPersist?: (images: WeddingEditorImage[]) => Promise<void>;
   inputTestId?: string;
   onUploadStateChange?: (state: { isUploading: boolean; hasError: boolean }) => void;
 };
@@ -53,6 +55,7 @@ export default function MultiImageUploader({
   description,
   images,
   onChange,
+  onPersist,
   inputTestId,
   onUploadStateChange,
 }: MultiImageUploaderProps) {
@@ -61,6 +64,7 @@ export default function MultiImageUploader({
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cleanupWarning, setCleanupWarning] = useState<string | null>(null);
+  const [persistStatus, setPersistStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
   const [previewTarget, setPreviewTarget] = useState<PreviewTarget | null>(null);
 
@@ -105,6 +109,59 @@ export default function MultiImageUploader({
     setUploadQueue((prev) =>
       prev.map((item) => (item.id === itemId ? { ...item, ...next } : item))
     );
+  };
+
+  const commitImages = async (
+    nextImages: WeddingEditorImage[],
+    previousImages: WeddingEditorImage[]
+  ): Promise<boolean> => {
+    onChange(nextImages);
+    if (!onPersist) {
+      return true;
+    }
+    setPersistStatus('saving');
+    setError(null);
+    try {
+      await onPersist(nextImages);
+      setPersistStatus('saved');
+      return true;
+    } catch (persistError) {
+      onChange(previousImages);
+      setPersistStatus('error');
+      if (persistError instanceof MediaApiError && persistError.errorCode === 'AUTH_REQUIRED') {
+        setError(persistError.message);
+      } else {
+        setError('변경사항을 저장하지 못했습니다. 다시 시도해 주세요.');
+      }
+      return false;
+    }
+  };
+
+  const cleanupRemoteAsset = (item: WeddingEditorImage) => {
+    if (
+      !shouldDeleteRemoteGalleryAsset({
+        url: item.url,
+        objectKey: item.objectKey,
+        mediaId: item.mediaId,
+      })
+    ) {
+      return;
+    }
+    const objectKey = (item.objectKey || item.mediaId || '').trim();
+    const url = (item.url || '').trim();
+    if (!objectKey && !url) return;
+
+    void deleteMediaFile(url, objectKey || undefined).catch((cleanupError) => {
+      if (cleanupError instanceof MediaApiError && cleanupError.errorCode === 'AUTH_REQUIRED') {
+        setCleanupWarning(
+          '초대장은 저장되었습니다. 저장소 정리를 위해 다시 로그인해 주세요.'
+        );
+        return;
+      }
+      setCleanupWarning(
+        '저장 완료. 저장소 파일 정리는 나중에 다시 시도됩니다.'
+      );
+    });
   };
 
   const enqueueAndUpload = async (files: File[]) => {
@@ -172,7 +229,18 @@ export default function MultiImageUploader({
     }
 
     if (uploadedCount > 0 || nextImages.length !== images.length) {
-      onChange(nextImages);
+      const previousImages = toEditorImages(
+        sanitizeGalleryItems(
+          images.map((image) => ({
+            id: image.id,
+            url: image.url,
+            objectKey: image.objectKey,
+            mediaId: image.mediaId,
+            name: image.name,
+          }))
+        )
+      );
+      await commitImages(nextImages, previousImages);
     }
     setError(firstError);
     setUploading(false);
@@ -189,37 +257,25 @@ export default function MultiImageUploader({
     const target = visibleImages[index];
     if (!target) return;
 
+    const previousImages = visibleImages;
     const nextImages = visibleImages.filter((_, idx) => idx !== index);
-    onChange(nextImages);
     setCleanupWarning(null);
 
-    if (
-      !shouldDeleteRemoteGalleryAsset({
-        url: target.url,
-        objectKey: target.objectKey,
-        mediaId: target.mediaId,
-      })
-    ) {
+    const saved = await commitImages(nextImages, previousImages);
+    if (!saved) {
       return;
     }
 
-    const objectKey = (target.objectKey || target.mediaId || '').trim();
-    const url = (target.url || '').trim();
-    if (!objectKey && !url) return;
-
-    try {
-      await deleteMediaFile(url, objectKey || undefined);
-    } catch {
-      setCleanupWarning('목록에서는 제거했습니다. 원격 파일 정리에 실패했을 수 있습니다.');
-    }
+    cleanupRemoteAsset(target);
   };
 
-  const handleMove = (from: number, to: number) => {
+  const handleMove = async (from: number, to: number) => {
     if (to < 0 || to >= visibleImages.length) return;
+    const previousImages = visibleImages;
     const nextImages = [...visibleImages];
     const [moved] = nextImages.splice(from, 1);
     nextImages.splice(to, 0, moved);
-    onChange(nextImages);
+    await commitImages(nextImages, previousImages);
   };
 
   const handleDismissQueueItem = (itemId: string) => {
@@ -276,6 +332,16 @@ export default function MultiImageUploader({
         <div className={styles.uploadDropHint}>파일을 이 영역에 드래그해 여러 장을 한 번에 업로드할 수 있습니다.</div>
         {error && <p className={styles.fieldDescription}>{error}</p>}
         {cleanupWarning && <p className={styles.fieldDescription}>{cleanupWarning}</p>}
+        {persistStatus === 'saving' ? (
+          <p className={styles.fieldDescription} data-testid="gallery-persist-status">
+            삭제됨 · 저장 중…
+          </p>
+        ) : null}
+        {persistStatus === 'saved' ? (
+          <p className={styles.fieldDescription} data-testid="gallery-persist-status">
+            저장 완료
+          </p>
+        ) : null}
         {activeQueue.length > 0 && (
           <div className={styles.uploadQueue} data-testid="gallery-upload-queue">
             {activeQueue.map((item) => (
@@ -362,8 +428,8 @@ export default function MultiImageUploader({
                       <button
                         type="button"
                         className={styles.editorGalleryActionButton}
-                        onClick={() => handleMove(index, index - 1)}
-                        disabled={index === 0}
+                        onClick={() => void handleMove(index, index - 1)}
+                        disabled={index === 0 || persistStatus === 'saving'}
                         aria-label="위로 이동"
                         data-testid="gallery-editor-move-up"
                       >
@@ -372,8 +438,8 @@ export default function MultiImageUploader({
                       <button
                         type="button"
                         className={styles.editorGalleryActionButton}
-                        onClick={() => handleMove(index, index + 1)}
-                        disabled={index === visibleImages.length - 1}
+                        onClick={() => void handleMove(index, index + 1)}
+                        disabled={index === visibleImages.length - 1 || persistStatus === 'saving'}
                         aria-label="아래로 이동"
                         data-testid="gallery-editor-move-down"
                       >
@@ -383,7 +449,7 @@ export default function MultiImageUploader({
                         type="button"
                         className={styles.editorGalleryDeleteButton}
                         onClick={() => void handleRemove(index)}
-                        disabled={uploading}
+                        disabled={uploading || persistStatus === 'saving'}
                         data-testid="gallery-editor-delete"
                       >
                         삭제

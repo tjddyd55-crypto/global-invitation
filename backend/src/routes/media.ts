@@ -581,7 +581,7 @@ router.delete('/', async (req, res) => {
       return res.status(400).json({ error: 'INVALID_MEDIA_URL' });
     }
     if (deleteError instanceof Error && deleteError.message === 'UNAUTHORIZED_MEDIA_ACCESS') {
-      return res.status(401).json({ error: 'UNAUTHORIZED_MEDIA_ACCESS' });
+      return res.status(403).json({ error: 'UNAUTHORIZED_MEDIA_ACCESS' });
     }
     if (deleteError instanceof Error && deleteError.message === 'R2_STORAGE_NOT_CONFIGURED') {
       return res.status(503).json({ error: 'R2_STORAGE_NOT_CONFIGURED' });

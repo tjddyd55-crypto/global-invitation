@@ -1,5 +1,9 @@
 import prisma from '../prisma';
 import { isUuid } from '../isUuid';
+import {
+  isSharedInvitationAssetKey,
+  parseInvitationUserAssetKey,
+} from '../invitationAssetKeys';
 
 const E2E_MEDIA_PREFIX = 'e2e';
 
@@ -84,6 +88,23 @@ export async function canDeleteByStorageKey(params: {
   const keyForAuthorization = stripE2EPrefixFromStorageKey(params.key);
   const segments = keyForAuthorization.split('/').filter(Boolean);
   if (segments.length < 2) return false;
+
+  // Shared catalog — never deletable via user media DELETE
+  if (isSharedInvitationAssetKey(keyForAuthorization)) {
+    return false;
+  }
+
+  // Canonical + legacy invitation user assets:
+  // invitation/{env}/users/{userId}/invitations/{invitationId}/...
+  // {env}/invitation/users/...
+  // invitation/users/...
+  const invitationUserAsset = parseInvitationUserAssetKey(keyForAuthorization);
+  if (invitationUserAsset) {
+    if (invitationUserAsset.userId !== params.userId) {
+      return false;
+    }
+    return canAccessInvitationMedia(params.userId, invitationUserAsset.invitationId);
+  }
 
   if (segments[0] === 'temp') {
     return false;

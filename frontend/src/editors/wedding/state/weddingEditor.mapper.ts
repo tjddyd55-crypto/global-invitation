@@ -4,7 +4,7 @@ import {
 } from '@/src/templates/weddingClassic/data';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
-import { sanitizeGalleryUrls } from '@/src/invitation/galleryAsset';
+import { sanitizeGalleryItems } from '@/src/invitation/galleryAsset';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/models/invitation';
 import type { WeddingEditorState } from './weddingEditor.types';
@@ -59,7 +59,22 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
   const coupleNames = [state.groom.name.trim(), state.bride.name.trim()].filter(Boolean).join(' ♥ ');
   const content = state.invitationMessage.body;
   const heroImage = (state.hero.heroImage ?? '').trim();
-  const galleryImages = sanitizeGalleryUrls(state.gallery.images.map((image) => image.url));
+  const galleryItems = sanitizeGalleryItems(
+    state.gallery.images.map((image) => ({
+      id: image.id,
+      url: image.url,
+      objectKey: image.objectKey,
+      mediaId: image.mediaId,
+      name: image.name,
+    }))
+  );
+  const galleryImages = galleryItems.map((item) => item.url);
+  const galleryMedia = galleryItems
+    .filter((item) => Boolean(item.objectKey))
+    .map((item) => ({
+      url: item.url,
+      key: item.objectKey as string,
+    }));
   const defaultLabels = getWeddingClassicDefaultLabels(state.setup.language);
   const conceptConfig = getConceptPresentationConfig(state.setup.conceptType);
   const mapImage = buildPreviewMapImage(state.location.mapLat, state.location.mapLng);
@@ -109,6 +124,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     musicKey: state.extras.musicEnabled ? state.extras.musicKey || null : null,
     heroImage,
     galleryImages,
+    galleryMedia,
     accounts: mapAccounts(state),
     accountEnabled,
     address: formattedAddress,
