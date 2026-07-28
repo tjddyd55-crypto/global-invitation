@@ -136,6 +136,10 @@ export default function GeneralInvitationRenderer({
             googlePlaceId={data.googlePlaceId}
             mapLat={data.mapLat}
             mapLng={data.mapLng}
+            mapProvider={data.mapProvider}
+            naverPlaceId={data.naverPlaceId}
+            naverMapUrl={data.naverMapUrl}
+            invitationData={data}
             mapImage={data.mapImage}
           />
         </section>

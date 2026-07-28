@@ -422,6 +422,10 @@ export default function WeddingClassicInvitation({
             googlePlaceId={r.googlePlaceId}
             mapLat={r.mapLat}
             mapLng={r.mapLng}
+            mapProvider={r.mapProvider}
+            naverPlaceId={r.naverPlaceId}
+            naverMapUrl={r.naverMapUrl}
+            invitationData={data}
             mapImage={r.mapImage}
             mapImageAlt={t(I18N_KEYS.weddingClassic.mapAlt)}
             tone={mapToneFuneralLike ? 'dark' : 'light'}

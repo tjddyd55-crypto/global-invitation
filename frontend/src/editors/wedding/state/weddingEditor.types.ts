@@ -50,7 +50,11 @@ export type WeddingEditorLocation = {
   /** formattedAddress — 공개 초대장 address 호환 */
   address: string;
   detailAddress?: string;
+  /** GOOGLE | NAVER — 없으면 GOOGLE */
+  mapProvider?: 'GOOGLE' | 'NAVER';
   googlePlaceId?: string;
+  naverPlaceId?: string;
+  naverMapUrl?: string;
   /** 내부 좌표 — UI 미노출 */
   mapLat?: number;
   mapLng?: number;

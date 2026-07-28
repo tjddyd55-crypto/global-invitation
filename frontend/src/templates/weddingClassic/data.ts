@@ -104,6 +104,10 @@ export type WeddingClassicData = {
   address: string;
   /** Google Places place_id (내부) */
   googlePlaceId?: string;
+  /** GOOGLE | NAVER — 없으면 GOOGLE */
+  mapProvider?: 'GOOGLE' | 'NAVER';
+  naverPlaceId?: string;
+  naverMapUrl?: string;
   /** 층/홀 등 상세 (지도 좌표와 무관) */
   detailAddress?: string;
   /** formattedAddress alias (address와 동기화 가능) */

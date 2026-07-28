@@ -3,8 +3,16 @@
 import styles from './LocationMapSection.module.css';
 import { cdnImageSrc } from '@/src/lib/image';
 import GoogleMapsExternalLinks from '@/src/maps/GoogleMapsExternalLinks';
+import NaverMapsExternalLinks from '@/src/maps/NaverMapsExternalLinks';
 import PublicGoogleMap from '@/src/maps/PublicGoogleMap';
+import PublicNaverMap from '@/src/maps/PublicNaverMap';
 import { hasGoogleMapsApiKey } from '@/src/maps/config';
+import { hasNaverMapsClientId } from '@/src/maps/loadNaverMaps';
+import {
+  getInvitationMapSettings,
+  hasMapTarget,
+  type InvitationMapProvider,
+} from '@/src/invitation/mapSettings';
 import type { InvitationLocation } from '@/src/maps/types';
 
 type LocationMapSectionProps = {
@@ -15,23 +23,25 @@ type LocationMapSectionProps = {
   googlePlaceId?: string;
   mapLat?: number;
   mapLng?: number;
+  mapProvider?: InvitationMapProvider;
+  naverPlaceId?: string;
+  naverMapUrl?: string;
   mapImage?: string;
   mapImageAlt?: string;
-  /** @deprecated Google-only — ignored (네이버/카카오/티맵 제거) */
+  /** @deprecated ignored */
   navLabels?: unknown;
   transportTitle?: string;
   transportInfo?: string[];
   parkingTitle?: string;
   parkingInfo?: string[];
-  /** 부고 등 어두운 배경에서 대비 유지 */
   tone?: 'light' | 'dark';
-  /** pixel QA layout mode */
   layoutMapPlaceholder?: boolean;
+  /** Prefer full invitation data when available — selector SSOT */
+  invitationData?: unknown;
 };
 
 /**
- * Public location section — Google Maps only (view + directions).
- * Header/details 는 내부 padding, 지도는 document full-bleed.
+ * Public/Preview location section — provider SSOT via getInvitationMapSettings.
  */
 export default function LocationMapSection({
   sectionTitle,
@@ -41,6 +51,9 @@ export default function LocationMapSection({
   googlePlaceId,
   mapLat,
   mapLng,
+  mapProvider,
+  naverPlaceId,
+  naverMapUrl,
   mapImage,
   mapImageAlt = 'Map',
   transportTitle,
@@ -49,55 +62,79 @@ export default function LocationMapSection({
   parkingInfo,
   tone = 'light',
   layoutMapPlaceholder = false,
+  invitationData,
 }: LocationMapSectionProps) {
+  const settings = getInvitationMapSettings(
+    invitationData ?? {
+      mapProvider,
+      venueName: title,
+      formattedAddress: address,
+      address,
+      detailAddress,
+      googlePlaceId,
+      mapLat,
+      mapLng,
+      naverPlaceId,
+      naverMapUrl,
+    }
+  );
+
   const invitationLocation: InvitationLocation = {
-    venueName: (title || '').trim(),
-    formattedAddress: (address || '').trim(),
-    detailAddress: (detailAddress || '').trim() || undefined,
-    googlePlaceId,
-    latitude: mapLat,
-    longitude: mapLng,
+    venueName: settings.venueName || (title || '').trim(),
+    formattedAddress: settings.formattedAddress || (address || '').trim(),
+    detailAddress: settings.detailAddress || (detailAddress || '').trim() || undefined,
+    googlePlaceId: settings.googlePlaceId,
+    latitude: settings.latitude ?? mapLat,
+    longitude: settings.longitude ?? mapLng,
   };
 
   const hasTransportInfo = Boolean(transportTitle && transportInfo && transportInfo.length > 0);
   const hasParkingInfo = Boolean(parkingTitle && parkingInfo && parkingInfo.length > 0);
-
+  const provider = settings.provider;
   const canShowGoogleMap =
+    provider === 'GOOGLE' &&
     hasGoogleMapsApiKey() &&
-    Boolean(
-      googlePlaceId?.trim() ||
-        (typeof mapLat === 'number' && typeof mapLng === 'number') ||
-        address?.trim() ||
-        title?.trim()
-    );
+    (hasMapTarget(settings) || Boolean(title?.trim() || address?.trim()));
+  const canShowNaverMap = provider === 'NAVER' && hasMapTarget(settings);
 
   const rootTone = tone === 'dark' ? styles.rootDark : styles.rootLight;
+  const displayTitle = settings.venueName || title;
+  const displayAddress = settings.formattedAddress || address;
+  const displayDetail = settings.detailAddress || detailAddress;
 
   return (
-    <div className={`${styles.root} ${rootTone}`}>
+    <div className={`${styles.root} ${rootTone}`} data-map-provider={provider}>
       <div className={styles.locationHeader}>
         {sectionTitle ? <div className={styles.sectionTitle}>{sectionTitle}</div> : null}
         <div className={styles.locationBlock}>
-          {title ? <h2>{title}</h2> : null}
-          {address ? <div>{address}</div> : null}
-          {detailAddress?.trim() ? <div className={styles.detailAddress}>{detailAddress}</div> : null}
+          {displayTitle ? <h2>{displayTitle}</h2> : null}
+          {displayAddress ? <div>{displayAddress}</div> : null}
+          {displayDetail?.trim() ? <div className={styles.detailAddress}>{displayDetail}</div> : null}
         </div>
       </div>
 
       <div className={styles.mapBleed} data-testid="public-map">
-        {canShowGoogleMap || layoutMapPlaceholder ? (
+        {provider === 'GOOGLE' && (canShowGoogleMap || layoutMapPlaceholder) ? (
           <PublicGoogleMap location={invitationLocation} layoutPlaceholder={layoutMapPlaceholder} />
+        ) : provider === 'NAVER' && (canShowNaverMap || layoutMapPlaceholder) ? (
+          <PublicNaverMap settings={settings} layoutPlaceholder={layoutMapPlaceholder} />
         ) : mapImage ? (
           <img className={styles.mapImage} src={cdnImageSrc(mapImage)} alt={mapImageAlt} loading="lazy" />
         ) : (
           <div className={styles.mapFallback} data-testid="public-map-fallback" data-qa-map-placeholder="1">
-            지도를 표시할 수 없습니다. 아래 링크로 위치를 확인해 주세요.
+            {provider === 'NAVER' && !hasNaverMapsClientId()
+              ? '선택한 지도 서비스를 불러오지 못했습니다. 주소는 저장되며 외부 지도에서 확인할 수 있습니다.'
+              : '지도를 표시할 수 없습니다. 아래 링크로 위치를 확인해 주세요.'}
           </div>
         )}
       </div>
 
       <div className={styles.locationDetails}>
-        <GoogleMapsExternalLinks location={invitationLocation} />
+        {provider === 'NAVER' ? (
+          <NaverMapsExternalLinks settings={settings} />
+        ) : (
+          <GoogleMapsExternalLinks location={invitationLocation} />
+        )}
 
         {hasTransportInfo && (
           <div className={styles.infoList}>
