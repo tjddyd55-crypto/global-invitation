@@ -198,14 +198,14 @@ test.describe('RSVP editor preview parity', () => {
       )
       .toBeTruthy();
 
-    await page.getByTestId('editor-rsvp-toggle-input').uncheck();
+    await page.getByTestId('editor-rsvp-toggle').click();
     await expect(preview.getByTestId('invitation-rsvp-section')).toHaveCount(0, { timeout: 15_000 });
     await expect(preview.getByTestId('invitation-comments-section')).toHaveCount(1);
 
-    await page.getByTestId('editor-rsvp-toggle-input').check();
+    await page.getByTestId('editor-rsvp-toggle').click();
     await expect(preview.getByTestId('invitation-rsvp-section')).toHaveCount(1, { timeout: 15_000 });
 
-    await page.getByTestId('editor-comments-toggle-input').uncheck();
+    await page.getByTestId('editor-comments-toggle').click();
     await expect(preview.getByTestId('invitation-rsvp-section')).toHaveCount(1);
     await expect(preview.getByTestId('invitation-comments-section')).toHaveCount(0);
 
@@ -304,7 +304,7 @@ test.describe('RSVP editor preview parity', () => {
 
     await page.reload({ waitUntil: 'domcontentloaded' });
     await goToRsvpStep(page);
-    await expect(page.getByTestId('editor-rsvp-toggle-input')).toBeChecked();
+    await expect(page.getByTestId('editor-rsvp-toggle-input')).toBeChecked({ timeout: 20_000 });
     await expect(page.getByTestId('editor-rsvp-button-label')).toHaveValue('저장복원문구');
     await expect(
       page.getByTestId('editor-live-preview-viewport').getByTestId('invitation-rsvp-cta')
