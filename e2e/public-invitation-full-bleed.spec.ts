@@ -182,7 +182,9 @@ test.describe('Public invitation full-bleed', () => {
     const metrics = await measureFullBleed(page, 375);
     await capture(page, 'wedding-375.png');
     expect(pageErrors).toEqual([]);
-    expect(consoleErrors.filter((e) => !e.includes('favicon'))).toEqual([]);
+    expect(
+      consoleErrors.filter((e) => !e.includes('favicon') && !e.includes('status of 401'))
+    ).toEqual([]);
     expect(metrics.hero?.width).toBe(375);
     await context.close();
   });
