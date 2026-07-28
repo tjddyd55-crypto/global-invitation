@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const FE = process.env.PLAYWRIGHT_BASE_URL || 'https://frontend-development-1b8a.up.railway.app';
-const WEDDING_SLUG = process.env.PUBLIC_WEDDING_SLUG || process.env.DESIGN_QA_SHARE_SLUG || 'i4upc4bok';
+const WEDDING_SLUG = process.env.PUBLIC_WEDDING_SLUG || process.env.DESIGN_QA_SHARE_SLUG || 'tpiqfk0tt';
 const GENERAL_SLUG = process.env.PUBLIC_GENERAL_SLUG || '';
 const FUNERAL_SLUG = process.env.PUBLIC_FUNERAL_SLUG || '';
 const EDITOR_ID = process.env.DESIGN_QA_EDITOR_ID || '';
@@ -113,17 +113,31 @@ const generalPayload = {
   templateId: null,
   musicKey: null,
   data: {
+    templateType: 'FULL',
     conceptType: 'GENERAL',
+    title: '일반 행사',
     heroTitle: '일반 행사',
+    heroSubtitle: 'Event',
     heroImage: '/images/wedding/classic/hero.jpg',
     content: '행사에 초대합니다.',
+    eventDate: '2025-11-15T14:30:00+09:00',
     weddingDateTime: '2025-11-15T14:30:00+09:00',
     venueName: '컨퍼런스홀',
+    locationText: '컨퍼런스홀',
     address: '서울 구로구 경인로 610',
+    formattedAddress: '서울 구로구 경인로 610',
     galleryImages: ['/images/wedding/classic/gallery_01.jpg'],
+    mapImage: '/images/wedding/classic/map.jpg',
     mapLat: 37.5,
     mapLng: 126.9,
+    rsvpEnabled: false,
+    schedule: [],
+    transportInfo: [],
+    parkingInfo: [],
+    accounts: [],
+    messages: [],
   },
+  dataJson: null,
 };
 
 const funeralPayload = {
@@ -155,6 +169,8 @@ const funeralPayload = {
 };
 
 test.describe('Public invitation full-bleed', () => {
+  test.describe.configure({ timeout: 90_000 });
+
   test('Wedding public 375', async ({ browser }) => {
     const { context, page, pageErrors, consoleErrors } = await freshPage(browser, {
       width: 375,
