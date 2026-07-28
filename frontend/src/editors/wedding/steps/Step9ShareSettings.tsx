@@ -4,13 +4,17 @@ import { useState } from 'react';
 import ImageUploader from '../components/ImageUploader';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorShare } from '../state/weddingEditor.types';
-import { cdnImageSrc } from '@/src/lib/image';
+import InvitationShareCardPreview from '@/src/components/share/InvitationShareCardPreview';
+import type { InvitationSharePreviewModel } from '@/src/invitation/sharePreviewModel';
 import { KAKAO_SHARE_FALLBACK_NOTICE, type KakaoShareMode } from '@/src/lib/shareKakaoTalk';
 
 type Step9ShareSettingsProps = {
   value: WeddingEditorShare;
   onChange: (value: Partial<WeddingEditorShare>) => void;
   heroImage: string;
+  /** Mobile: 폼 아래 카드. Desktop: 우측 컬럼에서 표시하므로 false */
+  showInlineShareCardPreview?: boolean;
+  sharePreviewModel?: InvitationSharePreviewModel | null;
   /** save → shareSlug → Kakao.Share.sendDefault (Editor draft만으로 SDK 호출 금지) */
   onShareKakaoTalk?: () => Promise<KakaoShareMode | null>;
   sharingKakao?: boolean;
@@ -20,14 +24,12 @@ export default function Step9ShareSettings({
   value,
   onChange,
   heroImage,
+  showInlineShareCardPreview = false,
+  sharePreviewModel,
   onShareKakaoTalk,
   sharingKakao,
 }: Step9ShareSettingsProps) {
   const [shareNotice, setShareNotice] = useState<string | null>(null);
-  const previewImage = (value.ogImage ?? '').trim() || (heroImage ?? '').trim();
-  const siteHint =
-    (typeof window !== 'undefined' ? window.location.origin : '') ||
-    'frontend-development-1b8a.up.railway.app';
 
   const handleShareKakao = async () => {
     if (!onShareKakaoTalk) return;
@@ -108,23 +110,16 @@ export default function Step9ShareSettings({
             이미지 제거
           </button>
         </div>
-        <div className={styles.ogPreviewCard} data-testid="og-preview-card">
-          <div className={styles.ogPreviewImage}>
-            {previewImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={cdnImageSrc(previewImage)} alt="" loading="lazy" />
-            ) : (
-              <span>이미지 없음</span>
-            )}
-          </div>
-          <div className={styles.ogPreviewBody}>
-            <div className={styles.ogPreviewTitle}>{value.ogTitle.trim() || '공유 미리보기 제목'}</div>
-            <div className={styles.ogPreviewDescription}>
-              {value.ogDescription.trim() || '공유 미리보기 설명'}
-            </div>
-            <div className={styles.fieldDescription}>{siteHint}</div>
-          </div>
-        </div>
+        {showInlineShareCardPreview && sharePreviewModel ? (
+          <InvitationShareCardPreview
+            title={sharePreviewModel.title}
+            description={sharePreviewModel.description}
+            imageUrl={sharePreviewModel.imageUrl}
+            canonicalUrl={sharePreviewModel.canonicalUrl}
+            displayUrl={sharePreviewModel.displayUrl}
+            hasPublicUrl={sharePreviewModel.hasPublicUrl}
+          />
+        ) : null}
         {onShareKakaoTalk ? (
           <div className={styles.uploaderActions}>
             <button

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import styles from './weddingEditor.module.css';
 import LivePreviewPanel from './components/LivePreviewPanel';
+import InvitationShareCardPreview from '@/src/components/share/InvitationShareCardPreview';
+import { buildInvitationSharePreviewModel } from '@/src/invitation/sharePreviewModel';
 import Step1BasicInfo from './steps/Step1BasicInfo';
 import Step2HeroImage from './steps/Step2HeroImage';
 import Step3InvitationMessage from './steps/Step3InvitationMessage';
@@ -27,6 +29,7 @@ import { useEditorShell } from '@/src/editors/shared/useEditorShell';
 type WeddingEditorProps = {
   initialState: WeddingEditorState;
   pageUrl: string;
+  shareSlug?: string | null;
   onSave?: (state: WeddingEditorState) => Promise<unknown> | void;
   onSaveAndExit?: (state: WeddingEditorState) => Promise<unknown> | void;
   onPublish?: (state: WeddingEditorState) => Promise<unknown> | void;
@@ -45,6 +48,7 @@ type WeddingEditorProps = {
 export default function WeddingEditor({
   initialState,
   pageUrl,
+  shareSlug,
   onSave,
   onSaveAndExit,
   onPublish,
@@ -62,14 +66,38 @@ export default function WeddingEditor({
   const [currentStep, setCurrentStep] = useState(0);
   const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
   const [hasBlockingUploadState, setHasBlockingUploadState] = useState(false);
+  const [siteOrigin, setSiteOrigin] = useState('');
   const previewLoggedRef = useRef(false);
   const shell = useEditorShell();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setSiteOrigin(window.location.origin);
+  }, []);
 
   const previewData = useMemo(() => buildWeddingClassicPreviewData(state), [state]);
   const visibleSections = useMemo(() => resolveVisibleSections(state.setup.conceptType), [state.setup.conceptType]);
   const completeness = useMemo(() => computeEditorCompleteness(state), [state]);
   const activeSection = visibleSections[currentStep]?.key ?? visibleSections[0]?.key ?? 'setup';
   const conceptPresentation = getConceptPresentationConfig(state.setup.conceptType);
+
+  const sharePreviewModel = useMemo(() => {
+    const origin =
+      siteOrigin ||
+      (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_SITE_URL || '' : '') ||
+      'https://frontend-development-1b8a.up.railway.app';
+    return buildInvitationSharePreviewModel({
+      invitationLike: {
+        title: previewData.title,
+        eventDate: previewData.eventDate,
+        locationText: previewData.locationText,
+        shareSlug: shareSlug || null,
+        dataJson: previewData,
+      },
+      shareSlug,
+      siteOrigin: origin,
+    });
+  }, [previewData, shareSlug, siteOrigin]);
 
   useEffect(() => {
     if (previewLoggedRef.current || !fullscreenPreviewOpen) return;
@@ -214,6 +242,8 @@ export default function WeddingEditor({
             value={state.share}
             onChange={(payload) => dispatch({ type: 'SET_SHARE', payload })}
             heroImage={state.hero.heroImage}
+            showInlineShareCardPreview={shell === 'mobile'}
+            sharePreviewModel={sharePreviewModel}
             sharingKakao={sharingKakao}
             onShareKakaoTalk={
               onShareKakaoTalk
@@ -393,6 +423,18 @@ export default function WeddingEditor({
               editingStepLabel={visibleSections[currentStep]?.title}
               focusSectionId={activeSection}
             />
+            {activeSection === 'share' ? (
+              <div className={styles.shareCardPreviewSlot} data-testid="desktop-share-card-preview-slot">
+                <InvitationShareCardPreview
+                  title={sharePreviewModel.title}
+                  description={sharePreviewModel.description}
+                  imageUrl={sharePreviewModel.imageUrl}
+                  canonicalUrl={sharePreviewModel.canonicalUrl}
+                  displayUrl={sharePreviewModel.displayUrl}
+                  hasPublicUrl={sharePreviewModel.hasPublicUrl}
+                />
+              </div>
+            ) : null}
           </aside>
         </div>
       )}

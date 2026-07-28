@@ -217,6 +217,17 @@
   top: 88px;
   align-self: start;
   width: 340px;
+  max-height: calc(100vh - 104px);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.shareCardPreviewSlot {
+  width: 100%;
+  max-width: 340px;
+  margin-top: 16px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .previewFrameWrap {

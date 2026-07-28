@@ -712,6 +712,7 @@ export default function EditorPage() {
         onSaveAndExit={handleSaveAndExit}
         onPublish={handlePublish}
         onShareKakaoTalk={handleShareKakaoTalk}
+        shareSlug={invitation.shareSlug}
         saving={saving}
         publishing={publishing}
         sharingKakao={sharingKakao}
