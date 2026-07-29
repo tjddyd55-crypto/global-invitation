@@ -189,8 +189,9 @@ presign의 최종 `objectKey`는 반드시 `invitation/{environment}/users/` 로
 
 ## 삭제 / orphan 정책
 
+- Editor UI에서 이미지/음악을 **제거**하면 draft/`dataJson`의 **참조(URL·objectKey)만** 지운다. R2 object를 즉시 삭제하지 않는다.
 - 빈 갤러리 항목(URL·objectKey 없음)은 local-only 제거한다.
-- 정상 legacy / canonical object는 owner 검증 후 삭제 가능하다.
+- 정상 legacy / canonical object는 owner 검증 후 삭제 가능하다(명시적 delete API).
 - shared/`invitation/shared/**` 경로는 일반 사용자 업로드·삭제 대상이 아니다.
 - 저장 후에도 이전 object는 orphan 이 될 수 있으며, 주기적 cleanup 또는 수동 purge로 정리한다.
 - 기존 R2 object를 일괄 이동하지 않는다.

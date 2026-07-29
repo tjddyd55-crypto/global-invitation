@@ -448,6 +448,9 @@ router.post('/confirm', async (req, res) => {
         usage: normalizeText(req.body?.usage) as
           | 'INVITATION_HERO'
           | 'INVITATION_GALLERY'
+          | 'INVITATION_COUPLE_GROOM'
+          | 'INVITATION_COUPLE_BRIDE'
+          | 'INVITATION_MUSIC'
           | 'TEMPLATE_COVER'
           | 'TEMPLATE_HERO'
           | 'TEMPLATE_ASSET'

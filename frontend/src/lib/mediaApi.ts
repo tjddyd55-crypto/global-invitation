@@ -138,12 +138,11 @@ function resolveDefaultUploadOptions(): UploadMediaOptions {
     };
   }
 
-  const invitationMatch =
-    pathname.match(/^\/editor\/([^/]+)/) || pathname.match(/^\/m\/editor\/([^/]+)/);
-  if (invitationMatch) {
+  const invitationId = resolveInvitationIdFromPathname(pathname);
+  if (invitationId) {
     return {
       context: 'invitation',
-      entityId: invitationMatch[1],
+      entityId: invitationId,
       assetType: 'gallery',
     };
   }
@@ -167,6 +166,15 @@ function resolveDefaultUploadOptions(): UploadMediaOptions {
   }
 
   return { context: 'user', assetType: 'asset' };
+}
+
+/** Editor pathname → invitationId (PC/Mobile/legacy). */
+export function resolveInvitationIdFromPathname(pathname: string): string | null {
+  const invitationMatch =
+    pathname.match(/^\/editor\/([^/]+)/) ||
+    pathname.match(/^\/m\/editor\/([^/]+)/) ||
+    pathname.match(/^\/pc\/editor\/([^/]+)/);
+  return invitationMatch?.[1] || null;
 }
 
 function sanitizePathSegment(value: string): string {
