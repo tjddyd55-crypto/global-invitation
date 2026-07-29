@@ -1,14 +1,12 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
-import { useEffect, useRef, useState } from 'react';
-import { EDITOR_MAP_HEIGHT_PX } from './config';
-import {
-  loadNaverMaps,
-  hasNaverMapsClientId,
-  didNaverMapsAuthFail,
-  type NaverMapsMapInstance,
-} from './loadNaverMaps';
+import { useRef, useState } from 'react';
+import { hasNaverMapsClientId } from './loadNaverMaps';
+import NaverPlaceSearch, { type NaverGeocodeItem } from './NaverPlaceSearch';
+import NaverLocationPickerMap, {
+  type NaverLocationPickerMapHandle,
+} from './NaverLocationPickerMap';
 import styles from './LocationPicker.module.css';
 
 export type NaverPendingLocation = {
@@ -32,13 +30,6 @@ type NaverLocationPickerProps = {
   onConfirm: (value: NaverPendingLocation) => void;
 };
 
-type GeocodeItem = {
-  title: string;
-  address: string;
-  lat: number;
-  lng: number;
-};
-
 /**
  * Naver place/address search + marker confirm.
  * Client ID 없으면 fallback UI.
@@ -48,74 +39,14 @@ export default function NaverLocationPicker({
   confirmed,
   onConfirm,
 }: NaverLocationPickerProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<NaverMapsMapInstance | null>(null);
-  const markerRef = useRef<{ setMap: (map: unknown | null) => void } | null>(null);
+  const mapHandleRef = useRef<NaverLocationPickerMapHandle | null>(null);
 
   const [query, setQuery] = useState(initialQuery);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [results, setResults] = useState<GeocodeItem[]>([]);
+  const [results, setResults] = useState<NaverGeocodeItem[]>([]);
   const [pending, setPending] = useState<NaverPendingLocation | null>(null);
-
-  useEffect(() => {
-    if (!hasNaverMapsClientId()) {
-      setError('Naver 지도 Client ID가 설정되지 않았습니다.');
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    loadNaverMaps()
-      .then(() => {
-        if (cancelled || !mapRef.current || !window.naver?.maps) return;
-        const maps = window.naver.maps;
-        const lat = confirmed?.latitude ?? 37.5665;
-        const lng = confirmed?.longitude ?? 126.978;
-        const center = new maps.LatLng(lat, lng);
-        const map = new maps.Map(mapRef.current, { center, zoom: 16 });
-        mapInstanceRef.current = map;
-        const marker = new maps.Marker({ position: center, map });
-        markerRef.current = marker;
-        setReady(true);
-        setError(null);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        if (didNaverMapsAuthFail() || (err instanceof Error && err.message.includes('AUTH'))) {
-          setError('Naver 지도 인증에 실패했습니다. 도메인/Client ID를 확인해 주세요.');
-        } else {
-          setError('선택한 지도 서비스를 불러오지 못했습니다.');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-      try {
-        markerRef.current?.setMap(null);
-        mapInstanceRef.current?.destroy?.();
-      } catch {
-        // ignore cleanup errors
-      }
-      markerRef.current = null;
-      mapInstanceRef.current = null;
-    };
-  }, [confirmed?.latitude, confirmed?.longitude]);
-
-  const moveMarker = (lat: number, lng: number) => {
-    if (!window.naver?.maps || !mapInstanceRef.current) return;
-    const maps = window.naver.maps;
-    const position = new maps.LatLng(lat, lng);
-    mapInstanceRef.current.setCenter(position);
-    if (markerRef.current) {
-      markerRef.current.setMap(null);
-    }
-    markerRef.current = new maps.Marker({ position, map: mapInstanceRef.current });
-  };
 
   const handleSearch = () => {
     const q = query.trim();
@@ -165,7 +96,7 @@ export default function NaverLocationPicker({
             lng,
           };
         })
-        .filter((item): item is GeocodeItem => Boolean(item));
+        .filter((item): item is NaverGeocodeItem => Boolean(item));
       setResults(items);
       if (items.length === 0) {
         setError('검색 결과가 없습니다.');
@@ -173,8 +104,8 @@ export default function NaverLocationPicker({
     });
   };
 
-  const selectResult = (item: GeocodeItem) => {
-    moveMarker(item.lat, item.lng);
+  const selectResult = (item: NaverGeocodeItem) => {
+    mapHandleRef.current?.moveMarker(item.lat, item.lng);
     setPending({
       venueName: item.title,
       formattedAddress: item.address,
@@ -196,45 +127,23 @@ export default function NaverLocationPicker({
 
   return (
     <div className={styles.picker} data-testid="naver-location-picker">
-      <div className={styles.searchRow}>
-        <input
-          type="text"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="장소명 또는 주소 검색 (Naver)"
-          data-testid="naver-place-search"
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              handleSearch();
-            }
-          }}
-        />
-        <button type="button" onClick={handleSearch} disabled={loading}>
-          검색
-        </button>
-      </div>
+      <NaverPlaceSearch
+        query={query}
+        loading={loading}
+        error={error}
+        results={results}
+        onQueryChange={setQuery}
+        onSearch={handleSearch}
+        onSelect={selectResult}
+      />
 
-      {error ? <p className={styles.error}>{error}</p> : null}
-
-      {results.length > 0 ? (
-        <ul className={styles.results} data-testid="naver-search-results">
-          {results.map((item) => (
-            <li key={`${item.lat}-${item.lng}-${item.address}`}>
-              <button type="button" onClick={() => selectResult(item)}>
-                <strong>{item.title}</strong>
-                <span>{item.address}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      <div
-        ref={mapRef}
-        className={styles.mapCanvas}
-        style={{ height: EDITOR_MAP_HEIGHT_PX }}
-        data-testid="editor-naver-map"
+      <NaverLocationPickerMap
+        ref={mapHandleRef}
+        latitude={confirmed?.latitude}
+        longitude={confirmed?.longitude}
+        onReadyChange={setReady}
+        onLoadingChange={setLoading}
+        onError={(message) => setError(message || null)}
       />
 
       {!ready && loading ? <p className={styles.hint}>지도를 불러오는 중…</p> : null}

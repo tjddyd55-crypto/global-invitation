@@ -9,7 +9,8 @@
     "lint": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next lint",
     "assert:no-legacy-ui": "node ../scripts/assert-no-legacy-ui.mjs",
     "assert:no-dev-home-ui": "node ../scripts/assert-no-dev-home-ui.mjs",
-    "assert:google-only-maps": "node ../scripts/assert-google-only-maps.mjs"
+    "assert:map-provider": "node ../scripts/assert-map-provider.mjs",
+    "assert:google-only-maps": "node ../scripts/assert-map-provider.mjs"
   },
   "dependencies": {
     "autoprefixer": "^10.4.27",
