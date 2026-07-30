@@ -41,21 +41,11 @@ const PUBLIC_TRACK_SELECT = {
   id: true,
   title: true,
   artistName: true,
-  description: true,
   category: true,
-  originalFilename: true,
   publicUrl: true,
-  mimeType: true,
-  fileSize: true,
   durationSeconds: true,
-  sortOrder: true,
-  licenseType: true,
-  licenseSource: true,
-  licenseSourceUrl: true,
   attributionText: true,
   attributionRequired: true,
-  createdAt: true,
-  updatedAt: true,
 } satisfies Prisma.InvitationMusicTrackSelect;
 
 export class InvitationMusicLibraryError extends Error {
