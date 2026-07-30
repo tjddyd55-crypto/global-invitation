@@ -1,0 +1,243 @@
+.page {
+  display: grid;
+  gap: 20px;
+  color: #111827;
+}
+
+.header h1,
+.panel h2 {
+  margin: 0;
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: #6b7280;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summaryGrid article,
+.panel {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.summaryGrid article {
+  display: grid;
+  gap: 8px;
+}
+
+.summaryGrid span {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.summaryGrid strong {
+  font-size: 1.55rem;
+}
+
+.panel {
+  display: grid;
+  gap: 16px;
+}
+
+.filterForm {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(130px, 1fr)) auto;
+  gap: 10px;
+}
+
+.filterForm input,
+.filterForm select,
+.form input,
+.form select,
+.form textarea,
+.table input {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.form > label,
+.fieldGrid label {
+  display: grid;
+  gap: 6px;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.checkboxRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+.checkboxRow label,
+.compactCheck {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+
+.checkboxRow input,
+.compactCheck input {
+  width: auto;
+}
+
+.primaryButton,
+.rowActions button,
+.iconButton {
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primaryButton:disabled,
+.rowActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 11px 8px;
+  border-bottom: 1px solid #edf0f3;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 0.86rem;
+}
+
+.table th {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.table td:nth-child(2) {
+  min-width: 180px;
+}
+
+.table td:nth-child(2) input {
+  width: 100%;
+}
+
+.table small {
+  display: block;
+  margin-top: 4px;
+  color: #6b7280;
+}
+
+.sortInput {
+  width: 70px;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.rowActions button {
+  padding: 6px 8px;
+  background: #4b5563;
+  font-size: 0.8rem;
+}
+
+.rowActions .dangerButton {
+  background: #dc2626;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.activeBadge {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.archivedBadge {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.error {
+  margin: 0;
+  color: #b91c1c;
+}
+
+.loading,
+.empty {
+  margin: 0;
+  padding: 20px;
+  color: #6b7280;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fieldGrid,
+  .filterForm {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .page {
+    gap: 14px;
+  }
+
+  .summaryGrid,
+  .fieldGrid,
+  .filterForm {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryGrid article,
+  .panel {
+    padding: 14px;
+  }
+}

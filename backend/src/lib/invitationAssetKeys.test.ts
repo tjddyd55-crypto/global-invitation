@@ -112,6 +112,18 @@ test('8. shared music key', () => {
   assert.equal(key, 'invitation/shared/music/wedding/soft-piano-01.mp3');
 });
 
+test('shared music UUID key uses canonical path without environment', () => {
+  const fileKey = '550e8400-e29b-41d4-a716-446655440000';
+  const key = buildSharedAssetKey({
+    kind: 'music',
+    concept: 'common',
+    fileKey,
+    contentType: 'audio/mpeg',
+  });
+  assert.equal(key, `invitation/shared/music/common/${fileKey}.mp3`);
+  assert.equal(key.includes('/development/'), false);
+});
+
 test('9. temp key under invitation/{env}/temp', () => {
   process.env.INVITATION_ASSET_ENVIRONMENT = 'development';
   const key = buildInvitationTempKey({

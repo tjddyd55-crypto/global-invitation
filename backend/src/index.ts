@@ -7,7 +7,9 @@ import invitationsRouter from './routes/invitations';
 import eventsRouter from './routes/events';
 import authRouter from './routes/auth';
 import adminAuthRouter from './routes/adminAuth';
+import adminMusicRouter from './routes/adminMusic';
 import adminRouter from './routes/admin';
+import musicLibraryRouter from './routes/musicLibrary';
 import templateRegistryRouter from './routes/templateRegistry';
 import rsvpRouter from './routes/rsvp';
 import invitationAnalyticsRouter from './routes/invitationAnalytics';
@@ -122,6 +124,7 @@ app.use('/api/events', eventsRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/admin', adminAuthRouter);
+app.use('/api/admin', adminMusicRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin', adminTemplateSubmissionsRouter);
 app.use('/api/admin/super', adminSuperRouter);
@@ -129,6 +132,7 @@ app.use('/api/creator', templateSubmissionsRouter);
 app.use('/api/templates', templateRegistryRouter);
 app.use('/api/rsvp', rsvpRouter);
 app.use('/api/media', mediaRouter);
+app.use('/api/music-library', musicLibraryRouter);
 app.use('/api/test-login', testLoginRouter);
 
 // Start server

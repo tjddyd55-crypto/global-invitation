@@ -3,4 +3,5 @@
 
 export * from '@/src/lib/api';
 export { buildApiUrl, buildRequestInit, getApiBaseUrl } from '@/src/lib/apiBase';
-export { buildAdminApiUrl } from '@/src/lib/adminApi';
+export * from '@/src/lib/adminApi';
+export * from '@/src/lib/musicLibraryApi';

@@ -578,3 +578,41 @@ model CreatorPayout {
   @@index([creatorId, createdAt])
   @@map("creator_payouts")
 }
+
+enum InvitationMusicCategory {
+  COMMON
+  WEDDING
+  FUNERAL
+  GENERAL
+}
+
+model InvitationMusicTrack {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title String
+  artistName String? @map("artist_name")
+  description String?
+  category InvitationMusicCategory
+  originalFilename String @map("original_filename")
+  objectKey String @unique @map("object_key")
+  publicUrl String @map("public_url")
+  mimeType String @map("mime_type")
+  fileSize Int @map("file_size")
+  durationSeconds Int? @map("duration_seconds")
+  sortOrder Int @default(0) @map("sort_order")
+  isActive Boolean @default(true) @map("is_active")
+  isArchived Boolean @default(false) @map("is_archived")
+  licenseType String? @map("license_type")
+  licenseSource String? @map("license_source")
+  licenseSourceUrl String? @map("license_source_url")
+  attributionText String? @map("attribution_text")
+  attributionRequired Boolean @default(false) @map("attribution_required")
+  commercialUseConfirmed Boolean @default(false) @map("commercial_use_confirmed")
+  uploadedByAdminId String? @map("uploaded_by_admin_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(6)
+
+  @@index([category, isActive, isArchived, sortOrder])
+  @@index([isActive, isArchived, createdAt])
+  @@map("invitation_music_tracks")
+}

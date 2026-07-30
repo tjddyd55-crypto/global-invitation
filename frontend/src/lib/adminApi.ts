@@ -73,6 +73,97 @@ export type AdminDashboardSummary = {
   };
 };
 
+export type AdminMusicCategory = 'COMMON' | 'WEDDING' | 'FUNERAL' | 'GENERAL';
+
+export type AdminMusicTrack = {
+  id: string;
+  title: string;
+  artistName: string | null;
+  description: string | null;
+  category: AdminMusicCategory;
+  originalFilename: string;
+  objectKey: string;
+  publicUrl: string;
+  mimeType: string;
+  fileSize: number;
+  durationSeconds: number | null;
+  sortOrder: number;
+  isActive: boolean;
+  isArchived: boolean;
+  archivedAt: string | null;
+  licenseType: string | null;
+  licenseSource: string | null;
+  licenseSourceUrl: string | null;
+  attributionText: string | null;
+  attributionRequired: boolean;
+  commercialUseConfirmed: boolean;
+  uploadedByAdminId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminMusicSummary = {
+  total: number;
+  active: number;
+  inactive: number;
+  archived: number;
+  recent: AdminMusicTrack[];
+  totalBytes: number;
+};
+
+export type AdminMusicFilters = {
+  search?: string;
+  category?: AdminMusicCategory;
+  isActive?: boolean;
+  isArchived?: boolean;
+};
+
+export type PresignAdminMusicInput = {
+  contentType: string;
+  filename?: string;
+  fileSize: number;
+  category: AdminMusicCategory;
+};
+
+export type ConfirmAdminMusicInput = {
+  objectKey: string;
+  title: string;
+  category: AdminMusicCategory;
+  originalFilename: string;
+  mimeType: string;
+  fileSize: number;
+  durationSeconds?: number | null;
+  artistName?: string | null;
+  description?: string | null;
+  licenseType?: string | null;
+  licenseSource?: string | null;
+  licenseSourceUrl?: string | null;
+  attributionText?: string | null;
+  attributionRequired?: boolean;
+  commercialUseConfirmed: boolean;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
+export type UpdateAdminMusicInput = Partial<
+  Pick<
+    ConfirmAdminMusicInput,
+    | 'title'
+    | 'category'
+    | 'durationSeconds'
+    | 'artistName'
+    | 'description'
+    | 'licenseType'
+    | 'licenseSource'
+    | 'licenseSourceUrl'
+    | 'attributionText'
+    | 'attributionRequired'
+    | 'commercialUseConfirmed'
+    | 'isActive'
+    | 'sortOrder'
+  >
+>;
+
 export type AdminInvitationGuest = {
   id: string;
   guestName: string;
@@ -230,6 +321,82 @@ export async function getAdminSession() {
 export async function getAdminDashboardSummary() {
   const response = await fetch(buildAdminApiUrl('/api/admin/dashboard'), buildAdminRequestInit());
   return parseJsonOrThrow<AdminDashboardSummary>(response);
+}
+
+export async function listAdminMusic(filters: AdminMusicFilters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search?.trim()) params.set('search', filters.search.trim());
+  if (filters.category) params.set('category', filters.category);
+  if (filters.isActive !== undefined) params.set('isActive', String(filters.isActive));
+  if (filters.isArchived !== undefined) params.set('isArchived', String(filters.isArchived));
+  const query = params.toString();
+  const response = await fetch(
+    buildAdminApiUrl(`/api/admin/music${query ? `?${query}` : ''}`),
+    buildAdminRequestInit()
+  );
+  return parseJsonOrThrow<AdminMusicTrack[]>(response);
+}
+
+export async function getAdminMusicSummary() {
+  const response = await fetch(
+    buildAdminApiUrl('/api/admin/music/summary'),
+    buildAdminRequestInit()
+  );
+  return parseJsonOrThrow<AdminMusicSummary>(response);
+}
+
+export async function presignAdminMusic(payload: PresignAdminMusicInput) {
+  const response = await fetch(
+    buildAdminApiUrl('/api/admin/music/presign'),
+    buildAdminRequestInit({ method: 'POST', body: JSON.stringify(payload) })
+  );
+  return parseJsonOrThrow<{
+    uploadUrl: string;
+    objectKey: string;
+    publicUrl: string;
+    headers?: Record<string, string>;
+    expiresIn: number;
+  }>(response);
+}
+
+export async function confirmAdminMusic(payload: ConfirmAdminMusicInput) {
+  const response = await fetch(
+    buildAdminApiUrl('/api/admin/music/confirm'),
+    buildAdminRequestInit({ method: 'POST', body: JSON.stringify(payload) })
+  );
+  return parseJsonOrThrow<AdminMusicTrack>(response);
+}
+
+export async function updateAdminMusic(trackId: string, payload: UpdateAdminMusicInput) {
+  const response = await fetch(
+    buildAdminApiUrl(`/api/admin/music/${encodeURIComponent(trackId)}`),
+    buildAdminRequestInit({ method: 'PATCH', body: JSON.stringify(payload) })
+  );
+  return parseJsonOrThrow<AdminMusicTrack>(response);
+}
+
+export async function archiveAdminMusic(trackId: string) {
+  const response = await fetch(
+    buildAdminApiUrl(`/api/admin/music/${encodeURIComponent(trackId)}/archive`),
+    buildAdminRequestInit({ method: 'POST', body: JSON.stringify({}) })
+  );
+  return parseJsonOrThrow<AdminMusicTrack>(response);
+}
+
+export async function deleteAdminMusic(trackId: string) {
+  const response = await fetch(
+    buildAdminApiUrl(`/api/admin/music/${encodeURIComponent(trackId)}`),
+    buildAdminRequestInit({ method: 'DELETE' })
+  );
+  return parseJsonOrThrow<AdminMusicTrack>(response);
+}
+
+export async function getAdminMusicUsage(trackId: string) {
+  const response = await fetch(
+    buildAdminApiUrl(`/api/admin/music/${encodeURIComponent(trackId)}/usage`),
+    buildAdminRequestInit()
+  );
+  return parseJsonOrThrow<{ count: number; invitationIds: string[] }>(response);
 }
 
 export async function listAdminTemplates(status?: string) {

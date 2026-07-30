@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { getAdminSession, logoutAdmin, type AdminSession } from '@/src/lib/adminApi';
+import { getAdminSession, logoutAdmin, type AdminSession } from '@/src/shared/api';
 import styles from './AdminShell.module.css';
 
 type AdminShellProps = {
@@ -13,6 +13,7 @@ type AdminShellProps = {
 
 const ADMIN_NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Dashboard' },
+  { href: '/admin/music', label: '음악 라이브러리' },
   { href: '/admin/templates', label: 'Template Management' },
   { href: '/admin/template-submissions', label: 'Template Submissions' },
   { href: '/admin/users', label: 'Users' },
@@ -110,8 +111,11 @@ export default function AdminShell({ children }: AdminShellProps) {
         </nav>
         <div className={styles.sidebarFooter}>
           <div>{session.email}</div>
+          <Link href="/" className={styles.userScreenLink}>
+            사용자 화면
+          </Link>
           <button type="button" onClick={handleLogout} className={styles.logoutButton}>
-            Logout
+            로그아웃
           </button>
         </div>
       </aside>

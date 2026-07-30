@@ -74,6 +74,17 @@
   cursor: pointer;
 }
 
+.userScreenLink {
+  color: #d1d5db;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.userScreenLink:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
 .main {
   padding: 28px;
 }
