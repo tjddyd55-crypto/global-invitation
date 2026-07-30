@@ -44,6 +44,29 @@ invitation/shared/music/{concept}/...
 `concept`: `wedding` | `funeral` | `general` | `common`  
 금지: `invitation/development/shared/...`, `invitation/production/shared/...`
 
+### Shared music category → R2 concept 매핑
+
+관리자 음악 라이브러리(`InvitationMusicTrack.category`)와 R2 path segment:
+
+| DB category | R2 concept segment | Editor concept 노출 |
+|-------------|--------------------|---------------------|
+| `COMMON` | `common` | WEDDING / FUNERAL / GENERAL 공통 |
+| `WEDDING` | `wedding` | WEDDING only (+ COMMON) |
+| `FUNERAL` | `funeral` | FUNERAL only (+ COMMON) |
+| `GENERAL` | `general` | GENERAL only (+ COMMON) |
+
+예시 objectKey (관리자 upload, Backend `buildSharedAssetKey`만 생성):
+
+```
+invitation/shared/music/common/{uuid}.mp3
+invitation/shared/music/wedding/{uuid}.mp3
+```
+
+- 이용자 Editor는 `GET /api/music-library?concept=` 결과의 `publicUrl`만 저장한다 (`trackId` + `fileUrl`).
+- 초대장이 공용 음악을 선택해도 R2 파일을 복사하지 않는다.
+- 일반 사용자는 `invitation/shared/**` 업로드·삭제 불가.
+- 레거시 FE 정적 `/music/*.mp3` catalog는 하위 호환용이며 신규 SSOT가 아니다.
+
 ### Temp
 
 ```
