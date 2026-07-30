@@ -165,10 +165,15 @@ app.listen(PORT, () => {
     const email = getEmailDiagnostics();
     console.info('[startup] email diagnostics', email);
   });
-  void import('./lib/audio/archiveKnownInvalidSharedMusic').then(
-    ({ archiveKnownInvalidSharedMusic }) => {
-      void archiveKnownInvalidSharedMusic();
-    }
-  );
   startCleanupWorker();
+  // Defer QA stub cleanup so a probe/ESM failure cannot take down boot.
+  setTimeout(() => {
+    void import('./lib/audio/archiveKnownInvalidSharedMusic')
+      .then(({ archiveKnownInvalidSharedMusic }) => archiveKnownInvalidSharedMusic())
+      .catch((error) => {
+        console.warn('[music] skipped known-invalid archive on boot', {
+          code: error instanceof Error ? error.message : 'UNKNOWN',
+        });
+      });
+  }, 3_000);
 });

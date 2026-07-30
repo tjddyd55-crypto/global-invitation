@@ -2,7 +2,6 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import { parseFile } from 'music-metadata';
 
 /** Placeholder / stub audio (e.g. 2KB fake MPEG header) must never enter the library. */
 export const MIN_PLAYABLE_AUDIO_BYTES = 16 * 1024;
@@ -82,8 +81,9 @@ function countNonZeroBytes(buffer: Buffer): number {
 }
 
 async function parseAudioMetadata(buffer: Buffer, mimeType: string) {
-  // music-metadata@11 parseBuffer can fail with "Guessed MIME-type not supported"
-  // in this runtime; parseFile via a short-lived temp path is reliable on Railway.
+  // Dynamic import: music-metadata@11 is ESM; Railway/Node CJS dist must not require() it.
+  // parseFile via temp path avoids parseBuffer MIME guess failures seen in this runtime.
+  const { parseFile } = await import('music-metadata');
   const tempPath = path.join(
     os.tmpdir(),
     `invite-audio-probe-${crypto.randomUUID()}${extensionForMime(mimeType)}`
