@@ -75,9 +75,8 @@ test('music is dedicated step 9; rsvp has no music; nav order preserved', async 
 
   await page.getByRole('button', { name: '다음 단계로 →' }).click();
   await expect(page.getByTestId('editor-music-step')).toHaveCount(0);
-  await expect(
-    page.getByTestId('desktop-share-card-preview-slot').or(page.getByTestId('invitation-share-card-preview'))
-  ).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('desktop-share-card-preview-slot')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('invitation-share-card-preview')).toBeVisible();
 
   await page.getByRole('button', { name: '← 이전' }).click();
   await expect(page.getByTestId('editor-music-step')).toBeVisible();
