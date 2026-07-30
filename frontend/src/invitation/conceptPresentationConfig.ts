@@ -31,6 +31,10 @@ export type ConceptPresentationConfig = {
   accountsTitle: string;
   rsvp: boolean;
   comments: boolean;
+  /** Editor 음악 단계 표시 — 현재 전 concept true */
+  music: boolean;
+  /** 신규 초대장 기본값 — 자동 삽입 금지 */
+  musicDefaultEnabled: boolean;
   sections: ConceptSectionKey[];
   commentsTitle: string;
   commentsSubtitle: string;
@@ -49,6 +53,8 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     accountsTitle: '마음 전하실 곳',
     rsvp: true,
     comments: true,
+    music: true,
+    musicDefaultEnabled: false,
     sections: [
       'hero',
       'introduction',
@@ -77,6 +83,8 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     accountsTitle: '마음 전하실 곳',
     rsvp: true,
     comments: true,
+    music: true,
+    musicDefaultEnabled: false,
     sections: [
       'hero',
       'deceased',
@@ -103,6 +111,8 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     accountsTitle: '참가비 및 입금 안내',
     rsvp: true,
     comments: true,
+    music: true,
+    musicDefaultEnabled: false,
     sections: [
       'hero',
       'introduction',

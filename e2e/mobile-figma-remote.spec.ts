@@ -266,7 +266,7 @@ test.describe('Railway mobile Figma QA', () => {
     await page.screenshot({ path: path.join(OUT, 'mobile-editor-step1-375.png'), fullPage: false });
 
     // Jump to share settings (last step) via stepper if present
-    const shareStep = page.getByTestId('stepper-item-8');
+    const shareStep = page.getByTestId('stepper-item-9');
     if (await shareStep.count()) {
       await shareStep.click();
       await page.waitForTimeout(400);
@@ -363,7 +363,7 @@ test.describe('Railway mobile Figma QA', () => {
     await page.getByRole('button', { name: '다음' }).click();
     await page.screenshot({ path: path.join(OUT, 'mobile-editor-step1-390.png'), fullPage: false });
 
-    const shareStep390 = page.getByTestId('stepper-item-8');
+    const shareStep390 = page.getByTestId('stepper-item-9');
     if (await shareStep390.count()) {
       await shareStep390.click();
       await page.waitForTimeout(400);

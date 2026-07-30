@@ -263,6 +263,7 @@ export function createWeddingEditorState(
           ? '참가비 및 입금 안내'
           : translate(language, I18N_KEYS.weddingClassic.accountsTitle),
       musicEnabled: false,
+      musicSourceType: undefined,
       musicKey: undefined,
       musicFileUrl: undefined,
       musicFileKey: undefined,
@@ -410,6 +411,14 @@ export function createWeddingEditorStateFromDraft(
           : base.extras.accountEnabled,
       accountsTitle: runtimeData.accountsTitle || base.extras.accountsTitle,
       musicEnabled: Boolean(runtimeData.music?.enabled),
+      musicSourceType:
+        runtimeData.music?.sourceType === 'UPLOAD' || runtimeData.music?.sourceType === 'SHARED'
+          ? runtimeData.music.sourceType
+          : runtimeData.music?.fileUrl
+            ? 'UPLOAD'
+            : runtimeData.music?.musicKey
+              ? 'SHARED'
+              : undefined,
       musicKey: runtimeData.music?.musicKey || undefined,
       musicFileUrl: runtimeData.music?.fileUrl || undefined,
       musicFileKey: runtimeData.music?.fileKey || undefined,

@@ -1,5 +1,5 @@
 /**
- * Editor step click → Phone Preview section scroll sync (Wedding 1–9).
+ * Editor step click → Phone Preview section scroll sync (Wedding 1–10).
  */
 import { test, expect, type Page } from '@playwright/test';
 
@@ -16,7 +16,8 @@ const WEDDING_STEPS: Array<{ stepper: string; section: string }> = [
   { stepper: 'stepper-item-5', section: 'location' },
   { stepper: 'stepper-item-6', section: 'accounts' },
   { stepper: 'stepper-item-7', section: 'rsvp' },
-  { stepper: 'stepper-item-8', section: 'share' },
+  { stepper: 'stepper-item-8', section: 'music' },
+  { stepper: 'stepper-item-9', section: 'share' },
 ];
 
 async function loginInBrowser(page: Page, email: string) {
@@ -58,7 +59,7 @@ async function createDraft(page: Page) {
   }, { api: API });
 }
 
-test('wedding steps 1-9 scroll phone preview to matching sections', async ({ browser }) => {
+test('wedding steps 1-10 scroll phone preview to matching sections', async ({ browser }) => {
   const pageErrors: string[] = [];
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();

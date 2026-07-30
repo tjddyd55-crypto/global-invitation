@@ -5,6 +5,7 @@
 
 export type InvitationMusicSettings = {
   enabled: boolean;
+  sourceType?: 'SHARED' | 'UPLOAD';
   /** 내장 카탈로그 키 (선택) */
   musicKey?: string;
   /** 사용자 업로드 또는 외부 URL */
@@ -40,6 +41,15 @@ export function normalizeInvitationMusic(value: unknown): InvitationMusicSetting
   const fileKey = typeof value.fileKey === 'string' ? value.fileKey.trim() : '';
   const title = typeof value.title === 'string' ? value.title.trim() : '';
   const loop = value.loop === true;
+  const sourceTypeRaw = value.sourceType;
+  const sourceType =
+    sourceTypeRaw === 'SHARED' || sourceTypeRaw === 'UPLOAD'
+      ? sourceTypeRaw
+      : fileUrl
+        ? 'UPLOAD'
+        : musicKey
+          ? 'SHARED'
+          : undefined;
   const startRaw = value.startAtSeconds;
   const startAtSeconds =
     typeof startRaw === 'number' && Number.isFinite(startRaw) && startRaw >= 0
@@ -48,6 +58,7 @@ export function normalizeInvitationMusic(value: unknown): InvitationMusicSetting
 
   return {
     enabled,
+    sourceType,
     musicKey: musicKey || undefined,
     fileUrl: fileUrl || undefined,
     fileKey: fileKey || undefined,

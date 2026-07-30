@@ -109,7 +109,7 @@ test('desktop share step shows live card preview with /i URL', async ({ browser,
   await expect(page.getByTestId('wedding-editor-root')).toBeVisible({ timeout: 60_000 });
   await expect(page.getByTestId('desktop-editor-layout')).toBeVisible({ timeout: 30_000 });
 
-  await page.getByTestId('stepper-item-8').click();
+  await page.getByTestId('stepper-item-9').click();
   await expect(page.getByTestId('og-title-input')).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId('desktop-share-card-preview-slot')).toBeVisible();
   await expect(page.getByTestId('invitation-share-card-preview')).toBeVisible();
@@ -171,7 +171,7 @@ test('mobile share step shows inline card preview without horizontal overflow', 
 
     // Force mobile shell if desktop still flashes
     await page.setViewportSize({ width, height: 844 });
-    await page.getByTestId('stepper-item-8').click();
+    await page.getByTestId('stepper-item-9').click();
     await expect(page.getByTestId('og-title-input')).toBeVisible({ timeout: 20_000 });
 
     const card = page.getByTestId('invitation-share-card-preview');
@@ -220,7 +220,7 @@ test('unpublished draft shows pending URL copy without root fallback', async ({ 
 
   await page.goto(`/editor/${created.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
   await expect(page.getByTestId('desktop-editor-layout')).toBeVisible({ timeout: 60_000 });
-  await page.getByTestId('stepper-item-8').click();
+  await page.getByTestId('stepper-item-9').click();
   await expect(page.getByTestId('share-card-preview-url-pending')).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId('share-card-preview-url')).toHaveCount(0);
   await expect(page.locator('[data-testid="share-card-preview-url-pending"]')).toContainText('공개 후');

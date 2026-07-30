@@ -205,6 +205,13 @@ export default function GeneralInvitationRenderer({
         />
       ) : null}
 
+      <section
+        data-section-id="music"
+        data-preview-section="music"
+        aria-hidden
+        style={{ height: 1, margin: 0, padding: 0, border: 0, overflow: 'hidden' }}
+      />
+
       {show('share') && onShare ? (
         <section
           className={styles.section}

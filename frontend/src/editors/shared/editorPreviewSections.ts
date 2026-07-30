@@ -13,6 +13,7 @@ export type EditorPreviewSectionId =
   | 'accounts'
   | 'rsvp'
   | 'comments'
+  | 'music'
   | 'share'
   | 'deceased';
 
@@ -27,6 +28,7 @@ export type EditorStepKey =
   | 'location'
   | 'accounts'
   | 'rsvp'
+  | 'music'
   | 'share';
 
 const WEDDING_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
@@ -39,6 +41,7 @@ const WEDDING_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
   location: 'location',
   accounts: 'accounts',
   rsvp: 'rsvp',
+  music: 'music',
   share: 'share',
 };
 
@@ -52,6 +55,7 @@ const GENERAL_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
   location: 'location',
   accounts: 'accounts',
   rsvp: 'rsvp',
+  music: 'music',
   share: 'share',
 };
 
@@ -65,6 +69,7 @@ const FUNERAL_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
   location: 'location',
   accounts: 'accounts',
   rsvp: 'rsvp',
+  music: 'music',
   share: 'share',
 };
 
@@ -79,6 +84,7 @@ const SECTION_FALLBACKS: EditorPreviewSectionId[] = [
   'accounts',
   'rsvp',
   'comments',
+  'music',
   'share',
 ];
 

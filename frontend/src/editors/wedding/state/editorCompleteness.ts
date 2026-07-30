@@ -3,6 +3,7 @@ import {
   isAccountItemComplete,
 } from '@/src/invitation/accountItems';
 import { sanitizeGalleryItems } from '@/src/invitation/galleryAsset';
+import { getMusicByKey } from '@/src/constants/music';
 import type { WeddingEditorState } from './weddingEditor.types';
 import { resolveVisibleSections } from './editorSteps';
 
@@ -96,6 +97,17 @@ export function computeEditorCompleteness(state: WeddingEditorState): {
         total += 1;
         completed += 1;
         break;
+      case 'music': {
+        // 선택 기능: OFF면 완성도에서 제외. ON이면 유효 source 필요.
+        if (!state.extras.musicEnabled) {
+          break;
+        }
+        total += 1;
+        const hasUpload = Boolean((state.extras.musicFileUrl || '').trim());
+        const hasShared = Boolean(getMusicByKey(state.extras.musicKey));
+        if (hasUpload || hasShared) completed += 1;
+        break;
+      }
       default:
         break;
     }

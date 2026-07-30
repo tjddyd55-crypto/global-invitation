@@ -14,6 +14,7 @@ import Step5Gallery from './steps/Step5Gallery';
 import Step6Location from './steps/Step6Location';
 import Step7Accounts from './steps/Step7Accounts';
 import Step8Extras from './steps/Step8Extras';
+import Step9MusicSettings from './steps/Step9MusicSettings';
 import Step9ShareSettings from './steps/Step9ShareSettings';
 import { buildWeddingClassicPreviewData } from './state/weddingEditor.mapper';
 import { weddingEditorReducer } from './state/weddingEditor.reducer';
@@ -250,6 +251,13 @@ export default function WeddingEditor({
         );
       case 'rsvp':
         return <Step8Extras value={state.extras} onChange={(payload) => dispatch({ type: 'SET_EXTRAS', payload })} />;
+      case 'music':
+        return (
+          <Step9MusicSettings
+            value={state.extras}
+            onChange={(payload) => dispatch({ type: 'SET_EXTRAS', payload })}
+          />
+        );
       case 'share':
         return (
           <Step9ShareSettings

@@ -77,6 +77,8 @@ export type WeddingEditorAccount = {
   paymentNote?: string;
 };
 
+export type WeddingEditorMusicSourceType = 'SHARED' | 'UPLOAD';
+
 export type WeddingEditorExtras = {
   rsvpEnabled: boolean;
   guestbookEnabled: boolean;
@@ -87,6 +89,8 @@ export type WeddingEditorExtras = {
   accountsTitle?: string;
   /** 배경 음악 — 기본 미사용 */
   musicEnabled?: boolean;
+  /** SHARED = catalog, UPLOAD = user file */
+  musicSourceType?: WeddingEditorMusicSourceType;
   musicKey?: string;
   musicFileUrl?: string;
   musicFileKey?: string;

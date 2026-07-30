@@ -3,6 +3,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { ResolvedInvitationMusic } from '@/src/invitation/invitationMusic';
+import {
+  claimInvitationMusicPlayback,
+  releaseInvitationMusicPlayback,
+} from '@/src/invitation/musicPlaybackController';
 import styles from './InvitationMusicPlayer.module.css';
 
 type InvitationMusicPlayerProps = {
@@ -13,10 +17,11 @@ type PlayerStatus = 'idle' | 'loading' | 'playing' | 'paused' | 'error';
 
 /**
  * 공개/프리뷰 공통 배경 음악 — 사용자 클릭 후에만 play.
- * 자동재생·muted 우회 없음.
+ * 자동재생·muted 우회 없음. Editor compact preview와 단일 재생 보장.
  */
 export default function InvitationMusicPlayer({ music }: InvitationMusicPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const stopRef = useRef<(() => void) | null>(null);
   const [status, setStatus] = useState<PlayerStatus>('idle');
 
   useEffect(() => {
@@ -35,7 +40,13 @@ export default function InvitationMusicPlayer({ music }: InvitationMusicPlayerPr
     audio.addEventListener('waiting', onWaiting);
     audio.addEventListener('error', onError);
 
+    stopRef.current = () => {
+      audio.pause();
+      setStatus('paused');
+    };
+
     return () => {
+      releaseInvitationMusicPlayback(stopRef.current);
       audio.pause();
       audio.removeEventListener('playing', onPlaying);
       audio.removeEventListener('pause', onPause);
@@ -52,10 +63,12 @@ export default function InvitationMusicPlayer({ music }: InvitationMusicPlayerPr
     if (status === 'playing') {
       audio.pause();
       setStatus('paused');
+      releaseInvitationMusicPlayback(stopRef.current);
       return;
     }
 
     try {
+      claimInvitationMusicPlayback(stopRef.current);
       setStatus('loading');
       if (music.startAtSeconds > 0 && audio.currentTime < 0.5) {
         audio.currentTime = music.startAtSeconds;

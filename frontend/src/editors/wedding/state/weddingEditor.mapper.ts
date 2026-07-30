@@ -119,6 +119,10 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     share: ogFields.share,
     music: {
       enabled: Boolean(state.extras.musicEnabled),
+      sourceType: state.extras.musicEnabled
+        ? state.extras.musicSourceType ||
+          ((state.extras.musicFileUrl || '').trim() ? 'UPLOAD' : 'SHARED')
+        : undefined,
       musicKey: state.extras.musicEnabled ? state.extras.musicKey || undefined : undefined,
       fileUrl: state.extras.musicEnabled ? state.extras.musicFileUrl || undefined : undefined,
       fileKey: state.extras.musicEnabled ? state.extras.musicFileKey || undefined : undefined,

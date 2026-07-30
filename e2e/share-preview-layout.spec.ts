@@ -55,7 +55,7 @@ test('desktop share step: phone preview above share card', async ({ browser }) =
 
   await page.goto(`/editor/${created.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
   await expect(page.getByTestId('desktop-editor-layout')).toBeVisible({ timeout: 60_000 });
-  await page.getByTestId('stepper-item-8').click();
+  await page.getByTestId('stepper-item-9').click();
 
   const phone = page.getByTestId('editor-live-preview-viewport');
   const shareSlot = page.getByTestId('desktop-share-card-preview-slot');

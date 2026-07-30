@@ -57,7 +57,7 @@ test('clear OG image persists and editor Kakao action is removed', async ({ brow
 
   await page.goto(`/editor/${created.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
   await expect(page.getByTestId('desktop-editor-layout')).toBeVisible({ timeout: 60_000 });
-  await page.getByTestId('stepper-item-8').click();
+  await page.getByTestId('stepper-item-9').click();
   await expect(page.getByTestId('og-title-input')).toBeVisible({ timeout: 20_000 });
 
   await expect(page.getByTestId('og-share-kakao-talk')).toHaveCount(0);
@@ -100,7 +100,7 @@ test('clear OG image persists and editor Kakao action is removed', async ({ brow
 
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 90_000 });
   await expect(page.getByTestId('desktop-editor-layout')).toBeVisible({ timeout: 60_000 });
-  await page.getByTestId('stepper-item-8').click();
+  await page.getByTestId('stepper-item-9').click();
   await expect(page.getByTestId('share-card-preview-image-placeholder')).toBeVisible({ timeout: 20_000 });
   await expect(page.getByTestId('share-card-preview-image').locator('img')).toHaveCount(0);
 

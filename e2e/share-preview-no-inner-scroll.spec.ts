@@ -154,7 +154,7 @@ test.describe('share preview no inner scroll', () => {
       });
       expect(otherStepScroll === 'auto' || otherStepScroll === 'scroll' || otherStepScroll === 'overlay').toBeTruthy();
 
-      await page.getByTestId('stepper-item-8').click();
+      await page.getByTestId('stepper-item-9').click();
       await expect(page.getByTestId('desktop-share-card-preview-slot')).toBeVisible({ timeout: 20_000 });
       await expect(page.getByTestId('invitation-share-card-preview')).toBeVisible();
       await expect(page.getByTestId('editor-live-preview-viewport')).toBeVisible();
@@ -183,7 +183,7 @@ test.describe('share preview no inner scroll', () => {
     await page.goto(`/editor/${created.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.getByTestId('wedding-editor-root')).toBeVisible({ timeout: 60_000 });
-    await page.getByTestId('stepper-item-8').click();
+    await page.getByTestId('stepper-item-9').click();
     await expect(page.getByTestId('invitation-share-card-preview')).toBeVisible({ timeout: 20_000 });
 
     const metrics = await page.evaluate(() => {
