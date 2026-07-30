@@ -19,7 +19,10 @@
     "test:preview-code": "tsx --test src/lib/mailer.previewCode.test.ts",
     "test:admin-session": "tsx --test src/lib/adminSession.cookie.test.ts src/routes/adminAuth.cors.test.ts",
     "test:audio-probe": "tsx --test src/lib/audio/playableAudioProbe.test.ts",
-    "music:archive-qa-placeholder": "tsx scripts/archive-qa-placeholder-music.ts"
+    "test:r2-cleanup": "tsx --test src/lib/r2Cleanup/legacyInvitationClassification.test.ts",
+    "music:archive-qa-placeholder": "tsx scripts/archive-qa-placeholder-music.ts",
+    "audit:r2:legacy-invitation": "tsx scripts/audit-legacy-invitation-r2-assets.ts",
+    "delete:r2:legacy-invitation": "tsx scripts/delete-legacy-invitation-r2-assets.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1004.0",

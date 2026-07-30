@@ -54,3 +54,8 @@ artifacts/design-qa/*.png
 *_계정정보.txt
 credentials.txt
 secrets.txt
+
+# R2 cleanup audit dumps (may contain user/object identifiers)
+reports/r2-invitation-cleanup/
+.r2-cleanup-*.json
+.r2-cleanup-*.csv
