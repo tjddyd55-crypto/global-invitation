@@ -46,7 +46,12 @@ export default function AdminShell({ children }: AdminShellProps) {
         setSession(nextSession);
       } catch {
         if (!isMounted) return;
-        router.replace('/admin/login');
+        const next = pathname && pathname.startsWith('/admin') ? pathname : '/admin';
+        const loginUrl =
+          next === '/admin/login'
+            ? '/admin/login'
+            : `/admin/login?next=${encodeURIComponent(next)}`;
+        router.replace(loginUrl);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -59,7 +64,7 @@ export default function AdminShell({ children }: AdminShellProps) {
     return () => {
       isMounted = false;
     };
-  }, [isLoginPage, router]);
+  }, [isLoginPage, pathname, router]);
 
   const navItems = useMemo(() => {
     const base = ADMIN_NAV_ITEMS.map((item) => ({

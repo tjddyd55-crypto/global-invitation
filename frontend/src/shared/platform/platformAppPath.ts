@@ -28,6 +28,8 @@ export function isPlatformAppPath(pathname: string | null | undefined): boolean 
   if (pathname === '/signup' || pathname.startsWith('/signup')) return true;
   if (pathname === '/my' || pathname.startsWith('/my/')) return true;
   if (pathname === '/settings' || pathname.startsWith('/settings/')) return true;
+  // Admin portal — no SaaS marketing header / auth chrome
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return true;
 
   return false;
 }

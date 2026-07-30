@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   clearStoredSession,
   fetchNavbarUser,
@@ -17,6 +18,10 @@ import {
   type AuthUser,
 } from '@/src/lib/auth';
 import type { AuthStatus } from './authStatus';
+
+function isAdminPortalPath(pathname: string | null): boolean {
+  return Boolean(pathname && (pathname === '/admin' || pathname.startsWith('/admin/')));
+}
 
 export interface AuthSessionContextValue {
   user: AuthUser | null;
@@ -32,6 +37,7 @@ const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
  * 반드시 /api/auth/me 부트스트랩 결과로 status 를 확정한다.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
   const hasBootstrappedRef = useRef(false);
@@ -50,8 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hasBootstrappedRef.current) return;
     hasBootstrappedRef.current = true;
+    // Admin portal uses /api/admin/me only — do not couple to user /api/auth/me.
+    if (isAdminPortalPath(pathname)) {
+      setUser(null);
+      setStatus('unauthenticated');
+      return;
+    }
     void refresh();
-  }, [refresh]);
+  }, [pathname, refresh]);
 
   const signOut = useCallback(async () => {
     await logoutCurrentSession();

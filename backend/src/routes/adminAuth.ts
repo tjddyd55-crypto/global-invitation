@@ -106,14 +106,12 @@ router.post('/login', async (req, res) => {
     if (!adminEmail.trim() || !password.trim()) {
       return res.status(400).json({ error: 'ADMIN_CREDENTIALS_REQUIRED' });
     }
-    console.log('admin login attempt', adminEmail.trim());
-
     const normalizedInputId = normalizeAdminId(adminEmail);
     const superEmailRaw = process.env.SUPER_ADMIN_EMAIL?.trim() || '';
 
     if (superEmailRaw && validateSuperAdminCredentials(adminEmail, password)) {
       setAdminSessionCookie(res, superEmailRaw, 'SUPER_ADMIN');
-      console.log('super admin login success');
+      console.log('admin login success');
       await logAdminAction({
         adminId: superEmailRaw,
         action: 'super_admin_login',
@@ -183,7 +181,6 @@ router.get('/me', requireAdminSession, async (req, res) => {
     return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
   }
 
-  console.log('admin session verified');
   return res.status(200).json({
     role: session.role,
     email: session.email,

@@ -275,9 +275,33 @@ async function parseJsonOrThrow<T>(response: Response): Promise<T> {
 }
 
 /**
- * Admin API calls are cross-origin in production; cookies only attach when
- * credentials: 'include' is set and the backend uses SameSite=None + CORS credentials.
+ * Admin API SSOT — always credentials:include against absolute Backend origin.
+ * Do not use the user auth client or bare fetch for /api/admin/*.
  */
+export async function adminApiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const { credentials: _c, cache: _cache, headers: incomingHeaders, ...rest } = init;
+  return fetch(buildAdminApiUrl(path), {
+    ...rest,
+    cache: 'no-store',
+    credentials: 'include',
+    headers: {
+      ...(incomingHeaders || {}),
+    },
+  });
+}
+
+export async function adminApiJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const response = await adminApiFetch(path, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init.headers || {}),
+    },
+  });
+  return parseJsonOrThrow<T>(response);
+}
+
+/** @deprecated Prefer adminApiFetch / adminApiJson */
 export function buildAdminRequestInit(init?: RequestInit): RequestInit {
   const { credentials: _c, cache: _cache, headers: incomingHeaders, ...rest } = init || {};
   return {
@@ -291,36 +315,26 @@ export function buildAdminRequestInit(init?: RequestInit): RequestInit {
   };
 }
 
-export async function loginAdmin(email: string, password: string) {
-  const response = await fetch(
-    buildAdminApiUrl('/api/admin/login'),
-    buildAdminRequestInit({
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    })
-  );
-  return parseJsonOrThrow<{ success: true; role: AdminRole; email: string }>(response);
+export async function loginAdmin(adminId: string, password: string) {
+  return adminApiJson<{ success: true; role: AdminRole; email: string }>('/api/admin/login', {
+    method: 'POST',
+    body: JSON.stringify({ adminId, email: adminId, password }),
+  });
 }
 
 export async function logoutAdmin() {
-  const response = await fetch(
-    buildAdminApiUrl('/api/admin/logout'),
-    buildAdminRequestInit({
-      method: 'POST',
-      body: JSON.stringify({}),
-    })
-  );
-  return parseJsonOrThrow<{ success: true }>(response);
+  return adminApiJson<{ success: true }>('/api/admin/logout', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
 }
 
 export async function getAdminSession() {
-  const response = await fetch(buildAdminApiUrl('/api/admin/me'), buildAdminRequestInit());
-  return parseJsonOrThrow<AdminSession>(response);
+  return adminApiJson<AdminSession>('/api/admin/me');
 }
 
 export async function getAdminDashboardSummary() {
-  const response = await fetch(buildAdminApiUrl('/api/admin/dashboard'), buildAdminRequestInit());
-  return parseJsonOrThrow<AdminDashboardSummary>(response);
+  return adminApiJson<AdminDashboardSummary>('/api/admin/dashboard');
 }
 
 export async function listAdminMusic(filters: AdminMusicFilters = {}) {
@@ -330,26 +344,15 @@ export async function listAdminMusic(filters: AdminMusicFilters = {}) {
   if (filters.isActive !== undefined) params.set('isActive', String(filters.isActive));
   if (filters.isArchived !== undefined) params.set('isArchived', String(filters.isArchived));
   const query = params.toString();
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/music${query ? `?${query}` : ''}`),
-    buildAdminRequestInit()
-  );
-  return parseJsonOrThrow<AdminMusicTrack[]>(response);
+  return adminApiJson<AdminMusicTrack[]>(`/api/admin/music${query ? `?${query}` : ''}`);
 }
 
 export async function getAdminMusicSummary() {
-  const response = await fetch(
-    buildAdminApiUrl('/api/admin/music/summary'),
-    buildAdminRequestInit()
-  );
-  return parseJsonOrThrow<AdminMusicSummary>(response);
+  return adminApiJson<AdminMusicSummary>('/api/admin/music/summary');
 }
 
 export async function presignAdminMusic(payload: PresignAdminMusicInput) {
-  const response = await fetch(
-    buildAdminApiUrl('/api/admin/music/presign'),
-    buildAdminRequestInit({ method: 'POST', body: JSON.stringify(payload) })
-  );
+  const response = await adminApiFetch('/api/admin/music/presign', { method: 'POST', body: JSON.stringify(payload) });
   return parseJsonOrThrow<{
     uploadUrl: string;
     objectKey: string;
@@ -360,54 +363,42 @@ export async function presignAdminMusic(payload: PresignAdminMusicInput) {
 }
 
 export async function confirmAdminMusic(payload: ConfirmAdminMusicInput) {
-  const response = await fetch(
-    buildAdminApiUrl('/api/admin/music/confirm'),
-    buildAdminRequestInit({ method: 'POST', body: JSON.stringify(payload) })
-  );
-  return parseJsonOrThrow<AdminMusicTrack>(response);
+  return adminApiJson<AdminMusicTrack>('/api/admin/music/confirm', { method: 'POST', body: JSON.stringify(payload) });
 }
 
 export async function updateAdminMusic(trackId: string, payload: UpdateAdminMusicInput) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/music/${encodeURIComponent(trackId)}`),
-    buildAdminRequestInit({ method: 'PATCH', body: JSON.stringify(payload) })
-  );
-  return parseJsonOrThrow<AdminMusicTrack>(response);
+  return adminApiJson<AdminMusicTrack>(`/api/admin/music/${encodeURIComponent(trackId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function archiveAdminMusic(trackId: string) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/music/${encodeURIComponent(trackId)}/archive`),
-    buildAdminRequestInit({ method: 'POST', body: JSON.stringify({}) })
+  return adminApiJson<AdminMusicTrack>(
+    `/api/admin/music/${encodeURIComponent(trackId)}/archive`,
+    { method: 'POST', body: JSON.stringify({}) }
   );
-  return parseJsonOrThrow<AdminMusicTrack>(response);
 }
 
 export async function deleteAdminMusic(trackId: string) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/music/${encodeURIComponent(trackId)}`),
-    buildAdminRequestInit({ method: 'DELETE' })
-  );
-  return parseJsonOrThrow<AdminMusicTrack>(response);
+  return adminApiJson<AdminMusicTrack>(`/api/admin/music/${encodeURIComponent(trackId)}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function getAdminMusicUsage(trackId: string) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/music/${encodeURIComponent(trackId)}/usage`),
-    buildAdminRequestInit()
+  return adminApiJson<{ count: number; invitationIds: string[] }>(
+    `/api/admin/music/${encodeURIComponent(trackId)}/usage`
   );
-  return parseJsonOrThrow<{ count: number; invitationIds: string[] }>(response);
 }
 
 export async function listAdminTemplates(status?: string) {
   const query = status ? `?status=${encodeURIComponent(status)}` : '';
-  const response = await fetch(buildAdminApiUrl(`/api/admin/templates${query}`), buildAdminRequestInit());
-  return parseJsonOrThrow<TemplateDefinition[]>(response);
+  return adminApiJson<TemplateDefinition[]>(`/api/admin/templates${query}`);
 }
 
 export async function getAdminTemplate(templateId: string) {
-  const response = await fetch(buildAdminApiUrl(`/api/admin/templates/${templateId}`), buildAdminRequestInit());
-  return parseJsonOrThrow<TemplateDefinition>(response);
+  return adminApiJson<TemplateDefinition>(`/api/admin/templates/${templateId}`);
 }
 
 export type AdminTemplatePreviewBundle = {
@@ -425,33 +416,21 @@ export async function fetchAdminTemplatePreviewBundle(
 ) {
   const encoded = encodeURIComponent(identifier);
   const query = options?.mode === 'real' ? '?mode=real' : '';
-  const response = await fetch(
-    buildAdminApiUrl(`/api/templates/${encoded}/preview${query}`),
-    buildAdminRequestInit()
-  );
-  return parseJsonOrThrow<AdminTemplatePreviewBundle>(response);
+  return adminApiJson<AdminTemplatePreviewBundle>(`/api/templates/${encoded}/preview${query}`);
 }
 
 export async function createAdminTemplate(payload: AdminTemplatePayload) {
-  const response = await fetch(
-    buildAdminApiUrl('/api/admin/templates'),
-    buildAdminRequestInit({
+  return adminApiJson<TemplateDefinition>('/api/admin/templates', {
       method: 'POST',
       body: JSON.stringify(payload),
-    })
-  );
-  return parseJsonOrThrow<TemplateDefinition>(response);
+    });
 }
 
 export async function updateAdminTemplate(templateId: string, payload: Partial<AdminTemplatePayload>) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/templates/${templateId}`),
-    buildAdminRequestInit({
+  return adminApiJson<TemplateDefinition>(`/api/admin/templates/${templateId}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
-    })
-  );
-  return parseJsonOrThrow<TemplateDefinition>(response);
+    });
 }
 
 /** 관리자 전용 라이프사이클 변경 (전이 검증은 백엔드). REJECTED 시 rejectReason 필수. */
@@ -464,36 +443,24 @@ export async function updateTemplateStatus(
   if (options?.rejectReason !== undefined) {
     body.rejectReason = options.rejectReason;
   }
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/templates/${templateId}`),
-    buildAdminRequestInit({
+  return adminApiJson<TemplateDefinition>(`/api/admin/templates/${templateId}`, {
       method: 'PATCH',
       body: JSON.stringify(body),
-    })
-  );
-  return parseJsonOrThrow<TemplateDefinition>(response);
+    });
 }
 
 export async function disableAdminTemplate(templateId: string) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/templates/${templateId}/disable`),
-    buildAdminRequestInit({
+  return adminApiJson<TemplateDefinition>(`/api/admin/templates/${templateId}/disable`, {
       method: 'POST',
       body: JSON.stringify({}),
-    })
-  );
-  return parseJsonOrThrow<TemplateDefinition>(response);
+    });
 }
 
 export async function deleteAdminTemplate(templateId: string) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/templates/${templateId}/delete`),
-    buildAdminRequestInit({
+  return adminApiJson<TemplateDefinition>(`/api/admin/templates/${templateId}/delete`, {
       method: 'POST',
       body: JSON.stringify({}),
-    })
-  );
-  return parseJsonOrThrow<TemplateDefinition>(response);
+    });
 }
 
 export async function getAdminInvitationGuestList(
@@ -511,21 +478,14 @@ export async function getAdminInvitationGuestList(
     params.set('attendance', filters.attendance);
   }
   const query = params.toString();
-  const response = await fetch(
-    buildAdminApiUrl(`/api/rsvp/${invitationId}${query ? `?${query}` : ''}`),
-    buildAdminRequestInit()
-  );
-  return parseJsonOrThrow<AdminInvitationGuestList>(response);
+  return adminApiJson<AdminInvitationGuestList>(`/api/rsvp/${invitationId}${query ? `?${query}` : ''}`);
 }
 
 export async function exportAdminInvitationGuestCsv(invitationId: string) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/invitations/${invitationId}/rsvp/export`),
-    buildAdminRequestInit({
+  const response = await adminApiFetch(`/api/admin/invitations/${invitationId}/rsvp/export`, {
       method: 'GET',
       headers: {},
-    })
-  );
+    });
 
   if (!response.ok) {
     let errorMessage = 'CSV export failed';
@@ -542,71 +502,46 @@ export async function exportAdminInvitationGuestCsv(invitationId: string) {
 }
 
 export async function deleteAdminRsvp(rsvpId: string) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/rsvp/${rsvpId}`),
-    buildAdminRequestInit({
+  return adminApiJson<{ success: true }>(`/api/admin/rsvp/${rsvpId}`, {
       method: 'DELETE',
-    })
-  );
-  return parseJsonOrThrow<{ success: true }>(response);
+    });
 }
 
 export async function updateAdminRsvpVisibility(rsvpId: string, isHidden: boolean) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/rsvp/${rsvpId}`),
-    buildAdminRequestInit({
-      method: 'PATCH',
-      body: JSON.stringify({ isHidden }),
-    })
-  );
-  return parseJsonOrThrow<{
+  return adminApiJson<{
     success: true;
     rsvp: AdminInvitationGuest & { invitationId: string };
-  }>(response);
+  }>(`/api/admin/rsvp/${rsvpId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isHidden }),
+    });
 }
 
 export async function getInvitationAnalytics(invitationId: string) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/invitations/${invitationId}/analytics`),
-    buildAdminRequestInit()
-  );
-  return parseJsonOrThrow<InvitationAnalyticsSummary>(response);
+  return adminApiJson<InvitationAnalyticsSummary>(`/api/admin/invitations/${invitationId}/analytics`);
 }
 
 export async function listAdminTemplateSubmissions() {
-  const response = await fetch(buildAdminApiUrl('/api/admin/template-submissions'), buildAdminRequestInit());
-  return parseJsonOrThrow<AdminTemplateSubmission[]>(response);
+  return adminApiJson<AdminTemplateSubmission[]>('/api/admin/template-submissions');
 }
 
 export async function getAdminTemplateSubmission(submissionId: string) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/template-submissions/${submissionId}`),
-    buildAdminRequestInit()
-  );
-  return parseJsonOrThrow<AdminTemplateSubmission>(response);
+  return adminApiJson<AdminTemplateSubmission>(`/api/admin/template-submissions/${submissionId}`);
 }
 
 export async function approveAdminTemplateSubmission(
   submissionId: string,
   payload?: { reviewNote?: string; creatorShare?: number }
 ) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/template-submissions/${submissionId}/approve`),
-    buildAdminRequestInit({
+  return adminApiJson<AdminTemplateSubmission>(`/api/admin/template-submissions/${submissionId}/approve`, {
       method: 'POST',
       body: JSON.stringify(payload || {}),
-    })
-  );
-  return parseJsonOrThrow<AdminTemplateSubmission>(response);
+    });
 }
 
 export async function rejectAdminTemplateSubmission(submissionId: string, payload?: { reviewNote?: string }) {
-  const response = await fetch(
-    buildAdminApiUrl(`/api/admin/template-submissions/${submissionId}/reject`),
-    buildAdminRequestInit({
+  return adminApiJson<AdminTemplateSubmission>(`/api/admin/template-submissions/${submissionId}/reject`, {
       method: 'POST',
       body: JSON.stringify(payload || {}),
-    })
-  );
-  return parseJsonOrThrow<AdminTemplateSubmission>(response);
+    });
 }

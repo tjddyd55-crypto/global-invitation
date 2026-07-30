@@ -26,15 +26,21 @@ function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
 }
 
+function isRailwayRuntime(): boolean {
+  return Boolean(
+    process.env.RAILWAY_ENVIRONMENT_NAME?.trim() ||
+      process.env.RAILWAY_PROJECT_ID?.trim() ||
+      process.env.RAILWAY_SERVICE_ID?.trim()
+  );
+}
+
 /**
- * Cross-origin admin UI (e.g. Vercel/Railway frontend → Railway API) requires
- * SameSite=None; Secure. Browsers ignore third-party cookies with SameSite=Lax.
- * Local HTTP dev keeps Lax + non-secure cookies so admin login still works.
+ * Cross-origin admin UI (Railway FE → Railway API) requires SameSite=None; Secure.
+ * Local HTTP (no Railway) keeps Lax + non-secure so admin login still works on localhost.
  *
- * Never set `domain` on this cookie: it must be host-only for the API host so
- * the browser sends it on credentialed fetches to the backend origin.
+ * Never set `domain`: host-only cookie on the API host so credentialed fetches send it.
  */
-function resolveAdminSessionCookieOptions(): {
+export function resolveAdminSessionCookieOptions(): {
   httpOnly: true;
   secure: boolean;
   sameSite: 'none' | 'lax';
@@ -42,19 +48,20 @@ function resolveAdminSessionCookieOptions(): {
   path: '/';
 } {
   const maxAge = ADMIN_SESSION_TTL_HOURS * 60 * 60 * 1000;
-  if (isProduction()) {
+  const isLocalHttp = !isRailwayRuntime() && !isProduction();
+  if (isLocalHttp) {
     return {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: false,
+      sameSite: 'lax',
       maxAge,
       path: '/',
     };
   }
   return {
     httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
+    secure: true,
+    sameSite: 'none',
     maxAge,
     path: '/',
   };
@@ -312,11 +319,12 @@ export function getAdminSession(req: Request): AdminSession | null {
 export function requireAdminSession(req: Request, res: Response, next: NextFunction) {
   const session = getAdminSession(req);
   if (!session || (session.role !== 'ADMIN' && session.role !== 'SUPER_ADMIN')) {
-    console.log('Incoming cookies:', req.headers.cookie ?? '(none)');
+    console.log('admin cookie diagnostics', {
+      hasAdminSession: Boolean(parseCookieValue(req, ADMIN_SESSION_COOKIE)),
+    });
     return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
   }
 
-  console.log('admin session verified', session.email);
   res.locals.adminSession = session;
   return next();
 }
@@ -324,7 +332,9 @@ export function requireAdminSession(req: Request, res: Response, next: NextFunct
 export function requireSuperAdminSession(req: Request, res: Response, next: NextFunction) {
   const session = getAdminSession(req);
   if (!session) {
-    console.log('Incoming cookies:', req.headers.cookie ?? '(none)');
+    console.log('admin cookie diagnostics', {
+      hasAdminSession: Boolean(parseCookieValue(req, ADMIN_SESSION_COOKIE)),
+    });
     return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
   }
   if (session.role !== 'SUPER_ADMIN') {

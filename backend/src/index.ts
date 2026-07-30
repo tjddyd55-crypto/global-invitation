@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { type Request } from 'express';
 import cors from 'cors';
 import path from 'path';
 import prisma from './lib/prisma';
@@ -31,6 +31,9 @@ import { getBackendBuildIdentity } from './lib/buildIdentity';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Railway / reverse proxy: correct secure cookie + client IP behavior
+app.set('trust proxy', 1);
+
 if (!process.env.ADMIN_JWT_SECRET?.trim() && !process.env.ADMIN_SESSION_SECRET?.trim()) {
   throw new Error('ADMIN_JWT_SECRET (or ADMIN_SESSION_SECRET) must be defined');
 }
@@ -46,8 +49,10 @@ const allowedOrigins = Array.from(
       process.env.FRONTEND_URL,
       process.env.FRONTEND_PREVIEW_URL,
       process.env.NEXT_PUBLIC_SITE_URL,
+      'https://frontend-development-1b8a.up.railway.app',
       'https://frontend-production-54bf.up.railway.app',
       'http://localhost:3000',
+      'http://127.0.0.1:3000',
       ...listFromEnv,
     ]
       .filter((value): value is string => Boolean(value?.trim()))
@@ -83,15 +88,17 @@ app.use((req, res, next) => {
   if (req.path.startsWith('/api')) {
     console.log('[REQUEST]', {
       path: req.path,
-      guestToken: req.headers['x-guest-token'],
+      hasGuestHeader: Boolean(req.headers['x-guest-token']),
       origin: req.headers.origin,
     });
   }
   next();
 });
 
-app.use('/api', attachGuestSession);
-app.use('/api', guestRateLimit);
+function isAdminApiPath(req: Request): boolean {
+  const url = (req.originalUrl || req.url || '').split('?')[0];
+  return url === '/api/admin' || url.startsWith('/api/admin/');
+}
 
 // Health check endpoint (email diagnostics: secret 값 미포함)
 app.get('/health', async (req, res) => {
@@ -115,7 +122,28 @@ app.get('/api/build-identity', (_req, res) => {
   res.status(200).json(getBackendBuildIdentity());
 });
 
-// API routes
+// Admin routes before guest middleware — admin auth must not mint guest tokens.
+app.use('/api/admin', adminAuthRouter);
+app.use('/api/admin', adminMusicRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/admin', adminTemplateSubmissionsRouter);
+app.use('/api/admin/super', adminSuperRouter);
+
+// Guest session only for non-admin APIs (skip remains defense-in-depth).
+app.use('/api', (req, res, next) => {
+  if (isAdminApiPath(req)) {
+    return next();
+  }
+  return attachGuestSession(req, res, next);
+});
+app.use('/api', (req, res, next) => {
+  if (isAdminApiPath(req)) {
+    return next();
+  }
+  return guestRateLimit(req, res, next);
+});
+
+// User / public API routes
 app.use('/api/invitations', invitationsRouter);
 app.use('/api/invitations/:id/comments', ownerInvitationCommentsRouter);
 app.use('/api/invitations', invitationAnalyticsRouter);
@@ -123,11 +151,6 @@ app.use('/api/public/invitations', publicInvitationCommentsRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/notifications', notificationsRouter);
-app.use('/api/admin', adminAuthRouter);
-app.use('/api/admin', adminMusicRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/admin', adminTemplateSubmissionsRouter);
-app.use('/api/admin/super', adminSuperRouter);
 app.use('/api/creator', templateSubmissionsRouter);
 app.use('/api/templates', templateRegistryRouter);
 app.use('/api/rsvp', rsvpRouter);
