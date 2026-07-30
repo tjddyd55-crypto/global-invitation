@@ -1,10 +1,12 @@
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import type { Readable } from 'stream';
 
 const DEFAULT_UPLOAD_EXPIRES_SECONDS = 3600;
 const MIN_UPLOAD_EXPIRES_SECONDS = 600;
@@ -183,6 +185,41 @@ export async function headObject(objectKey: string): Promise<HeadObjectResult> {
     }
     throw error;
   }
+}
+
+async function bodyToBuffer(body: unknown): Promise<Buffer> {
+  if (!body) {
+    throw new Error('R2_OBJECT_BODY_EMPTY');
+  }
+  if (Buffer.isBuffer(body)) {
+    return body;
+  }
+  if (body instanceof Uint8Array) {
+    return Buffer.from(body);
+  }
+  if (typeof (body as { transformToByteArray?: () => Promise<Uint8Array> }).transformToByteArray === 'function') {
+    const bytes = await (body as { transformToByteArray: () => Promise<Uint8Array> }).transformToByteArray();
+    return Buffer.from(bytes);
+  }
+  const stream = body as Readable;
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+
+/** Download object bytes for server-side audio probing (confirm path). */
+export async function getObjectBuffer(objectKey: string): Promise<Buffer> {
+  const config = resolveR2Config();
+  const client = getR2Client();
+  const response = await client.send(
+    new GetObjectCommand({
+      Bucket: config.bucketName,
+      Key: objectKey,
+    })
+  );
+  return bodyToBuffer(response.Body);
 }
 
 export async function deleteObject(objectKey: string): Promise<void> {

@@ -10,10 +10,20 @@ import {
   type AdminMusicTrack,
 } from '@/src/shared/api';
 import {
+  adminAudioErrorMessage,
+  logAudioPlaybackFailure,
+  mapMediaErrorCode,
+  type AudioPlaybackErrorKind,
+} from '@/src/invitation/audioPlaybackErrors';
+import {
   claimInvitationMusicPlayback,
   releaseInvitationMusicPlayback,
 } from '@/src/invitation/musicPlaybackController';
-import { formatMusicBytes, formatMusicDuration } from './adminMusicUpload';
+import {
+  formatMusicBytes,
+  formatMusicDuration,
+  resolveAdminTrackPlayability,
+} from './adminMusicUpload';
 import styles from './AdminMusicLibraryPage.module.css';
 
 type TrackListProps = {
@@ -24,13 +34,22 @@ type TrackListProps = {
 
 type TrackRowProps = TrackListProps & {
   track: AdminMusicTrack;
-  isPlaying: boolean;
+  playbackState: 'idle' | 'loading' | 'playing' | 'paused' | 'failed';
+  rowError: string | null;
   onTogglePlayback: (track: AdminMusicTrack) => void;
 };
 
+function playabilityLabel(track: AdminMusicTrack): string {
+  const playability = resolveAdminTrackPlayability(track);
+  if (playability === 'suspicious') return '손상 의심';
+  if (playability === 'unverified') return '재생 검증 필요';
+  return '재생 가능';
+}
+
 function AdminMusicTrackRow({
   track,
-  isPlaying,
+  playbackState,
+  rowError,
   onTogglePlayback,
   onChanged,
   onError,
@@ -40,6 +59,8 @@ function AdminMusicTrackRow({
   const [isActive, setIsActive] = useState(track.isActive);
   const [usageCount, setUsageCount] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const playability = resolveAdminTrackPlayability(track);
+  const playbackDisabled = playability === 'suspicious';
 
   const save = async () => {
     setIsSaving(true);
@@ -87,22 +108,96 @@ function AdminMusicTrackRow({
     }
   };
 
+  const playbackLabel =
+    playbackState === 'loading'
+      ? '로딩'
+      : playbackState === 'playing'
+        ? '일시정지'
+        : playbackState === 'paused'
+          ? '재생'
+          : playbackState === 'failed'
+            ? '재생 불가'
+            : '재생';
+
   return (
-    <tr>
-      <td><button className={styles.iconButton} type="button" onClick={() => onTogglePlayback(track)}>{isPlaying ? '정지' : '재생'}</button></td>
-      <td><input aria-label={`${track.title} 제목`} value={title} onChange={(event) => setTitle(event.target.value)} /><small>{track.artistName || '-'}</small></td>
+    <tr data-testid={`admin-music-row-${track.id}`}>
+      <td>
+        <button
+          className={styles.iconButton}
+          type="button"
+          disabled={playbackDisabled && playbackState !== 'playing'}
+          onClick={() => onTogglePlayback(track)}
+          aria-label={`${track.title} ${playbackLabel}`}
+        >
+          {playbackLabel}
+        </button>
+        {rowError ? <small className={styles.rowError}>{rowError}</small> : null}
+      </td>
+      <td>
+        <input aria-label={`${track.title} 제목`} value={title} onChange={(event) => setTitle(event.target.value)} />
+        <small>{track.artistName || '-'}</small>
+      </td>
       <td>{track.category}</td>
       <td>{formatMusicBytes(track.fileSize)}</td>
       <td>{formatMusicDuration(track.durationSeconds)}</td>
-      <td><span className={`${styles.badge} ${track.isArchived ? styles.archivedBadge : isActive ? styles.activeBadge : ''}`}>{track.isArchived ? '보관됨' : isActive ? '활성' : '비활성'}</span></td>
-      <td><input className={styles.sortInput} type="number" min="0" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} /></td>
-      <td><label className={styles.compactCheck}><input type="checkbox" checked={isActive} disabled={track.isArchived} onChange={(event) => setIsActive(event.target.checked)} /> 활성</label></td>
+      <td>
+        <span
+          className={`${styles.badge} ${
+            track.isArchived
+              ? styles.archivedBadge
+              : isActive
+                ? styles.activeBadge
+                : ''
+          }`}
+        >
+          {track.isArchived ? '보관됨' : isActive ? '활성' : '비활성'}
+        </span>
+        <span
+          className={`${styles.badge} ${
+            playability === 'suspicious'
+              ? styles.dangerBadge
+              : playability === 'unverified'
+                ? styles.warningBadge
+                : styles.okBadge
+          }`}
+        >
+          {playabilityLabel(track)}
+        </span>
+      </td>
+      <td>
+        <input
+          className={styles.sortInput}
+          type="number"
+          min="0"
+          value={sortOrder}
+          onChange={(event) => setSortOrder(event.target.value)}
+        />
+      </td>
+      <td>
+        <label className={styles.compactCheck}>
+          <input
+            type="checkbox"
+            checked={isActive}
+            disabled={track.isArchived}
+            onChange={(event) => setIsActive(event.target.checked)}
+          />{' '}
+          활성
+        </label>
+      </td>
       <td>
         <div className={styles.rowActions}>
-          <button type="button" onClick={() => void showUsage()}>사용 {usageCount === null ? '조회' : usageCount}</button>
-          <button type="button" disabled={isSaving || track.isArchived} onClick={() => void save()}>저장</button>
-          <button type="button" disabled={track.isArchived} onClick={() => void archive()}>보관</button>
-          <button className={styles.dangerButton} type="button" onClick={() => void remove()}>삭제</button>
+          <button type="button" onClick={() => void showUsage()}>
+            사용 {usageCount === null ? '조회' : usageCount}
+          </button>
+          <button type="button" disabled={isSaving || track.isArchived} onClick={() => void save()}>
+            저장
+          </button>
+          <button type="button" disabled={track.isArchived} onClick={() => void archive()}>
+            보관
+          </button>
+          <button className={styles.dangerButton} type="button" onClick={() => void remove()}>
+            삭제
+          </button>
         </div>
       </td>
     </tr>
@@ -113,32 +208,126 @@ export default function AdminMusicTrackList({ tracks, onChanged, onError }: Trac
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [playbackStateById, setPlaybackStateById] = useState<
+    Record<string, 'idle' | 'loading' | 'playing' | 'paused' | 'failed'>
+  >({});
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+
+  const setTrackState = (
+    trackId: string,
+    state: 'idle' | 'loading' | 'playing' | 'paused' | 'failed'
+  ) => {
+    setPlaybackStateById((current) => ({ ...current, [trackId]: state }));
+  };
+
+  const clearAudio = () => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }
+    audioRef.current = null;
+  };
 
   useEffect(() => {
     stopRef.current = () => {
-      audioRef.current?.pause();
+      clearAudio();
       setPlayingId(null);
     };
     return () => {
       releaseInvitationMusicPlayback(stopRef.current);
-      audioRef.current?.pause();
+      clearAudio();
     };
   }, []);
 
+  const failTrack = (track: AdminMusicTrack, kind: AudioPlaybackErrorKind, rejectionName?: string) => {
+    logAudioPlaybackFailure({
+      trackId: track.id,
+      publicUrl: track.publicUrl,
+      mediaErrorCode:
+        kind === 'NETWORK'
+          ? 2
+          : kind === 'DECODE'
+            ? 3
+            : kind === 'SRC_NOT_SUPPORTED'
+              ? 4
+              : kind === 'ABORTED'
+                ? 1
+                : null,
+      rejectionName,
+    });
+    clearAudio();
+    releaseInvitationMusicPlayback(stopRef.current);
+    setPlayingId(null);
+    setTrackState(track.id, 'failed');
+    setRowErrors((current) => ({
+      ...current,
+      [track.id]: adminAudioErrorMessage(kind),
+    }));
+  };
+
   const togglePlayback = (track: AdminMusicTrack) => {
+    if (resolveAdminTrackPlayability(track) === 'suspicious') {
+      setRowErrors((current) => ({
+        ...current,
+        [track.id]: '파일이 손상되었거나 지원되지 않는 형식입니다.',
+      }));
+      setTrackState(track.id, 'failed');
+      return;
+    }
+
     if (playingId === track.id) {
       stopRef.current?.();
       releaseInvitationMusicPlayback(stopRef.current);
+      setTrackState(track.id, 'paused');
       return;
     }
-    audioRef.current?.pause();
-    const audio = new Audio(track.publicUrl);
+
+    clearAudio();
+    setPlayingId(null);
+    setTrackState(track.id, 'loading');
+    setRowErrors((current) => {
+      const next = { ...current };
+      delete next[track.id];
+      return next;
+    });
+
+    const audio = new Audio();
     audio.preload = 'metadata';
-    audio.addEventListener('ended', () => setPlayingId(null));
-    audio.addEventListener('pause', () => setPlayingId(null));
     audioRef.current = audio;
+
+    const onEnded = () => {
+      setPlayingId(null);
+      setTrackState(track.id, 'idle');
+    };
+    const onPause = () => {
+      if (!audio.ended) {
+        setTrackState(track.id, 'paused');
+        setPlayingId(null);
+      }
+    };
+    const onError = () => {
+      failTrack(track, mapMediaErrorCode(audio.error?.code));
+    };
+
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('error', onError);
+    audio.src = track.publicUrl;
     claimInvitationMusicPlayback(stopRef.current);
-    void audio.play().then(() => setPlayingId(track.id)).catch(() => onError('음원을 재생할 수 없습니다.'));
+
+    void audio
+      .play()
+      .then(() => {
+        setPlayingId(track.id);
+        setTrackState(track.id, 'playing');
+      })
+      .catch((error: unknown) => {
+        const rejectionName = error instanceof Error ? error.name : 'PlayRejected';
+        const kind = mapMediaErrorCode(audio.error?.code);
+        failTrack(track, kind === 'UNKNOWN' ? 'SRC_NOT_SUPPORTED' : kind, rejectionName);
+      });
   };
 
   return (
@@ -146,9 +335,36 @@ export default function AdminMusicTrackList({ tracks, onChanged, onError }: Trac
       <h2>등록된 음원</h2>
       <div className={styles.tableWrap}>
         <table className={styles.table}>
-          <thead><tr><th>미리듣기</th><th>제목</th><th>카테고리</th><th>크기</th><th>길이</th><th>상태</th><th>순서</th><th>활성</th><th>작업</th></tr></thead>
+          <thead>
+            <tr>
+              <th>미리듣기</th>
+              <th>제목</th>
+              <th>카테고리</th>
+              <th>크기</th>
+              <th>길이</th>
+              <th>상태</th>
+              <th>순서</th>
+              <th>활성</th>
+              <th>작업</th>
+            </tr>
+          </thead>
           <tbody>
-            {tracks.map((track) => <AdminMusicTrackRow key={track.id} track={track} tracks={tracks} isPlaying={playingId === track.id} onTogglePlayback={togglePlayback} onChanged={onChanged} onError={onError} />)}
+            {tracks.map((track) => (
+              <AdminMusicTrackRow
+                key={track.id}
+                track={track}
+                tracks={tracks}
+                playbackState={
+                  playingId === track.id
+                    ? 'playing'
+                    : playbackStateById[track.id] || 'idle'
+                }
+                rowError={rowErrors[track.id] || null}
+                onTogglePlayback={togglePlayback}
+                onChanged={onChanged}
+                onError={onError}
+              />
+            ))}
           </tbody>
         </table>
       </div>

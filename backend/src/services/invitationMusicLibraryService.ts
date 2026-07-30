@@ -6,7 +6,12 @@ import {
   getInvitationAssetPublicUrl,
   type InvitationSharedConcept,
 } from '../lib/invitationAssetKeys';
-import { createPresignedUploadUrl, deleteObject, headObject } from '../lib/media/r2';
+import {
+  MIN_PLAYABLE_AUDIO_BYTES,
+  PlayableAudioProbeError,
+  probePlayableAudio,
+} from '../lib/audio/playableAudioProbe';
+import { createPresignedUploadUrl, deleteObject, getObjectBuffer, headObject } from '../lib/media/r2';
 import type {
   AdminTrackFilters,
   ConfirmSharedMusicInput,
@@ -23,6 +28,7 @@ export type {
 } from './invitationMusicLibraryTypes';
 
 export const MAX_SHARED_MUSIC_BYTES = 20 * 1024 * 1024;
+export { MIN_PLAYABLE_AUDIO_BYTES };
 export const ALLOWED_AUDIO_TYPES = new Set([
   'audio/mpeg',
   'audio/mp4',
@@ -99,6 +105,9 @@ function requireAudioType(value: unknown): string {
 
 function requireFileSize(value: unknown): number {
   const size = requireInteger(value, 'INVALID_FILE_SIZE', 1);
+  if (size < MIN_PLAYABLE_AUDIO_BYTES) {
+    throw new InvitationMusicLibraryError('AUDIO_FILE_TOO_SMALL', 400);
+  }
   if (size > MAX_SHARED_MUSIC_BYTES) {
     throw new InvitationMusicLibraryError('FILE_TOO_LARGE', 400);
   }
@@ -218,6 +227,9 @@ async function verifyUploadedObject(objectKey: string, fileSize: number, mimeTyp
   if (objectState.contentLength != null && objectState.contentLength !== fileSize) {
     throw new InvitationMusicLibraryError('MUSIC_OBJECT_SIZE_MISMATCH', 400);
   }
+  if (objectState.contentLength != null && objectState.contentLength < MIN_PLAYABLE_AUDIO_BYTES) {
+    throw new InvitationMusicLibraryError('AUDIO_FILE_TOO_SMALL', 400);
+  }
   const remoteType = (objectState.contentType || '').toLowerCase().split(';')[0].trim();
   // R2 may omit Content-Type or return octet-stream depending on client PUT headers.
   if (
@@ -229,6 +241,23 @@ async function verifyUploadedObject(objectKey: string, fileSize: number, mimeTyp
   }
 }
 
+async function probeUploadedAudio(objectKey: string, mimeType: string) {
+  let buffer: Buffer;
+  try {
+    buffer = await getObjectBuffer(objectKey);
+  } catch {
+    throw new InvitationMusicLibraryError('MUSIC_OBJECT_NOT_FOUND', 400);
+  }
+  try {
+    return await probePlayableAudio(buffer, mimeType);
+  } catch (error) {
+    if (error instanceof PlayableAudioProbeError) {
+      throw new InvitationMusicLibraryError(error.code, 400);
+    }
+    throw new InvitationMusicLibraryError('INVALID_AUDIO_FILE', 400);
+  }
+}
+
 export async function confirmSharedMusic(adminId: string, input: ConfirmSharedMusicInput) {
   const category = requireCategory(input.category);
   const mimeType = requireAudioType(input.mimeType);
@@ -236,16 +265,21 @@ export async function confirmSharedMusic(adminId: string, input: ConfirmSharedMu
   const objectKey = assertSharedMusicObjectKey(input.objectKey, category, mimeType);
   const isActive = input.isActive === true;
   validateActivation(isActive, input.commercialUseConfirmed);
+  await verifyUploadedObject(objectKey, fileSize, mimeType);
+  const probe = await probeUploadedAudio(objectKey, mimeType);
   const data = buildTrackCreateData({
     adminId,
-    input,
+    input: {
+      ...input,
+      // Server probe is SSOT — never trust client-reported duration alone.
+      durationSeconds: probe.durationSeconds,
+    },
     category,
     mimeType,
     fileSize,
     objectKey,
     isActive,
   });
-  await verifyUploadedObject(objectKey, fileSize, mimeType);
   return prisma.invitationMusicTrack.create({ data });
 }
 
@@ -282,12 +316,31 @@ export async function listPublicTracks(
     where: {
       isActive: true,
       isArchived: false,
+      // Exclude placeholders / unprobed stubs from Editor & Public selection.
+      fileSize: { gte: MIN_PLAYABLE_AUDIO_BYTES },
+      durationSeconds: { gt: 0 },
+      publicUrl: { not: '' },
       ...(categories ? { category: { in: categories } } : {}),
       ...buildSearchFilter(search),
     },
     select: PUBLIC_TRACK_SELECT,
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
   });
+}
+
+/** Development QA cleanup helper — archive known unplayable shared tracks. */
+export async function archiveUnplayableTrackByObjectKey(objectKey: string) {
+  const normalized = objectKey.trim().replace(/^\/+/, '');
+  const existing = await prisma.invitationMusicTrack.findFirst({
+    where: { objectKey: normalized },
+  });
+  if (!existing) {
+    throw new InvitationMusicLibraryError('MUSIC_TRACK_NOT_FOUND', 404);
+  }
+  if (existing.isArchived) {
+    return existing;
+  }
+  return archiveTrack(existing.id);
 }
 
 export async function updateTrack(id: string, input: UpdateTrackInput) {

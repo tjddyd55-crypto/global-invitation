@@ -165,5 +165,10 @@ app.listen(PORT, () => {
     const email = getEmailDiagnostics();
     console.info('[startup] email diagnostics', email);
   });
+  void import('./lib/audio/archiveKnownInvalidSharedMusic').then(
+    ({ archiveKnownInvalidSharedMusic }) => {
+      void archiveKnownInvalidSharedMusic();
+    }
+  );
   startCleanupWorker();
 });

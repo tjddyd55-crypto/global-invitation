@@ -4,6 +4,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { getMusicByKey } from '@/src/constants/music';
 import {
+  logAudioPlaybackFailure,
+  mapMediaErrorCode,
+  publicAudioErrorMessage,
+} from '@/src/invitation/audioPlaybackErrors';
+import {
   claimInvitationMusicPlayback,
   releaseInvitationMusicPlayback,
 } from '@/src/invitation/musicPlaybackController';
@@ -75,18 +80,38 @@ export default function SharedMusicLibraryPicker({
       return;
     }
     audioRef.current?.pause();
-    const audio = new Audio(track.publicUrl);
+    const audio = new Audio();
     audio.preload = 'metadata';
     audio.addEventListener('ended', () => setPreviewTrackId(null));
     audio.addEventListener('pause', () => setPreviewTrackId(null));
+    audio.addEventListener('error', () => {
+      const kind = mapMediaErrorCode(audio.error?.code);
+      logAudioPlaybackFailure({
+        trackId: track.id,
+        publicUrl: track.publicUrl,
+        mediaErrorCode: audio.error?.code ?? null,
+      });
+      setPreviewTrackId(null);
+      releaseInvitationMusicPlayback(stopRef.current);
+      onError(publicAudioErrorMessage(kind));
+    });
+    audio.src = track.publicUrl;
     audioRef.current = audio;
     claimInvitationMusicPlayback(stopRef.current);
     try {
       await audio.play();
       setPreviewTrackId(track.id);
-    } catch {
+    } catch (error) {
+      const kind = mapMediaErrorCode(audio.error?.code);
+      logAudioPlaybackFailure({
+        trackId: track.id,
+        publicUrl: track.publicUrl,
+        mediaErrorCode: audio.error?.code ?? null,
+        rejectionName: error instanceof Error ? error.name : 'PlayRejected',
+      });
       setPreviewTrackId(null);
-      onError('미리 듣기를 재생할 수 없습니다.');
+      releaseInvitationMusicPlayback(stopRef.current);
+      onError(publicAudioErrorMessage(kind));
     }
   };
 

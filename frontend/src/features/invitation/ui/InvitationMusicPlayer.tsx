@@ -4,6 +4,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ResolvedInvitationMusic } from '@/src/invitation/invitationMusic';
 import {
+  logAudioPlaybackFailure,
+  mapMediaErrorCode,
+  publicAudioErrorMessage,
+} from '@/src/invitation/audioPlaybackErrors';
+import {
   claimInvitationMusicPlayback,
   releaseInvitationMusicPlayback,
 } from '@/src/invitation/musicPlaybackController';
@@ -23,17 +28,28 @@ export default function InvitationMusicPlayer({ music }: InvitationMusicPlayerPr
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
   const [status, setStatus] = useState<PlayerStatus>('idle');
+  const [errorHint, setErrorHint] = useState<string | null>(null);
 
   useEffect(() => {
-    const audio = new Audio(music.src);
+    const audio = new Audio();
     audio.loop = music.loop;
     audio.preload = 'metadata';
+    audio.src = music.src;
     audioRef.current = audio;
 
     const onPlaying = () => setStatus('playing');
     const onPause = () => setStatus((prev) => (prev === 'error' ? prev : 'paused'));
     const onWaiting = () => setStatus('loading');
-    const onError = () => setStatus('error');
+    const onError = () => {
+      const kind = mapMediaErrorCode(audio.error?.code);
+      logAudioPlaybackFailure({
+        publicUrl: music.src,
+        mediaErrorCode: audio.error?.code ?? null,
+      });
+      setErrorHint(publicAudioErrorMessage(kind));
+      setStatus('error');
+      releaseInvitationMusicPlayback(stopRef.current);
+    };
 
     audio.addEventListener('playing', onPlaying);
     audio.addEventListener('pause', onPause);
@@ -52,6 +68,8 @@ export default function InvitationMusicPlayer({ music }: InvitationMusicPlayerPr
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('waiting', onWaiting);
       audio.removeEventListener('error', onError);
+      audio.removeAttribute('src');
+      audio.load();
       audioRef.current = null;
     };
   }, [music.src, music.loop]);
@@ -70,13 +88,22 @@ export default function InvitationMusicPlayer({ music }: InvitationMusicPlayerPr
     try {
       claimInvitationMusicPlayback(stopRef.current);
       setStatus('loading');
+      setErrorHint(null);
       if (music.startAtSeconds > 0 && audio.currentTime < 0.5) {
         audio.currentTime = music.startAtSeconds;
       }
       await audio.play();
       setStatus('playing');
-    } catch {
+    } catch (error) {
+      const kind = mapMediaErrorCode(audio.error?.code);
+      logAudioPlaybackFailure({
+        publicUrl: music.src,
+        mediaErrorCode: audio.error?.code ?? null,
+        rejectionName: error instanceof Error ? error.name : 'PlayRejected',
+      });
+      setErrorHint(publicAudioErrorMessage(kind));
       setStatus('error');
+      releaseInvitationMusicPlayback(stopRef.current);
     }
   };
 
@@ -86,7 +113,7 @@ export default function InvitationMusicPlayer({ music }: InvitationMusicPlayerPr
       : status === 'loading'
         ? '배경 음악 로딩'
         : status === 'error'
-          ? '배경 음악 재생 오류'
+          ? errorHint || '배경 음악 재생 오류'
           : '배경 음악 재생';
 
   return (
@@ -95,7 +122,7 @@ export default function InvitationMusicPlayer({ music }: InvitationMusicPlayerPr
       className={`${styles.fab} ${status === 'playing' ? styles.fabPlaying : ''} ${status === 'error' ? styles.fabError : ''}`}
       onClick={() => void toggle()}
       aria-label={label}
-      title={music.title}
+      title={errorHint || music.title}
       data-testid="invitation-music-player"
       data-music-status={status}
     >
