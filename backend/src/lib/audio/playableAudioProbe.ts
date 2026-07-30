@@ -1,7 +1,4 @@
-import crypto from 'crypto';
-import fs from 'fs/promises';
-import os from 'os';
-import path from 'path';
+import { parseBuffer } from 'music-metadata';
 
 /** Placeholder / stub audio (e.g. 2KB fake MPEG header) must never enter the library. */
 export const MIN_PLAYABLE_AUDIO_BYTES = 16 * 1024;
@@ -26,12 +23,6 @@ export class PlayableAudioProbeError extends Error {
     super(code);
     this.name = 'PlayableAudioProbeError';
   }
-}
-
-function extensionForMime(mimeType: string): string {
-  if (mimeType === 'audio/mpeg') return '.mp3';
-  if (mimeType === 'audio/aac') return '.aac';
-  return '.m4a';
 }
 
 function hasMpegFrameSync(buffer: Buffer): boolean {
@@ -80,25 +71,11 @@ function countNonZeroBytes(buffer: Buffer): number {
   return count;
 }
 
-async function parseAudioMetadata(buffer: Buffer, mimeType: string) {
-  // Dynamic import: music-metadata@11 is ESM; Railway/Node CJS dist must not require() it.
-  // parseFile via temp path avoids parseBuffer MIME guess failures seen in this runtime.
-  const { parseFile } = await import('music-metadata');
-  const tempPath = path.join(
-    os.tmpdir(),
-    `invite-audio-probe-${crypto.randomUUID()}${extensionForMime(mimeType)}`
-  );
-  await fs.writeFile(tempPath, buffer);
-  try {
-    return await parseFile(tempPath, { duration: true });
-  } finally {
-    await fs.unlink(tempPath).catch(() => undefined);
-  }
-}
-
 /**
  * Probe uploaded bytes for a real, decodable audio stream with positive duration.
  * Signature alone is never enough — duration/stream metadata must succeed.
+ *
+ * Uses music-metadata@7 (CJS) so Railway Node 20 + Express CJS dist stay stable.
  */
 export async function probePlayableAudio(
   buffer: Buffer,
@@ -117,14 +94,13 @@ export async function probePlayableAudio(
   if (!hasPlausibleAudioSignature(buffer, normalizedMime)) {
     throw new PlayableAudioProbeError('INVALID_AUDIO_FILE');
   }
-  // Reject near-empty payloads that only carry a forged MPEG sync word.
   if (countNonZeroBytes(buffer) < 64) {
     throw new PlayableAudioProbeError('INVALID_AUDIO_FILE');
   }
 
   let metadata;
   try {
-    metadata = await parseAudioMetadata(buffer, normalizedMime);
+    metadata = await parseBuffer(buffer, normalizedMime, { duration: true });
   } catch {
     throw new PlayableAudioProbeError('INVALID_AUDIO_FILE');
   }
