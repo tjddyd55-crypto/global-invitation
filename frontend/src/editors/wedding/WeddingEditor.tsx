@@ -15,7 +15,7 @@ import Step6Location from './steps/Step6Location';
 import Step7Accounts from './steps/Step7Accounts';
 import Step8Extras from './steps/Step8Extras';
 import Step9MusicSettings from './steps/Step9MusicSettings';
-import Step9ShareSettings from './steps/Step9ShareSettings';
+import Step10ShareSettings from './steps/Step10ShareSettings';
 import { buildWeddingClassicPreviewData } from './state/weddingEditor.mapper';
 import { weddingEditorReducer } from './state/weddingEditor.reducer';
 import type { WeddingEditorState } from './state/weddingEditor.types';
@@ -255,12 +255,13 @@ export default function WeddingEditor({
         return (
           <Step9MusicSettings
             value={state.extras}
+            conceptType={state.setup.conceptType}
             onChange={(payload) => dispatch({ type: 'SET_EXTRAS', payload })}
           />
         );
       case 'share':
         return (
-          <Step9ShareSettings
+          <Step10ShareSettings
             value={state.share}
             onChange={(payload) => dispatch({ type: 'SET_SHARE', payload })}
             onPersistShareChange={onSave ? handlePersistShareChange : undefined}

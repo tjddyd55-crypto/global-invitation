@@ -6,7 +6,7 @@ import type { WeddingEditorShare } from '../state/weddingEditor.types';
 import InvitationShareCardPreview from '@/src/components/share/InvitationShareCardPreview';
 import type { InvitationSharePreviewModel } from '@/src/invitation/sharePreviewModel';
 
-type Step9ShareSettingsProps = {
+type Step10ShareSettingsProps = {
   value: WeddingEditorShare;
   onChange: (value: Partial<WeddingEditorShare>) => void;
   /** 이미지 모드 변경 후 즉시 PATCH */
@@ -18,7 +18,7 @@ type Step9ShareSettingsProps = {
   persistingShareImage?: boolean;
 };
 
-export default function Step9ShareSettings({
+export default function Step10ShareSettings({
   value,
   onChange,
   onPersistShareChange,
@@ -26,7 +26,7 @@ export default function Step9ShareSettings({
   showInlineShareCardPreview = false,
   sharePreviewModel,
   persistingShareImage,
-}: Step9ShareSettingsProps) {
+}: Step10ShareSettingsProps) {
   const hero = (heroImage || '').trim();
   const hasHero = Boolean(hero);
 
