@@ -5,15 +5,17 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import ToggleRow from '../components/ToggleRow';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorExtras, WeddingEditorMusicSourceType } from '../state/weddingEditor.types';
-import { MUSIC_LIST, getMusicByKey } from '@/src/constants/music';
+import { getMusicByKey } from '@/src/constants/music';
 import { uploadMediaAudio } from '@/src/lib/mediaApi';
 import {
   claimInvitationMusicPlayback,
   releaseInvitationMusicPlayback,
 } from '@/src/invitation/musicPlaybackController';
+import SharedMusicLibraryPicker from './SharedMusicLibraryPicker';
 
 type Step9MusicSettingsProps = {
   value: WeddingEditorExtras;
+  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
   onChange: (value: Partial<WeddingEditorExtras>) => void;
 };
 
@@ -34,7 +36,7 @@ function hasValidMusicSource(value: WeddingEditorExtras): boolean {
 /**
  * 독립 음악 설정 Step — 기본 OFF, 자동재생 없음, 기본 음악 자동 삽입 금지.
  */
-export default function Step9MusicSettings({ value, onChange }: Step9MusicSettingsProps) {
+export default function Step9MusicSettings({ value, conceptType, onChange }: Step9MusicSettingsProps) {
   const musicOn = Boolean(value.musicEnabled);
   const sourceType = resolveSourceType(value);
   const [musicUploading, setMusicUploading] = useState(false);
@@ -72,9 +74,12 @@ export default function Step9MusicSettings({ value, onChange }: Step9MusicSettin
   }, [previewSrc]);
 
   const setSourceType = (next: WeddingEditorMusicSourceType) => {
+    if (next === sourceType) return;
     if (next === 'SHARED') {
       onChange({
         musicSourceType: 'SHARED',
+        musicTrackId: undefined,
+        musicKey: undefined,
         musicFileUrl: undefined,
         musicFileKey: undefined,
       });
@@ -82,7 +87,11 @@ export default function Step9MusicSettings({ value, onChange }: Step9MusicSettin
     }
     onChange({
       musicSourceType: 'UPLOAD',
+      musicTrackId: undefined,
       musicKey: undefined,
+      musicFileUrl: undefined,
+      musicFileKey: undefined,
+      musicTitle: undefined,
     });
   };
 
@@ -177,31 +186,23 @@ export default function Step9MusicSettings({ value, onChange }: Step9MusicSettin
           </div>
 
           {sourceType === 'SHARED' ? (
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>공용 음악 선택</span>
-              <select
-                value={value.musicKey || ''}
-                data-testid="editor-music-select"
-                onChange={(event) => {
-                  const key = event.target.value;
-                  const track = MUSIC_LIST.find((item) => item.musicKey === key);
-                  onChange({
-                    musicSourceType: 'SHARED',
-                    musicKey: key || undefined,
-                    musicTitle: track?.title || value.musicTitle,
-                    musicFileUrl: undefined,
-                    musicFileKey: undefined,
-                  });
-                }}
-              >
-                <option value="">선택하세요</option>
-                {MUSIC_LIST.map((track) => (
-                  <option key={track.musicKey} value={track.musicKey}>
-                    {track.title}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <SharedMusicLibraryPicker
+              conceptType={conceptType}
+              selectedTrackId={value.musicTrackId}
+              legacyMusicKey={value.musicKey}
+              onError={setMusicError}
+              onSelect={(track) =>
+                onChange({
+                  musicEnabled: true,
+                  musicSourceType: 'SHARED',
+                  musicTrackId: track.id,
+                  musicKey: track.id,
+                  musicFileUrl: track.publicUrl,
+                  musicTitle: track.title,
+                  musicFileKey: undefined,
+                })
+              }
+            />
           ) : (
             <label className={styles.field}>
               <span className={styles.fieldLabel}>내 음악 업로드 (MP3/M4A/AAC, 최대 10MB)</span>
@@ -221,6 +222,7 @@ export default function Step9MusicSettings({ value, onChange }: Step9MusicSettin
                     onChange({
                       musicEnabled: true,
                       musicSourceType: 'UPLOAD',
+                      musicTrackId: undefined,
                       musicKey: undefined,
                       musicFileUrl: uploaded.publicUrl,
                       musicFileKey: uploaded.objectKey,
@@ -315,6 +317,7 @@ export default function Step9MusicSettings({ value, onChange }: Step9MusicSettin
               onChange({
                 musicEnabled: false,
                 musicSourceType: undefined,
+                musicTrackId: undefined,
                 musicKey: undefined,
                 musicFileUrl: undefined,
                 musicFileKey: undefined,

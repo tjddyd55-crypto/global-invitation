@@ -264,6 +264,7 @@ export function createWeddingEditorState(
           : translate(language, I18N_KEYS.weddingClassic.accountsTitle),
       musicEnabled: false,
       musicSourceType: undefined,
+      musicTrackId: undefined,
       musicKey: undefined,
       musicFileUrl: undefined,
       musicFileKey: undefined,
@@ -411,6 +412,7 @@ export function createWeddingEditorStateFromDraft(
           : base.extras.accountEnabled,
       accountsTitle: runtimeData.accountsTitle || base.extras.accountsTitle,
       musicEnabled: Boolean(runtimeData.music?.enabled),
+      musicTrackId: runtimeData.music?.trackId || undefined,
       musicSourceType:
         runtimeData.music?.sourceType === 'UPLOAD' || runtimeData.music?.sourceType === 'SHARED'
           ? runtimeData.music.sourceType

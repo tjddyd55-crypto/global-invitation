@@ -91,6 +91,7 @@ export type WeddingEditorExtras = {
   musicEnabled?: boolean;
   /** SHARED = catalog, UPLOAD = user file */
   musicSourceType?: WeddingEditorMusicSourceType;
+  musicTrackId?: string;
   musicKey?: string;
   musicFileUrl?: string;
   musicFileKey?: string;

@@ -688,11 +688,76 @@
   color: #3f4630;
 }
 
+.musicLibrary {
+  display: grid;
+  gap: 10px;
+}
+
+.musicLibraryList {
+  display: grid;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.musicLibraryItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #e4ded4;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.musicLibraryItemSelected {
+  border-color: #82994d;
+  background: #f7f8f1;
+}
+
+.musicLibraryItem > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.musicLibraryItem span,
+.musicLibraryItem small {
+  color: #7a756c;
+  font-size: 0.78rem;
+}
+
+.musicLibraryActions {
+  display: flex;
+  gap: 6px;
+}
+
+.musicLibraryActions button {
+  padding: 7px 9px;
+  border: 1px solid #d6d0c6;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
 .musicPreviewRow {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .musicLibraryItem {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .musicLibraryActions button {
+    flex: 1;
+  }
 }
 
 .secondaryButton {
