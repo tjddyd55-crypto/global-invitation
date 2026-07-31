@@ -45,7 +45,7 @@ export function createCleanupS3Client(config: R2ListClientConfig): S3Client {
 export async function listEntireBucketInventory(
   client: S3Client,
   bucketName: string
-): Promise<InventoryObject[]> {
+): Promise<{ objects: InventoryObject[]; pageCount: number }> {
   const objects: InventoryObject[] = [];
   let continuationToken: string | undefined;
   let pageCount = 0;
@@ -72,7 +72,7 @@ export async function listEntireBucketInventory(
     throw new Error('R2_LIST_NO_PAGES');
   }
 
-  return objects;
+  return { objects, pageCount };
 }
 
 function mapS3Object(item: S3Object): InventoryObject {

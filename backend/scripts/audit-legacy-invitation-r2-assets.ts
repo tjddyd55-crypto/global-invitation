@@ -125,7 +125,8 @@ async function main() {
     throw new Error('audit script must run with DRY_RUN=true (delete script is separate)');
   }
 
-  const bucketName = requireEnv('R2_BUCKET_NAME');
+  const bucketName =
+    process.env.R2_CLEANUP_BUCKET_NAME?.trim() || requireEnv('R2_BUCKET_NAME');
   const acceptedAlias = process.env.R2_AUDIT_ACCEPT_BUCKET?.trim() || '';
   if (bucketName !== 'platform-assets') {
     if (!acceptedAlias || acceptedAlias !== bucketName) {
@@ -138,12 +139,15 @@ async function main() {
 
   const accountId = process.env.R2_ACCOUNT_ID?.trim() || '';
   const endpoint =
+    process.env.R2_CLEANUP_ENDPOINT?.trim() ||
     process.env.R2_ENDPOINT?.trim() ||
     (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : '');
   if (!endpoint) throw new Error('Missing env: R2_ENDPOINT or R2_ACCOUNT_ID');
 
-  const accessKeyId = requireEnv('R2_ACCESS_KEY_ID');
-  const secretAccessKey = requireEnv('R2_SECRET_ACCESS_KEY');
+  const accessKeyId =
+    process.env.R2_CLEANUP_ACCESS_KEY_ID?.trim() || requireEnv('R2_ACCESS_KEY_ID');
+  const secretAccessKey =
+    process.env.R2_CLEANUP_SECRET_ACCESS_KEY?.trim() || requireEnv('R2_SECRET_ACCESS_KEY');
   const region = process.env.R2_REGION?.trim() || 'auto';
   const publicBase = (process.env.R2_PUBLIC_BASE_URL || 'https://cdn.platform-assets.com')
     .trim()
@@ -157,13 +161,20 @@ async function main() {
     secretAccessKey,
   });
 
-  console.log('[r2-audit] listing bucket inventory (paginated)...');
-  const inventory = await listEntireBucketInventory(client, bucketName);
+  console.log('[r2-audit] listing bucket inventory (paginated)...', {
+    DRY_RUN: true,
+    deletionEnabled: false,
+    deleteCallCount: 0,
+  });
+  const { objects: inventory, pageCount } = await listEntireBucketInventory(client, bucketName);
   const totalBytes = inventory.reduce((sum, item) => sum + item.size, 0);
   console.log('[r2-audit] inventory complete', {
+    listingComplete: true,
+    pageCount,
     objectCount: inventory.length,
     totalBytes,
     totalBytesLabel: formatBytes(totalBytes),
+    deleteCallCount: 0,
   });
 
   console.log('[r2-audit] scanning DB media references...');
@@ -288,7 +299,12 @@ async function main() {
     generatedAt: new Date().toISOString(),
     bucketName,
     dryRun: true,
+    deletionEnabled: false,
+    deleteCallCount: 0,
+    quarantineCopyCount: 0,
     actualDeletes: 0,
+    listingComplete: true,
+    pageCount,
     objectCount: classified.length,
     totalBytes,
     totalBytesLabel: formatBytes(totalBytes),
@@ -296,6 +312,7 @@ async function main() {
     invitationBytes,
     invitationBytesLabel: formatBytes(invitationBytes),
     classificationCounts: counts,
+    classificationSum: Object.values(counts).reduce((a, b) => a + b, 0),
     safeToDeleteBytes: safeBytes,
     safeToDeleteBytesLabel: formatBytes(safeBytes),
     dbScanStatus: dbIndex.status,
@@ -321,6 +338,11 @@ async function main() {
   await fs.writeFile(summaryPath, JSON.stringify(summary, null, 2), 'utf8');
 
   console.log('[r2-audit] Phase 1 complete (no deletes)', {
+    DRY_RUN: true,
+    deletionEnabled: false,
+    deleteCallCount: 0,
+    listingComplete: true,
+    pageCount,
     objectCount: classified.length,
     invitationObjectCount: invitationRows.length,
     SAFE_TO_DELETE: counts.SAFE_TO_DELETE,
