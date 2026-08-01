@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import type { InvitationGalleryItem } from '@/src/invitation/galleryItems';
 import { GALLERY_GRID_INITIAL_VISIBLE_COUNT } from '@/src/invitation/galleryDisplay';
+import GalleryChevronIcon from './GalleryChevronIcon';
 import GalleryLightboxDialog from './GalleryLightboxDialog';
 import styles from './GalleryGridExpandView.module.css';
 
@@ -98,9 +99,11 @@ export default function GalleryGridExpandView({
           data-testid="gallery-expand-toggle"
           onClick={toggleExpand}
         >
-          <span className={styles.chevron} aria-hidden>
-            {expanded ? '⌃' : '⌄'}
-          </span>
+          <GalleryChevronIcon
+            className={`${styles.chevron} ${expanded ? styles.chevronUp : ''}`.trim()}
+            data-testid="gallery-expand-chevron"
+            data-direction={expanded ? 'up' : 'down'}
+          />
         </button>
       ) : null}
       <GalleryLightboxDialog
