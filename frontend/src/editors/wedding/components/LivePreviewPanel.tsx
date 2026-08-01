@@ -12,8 +12,8 @@ import { getMusicByKey } from '@/src/constants/music';
 import { resolvePlayableInvitationMusic } from '@/src/invitation/invitationMusic';
 import InvitationMusicPlayer from '@/src/features/invitation/ui/InvitationMusicPlayer';
 import {
-  findPreviewSectionElement,
   resolveEditorPreviewSectionId,
+  scrollPreviewToSection,
 } from '@/src/editors/shared/editorPreviewSections';
 import styles from '../weddingEditor.module.css';
 
@@ -25,6 +25,8 @@ type LivePreviewPanelProps = {
   editingStepLabel?: string;
   /** Editor active step key (setup/message/hero/...) */
   focusSectionId?: string | null;
+  /** Increment to re-scroll even when the same step is selected again */
+  scrollRequestId?: number;
   conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL';
 };
 
@@ -37,13 +39,13 @@ export default function LivePreviewPanel({
   fullscreen = false,
   editingStepLabel,
   focusSectionId,
+  scrollRequestId = 0,
   conceptType = 'WEDDING',
 }: LivePreviewPanelProps) {
   const frameClassName = fullscreen
     ? `${styles.previewFrame} ${styles.previewFrameFullscreen}`
     : styles.previewFrame;
   const scrollRef = useRef<HTMLDivElement>(null);
-  const lastFocusedStepRef = useRef<string | null>(null);
   const userScrollingRef = useRef(false);
   const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -84,7 +86,6 @@ export default function LivePreviewPanel({
 
     const root = scrollRef.current;
     if (!root) return;
-    if (lastFocusedStepRef.current === focusSectionId) return;
 
     userScrollingRef.current = false;
 
@@ -93,14 +94,7 @@ export default function LivePreviewPanel({
 
     const scrollToTarget = () => {
       if (cancelled) return;
-      const target = findPreviewSectionElement(root, resolvedFocusId);
-      lastFocusedStepRef.current = focusSectionId;
-      if (!target) return;
-
-      const rootRect = root.getBoundingClientRect();
-      const targetRect = target.getBoundingClientRect();
-      const nextTop = root.scrollTop + (targetRect.top - rootRect.top) - 12;
-      root.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+      scrollPreviewToSection(root, resolvedFocusId);
     };
 
     const timer = window.setTimeout(() => {
@@ -117,7 +111,7 @@ export default function LivePreviewPanel({
       window.clearTimeout(timer);
       if (followUp != null) window.clearTimeout(followUp);
     };
-  }, [resolvedFocusId, focusSectionId, data, conceptType]);
+  }, [resolvedFocusId, focusSectionId, scrollRequestId, conceptType]);
 
   return (
     <div

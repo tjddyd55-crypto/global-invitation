@@ -4,6 +4,7 @@ import type { Invitation } from '@/src/lib/api';
 import { buildWeddingClassicHeroTitle } from '@/src/templates/weddingClassic/data';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { sanitizeGalleryItems } from '@/src/invitation/galleryAsset';
+import { normalizeGalleryDisplayMode } from '@/src/invitation/galleryDisplay';
 import type {
   WeddingEditorAccount,
   WeddingEditorImage,
@@ -237,6 +238,7 @@ export function createWeddingEditorState(
     gallery: {
       // 신규 초대장: 샘플/placeholder를 data에 넣지 않음
       images: [],
+      displayMode: 'SLIDE',
     },
     location: {
       address: '서울 구로구 경인로 610',
@@ -352,6 +354,9 @@ export function createWeddingEditorStateFromDraft(
         }
         return toEditorGalleryImages(runtimeData.galleryImages || [], mediaByUrl);
       })(),
+      displayMode: normalizeGalleryDisplayMode(
+        (runtimeData as { galleryDisplayMode?: unknown }).galleryDisplayMode
+      ),
     },
     location: {
       ...base.location,

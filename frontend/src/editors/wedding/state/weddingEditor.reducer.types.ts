@@ -22,6 +22,7 @@ export type WeddingEditorAction =
   | { type: 'SET_GROOM'; payload: Partial<WeddingEditorPerson> }
   | { type: 'SET_BRIDE'; payload: Partial<WeddingEditorPerson> }
   | { type: 'SET_GALLERY_IMAGES'; payload: WeddingEditorImage[] }
+  | { type: 'SET_GALLERY_DISPLAY_MODE'; payload: 'SLIDE' | 'GRID_EXPAND' }
   | { type: 'SET_LOCATION'; payload: Partial<WeddingEditorLocation> }
   | { type: 'SET_ACCOUNTS'; payload: WeddingEditorAccount[] }
   | { type: 'SET_EXTRAS'; payload: Partial<WeddingEditorExtras> }

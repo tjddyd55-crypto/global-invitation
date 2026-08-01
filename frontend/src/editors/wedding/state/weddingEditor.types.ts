@@ -42,6 +42,8 @@ export type WeddingEditorImage = {
 
 export type WeddingEditorGallery = {
   images: WeddingEditorImage[];
+  /** Public/Preview gallery layout — missing → SLIDE */
+  displayMode?: 'SLIDE' | 'GRID_EXPAND';
 };
 
 export type WeddingEditorLocation = {

@@ -121,4 +121,27 @@ export function findPreviewSectionElement(
   return null;
 }
 
+/**
+ * Scroll the editor preview container to a section.
+ * Uses the preview scroll root — never window.scrollTo.
+ */
+export function scrollPreviewToSection(
+  root: HTMLElement | null | undefined,
+  sectionId: EditorPreviewSectionId,
+  options?: { behavior?: ScrollBehavior; offsetPx?: number }
+): boolean {
+  if (!root) return false;
+  const target = findPreviewSectionElement(root, sectionId);
+  if (!target) return false;
+  const offsetPx = options?.offsetPx ?? 12;
+  const rootRect = root.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const nextTop = root.scrollTop + (targetRect.top - rootRect.top) - offsetPx;
+  root.scrollTo({
+    top: Math.max(0, nextTop),
+    behavior: options?.behavior ?? 'smooth',
+  });
+  return true;
+}
+
 export const PREVIEW_SECTION_ATTR = 'data-section-id';

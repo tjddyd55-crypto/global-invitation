@@ -4,12 +4,12 @@
 import InvitationCommentsSection from '@/src/features/comments/ui/InvitationCommentsSection';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
-import GalleryCarousel from '@/src/templates/shared/GalleryCarousel';
+import InvitationGallerySection from '@/src/templates/shared/InvitationGallerySection';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
-import { getInvitationGalleryItems } from '@/src/invitation/galleryItems';
+import { getInvitationGallerySettings } from '@/src/invitation/galleryDisplay';
 import { shouldShowAccountsSection } from '@/src/invitation/accountItems';
 import { getInvitationSections } from '@/src/invitation/conceptPresentationConfig';
 import { getInvitationRsvpSettings } from '@/src/invitation/rsvpSettings';
@@ -33,7 +33,7 @@ function asLines(text: string): string[] {
 
 /**
  * GENERAL 전용 presentation — Wedding couple/account 축의금 UI 금지.
- * 갤러리는 공통 GalleryCarousel, 계좌는 선택형 참가비 섹션.
+ * 갤러리는 공통 InvitationGallerySection, 계좌는 선택형 참가비 섹션.
  */
 export default function GeneralInvitationRenderer({
   data,
@@ -50,7 +50,8 @@ export default function GeneralInvitationRenderer({
   const eventWhen = (data.weddingDateTime || data.eventDate || '').trim();
   const place = (data.locationText || data.venueName || data.address || '').trim();
   const schedule = Array.isArray(data.schedule) ? data.schedule.filter(Boolean) : [];
-  const galleryItems = getInvitationGalleryItems(data, { alt: '행사 갤러리' });
+  const gallerySettings = getInvitationGallerySettings(data, { alt: '행사 갤러리' });
+  const galleryItems = gallerySettings.images;
   const commentsOn = showComments ?? resolveCommentsEnabled(data);
   const rsvpSettings = getInvitationRsvpSettings(data, 'GENERAL');
   const rsvpOn = rsvpSettings.enabled || Boolean(showRsvp);
@@ -134,11 +135,13 @@ export default function GeneralInvitationRenderer({
       ) : null}
 
       {show('gallery') ? (
-        <GalleryCarousel
+        <InvitationGallerySection
           items={galleryItems}
+          displayMode={gallerySettings.displayMode}
           sectionLabel="Gallery"
           tone="general"
           hintText="밀어서 더 많은 이미지 보기"
+          lockBodyScroll={!previewMode}
         />
       ) : showGalleryEmptyPlaceholder ? (
         <section

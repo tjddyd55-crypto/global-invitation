@@ -5,6 +5,7 @@ import {
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
 import { sanitizeGalleryItems } from '@/src/invitation/galleryAsset';
+import { normalizeGalleryDisplayMode } from '@/src/invitation/galleryDisplay';
 import { buildOpenGraphSaveFields } from '@/src/invitation/openGraphSettings';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/models/invitation';
@@ -135,6 +136,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     heroImage,
     galleryImages,
     galleryMedia,
+    galleryDisplayMode: state.gallery.displayMode === 'GRID_EXPAND' ? 'GRID_EXPAND' : 'SLIDE',
     accounts: mapAccounts(state),
     accountEnabled,
     address: formattedAddress,

@@ -14,14 +14,14 @@ import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
 import { I18N_KEYS } from '@/src/i18n';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
-import GalleryCarousel from '@/src/templates/shared/GalleryCarousel';
+import InvitationGallerySection from '@/src/templates/shared/InvitationGallerySection';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import InvitationCommentsSection from '@/src/features/comments/ui/InvitationCommentsSection';
 import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
-import { getInvitationGalleryItems } from '@/src/invitation/galleryItems';
+import { getInvitationGallerySettings } from '@/src/invitation/galleryDisplay';
 import { shouldShowAccountsSection } from '@/src/invitation/accountItems';
 import { useEffect, useState } from 'react';
 
@@ -111,7 +111,10 @@ export default function WeddingClassicInvitation({
     return null;
   }
   const heroImage = typeof r.heroImage === 'string' && r.heroImage.trim() ? r.heroImage.trim() : '';
-  const galleryItems = getInvitationGalleryItems(r, { alt: t(I18N_KEYS.weddingClassic.galleryImageAlt) });
+  const gallerySettings = getInvitationGallerySettings(r, {
+    alt: t(I18N_KEYS.weddingClassic.galleryImageAlt),
+  });
+  const galleryItems = gallerySettings.images;
   const title = (r.title || r.heroTitle || '').trim();
   const subtitle = (r.subtitle ?? '').trim();
   const locationText = (r.locationText || r.venueName || '').trim();
@@ -435,11 +438,13 @@ export default function WeddingClassicInvitation({
       ) : null}
 
       {hasGallery ? (
-        <GalleryCarousel
+        <InvitationGallerySection
           items={galleryItems}
+          displayMode={gallerySettings.displayMode}
           sectionLabel="Album"
           tone={conceptType === 'FUNERAL' ? 'funeral' : conceptType === 'GENERAL' ? 'general' : 'wedding'}
           hintText="밀어서 더 많은 이미지 보기"
+          lockBodyScroll={!previewMode}
         />
       ) : showGalleryEmptyPlaceholder ? (
         <section

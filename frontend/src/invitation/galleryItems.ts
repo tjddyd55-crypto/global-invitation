@@ -3,7 +3,7 @@
  * Persistable items only (demo/placeholder/empty 제외).
  */
 
-import { sanitizeGalleryItems, type GalleryAssetInput } from '@/src/invitation/galleryAsset';
+import { sanitizeGalleryItems, type GalleryAssetInput } from './galleryAsset';
 
 export type InvitationGalleryItem = {
   id: string;

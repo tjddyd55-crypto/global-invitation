@@ -60,6 +60,7 @@ export default function WeddingEditor({
 }: WeddingEditorProps) {
   const [state, dispatch] = useReducer(weddingEditorReducer, initialState);
   const [currentStep, setCurrentStep] = useState(0);
+  const [previewScrollRequestId, setPreviewScrollRequestId] = useState(0);
   const [fullscreenPreviewOpen, setFullscreenPreviewOpen] = useState(false);
   const [hasBlockingUploadState, setHasBlockingUploadState] = useState(false);
   const [persistingShareImage, setPersistingShareImage] = useState(false);
@@ -138,6 +139,11 @@ export default function WeddingEditor({
     dispatch({ type: 'SET_SETUP', payload });
   };
 
+  const handleStepSelect = (step: number) => {
+    setCurrentStep(step);
+    setPreviewScrollRequestId((value) => value + 1);
+  };
+
   const handleGalleryUploadStateChange = (uploadState: { isUploading: boolean; hasError: boolean }) => {
     setHasBlockingUploadState(uploadState.isUploading || uploadState.hasError);
   };
@@ -146,11 +152,20 @@ export default function WeddingEditor({
     dispatch({ type: 'SET_GALLERY_IMAGES', payload: images });
   };
 
+  const handleGalleryDisplayModeChange = async (mode: 'SLIDE' | 'GRID_EXPAND') => {
+    dispatch({ type: 'SET_GALLERY_DISPLAY_MODE', payload: mode });
+    if (!onSave) return;
+    await onSave({
+      ...state,
+      gallery: { ...state.gallery, displayMode: mode },
+    });
+  };
+
   const handleGalleryPersist = async (images: WeddingEditorState['gallery']['images']) => {
     if (!onSave) return;
     await onSave({
       ...state,
-      gallery: { images },
+      gallery: { ...state.gallery, images },
     });
   };
 
@@ -215,6 +230,7 @@ export default function WeddingEditor({
           <Step5Gallery
             value={state.gallery}
             onChange={handleGalleryImagesChange}
+            onDisplayModeChange={handleGalleryDisplayModeChange}
             onPersist={onSave ? handleGalleryPersist : undefined}
             onUploadStateChange={handleGalleryUploadStateChange}
           />
@@ -332,7 +348,7 @@ export default function WeddingEditor({
             <UnifiedStepperNav
               steps={visibleSections}
               currentStep={currentStep}
-              onStepSelect={setCurrentStep}
+              onStepSelect={handleStepSelect}
               orientation="horizontal"
             />
           </div>
@@ -348,7 +364,7 @@ export default function WeddingEditor({
             <button
               type="button"
               className={styles.mobileActionGhost}
-              onClick={() => setCurrentStep((step) => Math.max(0, step - 1))}
+              onClick={() => handleStepSelect(Math.max(0, currentStep - 1))}
               disabled={currentStep <= 0}
             >
               이전
@@ -368,7 +384,7 @@ export default function WeddingEditor({
                   void handlePublish();
                   return;
                 }
-                setCurrentStep((step) => Math.min(visibleSections.length - 1, step + 1));
+                handleStepSelect(Math.min(visibleSections.length - 1, currentStep + 1));
               }}
             >
               {currentStep >= visibleSections.length - 1 ? '공개하기' : '다음'}
@@ -382,7 +398,7 @@ export default function WeddingEditor({
             <UnifiedStepperNav
               steps={visibleSections}
               currentStep={currentStep}
-              onStepSelect={setCurrentStep}
+              onStepSelect={handleStepSelect}
               orientation="vertical"
             />
             <div className={styles.progressCard}>
@@ -412,7 +428,7 @@ export default function WeddingEditor({
               <button
                 type="button"
                 className={styles.desktopPrevBtn}
-                onClick={() => setCurrentStep((step) => Math.max(0, step - 1))}
+                onClick={() => handleStepSelect(Math.max(0, currentStep - 1))}
                 disabled={currentStep <= 0}
               >
                 ← 이전
@@ -425,7 +441,7 @@ export default function WeddingEditor({
                     void handlePublish();
                     return;
                   }
-                  setCurrentStep((step) => Math.min(visibleSections.length - 1, step + 1));
+                  handleStepSelect(Math.min(visibleSections.length - 1, currentStep + 1));
                 }}
               >
                 {currentStep >= visibleSections.length - 1
@@ -447,6 +463,7 @@ export default function WeddingEditor({
               data={previewData}
               editingStepLabel={visibleSections[currentStep]?.title}
               focusSectionId={activeSection}
+              scrollRequestId={previewScrollRequestId}
               conceptType={
                 state.setup.conceptType === 'FUNERAL' || state.setup.conceptType === 'GENERAL'
                   ? state.setup.conceptType
@@ -492,6 +509,7 @@ export default function WeddingEditor({
                 data={previewData}
                 fullscreen
                 focusSectionId={activeSection}
+                scrollRequestId={previewScrollRequestId}
                 conceptType={
                   state.setup.conceptType === 'FUNERAL' || state.setup.conceptType === 'GENERAL'
                     ? state.setup.conceptType

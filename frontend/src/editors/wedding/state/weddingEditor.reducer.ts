@@ -22,6 +22,8 @@ export function weddingEditorReducer(state: WeddingEditorState, action: WeddingE
       return { ...state, bride: { ...state.bride, ...action.payload } };
     case 'SET_GALLERY_IMAGES':
       return { ...state, gallery: { ...state.gallery, images: action.payload } };
+    case 'SET_GALLERY_DISPLAY_MODE':
+      return { ...state, gallery: { ...state.gallery, displayMode: action.payload } };
     case 'SET_LOCATION':
       return { ...state, location: { ...state.location, ...action.payload } };
     case 'SET_ACCOUNTS':

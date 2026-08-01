@@ -80,6 +80,8 @@ export type WeddingClassicData = {
   galleryImages: string[];
   /** Optional R2 metadata synced with galleryImages on save */
   galleryMedia?: Array<{ url: string; key: string }>;
+  /** Gallery layout — missing/invalid → SLIDE */
+  galleryDisplayMode?: 'SLIDE' | 'GRID_EXPAND';
   accounts: WeddingClassicAccount[];
   /** 컨셉 확장 필드 */
   groomName?: string;
