@@ -130,7 +130,21 @@ production 변수·발송 설정 변경 금지.
   - shared: `invitation/shared/...` (environment 없음)
   - obsolete wrong-order (`development/invitation/...`) runtime 호환 제거 완료 — canonical만 허용
 - `R2_KEY_PREFIX` 는 Invitation 사용자 자산 builder에서 사용하지 않는다 (다른 서비스/legacy template 용).
+- **버킷 CORS** (브라우저 PUT 필수): `docs/media-upload.md` JSON을 Cloudflare Dashboard → R2 → `platform-assets` → Settings → CORS 에 적용.
+  - AllowedOrigins에 `https://frontend-development-1b8a.up.railway.app` 포함 필수
+  - API 토큰에 CORS 권한이 없으면 `scripts/apply-r2-cors.ts` 가 Access Denied — Dashboard로 적용
+  - 검증: R2 endpoint에 `Origin: https://frontend-development-1b8a.up.railway.app` OPTIONS → `204` + `Access-Control-Allow-Origin`
 - 이상적으로는 development 전용 버킷을 분리한다.
+
+---
+
+## Maps (Frontend development)
+
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — Google Places/Map (HTTP referrer 제한)
+- `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` — (선택) Advanced Marker mapId
+- `NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID` — Naver Maps JS (없으면 Editor/Public graceful fallback)
+- Secret / Client Secret 은 `NEXT_PUBLIC_*` 에 두지 않는다. 상세: `docs/MAPS_PROVIDERS.md`
+- Provider SSOT: `frontend/src/invitation/mapSettings.ts` → Editor `Step6Location` / Preview·Public `LocationMapSection`
 
 ---
 

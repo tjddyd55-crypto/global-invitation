@@ -70,6 +70,16 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('[r2-cors] failed', error instanceof Error ? error.message : error);
+  const message = error instanceof Error ? error.message : String(error);
+  console.error('[r2-cors] failed', message);
+  if (/access denied/i.test(message)) {
+    console.error(
+      [
+        '[r2-cors] API token lacks PutBucketCors/GetBucketCors.',
+        'Apply the JSON in docs/media-upload.md via Cloudflare Dashboard → R2 → platform-assets → Settings → CORS.',
+        'Verify with OPTIONS preflight from Origin https://frontend-development-1b8a.up.railway.app (expect 204 + ACAO).',
+      ].join('\n')
+    );
+  }
   process.exit(1);
 });
