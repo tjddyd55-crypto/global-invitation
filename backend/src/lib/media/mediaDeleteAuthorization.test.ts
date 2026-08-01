@@ -28,9 +28,9 @@ test('shared invitation asset is never deletable', async () => {
   assert.equal(allowed, false);
 });
 
-test('legacy env-prefixed invitation key is recognized for user mismatch denial', async () => {
+test('legacy env-prefixed invitation key is not rewritten and denies delete', async () => {
   const denied = await canDeleteByStorageKey({
-    userId: 'other-user',
+    userId: 'owner-user',
     isCreator: false,
     key: 'development/invitation/users/owner-user/invitations/inv-1/gallery/file.jpg',
   });

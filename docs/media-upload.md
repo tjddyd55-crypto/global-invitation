@@ -73,17 +73,19 @@ invitation/shared/music/wedding/{uuid}.mp3
 invitation/{environment}/temp/{userId}/{uploadId}/{uuid}.{ext}
 ```
 
-### Legacy 호환 (읽기·삭제만)
+### Obsolete wrong-order keys (정리 완료)
 
-기존 잘못 조합된 경로:
+과거 잘못 조합된 경로:
 
 ```
 development/invitation/users/{userId}/invitations/{invitationId}/...
+production/invitation/users/{userId}/invitations/{invitationId}/...
 ```
 
-- 신규 업로드는 canonical만 생성한다.
-- 기존 object / `dataJson` URL은 일괄 이동·자동 변경하지 않는다.
-- parser는 canonical + legacy를 모두 허용한다.
+- R2 object와 development DB 참조는 정리 완료되었다.
+- runtime은 더 이상 이 형태를 canonical로 조용히 변환하지 않는다.
+- parser / delete / confirm은 **canonical `invitation/{environment}/users/...` 만** 허용한다.
+- 잘못된 key는 `NON_CANONICAL_INVITATION_ASSET_KEY` / `INVALID_MEDIA_OBJECT_KEY` 로 거절한다.
 
 ## 필수 환경 변수 (Backend)
 

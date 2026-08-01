@@ -26,16 +26,6 @@ export const CODE_PATH_REFERENCE_CATALOG: CodePathReference[] = [
     source: 'buildSharedAssetKey kind=images',
   },
   {
-    prefix: 'development/invitation/',
-    kind: 'runtime_read_compat',
-    source: 'peelLegacyEnvironmentPrefix',
-  },
-  {
-    prefix: 'production/invitation/',
-    kind: 'runtime_read_compat',
-    source: 'peelLegacyEnvironmentPrefix',
-  },
-  {
     prefix: 'invitations/',
     kind: 'gradual_purge_only',
     source: 'LEGACY_MEDIA_STORAGE_PREFIXES',

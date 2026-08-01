@@ -26,10 +26,10 @@ test('canonical user R2 paths are USER_UPLOAD', () => {
   assert.equal(shouldDeleteRemoteGalleryAsset({ url, objectKey: 'invitation/development/users/u1/invitations/i1/gallery/abc.jpg' }), true);
 });
 
-test('legacy user R2 paths are USER_UPLOAD', () => {
+test('obsolete wrong-order user R2 paths are not treated as USER_UPLOAD', () => {
   const url = 'https://cdn.example.com/development/invitation/users/u1/invitations/i1/gallery/abc.jpg';
-  assert.equal(isUserInvitationAsset(url), true);
-  assert.equal(classifyGalleryAssetSource({ url }), 'USER_UPLOAD');
+  assert.equal(isUserInvitationAsset(url), false);
+  assert.equal(classifyGalleryAssetSource({ url }), 'LEGACY');
 });
 
 test('shared catalog is SHARED and not remotely deletable by user flow', () => {

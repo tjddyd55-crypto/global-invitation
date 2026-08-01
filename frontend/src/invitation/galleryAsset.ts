@@ -59,24 +59,16 @@ export function isSharedInvitationAssetUrlOrKey(url: string, objectKey?: string)
   return path.includes('/invitation/shared/') || path.includes('/shared/images/') || path.includes('/shared/music/');
 }
 
-/** Canonical or legacy user R2 key / URL */
+/** Canonical user R2 key / URL under invitation/{env}/users/... */
 export function isUserInvitationAsset(url: string, objectKey?: string): boolean {
   const key = trim(objectKey).replace(/^\/+/, '');
-  if (
-    /^invitation\/(development|production)\/users\//.test(key) ||
-    /^(development|production)\/invitation\/users\//.test(key) ||
-    /^invitation\/users\//.test(key)
-  ) {
+  if (/^invitation\/(development|production)\/users\//.test(key)) {
     return true;
   }
 
   const path = pathOnly(trim(url));
   if (!path) return false;
-  return (
-    /\/invitation\/(development|production)\/users\//.test(path) ||
-    /\/(development|production)\/invitation\/users\//.test(path) ||
-    /\/invitation\/users\//.test(path)
-  );
+  return /\/invitation\/(development|production)\/users\//.test(path);
 }
 
 export function classifyGalleryAssetSource(input: GalleryAssetInput): GalleryAssetSource {

@@ -103,22 +103,24 @@ export function isInvitationAssetEnvironment(value: string | undefined): value i
   return Boolean(value && INVITATION_ENVIRONMENTS.has(value));
 }
 
+/** Normalize leading slashes only — does not rewrite path shape. */
+export function normalizeCanonicalInvitationObjectKey(objectKey: string): string {
+  return normalizeObjectKey(objectKey);
+}
+
 /**
- * Legacy wrong-order keys: `{environment}/invitation/...` → `invitation/...`
- * Does not strip environment from canonical `invitation/{environment}/...`.
+ * Canonical user asset:
+ *   invitation/{environment}/users/{userId}/invitations/{invitationId}/...
+ * Rejects obsolete wrong-order keys such as development/invitation/...
  */
-export function peelLegacyEnvironmentPrefix(objectKey: string): string {
-  const normalized = normalizeObjectKey(objectKey);
-  const segments = normalized.split('/').filter(Boolean);
-  const root = getInvitationRootPrefix();
-  if (
-    segments.length >= 2 &&
-    isInvitationAssetEnvironment(segments[0]) &&
-    segments[1] === root
-  ) {
-    return segments.slice(1).join('/');
+export function isCanonicalInvitationUserAssetKey(objectKey: string): boolean {
+  return parseInvitationUserAssetKey(objectKey)?.variant === 'canonical';
+}
+
+export function assertCanonicalInvitationObjectKey(objectKey: string): void {
+  if (!isCanonicalInvitationUserAssetKey(objectKey) && !isSharedInvitationAssetKey(objectKey)) {
+    throw new Error('NON_CANONICAL_INVITATION_ASSET_KEY');
   }
-  return normalized;
 }
 
 export function isUserUploadAssetType(assetType: InvitationAssetType): boolean {
@@ -258,20 +260,18 @@ export function assertCanonicalInvitationUserAssetKey(objectKey: string): void {
 }
 
 /**
- * Parse canonical + legacy user asset keys.
+ * Parse canonical user asset keys only.
  * Canonical: invitation/{env}/users/{userId}/invitations/{invitationId}/...
- * Legacy A:  invitation/users/{userId}/invitations/{invitationId}/...
- * Legacy B:  {env}/invitation/users/{userId}/invitations/{invitationId}/...
+ * Obsolete wrong-order keys (`{env}/invitation/...`) return null.
  */
 export function parseInvitationUserAssetKey(objectKey: string): {
   userId: string;
   invitationId: string;
   folder: string;
-  environment?: InvitationAssetEnvironment;
-  variant: 'canonical' | 'legacy';
+  environment: InvitationAssetEnvironment;
+  variant: 'canonical';
 } | null {
-  const relative = peelLegacyEnvironmentPrefix(objectKey);
-  const segments = relative.split('/').filter(Boolean);
+  const segments = normalizeCanonicalInvitationObjectKey(objectKey).split('/').filter(Boolean);
   const root = getInvitationRootPrefix();
   if (segments[0] !== root) return null;
 
@@ -292,21 +292,11 @@ export function parseInvitationUserAssetKey(objectKey: string): {
     };
   }
 
-  // invitation/users/{userId}/invitations/{invitationId}/... (legacy without env under root)
-  if (segments[1] === 'users' && segments[3] === 'invitations' && segments[2] && segments[4]) {
-    return {
-      userId: segments[2],
-      invitationId: segments[4],
-      folder: segments.slice(5, -1).join('/') || segments[5] || '',
-      variant: 'legacy',
-    };
-  }
-
   return null;
 }
 
 export function isSharedInvitationAssetKey(objectKey: string): boolean {
-  const segments = peelLegacyEnvironmentPrefix(objectKey).split('/').filter(Boolean);
+  const segments = normalizeCanonicalInvitationObjectKey(objectKey).split('/').filter(Boolean);
   const root = getInvitationRootPrefix();
   if (segments[0] !== root) return false;
   if (segments[1] === 'shared') return true;

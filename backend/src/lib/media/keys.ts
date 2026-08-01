@@ -3,7 +3,7 @@ import {
   buildInvitationAssetKey,
   getInvitationRootPrefix,
   isInvitationAssetEnvironment,
-  peelLegacyEnvironmentPrefix,
+  normalizeCanonicalInvitationObjectKey,
 } from '../invitationAssetKeys';
 
 /**
@@ -154,11 +154,11 @@ export function buildTempObjectKey(sessionId: string, contentType: string, filen
 }
 
 export function isTempStagingKey(objectKey: string): boolean {
-  const relative = peelLegacyEnvironmentPrefix(stripStorageKeyPrefix(objectKey));
+  const relative = normalizeCanonicalInvitationObjectKey(stripStorageKeyPrefix(objectKey));
   const segments = relative.split('/').filter(Boolean);
   if (segments[0] === 'temp' && segments.length >= 3) return true;
   const root = getInvitationRootPrefix();
-  // invitation/temp/{userId}/{uploadId}/... (legacy)
+  // invitation/temp/{userId}/{uploadId}/... (legacy under root without env)
   if (segments[0] === root && segments[1] === 'temp' && segments.length >= 4) return true;
   // invitation/{env}/temp/{userId}/{uploadId}/...
   if (
@@ -339,10 +339,14 @@ function parseUserScopedInvitationFolder(
 }
 
 function parseEntityInvitationKey(rawSegments: string[]): ParsedMediaObjectKey | null {
-  const peeled = peelLegacyEnvironmentPrefix(rawSegments.join('/'));
-  const segments = peeled.split('/').filter(Boolean);
+  const segments = normalizeCanonicalInvitationObjectKey(rawSegments.join('/'))
+    .split('/')
+    .filter(Boolean);
   const root = getInvitationRootPrefix();
   if (segments[0] !== root || segments.length < 3) return null;
+
+  // Reject obsolete wrong-order keys if they somehow reach this parser without peel.
+  // (They never start with invitation/ so they already fail the root check above.)
 
   // invitation/{env}/users/{userId}/invitations/{invitationId}/{folder}/...
   if (
@@ -353,11 +357,6 @@ function parseEntityInvitationKey(rawSegments: string[]): ParsedMediaObjectKey |
     segments[5]
   ) {
     return parseUserScopedInvitationFolder(segments[3], segments[5], segments[6] || '', segments[7]);
-  }
-
-  // invitation/users/{userId}/invitations/{invitationId}/{folder}/... (legacy)
-  if (segments[1] === 'users' && segments[3] === 'invitations' && segments[2] && segments[4]) {
-    return parseUserScopedInvitationFolder(segments[2], segments[4], segments[5] || '', segments[6]);
   }
 
   // invitation/{env}/temp/... or invitation/temp/...
@@ -376,7 +375,7 @@ function parseEntityInvitationKey(rawSegments: string[]): ParsedMediaObjectKey |
     return null;
   }
 
-  // Skip environment segment for legacy invitation/{id}/hero paths when mis-nested
+  // Skip environment segment for invitation/{env}/{id}/hero paths when mis-nested
   const invitationIdOffset = isInvitationAssetEnvironment(segments[1]) ? 2 : 1;
   const invitationId = segments[invitationIdOffset] || '';
   const section = segments[invitationIdOffset + 1] || '';
@@ -470,8 +469,9 @@ function parseLegacyInvitationKey(segments: string[]): ParsedMediaObjectKey | nu
 
 export function parseMediaObjectKey(objectKey: string): ParsedMediaObjectKey | null {
   // stripStorageKeyPrefix handles legacy `{R2_KEY_PREFIX}/...` for non-invitation keys.
-  // Invitation keys may be canonical (`invitation/{env}/...`) or legacy (`{env}/invitation/...`).
-  const normalized = peelLegacyEnvironmentPrefix(stripStorageKeyPrefix(objectKey));
+  // Invitation user keys must be canonical: invitation/{env}/users/...
+  // Obsolete wrong-order keys (`{env}/invitation/...`) are not rewritten and do not parse.
+  const normalized = normalizeCanonicalInvitationObjectKey(stripStorageKeyPrefix(objectKey));
   const segments = normalized.split('/').filter(Boolean);
 
   const tempCommon = parseTempKeyAsCommon(segments);

@@ -1,9 +1,21 @@
 # R2 legacy Invitation cleanup (platform-assets)
 
+## Current SSOT
+
+- Canonical user assets: `invitation/{environment}/users/...`
+- Canonical shared music/images: `invitation/shared/...`
+- Runtime accepts **canonical keys only**. Obsolete wrong-order paths (`development/invitation/`, `production/invitation/`) are no longer peeled or rewritten.
+
 ## Protection
 
 - `invitation/**` is SSOT and never deleted by these scripts.
 - `cleanup-quarantine/invitation-legacy/**` is also protected during cleanup runs.
+
+## History (completed)
+
+- Wrong-order `development/invitation/` test objects were removed from `platform-assets` after DB reference cleanup in development.
+- `production/invitation/` objects were already zero.
+- One-off operational helper scripts used for that cleanup were deleted and are not part of the tracked toolkit.
 
 ## Phase 1 — audit only
 
@@ -43,3 +55,12 @@ npm run delete:r2:legacy-invitation
 ```
 
 Do not run Phase 1 and Phase 2 in the same session without human review.
+
+## Tracked toolkit (keep)
+
+- `backend/src/lib/r2Cleanup/*` classification, inventory, DB scan, catalog
+- `backend/scripts/audit-legacy-invitation-r2-assets.ts`
+- `backend/scripts/delete-legacy-invitation-r2-assets.ts`
+- related unit tests (`npm run test:r2-cleanup`)
+
+Reports, manifests, and DB backups under `reports/r2-invitation-cleanup/` stay gitignored.

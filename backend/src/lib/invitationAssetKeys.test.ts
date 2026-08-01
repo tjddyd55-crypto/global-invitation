@@ -134,15 +134,14 @@ test('9. temp key under invitation/{env}/temp', () => {
   assert.match(key, /^invitation\/development\/temp\/u1\/up1\/[a-f0-9]+\.jpg$/);
 });
 
-test('10. legacy path parse (env before invitation)', () => {
-  const legacy = 'development/invitation/users/u1/invitations/i1/gallery/f1.jpg';
-  const parsed = parseInvitationUserAssetKey(legacy);
-  assert.equal(parsed?.variant, 'legacy');
-  assert.equal(parsed?.userId, 'u1');
-  assert.equal(parsed?.invitationId, 'i1');
-  const media = parseMediaObjectKey(legacy);
-  assert.equal(media?.scope, 'invitationGallery');
-  assert.equal((media as { userId?: string }).userId, 'u1');
+test('10. obsolete wrong-order path is rejected (no silent peel)', () => {
+  const obsolete = 'development/invitation/users/u1/invitations/i1/gallery/f1.jpg';
+  assert.equal(parseInvitationUserAssetKey(obsolete), null);
+  assert.equal(parseMediaObjectKey(obsolete), null);
+
+  const obsoleteProd = 'production/invitation/users/u1/invitations/i1/gallery/f1.jpg';
+  assert.equal(parseInvitationUserAssetKey(obsoleteProd), null);
+  assert.equal(parseMediaObjectKey(obsoleteProd), null);
 });
 
 test('11. canonical path parse', () => {
