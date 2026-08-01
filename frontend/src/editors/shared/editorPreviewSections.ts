@@ -4,6 +4,7 @@
  */
 
 export type EditorPreviewSectionId =
+  | 'basic'
   | 'hero'
   | 'greeting'
   | 'couple'
@@ -31,6 +32,9 @@ export type EditorStepKey =
   | 'music'
   | 'share';
 
+/** Preview frame 상단 padding 아래 정렬용 offset (px) */
+export const PREVIEW_SECTION_SCROLL_OFFSET = 12;
+
 const WEDDING_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
   setup: 'hero',
   message: 'greeting',
@@ -45,8 +49,12 @@ const WEDDING_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
   share: 'share',
 };
 
+/**
+ * GENERAL — setup(기본 정보)과 hero(대표 이미지)를 분리한다.
+ * 같은 DOM에 두 Step을 매핑하지 않는다.
+ */
 const GENERAL_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
-  setup: 'hero',
+  setup: 'basic',
   message: 'greeting',
   hero: 'hero',
   couple: 'greeting',
@@ -73,20 +81,22 @@ const FUNERAL_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
   share: 'share',
 };
 
-const SECTION_FALLBACKS: EditorPreviewSectionId[] = [
-  'hero',
-  'greeting',
-  'couple',
-  'deceased',
-  'schedule',
-  'gallery',
-  'location',
-  'accounts',
-  'rsvp',
-  'comments',
-  'music',
-  'share',
-];
+/** 동일 의미의 DOM id 별칭만 허용. 무관한 섹션으로 fallback 금지. */
+const SECTION_QUERY_IDS: Record<EditorPreviewSectionId, string[]> = {
+  basic: ['basic'],
+  hero: ['hero'],
+  greeting: ['greeting', 'introduction'],
+  couple: ['couple'],
+  schedule: ['schedule'],
+  gallery: ['gallery'],
+  location: ['location'],
+  accounts: ['accounts', 'account'],
+  rsvp: ['rsvp'],
+  comments: ['comments'],
+  music: ['music'],
+  share: ['share'],
+  deceased: ['deceased'],
+};
 
 export function resolveEditorPreviewSectionId(
   stepKey: string,
@@ -106,17 +116,12 @@ export function findPreviewSectionElement(
   root: ParentNode,
   sectionId: EditorPreviewSectionId
 ): HTMLElement | null {
-  const primary =
-    root.querySelector(`[data-section-id="${sectionId}"]`) ||
-    root.querySelector(`[data-preview-section="${sectionId}"]`);
-  if (primary instanceof HTMLElement) return primary;
-
-  for (const fallback of SECTION_FALLBACKS) {
-    if (fallback === sectionId) continue;
-    const el =
-      root.querySelector(`[data-section-id="${fallback}"]`) ||
-      root.querySelector(`[data-preview-section="${fallback}"]`);
-    if (el instanceof HTMLElement) return el;
+  const candidates = SECTION_QUERY_IDS[sectionId] ?? [sectionId];
+  for (const id of candidates) {
+    const primary =
+      root.querySelector(`[data-section-id="${id}"]`) ||
+      root.querySelector(`[data-preview-section="${id}"]`);
+    if (primary instanceof HTMLElement) return primary;
   }
   return null;
 }
@@ -133,13 +138,16 @@ export function scrollPreviewToSection(
   if (!root) return false;
   const target = findPreviewSectionElement(root, sectionId);
   if (!target) return false;
-  const offsetPx = options?.offsetPx ?? 12;
+  const offsetPx = options?.offsetPx ?? PREVIEW_SECTION_SCROLL_OFFSET;
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const rootRect = root.getBoundingClientRect();
   const targetRect = target.getBoundingClientRect();
   const nextTop = root.scrollTop + (targetRect.top - rootRect.top) - offsetPx;
   root.scrollTo({
     top: Math.max(0, nextTop),
-    behavior: options?.behavior ?? 'smooth',
+    behavior: options?.behavior ?? (prefersReducedMotion ? 'auto' : 'smooth'),
   });
   return true;
 }

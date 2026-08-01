@@ -90,26 +90,34 @@ export default function LivePreviewPanel({
     userScrollingRef.current = false;
 
     let cancelled = false;
-    let followUp: number | null = null;
+    const timers: number[] = [];
 
     const scrollToTarget = () => {
       if (cancelled) return;
-      scrollPreviewToSection(root, resolvedFocusId);
+      return scrollPreviewToSection(root, resolvedFocusId);
     };
 
-    const timer = window.setTimeout(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          scrollToTarget();
-          followUp = window.setTimeout(scrollToTarget, 280);
-        });
-      });
-    }, 120);
+    const attempt = (delayMs: number) => {
+      timers.push(
+        window.setTimeout(() => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              scrollToTarget();
+            });
+          });
+        }, delayMs)
+      );
+    };
+
+    // 첫 렌더·이미지/지도 높이 변화·같은 Step 재클릭을 흡수하기 위한 제한된 retry
+    attempt(0);
+    attempt(120);
+    attempt(280);
+    attempt(560);
 
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
-      if (followUp != null) window.clearTimeout(followUp);
+      for (const timer of timers) window.clearTimeout(timer);
     };
   }, [resolvedFocusId, focusSectionId, scrollRequestId, conceptType]);
 

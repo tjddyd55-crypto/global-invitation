@@ -54,9 +54,9 @@ export function resolveVisibleSections(conceptType: ConceptType): EditorSectionI
     ];
   }
 
-  // GENERAL — 10 steps
+  // GENERAL — 10 steps (setup=basic text, hero=media — 분리)
   return [
-    { id: 0, key: 'setup', title: '기본 정보', previewSectionId: 'hero' },
+    { id: 0, key: 'setup', title: '기본 정보', previewSectionId: 'basic' },
     { id: 1, key: 'message', title: '행사 소개', previewSectionId: 'greeting' },
     { id: 2, key: 'hero', title: '대표 이미지', previewSectionId: 'hero' },
     { id: 3, key: 'schedule', title: '일정', previewSectionId: 'schedule' },

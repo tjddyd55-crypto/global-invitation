@@ -113,10 +113,32 @@
   font-weight: 700;
 }
 
+.introQuote {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.55;
+  font-weight: 600;
+  color: #27272a;
+}
+
 .body p {
   margin: 0 0 10px;
   font-size: 14px;
   line-height: 1.65;
+}
+
+.heroEmptyHint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 24px;
+  font-size: 13px;
+  color: #52525b;
+  text-align: center;
 }
 
 .scheduleList {

@@ -210,6 +210,8 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
   if (state.setup.conceptType === 'GENERAL') {
     return {
       ...base,
+      // heroSubtitle 은 날짜가 아니라 사용자 부제. 날짜는 weddingDateTime/schedule 만.
+      heroSubtitle: (state.basic.subtitle ?? '').trim(),
       commentsEnabled: state.extras.guestbookEnabled,
       coupleNames: '',
       groomName: '',

@@ -1419,6 +1419,39 @@
   gap: 1rem;
 }
 
+.accountHeaderRow .buttonPrimary {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  min-width: max-content;
+  border-radius: 999px;
+  padding: 0.6rem 1.25rem;
+}
+
+.dateTimeFieldRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dateTimeFieldRow input[type='datetime-local'] {
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.dateTimePickerButton {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #d6d0c6;
+  background: #fff;
+  color: #444;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .accountList {
   display: grid;
   gap: 1rem;
