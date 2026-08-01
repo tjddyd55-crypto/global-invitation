@@ -354,6 +354,15 @@ export default function GeneralInvitationRenderer({
           />
         )
       ) : null}
+
+      {/* Editor Preview: 마지막 step(music/share)도 상단 정렬되도록 스크롤 여유 확보 */}
+      {previewMode ? (
+        <div
+          aria-hidden
+          data-testid="preview-scroll-spacer"
+          style={{ height: '70vh', width: '100%', flexShrink: 0 }}
+        />
+      ) : null}
     </div>
   );
 }
