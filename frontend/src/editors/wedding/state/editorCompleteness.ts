@@ -27,10 +27,8 @@ export function computeEditorCompleteness(state: WeddingEditorState): {
     switch (section.key) {
       case 'setup':
         total += 1;
-        // GENERAL: 일시는 schedule 단계에서 입력·집계. setup은 제목만 요구.
-        if (state.setup.conceptType === 'GENERAL') {
-          if (isNonEmpty(state.basic.title)) completed += 1;
-        } else if (isNonEmpty(state.basic.title) && isNonEmpty(state.basic.eventDateTime)) {
+        // GENERAL/WEDDING 모두 Step1에서 title + eventDateTime 입력 (동일 SSOT).
+        if (isNonEmpty(state.basic.title) && isNonEmpty(state.basic.eventDateTime)) {
           completed += 1;
         }
         break;

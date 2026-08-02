@@ -132,10 +132,29 @@ test('GENERAL preview has anchors for all 10 steps and scrolls on step click', a
   await expect(previewRoot.getByText('함께해 주세요')).toBeVisible();
   await expect(previewRoot.getByText('일반 행사 소개 본문입니다.')).toBeVisible();
 
-  // Date picker control present on schedule step
-  await page.getByRole('button', { name: /일정/ }).first().click();
-  await expect(page.getByTestId('schedule-datetime-input')).toBeVisible();
+  // Step 1 exposes the same SSOT fields (title/datetime/venue)
+  await page.getByRole('button', { name: /기본 정보/ }).first().click();
+  await page.waitForTimeout(400);
+  await expect(page.getByTestId('basic-title-input')).toBeVisible();
+  await expect(page.getByTestId('basic-datetime-input')).toBeVisible();
+  await expect(page.getByTestId('basic-datetime-picker-button')).toBeVisible();
+  await expect(page.getByTestId('basic-venue-input')).toBeVisible();
+
+  const nextDate = '2025-04-13T17:20';
+  await page.getByTestId('basic-datetime-input').fill(nextDate);
+  await page.getByTestId('basic-venue-input').fill('코엑스 컨퍼런스홀');
+  await page.waitForTimeout(600);
+
+  // Schedule step shares the same SSOT values
+  await page.getByRole('button', { name: /^.*일정$/ }).first().click();
+  await page.waitForTimeout(500);
+  await expect(page.getByTestId('schedule-datetime-input')).toHaveValue(nextDate);
+  await expect(page.getByTestId('schedule-venue-input')).toHaveValue('코엑스 컨퍼런스홀');
   await expect(page.getByTestId('schedule-datetime-picker-button')).toBeVisible();
+
+  // Preview shows shared calendar card (not text-only list)
+  await expect(previewRoot.getByTestId('general-schedule')).toBeVisible();
+  await expect(previewRoot.getByTestId('schedule-calendar-highlight')).toHaveText('13');
 
   expect(pageErrors, pageErrors.join('\n')).toEqual([]);
   await context.close();

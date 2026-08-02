@@ -7,6 +7,7 @@ import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import InvitationGallerySection from '@/src/templates/shared/InvitationGallerySection';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
+import InvitationScheduleCalendar from '@/src/templates/shared/InvitationScheduleCalendar';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
 import { getInvitationGallerySettings } from '@/src/invitation/galleryDisplay';
@@ -15,6 +16,7 @@ import {
   shouldShowAccountsSection,
 } from '@/src/invitation/accountItems';
 import { getInvitationRsvpSettings } from '@/src/invitation/rsvpSettings';
+import { getInvitationScheduleCalendarModel } from '@/src/invitation/scheduleCalendar';
 import styles from './GeneralInvitationRenderer.module.css';
 
 type GeneralInvitationRendererProps = {
@@ -31,18 +33,6 @@ function asLines(text: string): string[] {
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
-}
-
-function uniqueScheduleLines(...candidates: Array<string | undefined | null>): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const candidate of candidates) {
-    const value = (candidate || '').trim();
-    if (!value || seen.has(value)) continue;
-    seen.add(value);
-    out.push(value);
-  }
-  return out;
 }
 
 function PreviewPlaceholder({
@@ -89,8 +79,12 @@ export default function GeneralInvitationRenderer({
   const heroImage = (data.heroImage || '').trim();
   const eventWhen = (data.weddingDateTime || '').trim();
   const place = (data.locationText || data.venueName || data.address || '').trim();
-  const scheduleRaw = Array.isArray(data.schedule) ? data.schedule.filter(Boolean) : [];
-  const scheduleLines = uniqueScheduleLines(...scheduleRaw, eventWhen);
+  const venueDetail = (data.detailAddress || data.venueDetail || '').trim();
+  const scheduleCalendar = getInvitationScheduleCalendarModel({
+    weddingDate: data.weddingDate instanceof Date || typeof data.weddingDate === 'string' ? data.weddingDate : null,
+    eventDate: data.eventDate,
+    weddingDateTime: data.weddingDateTime,
+  });
   const gallerySettings = getInvitationGallerySettings(data, { alt: '행사 갤러리' });
   const galleryItems = gallerySettings.images;
   const commentsOn = showComments ?? resolveCommentsEnabled(data);
@@ -99,7 +93,7 @@ export default function GeneralInvitationRenderer({
   const accountEnabled = resolveAccountEnabled(data, 'GENERAL');
   const showAccounts = shouldShowAccountsSection(data, 'GENERAL');
   const hasLocation = Boolean(data.address || data.venueName || data.mapLat != null);
-  const hasSchedule = scheduleLines.length > 0;
+  const hasSchedule = Boolean(scheduleCalendar);
   const musicEnabled = Boolean(data.music?.enabled);
 
   const showGalleryEmptyPlaceholder = Boolean(previewMode) && galleryItems.length === 0;
@@ -173,27 +167,21 @@ export default function GeneralInvitationRenderer({
         )
       ) : null}
 
-      {showScheduleBlock ? (
-        hasSchedule ? (
-          <section
-            className={styles.section}
-            data-testid="general-schedule"
-            data-section-id="schedule"
-            data-preview-section="schedule"
-          >
-            <h2 className={styles.sectionTitle}>행사 일정</h2>
-            <ul className={styles.scheduleList}>
-              {scheduleLines.map((item, index) => (
-                <li key={`schedule-${index}`}>{item}</li>
-              ))}
-            </ul>
-            {place ? <p className={styles.meta}>{place}</p> : null}
-          </section>
-        ) : (
-          <PreviewPlaceholder sectionId="schedule" testId="general-schedule-placeholder">
-            행사 일정을 입력해 주세요.
-          </PreviewPlaceholder>
-        )
+      {showScheduleBlock && scheduleCalendar ? (
+        <InvitationScheduleCalendar
+          model={scheduleCalendar}
+          title="행사 일정"
+          datetimeLabel={eventWhen || undefined}
+          venueLabel={(data.venueName || data.locationText || '').trim() || undefined}
+          detailLabel={venueDetail || undefined}
+          tone="general"
+          testId="general-schedule"
+        />
+      ) : null}
+      {showScheduleBlock && !scheduleCalendar ? (
+        <PreviewPlaceholder sectionId="schedule" testId="general-schedule-placeholder">
+          행사 일정을 입력해 주세요.
+        </PreviewPlaceholder>
       ) : null}
 
       {galleryItems.length > 0 ? (

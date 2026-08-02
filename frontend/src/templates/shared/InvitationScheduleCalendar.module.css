@@ -1,0 +1,85 @@
+.section {
+  width: 100%;
+  padding: 56px 24px;
+  box-sizing: border-box;
+  background: transparent;
+  text-align: center;
+}
+
+.title {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  text-align: center;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.calendarCell {
+  padding: 6px 0;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.calendarHeader {
+  font-weight: 600;
+  color: #6a6a6a;
+}
+
+.calendarHighlight {
+  background: #a9ba7a;
+  color: #fff;
+  font-weight: 700;
+}
+
+.metaBlock {
+  margin-top: 20px;
+}
+
+.datetime {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+}
+
+.place {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: #666;
+}
+
+.tone_wedding {
+  font-family: "Noto Serif KR", "Pretendard", "Noto Sans KR", serif;
+}
+
+.tone_general {
+  font-family: "Pretendard", "Noto Sans KR", sans-serif;
+  text-align: left;
+}
+
+.tone_general .calendarGrid {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.tone_general .title {
+  text-align: left;
+}
+
+.tone_funeral .calendarHeader {
+  color: #9ca3af;
+}
+
+.tone_funeral .place {
+  color: #9ca3af;
+}

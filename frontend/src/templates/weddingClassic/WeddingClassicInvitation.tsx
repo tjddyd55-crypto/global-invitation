@@ -17,12 +17,14 @@ import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import InvitationGallerySection from '@/src/templates/shared/InvitationGallerySection';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
+import InvitationScheduleCalendar from '@/src/templates/shared/InvitationScheduleCalendar';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import InvitationCommentsSection from '@/src/features/comments/ui/InvitationCommentsSection';
 import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
 import { getInvitationGallerySettings } from '@/src/invitation/galleryDisplay';
 import { shouldShowAccountsSection } from '@/src/invitation/accountItems';
+import { getInvitationScheduleCalendarModel } from '@/src/invitation/scheduleCalendar';
 import { useEffect, useState } from 'react';
 
 type WeddingClassicInvitationProps = {
@@ -50,25 +52,6 @@ function normalizeMessageText(value: unknown): string {
     return value.filter((item): item is string => typeof item === 'string').join('\n');
   }
   return '';
-}
-
-function safeDate(value?: string): Date | null {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function buildCalendarCells(targetDate: Date): (number | null)[] {
-  const year = targetDate.getFullYear();
-  const month = targetDate.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const cells: (number | null)[] = Array(firstDay).fill(null);
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    cells.push(day);
-  }
-  return cells;
 }
 
 export default function WeddingClassicInvitation({
@@ -145,14 +128,11 @@ export default function WeddingClassicInvitation({
     t(I18N_KEYS.weddingClassic.weekdayFri),
     t(I18N_KEYS.weddingClassic.weekdaySat),
   ];
-  const weddingDate =
-    r?.weddingDate instanceof Date
-      ? r.weddingDate
-      : safeDate(typeof r?.weddingDate === 'string' ? r.weddingDate : undefined) ??
-        safeDate(r.eventDate || r.weddingDateTime) ??
-        new Date(0);
-  const calendarCells = buildCalendarCells(weddingDate);
-  const highlightDay = weddingDate.getDate();
+  const scheduleCalendar = getInvitationScheduleCalendarModel({
+    weddingDate: r.weddingDate instanceof Date || typeof r.weddingDate === 'string' ? r.weddingDate : null,
+    eventDate: r.eventDate,
+    weddingDateTime: r.weddingDateTime,
+  });
 
   const messageTitle =
     conceptType === 'WEDDING'
@@ -196,8 +176,11 @@ export default function WeddingClassicInvitation({
     conceptPresentation.couple &&
     (Boolean(hasCouple || groomPhone || bridePhone || parentsInfo) || Boolean(previewMode));
   const showAccountsBlock = shouldShowAccountsSection(r, conceptType);
-  /** 장례 일정 데이터가 있으면 리스트, 그 외에는 커플 데이터가 있을 때만 웨딩형 캘린더 */
-  const useCalendarSchedule = conceptPresentation.couple && hasCouple && !mapToneFuneralLike;
+  /** WEDDING/GENERAL: 유효 날짜가 있으면 공용 달력형. FUNERAL은 리스트 유지. */
+  const useCalendarSchedule =
+    Boolean(scheduleCalendar) &&
+    (conceptType === 'WEDDING' || conceptType === 'GENERAL') &&
+    !mapToneFuneralLike;
   const guestbookMessages = safeArray(r.messages).filter(
     (msg) => typeof msg?.name === 'string' && typeof msg?.content === 'string' && msg.content.trim()
   );
@@ -394,30 +377,26 @@ export default function WeddingClassicInvitation({
         </section>
       ) : null}
 
-      {showScheduleBlock ? (
+      {showScheduleBlock && useCalendarSchedule && scheduleCalendar ? (
+        <InvitationScheduleCalendar
+          model={scheduleCalendar}
+          title={scheduleTitle}
+          datetimeLabel={heroDate || undefined}
+          venueLabel={locationText || undefined}
+          detailLabel={venueDetail || undefined}
+          weekdayLabels={weekdays}
+          tone={conceptType === 'GENERAL' ? 'general' : 'wedding'}
+          className={styles.scheduleSection}
+        />
+      ) : null}
+      {showScheduleBlock && !useCalendarSchedule ? (
         <section
           className={`${styles.section} ${styles.scheduleSection}`}
           data-section-id="schedule"
           data-preview-section="schedule"
         >
           <div className={styles.calendarTitle}>{scheduleTitle}</div>
-          {useCalendarSchedule ? (
-            <div className={styles.calendarGrid}>
-              {weekdays.map((day) => (
-                <div key={day} className={`${styles.calendarCell} ${styles.calendarHeader}`}>
-                  {day}
-                </div>
-              ))}
-              {calendarCells.map((day, index) => (
-                <div
-                  key={`${day ?? 'empty'}-${index}`}
-                  className={`${styles.calendarCell} ${day === highlightDay ? styles.calendarHighlight : ''}`}
-                >
-                  {day ?? ''}
-                </div>
-              ))}
-            </div>
-          ) : (
+          {hasSchedule ? (
             <ul className={styles.scheduleList}>
               {scheduleList.filter(Boolean).map((item, index) => {
                 const parts = item.split('\n').map((p) => p.trim()).filter(Boolean);
@@ -433,7 +412,11 @@ export default function WeddingClassicInvitation({
                 );
               })}
             </ul>
-          )}
+          ) : previewMode ? (
+            <p className={styles.scheduleItemDetail} style={{ opacity: 0.55, textAlign: 'center' }}>
+              일정을 입력해 주세요
+            </p>
+          ) : null}
         </section>
       ) : null}
 

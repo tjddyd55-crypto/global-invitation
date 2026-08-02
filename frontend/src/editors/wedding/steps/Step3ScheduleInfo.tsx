@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import DateTimeLocalField from '@/src/editors/shared/DateTimeLocalField';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorBasic } from '../state/weddingEditor.types';
 
@@ -10,58 +10,25 @@ type Step3ScheduleInfoProps = {
 };
 
 /**
- * GENERAL/FUNERAL 일정 입력.
- * native datetime-local + showPicker(지원 시)로 달력·시간 UI를 연다.
+ * GENERAL/FUNERAL 일정 Step.
+ * Step1 기본 정보와 동일한 WeddingEditorBasic SSOT 를 편집한다 (중복 state 금지).
  */
 export default function Step3ScheduleInfo({ value, onChange }: Step3ScheduleInfoProps) {
-  const dateInputRef = useRef<HTMLInputElement>(null);
-
-  const openDateTimePicker = () => {
-    const input = dateInputRef.current;
-    if (!input) return;
-    const picker = input as HTMLInputElement & { showPicker?: () => void };
-    try {
-      if (typeof picker.showPicker === 'function') {
-        picker.showPicker();
-        return;
-      }
-    } catch {
-      // showPicker 는 user-gesture / insecure context 에서 throw 가능
-    }
-    input.focus();
-    input.click();
-  };
-
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>일정</h2>
-        <p>행사 일시와 장소를 입력합니다.</p>
+        <p>기본 정보와 동일한 일시·장소를 편집합니다. 한쪽을 바꾸면 즉시 함께 반영됩니다.</p>
       </div>
       <div className={styles.fieldGrid}>
-        <label className={styles.field}>
-          <span className={styles.fieldLabel}>행사 날짜/시간</span>
-          <div className={styles.dateTimeFieldRow}>
-            <input
-              ref={dateInputRef}
-              type="datetime-local"
-              value={value.eventDateTime}
-              onChange={(event) => onChange({ eventDateTime: event.target.value })}
-              onClick={openDateTimePicker}
-              required
-              data-testid="schedule-datetime-input"
-            />
-            <button
-              type="button"
-              className={styles.dateTimePickerButton}
-              onClick={openDateTimePicker}
-              aria-label="날짜와 시간 선택"
-              data-testid="schedule-datetime-picker-button"
-            >
-              달력
-            </button>
-          </div>
-        </label>
+        <DateTimeLocalField
+          label="행사 날짜/시간"
+          value={value.eventDateTime}
+          onChange={(next) => onChange({ eventDateTime: next })}
+          required
+          inputTestId="schedule-datetime-input"
+          buttonTestId="schedule-datetime-picker-button"
+        />
         <label className={styles.field}>
           <span className={styles.fieldLabel}>장소명</span>
           <input
@@ -69,16 +36,18 @@ export default function Step3ScheduleInfo({ value, onChange }: Step3ScheduleInfo
             value={value.venueName}
             onChange={(event) => onChange({ venueName: event.target.value })}
             placeholder="예: 코엑스 컨퍼런스홀"
+            data-testid="schedule-venue-input"
             required
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>상세 장소 (선택)</span>
+          <span className={styles.fieldLabel}>홀 이름 (선택)</span>
           <input
             type="text"
             value={value.venueDetail ?? ''}
             onChange={(event) => onChange({ venueDetail: event.target.value })}
             placeholder="예: 3층 오디토리움"
+            data-testid="schedule-venue-detail-input"
           />
         </label>
       </div>

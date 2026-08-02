@@ -1,5 +1,6 @@
 'use client';
 
+import DateTimeLocalField from '@/src/editors/shared/DateTimeLocalField';
 import styles from '../weddingEditor.module.css';
 import type {
   WeddingEditorBasic,
@@ -12,6 +13,10 @@ type Step1BasicInfoProps = {
   onChange: (value: Partial<WeddingEditorBasic>) => void;
 };
 
+/**
+ * 기본 정보 Step.
+ * GENERAL/WEDDING 모두 title·subtitle·eventDateTime·venueName·venueDetail 동일 SSOT.
+ */
 export default function Step1BasicInfo({
   value,
   conceptType,
@@ -22,11 +27,11 @@ export default function Step1BasicInfo({
     subtitle: string;
     titlePlaceholder: string;
     subtitlePlaceholder: string;
-    datetime?: string;
-    venue?: string;
-    detail?: string;
-    venuePlaceholder?: string;
-    detailPlaceholder?: string;
+    datetime: string;
+    venue: string;
+    detail: string;
+    venuePlaceholder: string;
+    detailPlaceholder: string;
   };
 
   const labels: BasicStepLabel =
@@ -46,8 +51,13 @@ export default function Step1BasicInfo({
         ? {
             title: '행사 제목',
             subtitle: '행사 부제 (선택)',
+            datetime: '행사 날짜/시간',
+            venue: '장소명',
+            detail: '홀 이름 (선택)',
             titlePlaceholder: '예: 초대합니다',
             subtitlePlaceholder: '예: 함께 만드는 미래',
+            venuePlaceholder: '예: 코엑스 컨퍼런스홀',
+            detailPlaceholder: '예: 3층 오디토리움',
           }
         : {
             title: '제목',
@@ -65,7 +75,7 @@ export default function Step1BasicInfo({
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>기본 정보</h2>
-        <p>컨셉에 맞는 기본 제목 정보를 입력하면 미리보기에 즉시 반영됩니다.</p>
+        <p>컨셉에 맞는 기본 제목·일정·장소 정보를 입력하면 미리보기에 즉시 반영됩니다.</p>
       </div>
       <div className={styles.fieldGrid}>
         <label className={styles.field}>
@@ -88,38 +98,35 @@ export default function Step1BasicInfo({
             placeholder={labels.subtitlePlaceholder}
           />
         </label>
-        {conceptType !== 'GENERAL' && (
-          <>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>{labels.datetime ?? '일시'}</span>
-              <input
-                type="datetime-local"
-                value={value.eventDateTime}
-                onChange={(event) => onChange({ eventDateTime: event.target.value })}
-                required
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>{labels.venue ?? '장소명'}</span>
-              <input
-                type="text"
-                value={value.venueName}
-                onChange={(event) => onChange({ venueName: event.target.value })}
-                placeholder={labels.venuePlaceholder ?? '예: 행사 장소'}
-                required
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>{labels.detail ?? '상세 장소'}</span>
-              <input
-                type="text"
-                value={value.venueDetail ?? ''}
-                onChange={(event) => onChange({ venueDetail: event.target.value })}
-                placeholder={labels.detailPlaceholder ?? '예: 상세 안내'}
-              />
-            </label>
-          </>
-        )}
+        <DateTimeLocalField
+          label={labels.datetime}
+          value={value.eventDateTime}
+          onChange={(next) => onChange({ eventDateTime: next })}
+          required
+          inputTestId="basic-datetime-input"
+          buttonTestId="basic-datetime-picker-button"
+        />
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>{labels.venue}</span>
+          <input
+            type="text"
+            value={value.venueName}
+            onChange={(event) => onChange({ venueName: event.target.value })}
+            placeholder={labels.venuePlaceholder}
+            data-testid="basic-venue-input"
+            required
+          />
+        </label>
+        <label className={styles.field}>
+          <span className={styles.fieldLabel}>{labels.detail}</span>
+          <input
+            type="text"
+            value={value.venueDetail ?? ''}
+            onChange={(event) => onChange({ venueDetail: event.target.value })}
+            placeholder={labels.detailPlaceholder}
+            data-testid="basic-venue-detail-input"
+          />
+        </label>
       </div>
     </section>
   );
