@@ -10,7 +10,7 @@ type Step3ScheduleInfoProps = {
 };
 
 /**
- * GENERAL/FUNERAL 일정 Step.
+ * FUNERAL 장례 일정 Step (GENERAL은 기본 정보에 통합 — visible step 목록에 없음).
  * Step1 기본 정보와 동일한 WeddingEditorBasic SSOT 를 편집한다 (중복 state 금지).
  */
 export default function Step3ScheduleInfo({ value, onChange }: Step3ScheduleInfoProps) {

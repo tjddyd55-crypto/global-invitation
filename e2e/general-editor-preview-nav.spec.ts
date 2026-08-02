@@ -9,11 +9,11 @@ const FE = process.env.PLAYWRIGHT_BASE_URL || 'https://frontend-development-1b8a
 
 test.setTimeout(300_000);
 
+/** GENERAL editor steps SSOT — no separate schedule step (datetime/venue live in 기본 정보). */
 const STEP_SECTION: Array<{ label: string; sectionId: string }> = [
   { label: '기본 정보', sectionId: 'basic' },
   { label: '행사 소개', sectionId: 'greeting' },
   { label: '대표 이미지', sectionId: 'hero' },
-  { label: '일정', sectionId: 'schedule' },
   { label: '갤러리', sectionId: 'gallery' },
   { label: '위치 안내', sectionId: 'location' },
   { label: '참가비·계좌 정보', sectionId: 'accounts' },
@@ -61,7 +61,7 @@ async function createGeneralDraft(page: Page) {
   }, { api: API });
 }
 
-test('GENERAL preview has anchors for all 10 steps and scrolls on step click', async ({ browser }) => {
+test('GENERAL editor: 9 steps → preview sections + basic→calendar SSOT', async ({ browser }) => {
   const pageErrors: string[] = [];
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
@@ -78,6 +78,14 @@ test('GENERAL preview has anchors for all 10 steps and scrolls on step click', a
   });
   await expect(page.getByTestId('editor-live-preview-panel')).toBeVisible({ timeout: 60_000 });
   await page.waitForTimeout(1500);
+
+  // Left step menu: 9 steps, no couple, no separate 일정 editor step
+  expect(STEP_SECTION).toHaveLength(9);
+  for (const step of STEP_SECTION) {
+    await expect(page.getByRole('button', { name: new RegExp(step.label) }).first()).toBeVisible();
+  }
+  await expect(page.getByRole('button', { name: /신랑·신부/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^.*일정$/ })).toHaveCount(0);
 
   // Patch intro quote + body via UI so introduction content is visible
   await page.getByRole('button', { name: /행사 소개/ }).first().click();
@@ -145,16 +153,20 @@ test('GENERAL preview has anchors for all 10 steps and scrolls on step click', a
   await page.getByTestId('basic-venue-input').fill('코엑스 컨퍼런스홀');
   await page.waitForTimeout(600);
 
-  // Schedule step shares the same SSOT values
-  await page.getByRole('button', { name: /^.*일정$/ }).first().click();
-  await page.waitForTimeout(500);
-  await expect(page.getByTestId('schedule-datetime-input')).toHaveValue(nextDate);
-  await expect(page.getByTestId('schedule-venue-input')).toHaveValue('코엑스 컨퍼런스홀');
-  await expect(page.getByTestId('schedule-datetime-picker-button')).toBeVisible();
-
-  // Preview shows shared calendar card (not text-only list)
+  // Preview calendar updates from 기본 정보 (no schedule editor step)
   await expect(previewRoot.getByTestId('general-schedule')).toBeVisible();
   await expect(previewRoot.getByTestId('schedule-calendar-highlight')).toHaveText('13');
+  await expect(previewRoot.getByTestId('general-schedule')).toContainText('코엑스 컨퍼런스홀');
+
+  // Prev/next: 대표 이미지 ↔ 갤러리 skips removed schedule step
+  await page.getByRole('button', { name: /대표 이미지/ }).first().click();
+  await page.waitForTimeout(300);
+  await page.getByRole('button', { name: /다음 단계로|다음/ }).first().click();
+  await page.waitForTimeout(400);
+  await expect(page.getByRole('heading', { name: /갤러리/ })).toBeVisible();
+  await page.getByRole('button', { name: /이전/ }).first().click();
+  await page.waitForTimeout(400);
+  await expect(page.getByRole('heading', { name: /대표 이미지|메인 이미지/ })).toBeVisible();
 
   expect(pageErrors, pageErrors.join('\n')).toEqual([]);
   await context.close();

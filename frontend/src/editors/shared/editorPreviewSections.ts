@@ -50,15 +50,16 @@ const WEDDING_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
 };
 
 /**
- * GENERAL — setup(기본 정보)과 hero(대표 이미지)를 분리한다.
- * 같은 DOM에 두 Step을 매핑하지 않는다.
+ * GENERAL editor step → Preview section.
+ * schedule 키는 editor visible step 에 없으며, Preview/Public renderer 전용 섹션이다.
+ * (legacy resolve 호출 시 basic 으로 보내 빈 화면을 피한다)
  */
 const GENERAL_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
   setup: 'basic',
   message: 'greeting',
   hero: 'hero',
   couple: 'greeting',
-  schedule: 'schedule',
+  schedule: 'basic',
   gallery: 'gallery',
   location: 'location',
   accounts: 'accounts',

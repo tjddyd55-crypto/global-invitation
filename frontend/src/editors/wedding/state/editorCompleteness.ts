@@ -27,7 +27,8 @@ export function computeEditorCompleteness(state: WeddingEditorState): {
     switch (section.key) {
       case 'setup':
         total += 1;
-        // GENERAL/WEDDING 모두 Step1에서 title + eventDateTime 입력 (동일 SSOT).
+        // GENERAL: 일정 Step 없음 — 제목+일시가 기본 정보 완료 조건 (장소는 location step).
+        // WEDDING/FUNERAL: 동일하게 제목+일시.
         if (isNonEmpty(state.basic.title) && isNonEmpty(state.basic.eventDateTime)) {
           completed += 1;
         }

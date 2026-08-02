@@ -114,8 +114,14 @@ export default function WeddingEditor({
   }, [fullscreenPreviewOpen]);
 
   useEffect(() => {
-    if (currentStep >= visibleSections.length) {
+    if (visibleSections.length === 0) return;
+    if (currentStep < 0) {
       setCurrentStep(0);
+      return;
+    }
+    // concept별 단계 수 축소(예: GENERAL schedule 제거) 시 가장 가까운 유효 index 로 normalize
+    if (currentStep >= visibleSections.length) {
+      setCurrentStep(visibleSections.length - 1);
     }
   }, [currentStep, visibleSections.length]);
 

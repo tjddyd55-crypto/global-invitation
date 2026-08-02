@@ -16,11 +16,14 @@ test('wedding has 10 steps with music then share', () => {
   assert.equal(steps[9]?.title, '공유 설정');
 });
 
-test('general has 10 steps with music then share', () => {
+test('general has 9 steps without schedule; music then share', () => {
   const steps = resolveVisibleSections('GENERAL');
-  assert.equal(steps.length, 10);
-  assert.equal(steps[8]?.key, 'music');
-  assert.equal(steps[9]?.key, 'share');
+  assert.equal(steps.length, 9);
+  assert.ok(!steps.some((s) => s.key === 'schedule'));
+  assert.equal(steps[2]?.key, 'hero');
+  assert.equal(steps[3]?.key, 'gallery');
+  assert.equal(steps[7]?.key, 'music');
+  assert.equal(steps[8]?.key, 'share');
 });
 
 test('funeral has 10 steps with music then share', () => {
