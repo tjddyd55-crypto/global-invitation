@@ -197,6 +197,11 @@ export function createWeddingEditorState(
       (invitation?.dataJson as { conceptType?: unknown } | undefined)?.conceptType ??
         (invitation?.data as { conceptType?: unknown } | undefined)?.conceptType
     );
+  const visualTemplateIdRaw =
+    (invitation?.dataJson as { visualTemplateId?: unknown } | undefined)?.visualTemplateId ??
+    (invitation?.data as { visualTemplateId?: unknown } | undefined)?.visualTemplateId;
+  const visualTemplateId =
+    typeof visualTemplateIdRaw === 'string' ? visualTemplateIdRaw : undefined;
   const defaultTitle = getDefaultTitleByConcept(conceptType);
   const defaultMessage = getDefaultMessageByConcept(conceptType);
   const defaultQuote = getDefaultQuoteByConcept(conceptType);
@@ -207,6 +212,7 @@ export function createWeddingEditorState(
       templateKey,
       conceptType,
       language,
+      ...(visualTemplateId ? { visualTemplateId } : {}),
     },
     basic: {
       title: invitation?.title || defaultTitle,

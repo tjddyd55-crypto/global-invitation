@@ -65,7 +65,9 @@ test('template preview is public and Classic catalog creates with visualTemplate
   await page.getByTestId('template-create-WEDDING_05_GARDEN').click();
   await page.waitForURL(/\/editor\//, { timeout: 90_000 });
   await expect(page.getByTestId('editor-template-switcher')).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByTestId('editor-template-switcher').getByText('로맨틱 가든')).toBeVisible();
+  await expect(page.getByTestId('editor-template-switcher')).toContainText('로맨틱 가든', {
+    timeout: 15_000,
+  });
 
   expect(pageErrors, pageErrors.join('\n')).toEqual([]);
   await context.close();

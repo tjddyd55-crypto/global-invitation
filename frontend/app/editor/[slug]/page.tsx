@@ -398,6 +398,9 @@ export default function EditorPage() {
       setup: {
         ...draft.setup,
         conceptType: editorType,
+        ...(typeof runtimeRaw?.visualTemplateId === 'string'
+          ? { visualTemplateId: runtimeRaw.visualTemplateId }
+          : {}),
       },
       location: {
         ...draft.location,
