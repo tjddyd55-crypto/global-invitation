@@ -1,0 +1,255 @@
+.page {
+  --sun: #ffe34d;
+  --grape: #301f6c;
+  --tangerine: #fa6540;
+  --paper: #fffdf4;
+  max-width: 375px;
+  margin: 0 auto;
+  background: var(--paper);
+  color: var(--grape);
+  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+.hero {
+  position: relative;
+  padding: 40px 24px 36px;
+  background: var(--sun);
+  overflow: hidden;
+}
+.shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.85;
+}
+.shapeOne {
+  width: 120px;
+  height: 120px;
+  top: -34px;
+  right: -28px;
+  background: var(--tangerine);
+}
+.shapeTwo {
+  width: 80px;
+  height: 80px;
+  bottom: 24px;
+  left: -26px;
+  background: var(--grape);
+  opacity: 0.18;
+}
+.photo {
+  position: relative;
+  width: 78%;
+  margin: 0 auto 24px;
+  transform: rotate(-3deg);
+  background: #fff;
+  padding: 8px;
+  box-shadow: 0 8px 20px rgba(48, 31, 108, 0.18);
+}
+.photoImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+.photoPlaceholder {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 5;
+  font-size: 12px;
+  color: #7b6fa5;
+}
+.title {
+  position: relative;
+  margin: 0 0 8px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+.subtitle {
+  position: relative;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #4a3a8a;
+}
+.sticker {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--tangerine);
+  color: #fff;
+  text-align: center;
+  transform: rotate(-9deg);
+  animation: festivePop 0.6s ease-out both;
+}
+.stickerMonth {
+  display: block;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.stickerWeekday {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 800;
+}
+.placeholder {
+  margin: 0;
+  font-size: 12px;
+  color: #7b6fa5;
+}
+
+.basic {
+  padding: 20px 24px 4px;
+}
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--grape);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.copy {
+  padding: 24px 24px 32px;
+}
+.copyLine {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.9;
+  color: #3d3170;
+}
+
+.gallery {
+  padding: 0 24px 32px;
+}
+.scrapbook {
+  columns: 2;
+  column-gap: 10px;
+}
+.scrapCell {
+  display: block;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 6px;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(48, 31, 108, 0.12);
+  cursor: pointer;
+  break-inside: avoid;
+}
+.scrapCell:nth-child(3n) {
+  transform: rotate(1.5deg);
+}
+.scrapCell:nth-child(4n) {
+  transform: rotate(-1.8deg);
+}
+.scrapImage {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+}
+
+.schedule {
+  padding: 0 24px 32px;
+}
+.scheduleDate {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #5a4a9a;
+}
+.calendarCard {
+  padding: 18px 16px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(48, 31, 108, 0.1);
+}
+.dateGrid {
+  color: var(--grape);
+}
+
+.location {
+  padding-bottom: 24px;
+}
+
+.ticketWrap {
+  margin: 0 24px 8px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(48, 31, 108, 0.1);
+  overflow: hidden;
+}
+.ticket {
+  padding: 18px 18px 14px;
+  background: var(--grape);
+  color: #fff;
+}
+.ticketLabel {
+  display: inline-block;
+  margin-bottom: 8px;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--sun);
+}
+.ticketTitle {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 800;
+}
+.ticketMeta {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.accounts {
+  padding-bottom: 18px;
+}
+
+.rsvp {
+  padding-bottom: 8px;
+}
+
+.accountsEmpty {
+  padding: 24px;
+  text-align: center;
+}
+
+.anchor {
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+
+@keyframes festivePop {
+  from {
+    opacity: 0;
+    transform: rotate(-9deg) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-9deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sticker {
+    animation: none;
+  }
+}

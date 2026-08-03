@@ -1,0 +1,175 @@
+.page {
+  --ink: #1f2937;
+  --muted: #6b7280;
+  --accent: #2d7669;
+  --line: #e5e7eb;
+  max-width: 375px;
+  margin: 0 auto;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+.hero {
+  padding: 56px 24px 28px;
+}
+.eyebrow {
+  margin: 0 0 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+}
+.title {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.rule {
+  display: block;
+  width: 40px;
+  height: 3px;
+  margin-top: 20px;
+  background: var(--accent);
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.placeholder {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+.facts {
+  padding: 0 24px 28px;
+}
+.factGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.factCell {
+  padding: 16px 8px;
+  border-right: 1px solid var(--line);
+}
+.factCell:last-child {
+  border-right: 0;
+}
+.factLabel {
+  margin: 0 0 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+}
+.factValue {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.banner {
+  margin: 0 0 28px;
+  background: #f3f4f6;
+}
+.bannerImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+.bannerPlaceholder {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.copy {
+  padding: 0 24px 36px;
+}
+.copyLine {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.9;
+  color: #374151;
+}
+
+.schedule {
+  padding: 0 24px 36px;
+}
+.scheduleDate {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.dateGrid {
+  color: var(--ink);
+}
+.scheduleList {
+  margin: 18px 0 0;
+  padding-left: 16px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #374151;
+}
+
+.gallery {
+  padding: 0 24px 36px;
+}
+.archiveGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.archiveCell {
+  padding: 0;
+  border: 0;
+  background: #f3f4f6;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  cursor: pointer;
+}
+.archiveImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.location,
+.accounts,
+.rsvp {
+  padding-bottom: 8px;
+}
+
+.accountsEmpty {
+  padding: 24px;
+  text-align: center;
+}
+
+.anchor {
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
