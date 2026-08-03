@@ -1,0 +1,267 @@
+.page {
+  --ink: #1a1a1a;
+  --muted: #8a8178;
+  --accent: #a63d33;
+  --paper: #ffffff;
+  max-width: 375px;
+  margin: 0 auto;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+.hero {
+  position: relative;
+  padding: 0 0 40px;
+}
+.heroMedia {
+  position: relative;
+  height: 300px;
+  overflow: hidden;
+  background: #f1ede8;
+}
+.heroImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: edPan 8s ease-out both;
+}
+.heroPlaceholder {
+  display: grid;
+  place-items: center;
+  height: 300px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.heroRail {
+  position: absolute;
+  top: 24px;
+  right: 14px;
+  margin: 0;
+  writing-mode: vertical-rl;
+  letter-spacing: 0.22em;
+  font-size: 11px;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+}
+
+.names {
+  padding: 32px 28px 0;
+}
+.eyebrow {
+  margin: 0 0 14px;
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: var(--muted);
+}
+.title {
+  margin: 0;
+  font-family: 'DM Serif Display', 'Gowun Batang', serif;
+  font-size: 38px;
+  line-height: 1.15;
+  font-weight: 400;
+}
+.divider {
+  display: block;
+  width: 56px;
+  height: 1px;
+  margin: 20px 0;
+  background: var(--accent);
+}
+.subtitle {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #55504b;
+}
+.heroMeta {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.heroMetaLine {
+  display: block;
+  margin-top: 4px;
+}
+
+.sectionLabel {
+  margin: 0 0 18px;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+}
+.placeholder {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.letter {
+  padding: 48px 28px;
+}
+.letterLine {
+  margin: 0 0 8px;
+  font-family: 'Gowun Batang', serif;
+  font-size: 14px;
+  line-height: 2.1;
+  color: #3d3833;
+}
+
+.profiles {
+  padding: 8px 28px 48px;
+}
+.profileRow {
+  display: grid;
+  grid-template-columns: 116px 1fr;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+.profileRowFlip {
+  grid-template-columns: 1fr 116px;
+  direction: rtl;
+}
+.profileRowFlip .profileText {
+  direction: ltr;
+}
+.profileFrame {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: #f1ede8;
+  display: grid;
+  place-items: center;
+}
+.profileImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.profileInitial {
+  font-family: 'DM Serif Display', serif;
+  font-size: 26px;
+  color: var(--muted);
+}
+.profileText {
+  text-align: left;
+}
+.profileRole {
+  margin: 0 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--muted);
+}
+.profileName {
+  margin: 0 0 6px;
+  font-family: 'DM Serif Display', 'Gowun Batang', serif;
+  font-size: 22px;
+}
+.profileMeta {
+  margin: 0 0 10px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #6f6862;
+}
+.profileContact {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.gallery {
+  padding: 8px 20px 48px;
+}
+.collage {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.collageCell {
+  padding: 0;
+  border: 0;
+  background: #f1ede8;
+  cursor: pointer;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+}
+.collageCell:nth-child(3n + 1) {
+  grid-column: 1 / -1;
+  aspect-ratio: 4 / 3;
+}
+.collageCell:nth-child(4n) {
+  transform: translateY(10px);
+}
+.collageImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.schedule {
+  padding: 8px 28px 48px;
+}
+.scheduleHead {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.scheduleMonth {
+  font-family: 'DM Serif Display', serif;
+  font-size: 72px;
+  line-height: 0.85;
+  color: var(--accent);
+}
+.scheduleYear {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: var(--muted);
+}
+.scheduleDate {
+  margin: 0;
+  font-size: 13px;
+}
+.dateGrid {
+  color: var(--ink);
+}
+
+.location,
+.accounts,
+.rsvp {
+  padding: 0 0 8px;
+}
+
+.accountsEmpty {
+  padding: 24px 28px;
+  text-align: center;
+}
+
+.anchor {
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+
+@keyframes edPan {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroImage {
+    animation: none;
+  }
+}
