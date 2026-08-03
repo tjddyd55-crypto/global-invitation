@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import { createInvitation } from '@/src/lib/api';
 import { fetchCurrentUser } from '@/src/shared/auth';
 import { BookOpenIcon, CalendarDaysIcon, HeartIcon } from '@/src/ui/icons/ConceptIcons';
+import { sanitizeVisualTemplateIdForSave } from '@/src/templates/visualTemplate/resolveVisualTemplateId';
+import {
+  clearPendingVisualTemplate,
+  savePendingVisualTemplate,
+  VISUAL_TEMPLATE_RESUME_PATH,
+} from '@/src/features/templates/model/pendingVisualTemplate';
 
 export type ConceptType = 'WEDDING' | 'FUNERAL' | 'GENERAL';
 
@@ -12,16 +18,13 @@ const CONCEPT_CREATE_NEXT_PATH = '/create/concept';
 
 export const CONCEPT_OPTIONS: Array<{
   value: ConceptType;
-  /** Figma DesktopConceptSelectionScreen `title` */
   label: string;
   badge: string;
   description: string;
-  /** Figma ConceptSelectionScreen mobile `fields` 한 줄 요약 */
   fieldsSummary: string;
   accent: string;
   accentSoft: string;
   accentActiveBg: string;
-  /** Figma Make 컨셉 카드 기능 목록 (+ GENERAL 최신 기능 반영). */
   features: string[];
   Icon: ComponentType<{ size?: number; className?: string }>;
 }> = [
@@ -88,39 +91,67 @@ export const CONCEPT_OPTIONS: Array<{
 export interface UseCreateInvitationResult {
   creatingConcept: ConceptType | null;
   error: string | null;
-  start: (concept: ConceptType) => Promise<void>;
+  /** Concept only → catalog (WEDDING/GENERAL) or create (FUNERAL). With visualTemplateId → create. */
+  start: (concept: ConceptType, visualTemplateId?: string) => Promise<void>;
 }
 
-/**
- * 컨셉 선택 후 초대장 생성.
- * - 인증된 userId 세션이 필수다. 미인증이면 이메일 인증 화면으로 보낸다.
- * - guestToken 기반 신규 생성/폴백은 사용하지 않는다.
- */
 export function useCreateInvitation(): UseCreateInvitationResult {
   const router = useRouter();
   const [creatingConcept, setCreating] = useState<ConceptType | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const start = useCallback(
-    async (concept: ConceptType) => {
+    async (concept: ConceptType, visualTemplateId?: string) => {
       if (creatingConcept) return;
+
+      // WEDDING/GENERAL without template → catalog step
+      if ((concept === 'WEDDING' || concept === 'GENERAL') && !visualTemplateId) {
+        router.push(`/create/templates?concept=${concept}`);
+        return;
+      }
+
       setCreating(concept);
       setError(null);
       try {
         const user = await fetchCurrentUser({ useCache: false });
         if (!user) {
+          if (visualTemplateId && (concept === 'WEDDING' || concept === 'GENERAL')) {
+            savePendingVisualTemplate({
+              conceptType: concept,
+              visualTemplateId,
+              createdAt: Date.now(),
+            });
+            router.replace(`/auth/email?next=${encodeURIComponent(VISUAL_TEMPLATE_RESUME_PATH)}`);
+            return;
+          }
           router.replace(`/auth/email?next=${encodeURIComponent(CONCEPT_CREATE_NEXT_PATH)}`);
           return;
         }
 
+        const sanitized =
+          concept === 'WEDDING' || concept === 'GENERAL'
+            ? sanitizeVisualTemplateIdForSave(visualTemplateId, concept)
+            : undefined;
+
         const created = await createInvitation({
           templateKey: 'invitation_full',
           conceptType: concept,
+          ...(sanitized ? { visualTemplateId: sanitized } : {}),
         });
+        clearPendingVisualTemplate();
         router.push(`/editor/${created.id}?concept=${concept}`);
       } catch (err) {
         const message = err instanceof Error ? err.message : '초대장 생성에 실패했습니다.';
         if (message.includes('401') || message.toUpperCase().includes('UNAUTHORIZED')) {
+          if (visualTemplateId && (concept === 'WEDDING' || concept === 'GENERAL')) {
+            savePendingVisualTemplate({
+              conceptType: concept,
+              visualTemplateId,
+              createdAt: Date.now(),
+            });
+            router.replace(`/auth/email?next=${encodeURIComponent(VISUAL_TEMPLATE_RESUME_PATH)}`);
+            return;
+          }
           router.replace(`/auth/email?next=${encodeURIComponent(CONCEPT_CREATE_NEXT_PATH)}`);
           return;
         }

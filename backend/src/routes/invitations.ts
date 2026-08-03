@@ -292,8 +292,21 @@ async function saveDraftByIdentifier(params: {
   const payload: Prisma.InvitationUpdateInput = {};
   const dataJson = normalizeInvitationData(params.body?.data_json ?? params.body?.data);
   if (dataJson !== undefined) {
-    payload.data = dataJson;
-    payload.dataJson = dataJson;
+    if (dataJson && typeof dataJson === 'object' && !Array.isArray(dataJson)) {
+      const record = dataJson as Record<string, unknown>;
+      const { applyVisualTemplateToDataJson } = await import('../invitation/visualTemplate');
+      const concept =
+        typeof record.conceptType === 'string'
+          ? record.conceptType
+          : ((invitation.dataJson as { conceptType?: string } | null)?.conceptType ??
+            (invitation.data as { conceptType?: string } | null)?.conceptType);
+      const sanitized = applyVisualTemplateToDataJson(record, concept);
+      payload.data = sanitized as Prisma.InputJsonValue;
+      payload.dataJson = sanitized as Prisma.InputJsonValue;
+    } else {
+      payload.data = dataJson;
+      payload.dataJson = dataJson;
+    }
   }
   if (params.body?.title !== undefined) {
     payload.title = normalizeText(params.body.title) || null;
@@ -497,8 +510,12 @@ router.post('/', async (req, res) => {
       invitationData && typeof invitationData === 'object' && !Array.isArray(invitationData)
         ? (invitationData as Record<string, unknown>)
         : {};
+    const { applyVisualTemplateToDataJson } = await import('../invitation/visualTemplate');
+    const explicitVisual =
+      normalizeText(req.body?.visualTemplateId) ||
+      (typeof baseData.visualTemplateId === 'string' ? baseData.visualTemplateId : undefined);
     const dataWithConcept: Prisma.InputJsonValue = {
-      ...baseData,
+      ...applyVisualTemplateToDataJson(baseData, conceptType, explicitVisual),
       templateType: 'FULL',
       ...(conceptType ? { conceptType } : {}),
     };

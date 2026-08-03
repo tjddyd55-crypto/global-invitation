@@ -302,6 +302,7 @@ export function createWeddingEditorStateFromDraft(
     setup: {
       ...base.setup,
       conceptType: runtimeData.conceptType || base.setup.conceptType,
+      visualTemplateId: runtimeData.visualTemplateId || base.setup.visualTemplateId,
     },
     basic: {
       ...base.basic,

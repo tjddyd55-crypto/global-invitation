@@ -4,6 +4,11 @@ export type WeddingEditorSetup = {
   /** 에디터 진입 시 페이지에서 고정; 런타임 변경 불가 */
   readonly conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
   language: 'ko' | 'en' | 'mn';
+  /**
+   * dataJson.visualTemplateId — WEDDING/GENERAL only.
+   * Missing at load → UI uses Classic fallback without writing until explicit change/save.
+   */
+  visualTemplateId?: string;
 };
 
 export type WeddingEditorBasic = {

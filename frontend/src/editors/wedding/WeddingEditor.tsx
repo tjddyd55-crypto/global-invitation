@@ -25,6 +25,8 @@ import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentati
 import { logEvent } from '@/src/lib/events';
 import EditorHeader from '@/src/editors/shared/EditorHeader';
 import UnifiedStepperNav from '@/src/editors/shared/UnifiedStepperNav';
+import EditorTemplateSwitcher from './components/EditorTemplateSwitcher';
+import type { VisualTemplateId } from '@/src/templates/visualTemplate/ids';
 import { useEditorShell } from '@/src/editors/shared/useEditorShell';
 
 type WeddingEditorProps = {
@@ -360,6 +362,13 @@ export default function WeddingEditor({
           </div>
           <main className={styles.mobileFormColumn} data-testid="mobile-editor-form">
             <div className={styles.formCard}>
+              <EditorTemplateSwitcher
+                conceptType={state.setup.conceptType}
+                visualTemplateId={state.setup.visualTemplateId}
+                onChange={(nextId: VisualTemplateId) =>
+                  dispatch({ type: 'SET_SETUP', payload: { visualTemplateId: nextId } })
+                }
+              />
               <h2 className={styles.formCardTitle}>
                 {visibleSections[currentStep]?.title ?? '편집'}
               </h2>
@@ -425,6 +434,13 @@ export default function WeddingEditor({
 
           <main className={styles.formColumn} data-testid="desktop-editor-form">
             <div className={styles.formCard}>
+              <EditorTemplateSwitcher
+                conceptType={state.setup.conceptType}
+                visualTemplateId={state.setup.visualTemplateId}
+                onChange={(nextId: VisualTemplateId) =>
+                  dispatch({ type: 'SET_SETUP', payload: { visualTemplateId: nextId } })
+                }
+              />
               <h2 className={styles.formCardTitle}>
                 {visibleSections[currentStep]?.title ?? '편집'}
               </h2>

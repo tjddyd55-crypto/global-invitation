@@ -9,6 +9,7 @@ import { normalizeGalleryDisplayMode } from '@/src/invitation/galleryDisplay';
 import { buildOpenGraphSaveFields } from '@/src/invitation/openGraphSettings';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/models/invitation';
+import { sanitizeVisualTemplateIdForSave } from '@/src/templates/visualTemplate/resolveVisualTemplateId';
 import type { WeddingEditorState } from './weddingEditor.types';
 
 function parseWeddingDate(eventDateTime: string): Date {
@@ -102,9 +103,15 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     imageMode: state.share.ogImageMode || 'NONE',
   });
 
+  const sanitizedVisualId = sanitizeVisualTemplateIdForSave(
+    state.setup.visualTemplateId,
+    state.setup.conceptType
+  );
+
   const base = {
     templateType: 'FULL' as const,
     conceptType: state.setup.conceptType,
+    ...(sanitizedVisualId ? { visualTemplateId: sanitizedVisualId } : {}),
     title,
     subtitle: (state.basic.subtitle ?? '').trim(),
     content,
