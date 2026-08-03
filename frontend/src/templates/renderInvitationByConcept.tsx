@@ -6,22 +6,25 @@ import {
   isWeddingInvitationData,
   resolveInvitationConceptType,
 } from '@/src/invitation/schemas';
-import WeddingClassicInvitation from '@/src/templates/weddingClassic/WeddingClassicInvitation';
 import FuneralClassicInvitation from '@/src/templates/funeralClassic/FuneralClassicInvitation';
-import GeneralInvitationRenderer from '@/src/templates/general/GeneralInvitationRenderer';
 import { buildWeddingClassicData, getSampleWeddingInvitation } from '@/src/templates/weddingClassic/data';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
+import VisualInvitationHost from '@/src/templates/visualTemplate/VisualInvitationHost';
+import type { InvitationRenderMode } from '@/src/templates/visualTemplate/visualTemplateRegistry';
+import type { VisualTemplateId } from '@/src/templates/visualTemplate/ids';
 
 type RenderInvitationByConceptProps = {
   data: InvitationRuntimeData;
   invitationSlug?: string;
   showPlayButton?: boolean;
   previewMode?: boolean;
+  renderMode?: InvitationRenderMode;
   showRsvp?: boolean;
   showGuestbook?: boolean;
   onShare?: () => void;
   onKakaoShare?: () => void;
   isShared?: boolean;
+  visualTemplateIdOverride?: VisualTemplateId;
 };
 
 function toWeddingFromFuneral(data: FuneralInvitationData): WeddingInvitationData {
@@ -75,8 +78,9 @@ function resolveWeddingLikePayload(data: InvitationRuntimeData): WeddingInvitati
 }
 
 /**
- * Concept SSOT renderer — Preview / Public 동일 분기.
- * concept 불명 시 Wedding fallback 금지 → GENERAL.
+ * Concept SSOT renderer — Preview / Public / Template Preview 동일 분기.
+ * WEDDING/GENERAL → VisualInvitationHost (visualTemplateId).
+ * FUNERAL → 기존 Classic only (visual registry 제외).
  */
 export default function RenderInvitationByConcept(props: RenderInvitationByConceptProps) {
   const {
@@ -84,11 +88,13 @@ export default function RenderInvitationByConcept(props: RenderInvitationByConce
     invitationSlug,
     showPlayButton,
     previewMode,
+    renderMode,
     showRsvp,
     showGuestbook,
     onShare,
     onKakaoShare,
     isShared,
+    visualTemplateIdOverride,
   } = props;
 
   const conceptType = resolveInvitationConceptType(data);
@@ -109,16 +115,18 @@ export default function RenderInvitationByConcept(props: RenderInvitationByConce
     }
     if (weddingLike) {
       return (
-        <WeddingClassicInvitation
+        <VisualInvitationHost
           data={{ ...weddingLike, conceptType: 'FUNERAL' }}
           invitationSlug={invitationSlug}
           showPlayButton={showPlayButton}
           previewMode={previewMode}
+          renderMode={renderMode}
           showRsvp={showRsvp ?? weddingLike.rsvpEnabled}
           showGuestbook={commentsEnabled}
           onShare={onShare}
           onKakaoShare={onKakaoShare}
           isShared={isShared}
+          visualTemplateIdOverride="WEDDING_01_CLASSIC"
         />
       );
     }
@@ -129,59 +137,30 @@ export default function RenderInvitationByConcept(props: RenderInvitationByConce
     );
   }
 
-  if (conceptType === 'GENERAL') {
-    if (!weddingLike) {
-      return (
-        <div data-testid="concept-render-error" style={{ padding: 24, textAlign: 'center' }}>
-          초대장을 표시할 수 없습니다.
-        </div>
-      );
-    }
+  if (!weddingLike) {
     return (
-      <GeneralInvitationRenderer
-        data={{ ...weddingLike, conceptType: 'GENERAL' }}
-        invitationSlug={invitationSlug}
-        previewMode={previewMode}
-        showRsvp={showRsvp ?? weddingLike.rsvpEnabled}
-        showComments={commentsEnabled}
-        onShare={onShare}
-      />
+      <div data-testid="concept-render-error" style={{ padding: 24, textAlign: 'center' }}>
+        초대장을 표시할 수 없습니다.
+      </div>
     );
   }
 
-  if (conceptType === 'WEDDING' && weddingLike) {
-    return (
-      <WeddingClassicInvitation
-        data={{ ...weddingLike, conceptType: 'WEDDING' }}
-        invitationSlug={invitationSlug}
-        showPlayButton={showPlayButton}
-        previewMode={previewMode}
-        showRsvp={showRsvp ?? weddingLike.rsvpEnabled}
-        showGuestbook={commentsEnabled}
-        onShare={onShare}
-        onKakaoShare={onKakaoShare}
-        isShared={isShared}
-      />
-    );
-  }
-
-  // Unknown → GENERAL (never Wedding)
-  if (weddingLike) {
-    return (
-      <GeneralInvitationRenderer
-        data={{ ...weddingLike, conceptType: 'GENERAL' }}
-        invitationSlug={invitationSlug}
-        previewMode={previewMode}
-        showRsvp={showRsvp ?? weddingLike.rsvpEnabled}
-        showComments={commentsEnabled}
-        onShare={onShare}
-      />
-    );
-  }
+  const resolvedConcept = conceptType === 'WEDDING' || conceptType === 'GENERAL' ? conceptType : 'GENERAL';
 
   return (
-    <div data-testid="concept-render-error" style={{ padding: 24, textAlign: 'center' }}>
-      초대장을 표시할 수 없습니다.
-    </div>
+    <VisualInvitationHost
+      data={{ ...weddingLike, conceptType: resolvedConcept }}
+      invitationSlug={invitationSlug}
+      showPlayButton={showPlayButton}
+      previewMode={previewMode}
+      renderMode={renderMode}
+      showRsvp={showRsvp ?? weddingLike.rsvpEnabled}
+      showGuestbook={commentsEnabled}
+      showComments={commentsEnabled}
+      onShare={onShare}
+      onKakaoShare={onKakaoShare}
+      isShared={isShared}
+      visualTemplateIdOverride={visualTemplateIdOverride}
+    />
   );
 }

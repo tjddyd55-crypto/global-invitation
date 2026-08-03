@@ -1,0 +1,42 @@
+.gi-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  filter: blur(0);
+  transition:
+    opacity 0.65s ease,
+    transform 0.65s ease,
+    filter 0.65s ease,
+    clip-path 0.7s ease;
+  will-change: opacity, transform;
+  pointer-events: auto;
+}
+.gi-reveal--blur {
+  filter: blur(4px);
+}
+.gi-reveal--fade {
+  transform: none;
+}
+.gi-reveal--wipe {
+  clip-path: inset(0 100% 0 0);
+  transform: none;
+}
+.gi-reveal--mask {
+  clip-path: inset(0 0 100% 0);
+  transform: none;
+}
+.gi-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  clip-path: inset(0 0 0 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gi-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    clip-path: none !important;
+    transition: none !important;
+  }
+}

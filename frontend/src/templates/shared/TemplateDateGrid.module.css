@@ -1,0 +1,55 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  font-size: 9px;
+  text-align: center;
+}
+.grid span {
+  height: 20px;
+  display: grid;
+  place-items: center;
+}
+.weekday {
+  opacity: 0.55;
+  font-size: 8px;
+}
+.on {
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.editorial .on {
+  border-radius: 50%;
+  border-width: 1px;
+}
+.garden .on {
+  background: #dba6ab;
+  color: #fff;
+  border: 0;
+  border-radius: 48% 52% 44% 56%;
+}
+.night .on {
+  background: #c6b171;
+  color: #111;
+  border: 0;
+  border-radius: 0;
+}
+.clean .on {
+  background: #2d7669;
+  color: #fff;
+  border: 0;
+  border-radius: 0;
+}
+.festive .on {
+  background: #fa6540;
+  color: #fff;
+  border: 0;
+  border-radius: 50%;
+}
+.culture .on {
+  background: #d85c3b;
+  color: #fff;
+  border: 0;
+  border-radius: 0;
+}

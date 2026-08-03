@@ -34,6 +34,8 @@ export type WeddingClassicMessage = {
 export type WeddingClassicData = {
   templateType: 'FULL';
   conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  /** Visual template SSOT — optional; missing → Classic fallback at read time */
+  visualTemplateId?: string;
   /** 공통 필드 */
   title: string;
   /** 부제·영웅 보조 줄 */
