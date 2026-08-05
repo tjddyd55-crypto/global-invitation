@@ -93,4 +93,6 @@ Figma Make 원본 스크린샷은 Make 파일에서 수동 대조. Make 메타�
 - [x] CTA 가림 방지
 - [x] Classic / FUNERAL 경로 무파괴
 - [x] migration 없음
-- [ ] development 배포 (커밋 후 `railway up`)
+- [x] development 배포 (커밋 후 `railway up`)
+- [x] 360/375/390 QA 18건 통과 (`artifacts/visual-template-polish/`)
+- Culture sticky section number: **미적용** (스크롤 성능·안정성)
