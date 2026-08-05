@@ -71,9 +71,87 @@ function toWeddingFromFuneral(data: FuneralInvitationData): WeddingInvitationDat
   };
 }
 
+function textOrEmpty(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function stringArrayOrEmpty(value: unknown): string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string')
+    ? (value as string[])
+    : [];
+}
+
+/**
+ * create 직후 dataJson 은 conceptType/templateType/visualTemplateId 만 있을 수 있다.
+ * 샘플 fixture 를 섞지 않고 빈 필드로 wedding-like 를 만든다.
+ */
+function toSparseWeddingLike(
+  data: Record<string, unknown>,
+  conceptType: 'WEDDING' | 'GENERAL'
+): WeddingInvitationData {
+  const eventDate = textOrEmpty(data.eventDate);
+  const parsedDate = eventDate ? new Date(eventDate) : new Date(0);
+  return {
+    templateType: 'FULL',
+    conceptType,
+    visualTemplateId: textOrEmpty(data.visualTemplateId) || undefined,
+    title: textOrEmpty(data.title),
+    subtitle: textOrEmpty(data.subtitle),
+    content: textOrEmpty(data.content),
+    eventDate,
+    locationText: textOrEmpty(data.locationText),
+    venueDetail: textOrEmpty(data.venueDetail),
+    venueName: textOrEmpty(data.venueName),
+    schedule: stringArrayOrEmpty(data.schedule),
+    rsvpEnabled: typeof data.rsvpEnabled === 'boolean' ? data.rsvpEnabled : false,
+    guestbookEnabled: typeof data.guestbookEnabled === 'boolean' ? data.guestbookEnabled : false,
+    commentsEnabled: typeof data.commentsEnabled === 'boolean' ? data.commentsEnabled : false,
+    heroImage: textOrEmpty(data.heroImage),
+    galleryImages: stringArrayOrEmpty(data.galleryImages),
+    heroTitle: textOrEmpty(data.heroTitle),
+    heroSubtitle: textOrEmpty(data.heroSubtitle),
+    coupleNames: textOrEmpty(data.coupleNames),
+    weddingDateTime: textOrEmpty(data.weddingDateTime),
+    introQuote: textOrEmpty(data.introQuote),
+    introText: stringArrayOrEmpty(data.introText),
+    weddingDate: Number.isNaN(parsedDate.getTime()) ? new Date(0) : parsedDate,
+    address: textOrEmpty(data.address),
+    mapImage: textOrEmpty(data.mapImage),
+    transportInfo: stringArrayOrEmpty(data.transportInfo),
+    parkingInfo: stringArrayOrEmpty(data.parkingInfo),
+    accounts: Array.isArray(data.accounts) ? (data.accounts as WeddingInvitationData['accounts']) : [],
+    messages: Array.isArray(data.messages) ? (data.messages as WeddingInvitationData['messages']) : [],
+    groomName: textOrEmpty(data.groomName),
+    brideName: textOrEmpty(data.brideName),
+    groomImage: textOrEmpty(data.groomImage),
+    brideImage: textOrEmpty(data.brideImage),
+    groomPhone: textOrEmpty(data.groomPhone),
+    bridePhone: textOrEmpty(data.bridePhone),
+    parentsInfo: textOrEmpty(data.parentsInfo),
+    groom:
+      data.groom && typeof data.groom === 'object'
+        ? (data.groom as WeddingInvitationData['groom'])
+        : { name: textOrEmpty(data.groomName) },
+    bride:
+      data.bride && typeof data.bride === 'object'
+        ? (data.bride as WeddingInvitationData['bride'])
+        : { name: textOrEmpty(data.brideName) },
+  };
+}
+
 function resolveWeddingLikePayload(data: InvitationRuntimeData): WeddingInvitationData | null {
   if (isWeddingInvitationData(data)) return data;
   if (isFuneralInvitationData(data)) return toWeddingFromFuneral(data);
+
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const record = data as Record<string, unknown>;
+    if (record.templateType === 'FULL') {
+      const concept = resolveInvitationConceptType(record as InvitationRuntimeData);
+      if (concept === 'WEDDING' || concept === 'GENERAL') {
+        return toSparseWeddingLike(record, concept);
+      }
+    }
+  }
   return null;
 }
 
