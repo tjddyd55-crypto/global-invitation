@@ -1,4 +1,4 @@
-/* WEDDING 06 — Minimal Night (Figma Make: night-* sections) */
+﻿/* WEDDING 06 — Minimal Night (Figma Make: night-* sections) */
 .page {
   --bg: #10100f;
   --panel: #171715;
@@ -59,7 +59,7 @@
 }
 .title {
   margin: 0 0 16px;
-  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-family: var(--font-gi-dm-serif), var(--font-gi-gowun), Georgia, serif;
   font-size: 42px;
   line-height: 1.1;
   letter-spacing: 0.01em;
@@ -86,7 +86,7 @@
 }
 .introQuote {
   margin: 0 0 22px;
-  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-family: var(--font-gi-dm-serif), var(--font-gi-gowun), Georgia, serif;
   font-size: 22px;
   line-height: 1.55;
   font-style: italic;
@@ -141,7 +141,7 @@
   color: var(--muted);
 }
 .contactName {
-  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-family: var(--font-gi-dm-serif), var(--font-gi-gowun), Georgia, serif;
   font-size: 20px;
 }
 .contactLink {
@@ -207,7 +207,7 @@
 .venueName {
   margin: 0 0 6px;
   padding: 0 var(--gutter);
-  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-family: var(--font-gi-dm-serif), var(--font-gi-gowun), Georgia, serif;
   font-size: 24px;
 }
 .venueDetail {

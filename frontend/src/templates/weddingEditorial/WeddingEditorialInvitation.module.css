@@ -1,4 +1,4 @@
-/* WEDDING 04 — Modern Editorial (Figma Make: ed-* sections) */
+﻿/* WEDDING 04 — Modern Editorial (Figma Make: ed-* sections) */
 .page {
   --ink: #1a1a1a;
   --soft: #55504b;
@@ -71,7 +71,7 @@
 }
 .title {
   margin: 0;
-  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-family: var(--font-gi-dm-serif), var(--font-gi-gowun), Georgia, serif;
   font-size: 42px;
   line-height: 1.08;
   letter-spacing: -0.015em;
@@ -183,7 +183,7 @@
   object-position: center 28%;
 }
 .profileInitial {
-  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-family: var(--font-gi-dm-serif), var(--font-gi-gowun), Georgia, serif;
   font-size: 28px;
   color: var(--muted);
 }
@@ -195,7 +195,7 @@
 }
 .profileName {
   margin: 0 0 8px;
-  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-family: var(--font-gi-dm-serif), var(--font-gi-gowun), Georgia, serif;
   font-size: 24px;
   line-height: 1.2;
 }
@@ -293,7 +293,7 @@
   border-bottom: 1px solid var(--line);
 }
 .scheduleMonth {
-  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-family: var(--font-gi-dm-serif), var(--font-gi-gowun), Georgia, serif;
   font-size: 76px;
   line-height: 0.78;
   color: var(--accent);
@@ -348,7 +348,7 @@
 }
 .footerMark {
   margin: 0;
-  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-family: var(--font-gi-dm-serif), var(--font-gi-gowun), Georgia, serif;
   font-size: 15px;
   letter-spacing: 0.28em;
   color: var(--muted);

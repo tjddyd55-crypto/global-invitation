@@ -1,4 +1,4 @@
-/* GENERAL 06 — Culture & Exhibition */
+﻿/* GENERAL 06 — Culture & Exhibition */
 .page {
   --ink: #1b1b1b;
   --paper: #f4f1ea;
@@ -31,7 +31,7 @@
 .title {
   margin: 0;
   writing-mode: vertical-rl;
-  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-family: var(--font-gi-dm-serif), var(--font-gi-gowun), Georgia, serif;
   font-size: 28px;
   font-weight: 400;
   letter-spacing: 0.08em;
