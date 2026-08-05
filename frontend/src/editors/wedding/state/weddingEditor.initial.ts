@@ -52,11 +52,24 @@ function parseCoupleNames(rawTitle?: string | null): { coupleNames: string; groo
   return { coupleNames: `${left} ♥ ${right}`, groomName: left, brideName: right };
 }
 
+function pad2(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+/**
+ * datetime-local 입력용 문자열.
+ * ISO 원문이 오면 UTC toISOString 으로 시각이 밀리지 않게 로컬 벽시계를 유지한다.
+ */
 function toDateTimeLocal(source?: string | null): string {
   if (!source) return DEFAULT_EVENT_DATE_TIME;
-  const parsed = new Date(source);
+  const trimmed = source.trim();
+  const localMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/);
+  if (localMatch) {
+    return `${localMatch[1]}T${localMatch[2]}`;
+  }
+  const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) return DEFAULT_EVENT_DATE_TIME;
-  return parsed.toISOString().slice(0, 16);
+  return `${parsed.getFullYear()}-${pad2(parsed.getMonth() + 1)}-${pad2(parsed.getDate())}T${pad2(parsed.getHours())}:${pad2(parsed.getMinutes())}`;
 }
 
 function normalizeLineBreaks(value: string): string {
@@ -313,15 +326,20 @@ export function createWeddingEditorStateFromDraft(
     basic: {
       ...base.basic,
       title: invitation.title || runtimeData.title || runtimeData.coupleNames || base.basic.title,
-      subtitle: runtimeData.contactPerson || base.basic.subtitle,
+      subtitle:
+        (typeof (runtimeData as { subtitle?: unknown }).subtitle === 'string'
+          ? (runtimeData as { subtitle: string }).subtitle
+          : '') ||
+        runtimeData.contactPerson ||
+        base.basic.subtitle,
       eventDateTime:
         typeof runtimeData.eventDate === 'string'
           ? toDateTimeLocal(runtimeData.eventDate)
           : runtimeData.weddingDate
             ? toDateTimeLocalFromDate(runtimeData.weddingDate)
             : base.basic.eventDateTime,
-      venueName: runtimeData.locationText || runtimeData.venueName || base.basic.venueName,
-      venueDetail: undefined,
+      venueName: runtimeData.venueName || runtimeData.locationText || base.basic.venueName,
+      venueDetail: runtimeData.venueDetail || runtimeData.detailAddress || base.basic.venueDetail,
     },
     hero: {
       heroImage: runtimeData.heroImage || base.hero.heroImage,

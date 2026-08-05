@@ -374,8 +374,16 @@ export default function EditorPage() {
     if (!invitation || !editorType || editorType === 'FUNERAL') return null;
     const runtimeRaw = (invitation.dataJson ?? invitation.data) as Record<string, unknown> | undefined;
     const runtimeData = runtimeRaw as WeddingInvitationData | undefined;
-    const draft = isWeddingInvitationData(runtimeData)
-      ? createWeddingEditorStateFromDraft(invitation, runtimeData)
+    // isWeddingInvitationData 가 엄격해 sparse/부분 저장본에서 기본값 폴백으로
+    // gallery·music·accounts 가 덮어씌워지지 않도록 WEDDING/GENERAL 은 draft 경로를 우선한다.
+    const useDraft =
+      Boolean(runtimeData) &&
+      (editorType === 'WEDDING' || editorType === 'GENERAL') &&
+      (isWeddingInvitationData(runtimeData) ||
+        runtimeRaw?.templateType === 'FULL' ||
+        runtimeRaw?.conceptType === editorType);
+    const draft = useDraft
+      ? createWeddingEditorStateFromDraft(invitation, runtimeData as WeddingInvitationData)
       : createWeddingEditorState(invitation, { conceptType: editorType });
 
     const rawLat = runtimeRaw?.mapLat;
