@@ -65,6 +65,7 @@ test('public: create publish visit 6 visual templates', async ({ browser }) => {
     const patch = await page.request.patch(`${API}/api/invitations/${created.id}`, {
       data: {
         data: {
+          templateType: 'FULL',
           conceptType: item.concept,
           visualTemplateId: item.id,
           title,

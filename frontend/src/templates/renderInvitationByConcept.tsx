@@ -145,11 +145,14 @@ function resolveWeddingLikePayload(data: InvitationRuntimeData): WeddingInvitati
 
   if (data && typeof data === 'object' && !Array.isArray(data)) {
     const record = data as Record<string, unknown>;
-    if (record.templateType === 'FULL') {
-      const concept = resolveInvitationConceptType(record as InvitationRuntimeData);
-      if (concept === 'WEDDING' || concept === 'GENERAL') {
-        return toSparseWeddingLike(record, concept);
-      }
+    // PATCH 는 dataJson 을 merge 하지 않고 교체할 수 있어 templateType 이 빠질 수 있다.
+    // FUNERAL 스키마가 아니면 WEDDING/GENERAL sparse 로 렌더한다 (샘플 fixture 병합 금지).
+    if (record.templateType !== undefined && record.templateType !== 'FULL') {
+      return null;
+    }
+    const concept = resolveInvitationConceptType(record as InvitationRuntimeData);
+    if (concept === 'WEDDING' || concept === 'GENERAL') {
+      return toSparseWeddingLike(record, concept);
     }
   }
   return null;
