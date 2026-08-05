@@ -31,8 +31,10 @@ SSOT 충돌 시 본 문서의 검증 결과가 우선한다.
 | 항목 | 값 |
 |------|-----|
 | Branch | `chore/cleanup-legacy` |
-| Frontend deployment ID | `7d3c4b0b-af05-45d6-a9e9-28261b703c5e` |
-| Backend deployment ID | `079e3d32-2b42-4d9b-9255-0fbc3591b7ce` |
+| Frontend deployment ID | `5dade28d-11a2-4863-b24d-879607379da3` (push 후 활성) |
+| Backend deployment ID | `94204d66-f54d-4bba-a601-4f50f896231e` (push 후 활성) |
+| 검증 시점 FE (이전) | `7d3c4b0b-af05-45d6-a9e9-28261b703c5e` |
+| 검증 시점 BE (이전) | `079e3d32-2b42-4d9b-9255-0fbc3591b7ce` |
 | FE URL | `https://frontend-development-1b8a.up.railway.app` |
 | BE URL | `https://backend-development-c9a4.up.railway.app` |
 | main/production | 미반영 |
