@@ -5,7 +5,7 @@
  * WEDDING 05 — Romantic Garden
  * 아치 히어로 + 편지형 인사말 + 폴라로이드 갤러리.
  */
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import GalleryLightboxDialog from '@/src/templates/shared/GalleryLightboxDialog';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
@@ -109,12 +109,12 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
           </InvitationReveal>
           <div className={styles.peopleGrid}>
             {model.groom ? (
-              <InvitationReveal variant="blur" delayMs={80}>
+              <InvitationReveal variant="slideLeft" delayMs={80}>
                 <PersonCard person={model.groom} offset={false} />
               </InvitationReveal>
             ) : null}
             {model.bride ? (
-              <InvitationReveal variant="blur" delayMs={200}>
+              <InvitationReveal variant="slideRight" delayMs={200}>
                 <PersonCard person={model.bride} offset />
               </InvitationReveal>
             ) : null}
@@ -136,6 +136,11 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
             className={styles.dateGrid}
           />
         </InvitationReveal>
+        {model.scheduleLines.map((line, index) => (
+          <p key={`schedule-${index}`} className={styles.scheduleNote}>
+            {line}
+          </p>
+        ))}
         {model.venueName ? (
           <InvitationReveal variant="rise" delayMs={200}>
             <p className={styles.ribbon}>{model.venueName}</p>
@@ -149,21 +154,24 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
           <InvitationReveal variant="rise">
             <p className={styles.sectionLabel}>우리의 순간</p>
           </InvitationReveal>
-          <div className={styles.polaroidGrid}>
-            {model.gallery.items.map((item, index) => (
-              <button
-                key={item.id || item.url}
-                type="button"
-                className={styles.polaroid}
-                onClick={() => setLightboxIndex(index)}
-                aria-label={`${index + 1}번째 사진 크게 보기`}
-              >
-                <span className={styles.polaroidFrame}>
-                  <ImageWithFallback className={styles.polaroidImage} src={item.url} alt={item.alt} />
-                </span>
-              </button>
-            ))}
-          </div>
+          <InvitationReveal variant="fade">
+            <div className={styles.polaroidGrid}>
+              {model.gallery.items.map((item, index) => (
+                <button
+                  key={item.id || item.url}
+                  type="button"
+                  className={styles.polaroid}
+                  style={{ '--cell-index': index % 6 } as CSSProperties}
+                  onClick={() => setLightboxIndex(index)}
+                  aria-label={`${index + 1}번째 사진 크게 보기`}
+                >
+                  <span className={styles.polaroidFrame}>
+                    <ImageWithFallback className={styles.polaroidImage} src={item.url} alt={item.alt} />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </InvitationReveal>
         </section>
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
@@ -223,6 +231,11 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
 
       <section data-section-id="music" data-preview-section="music" className={styles.anchor} aria-hidden />
       <section data-section-id="share" data-preview-section="share" className={styles.anchor} aria-hidden />
+
+      <footer className={styles.footer}>
+        <span className={styles.leaf} aria-hidden />
+        <p className={styles.footerMark}>{model.dateText}</p>
+      </footer>
 
       <GalleryLightboxDialog
         items={model.gallery.items}

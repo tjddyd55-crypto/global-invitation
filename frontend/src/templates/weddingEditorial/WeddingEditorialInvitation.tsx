@@ -6,7 +6,7 @@
  * 매거진 편집 레이아웃. 데이터 정규화는 templateInvitationModel 이 담당하고
  * 이 파일은 레이아웃·모션만 기술한다.
  */
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import GalleryLightboxDialog from '@/src/templates/shared/GalleryLightboxDialog';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
@@ -14,6 +14,7 @@ import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection'
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import TemplateDateGrid from '@/src/templates/shared/TemplateDateGrid';
 import { InvitationReveal } from '@/src/templates/shared/motion/InvitationReveal';
+import { useHeroParallax } from '@/src/templates/shared/motion/useHeroParallax';
 import {
   buildTemplateInvitationModel,
   resolveTemplateRenderFlags,
@@ -26,6 +27,7 @@ import styles from './WeddingEditorialInvitation.module.css';
 function ProfileRow({ person, flip }: { person: TemplatePerson; flip: boolean }) {
   return (
     <div className={`${styles.profileRow} ${flip ? styles.profileRowFlip : ''}`.trim()}>
+      {/* 이미지/텍스트 순서는 CSS order 로 뒤집는다 (RTL 을 쓰면 전화번호가 뒤집힌다) */}
       <div className={styles.profileFrame}>
         <ImageWithFallback
           className={styles.profileImage}
@@ -53,6 +55,8 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  // CSS 변수는 상속되므로 컨테이너에 걸고 이미지가 소비한다.
+  const heroRef = useHeroParallax<HTMLDivElement>(0.1, 30);
 
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
 
@@ -65,7 +69,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
     >
       <section className={styles.hero} data-section-id="hero" data-preview-section="hero">
         {showHeroMedia ? (
-          <div className={styles.heroMedia}>
+          <div className={styles.heroMedia} ref={heroRef}>
             <ImageWithFallback
               className={styles.heroImage}
               src={model.heroImage || null}
@@ -73,11 +77,12 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
               loading="eager"
               fallback={<div className={styles.heroPlaceholder}>대표 이미지를 추가해 주세요</div>}
             />
+            <span className={styles.heroFrame} aria-hidden />
           </div>
         ) : null}
-        {model.dateParts ? (
+        {model.dateCompact ? (
           <p className={styles.heroRail} aria-hidden>
-            {`${model.dateParts.year}.${model.dateParts.month}.${model.dateParts.day}`}
+            {model.dateCompact}
           </p>
         ) : null}
 
@@ -88,7 +93,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
           <InvitationReveal variant="rise" delayMs={180}>
             <h1 className={styles.title}>{model.title}</h1>
           </InvitationReveal>
-          <InvitationReveal variant="wipe" delayMs={320}>
+          <InvitationReveal variant="draw" delayMs={320}>
             <span className={styles.divider} aria-hidden />
           </InvitationReveal>
           {model.subtitle ? (
@@ -98,9 +103,15 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
           ) : null}
           <InvitationReveal variant="rise" delayMs={480}>
             <p className={styles.heroMeta}>
-              {model.dateText}
-              {model.venueName ? <span className={styles.heroMetaLine}>{model.venueName}</span> : null}
+              <span className={styles.heroMetaLine}>{model.dateText}</span>
+              {model.venueName ? (
+                <span className={styles.heroMetaLine}>
+                  {model.venueName}
+                  {model.venueDetail ? ` · ${model.venueDetail}` : ''}
+                </span>
+              ) : null}
             </p>
+            <span className={styles.scrollCue} aria-hidden />
           </InvitationReveal>
         </div>
       </section>
@@ -145,19 +156,23 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
           <InvitationReveal variant="rise">
             <p className={styles.sectionLabel}>GALLERY</p>
           </InvitationReveal>
-          <div className={styles.collage}>
-            {model.gallery.items.map((item, index) => (
-              <button
-                key={item.id || item.url}
-                type="button"
-                className={styles.collageCell}
-                onClick={() => setLightboxIndex(index)}
-                aria-label={`${index + 1}번째 사진 크게 보기`}
-              >
-                <ImageWithFallback className={styles.collageImage} src={item.url} alt={item.alt} />
-              </button>
-            ))}
-          </div>
+          <InvitationReveal variant="fade">
+            <div className={styles.collage}>
+              {model.gallery.items.map((item, index) => (
+                <button
+                  key={item.id || item.url}
+                  type="button"
+                  className={styles.collageCell}
+                  style={{ '--cell-index': index % 6 } as CSSProperties}
+                  onClick={() => setLightboxIndex(index)}
+                  aria-label={`${index + 1}번째 사진 크게 보기`}
+                >
+                  <ImageWithFallback className={styles.collageImage} src={item.url} alt={item.alt} />
+                </button>
+              ))}
+            </div>
+            <p className={styles.galleryCount}>{`${model.gallery.items.length} PHOTOS`}</p>
+          </InvitationReveal>
         </section>
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
@@ -175,6 +190,15 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
             </div>
           </div>
         </InvitationReveal>
+        {model.scheduleLines.length > 0 ? (
+          <InvitationReveal variant="fade" delayMs={80}>
+            {model.scheduleLines.map((line, index) => (
+              <p key={`schedule-${index}`} className={styles.scheduleNote}>
+                {line}
+              </p>
+            ))}
+          </InvitationReveal>
+        ) : null}
         <InvitationReveal variant="fade" delayMs={120}>
           <TemplateDateGrid
             variant="editorial"
@@ -238,6 +262,10 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
 
       <section data-section-id="music" data-preview-section="music" className={styles.anchor} aria-hidden />
       <section data-section-id="share" data-preview-section="share" className={styles.anchor} aria-hidden />
+
+      <footer className={styles.footer}>
+        <p className={styles.footerMark}>{model.dateCompact}</p>
+      </footer>
 
       <GalleryLightboxDialog
         items={model.gallery.items}

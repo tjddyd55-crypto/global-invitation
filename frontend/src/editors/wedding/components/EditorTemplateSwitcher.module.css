@@ -11,9 +11,33 @@
   background: #fafafa;
 }
 .thumb {
+  width: 36px;
+  height: 48px;
   border-radius: 4px;
   object-fit: cover;
+  object-position: center 30%;
   background: #eee;
+  display: block;
+  flex-shrink: 0;
+}
+.optionThumb {
+  width: 40px;
+  height: 54px;
+  border-radius: 4px;
+  object-fit: cover;
+  object-position: center 30%;
+  background: #eee;
+  display: block;
+}
+.thumbFallback {
+  width: 36px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: #e5e7eb;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #6b7280;
 }
 .meta {
   flex: 1;

@@ -2,7 +2,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useMemo, useState } from 'react';
-import Image from 'next/image';
+import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import {
   getVisualTemplateDefinition,
   listActiveVisualTemplates,
@@ -38,13 +38,11 @@ export default function EditorTemplateSwitcher({ conceptType, visualTemplateId, 
   return (
     <div className={styles.wrap} data-testid="editor-template-switcher">
       <div className={styles.current}>
-        <Image
+        <ImageWithFallback
           src={current.thumbnailAsset}
           alt=""
-          width={36}
-          height={60}
           className={styles.thumb}
-          unoptimized
+          fallback={<span className={styles.thumbFallback}>{current.name.slice(0, 1)}</span>}
         />
         <div className={styles.meta}>
           <span className={styles.label}>템플릿</span>
@@ -67,7 +65,12 @@ export default function EditorTemplateSwitcher({ conceptType, visualTemplateId, 
                     className={opt.id === resolved ? styles.optionActive : styles.option}
                     onClick={() => setConfirmId(opt.id)}
                   >
-                    <Image src={opt.thumbnailAsset} alt="" width={40} height={66} unoptimized />
+                    <ImageWithFallback
+                      src={opt.thumbnailAsset}
+                      alt=""
+                      className={styles.optionThumb}
+                      fallback={<span className={styles.thumbFallback}>{opt.name.slice(0, 1)}</span>}
+                    />
                     <span>
                       <strong>{opt.name}</strong>
                       <em>{opt.description}</em>

@@ -14,9 +14,10 @@ import {
 } from '@/src/invitation/galleryDisplay';
 import type { InvitationGalleryItem } from '@/src/invitation/galleryItems';
 import {
-  getInvitationScheduleCalendarModel,
-  SCHEDULE_WEEKDAY_LABELS_KO,
-} from '@/src/invitation/scheduleCalendar';
+  getInvitationScheduleDisplay,
+  toDisplayScheduleLines,
+  type InvitationScheduleDisplay,
+} from '@/src/invitation/scheduleDisplay';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import type { InvitationRenderMode } from '@/src/templates/visualTemplate/visualTemplateRegistry';
 
@@ -43,13 +44,17 @@ export type TemplatePerson = {
   parentsText: string;
 };
 
+/** 표시 전용 날짜 조각 — 조립은 scheduleDisplay SSOT 가 담당한다. */
 export type TemplateDateParts = {
   year: string;
   /** 2자리 (01~12) */
   month: string;
   /** 2자리 (01~31) */
   day: string;
+  /** `토` */
   weekday: string;
+  /** `SAT` */
+  weekdayEn: string;
   /** 자정(시간 미입력)이면 빈 문자열 */
   time: string;
 };
@@ -68,9 +73,14 @@ export type TemplateInvitationModel = {
   hasGreeting: boolean;
   heroImage: string;
   gallery: TemplateGalleryModel;
-  /** 사람이 읽는 한 줄 일시 */
+  /** `2026년 10월 17일 토요일 오후 2시` */
   dateText: string;
+  /** `2026. 10. 17 SAT` */
+  dateCompact: string;
+  /** `오후 2시` */
+  timeText: string;
   dateParts: TemplateDateParts | null;
+  /** 사용자가 입력한 추가 일정 줄 (ISO 원문 제외) */
   scheduleLines: string[];
   venueName: string;
   venueDetail: string;
@@ -109,37 +119,15 @@ function toLines(value: unknown): string[] {
   return source.map((line) => line.trim()).filter(Boolean);
 }
 
-function formatTimeLabel(date: Date): string {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  if (hours === 0 && minutes === 0) return '';
-  const meridiem = hours < 12 ? '오전' : '오후';
-  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
-  return minutes === 0 ? `${meridiem} ${hour12}시` : `${meridiem} ${hour12}시 ${minutes}분`;
-}
-
-function buildDateParts(data: WeddingInvitationData): TemplateDateParts | null {
-  const model = getInvitationScheduleCalendarModel({
-    weddingDate: data.weddingDate ?? null,
-    eventDate: data.eventDate ?? null,
-    weddingDateTime: data.weddingDateTime ?? null,
-  });
-  if (!model) return null;
+function toDateParts(display: InvitationScheduleDisplay): TemplateDateParts {
   return {
-    year: String(model.year),
-    month: String(model.monthIndex + 1).padStart(2, '0'),
-    day: String(model.highlightDay).padStart(2, '0'),
-    weekday: SCHEDULE_WEEKDAY_LABELS_KO[model.eventDate.getDay()],
-    time: formatTimeLabel(model.eventDate),
+    year: String(display.year),
+    month: display.monthPadded,
+    day: display.dayPadded,
+    weekday: display.weekdayKo,
+    weekdayEn: display.weekdayEn,
+    time: display.timeText,
   };
-}
-
-function buildDateText(data: WeddingInvitationData, parts: TemplateDateParts | null): string {
-  const explicit = text(data.weddingDateTime) || toLines(data.schedule)[0];
-  if (explicit) return explicit;
-  if (!parts) return '';
-  const day = `${parts.year}. ${parts.month}. ${parts.day} ${parts.weekday}`;
-  return parts.time ? `${day} ${parts.time}` : day;
 }
 
 function buildPerson(
@@ -194,7 +182,11 @@ function resolveConceptType(data: WeddingInvitationData): InvitationConceptType 
 
 export function buildTemplateInvitationModel(data: WeddingInvitationData): TemplateInvitationModel {
   const conceptType = resolveConceptType(data);
-  const dateParts = buildDateParts(data);
+  const scheduleDisplay = getInvitationScheduleDisplay({
+    weddingDate: data.weddingDate ?? null,
+    eventDate: data.eventDate ?? null,
+    weddingDateTime: data.weddingDateTime ?? null,
+  });
   const { groom, bride } = buildCouple(data);
   const venueName = text(data.locationText) || text(data.venueName);
   const address = text(data.address) || venueName;
@@ -208,9 +200,11 @@ export function buildTemplateInvitationModel(data: WeddingInvitationData): Templ
     hasGreeting: greetingLines.length > 0,
     heroImage: text(data.heroImage),
     gallery: buildGallery(data),
-    dateText: buildDateText(data, dateParts),
-    dateParts,
-    scheduleLines: toLines(data.schedule),
+    dateText: scheduleDisplay?.full ?? '',
+    dateCompact: scheduleDisplay?.compact ?? '',
+    timeText: scheduleDisplay?.timeText ?? '',
+    dateParts: scheduleDisplay ? toDateParts(scheduleDisplay) : null,
+    scheduleLines: toDisplayScheduleLines(toLines(data.schedule)),
     venueName,
     venueDetail: text(data.venueDetail),
     address,

@@ -25,6 +25,11 @@ import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
 import { getInvitationGallerySettings } from '@/src/invitation/galleryDisplay';
 import { shouldShowAccountsSection } from '@/src/invitation/accountItems';
 import { getInvitationScheduleCalendarModel } from '@/src/invitation/scheduleCalendar';
+import {
+  getInvitationScheduleDisplay,
+  isMachineDateString,
+  toDisplayScheduleLines,
+} from '@/src/invitation/scheduleDisplay';
 import { useEffect, useState } from 'react';
 
 type WeddingClassicInvitationProps = {
@@ -105,7 +110,18 @@ export default function WeddingClassicInvitation({
   const addressForMap = (r.address || '').trim() || locationText;
   const contentText = normalizeMessageText(r.content);
   const messageLines = contentText.split('\n');
-  const scheduleList = safeArray(r.schedule).length > 0 ? safeArray(r.schedule) : [r.eventDate || r.weddingDateTime || ''];
+  const scheduleDisplay = getInvitationScheduleDisplay({
+    weddingDate: r.weddingDate instanceof Date || typeof r.weddingDate === 'string' ? r.weddingDate : null,
+    eventDate: r.eventDate,
+    weddingDateTime: r.weddingDateTime,
+  });
+  const rawSchedule = safeArray(r.schedule);
+  const scheduleList =
+    toDisplayScheduleLines(rawSchedule).length > 0
+      ? toDisplayScheduleLines(rawSchedule)
+      : scheduleDisplay
+        ? [scheduleDisplay.full]
+        : [];
   const hasLocation =
     Boolean(addressForMap.trim()) || (typeof r.mapLat === 'number' && typeof r.mapLng === 'number');
   const hasSchedule = scheduleList.filter(Boolean).length > 0;
@@ -144,10 +160,12 @@ export default function WeddingClassicInvitation({
   const locationTitle = '위치 안내';
 
   const scheduleForHero = scheduleList.filter(Boolean);
+  const storedHeroDate =
+    typeof r.weddingDateTime === 'string' && r.weddingDateTime.trim() ? r.weddingDateTime.trim() : '';
   const heroDate =
-    (typeof r.weddingDateTime === 'string' && r.weddingDateTime.trim() ? r.weddingDateTime.trim() : '') ||
+    scheduleDisplay?.full ||
+    (storedHeroDate && !isMachineDateString(storedHeroDate) ? storedHeroDate : '') ||
     scheduleForHero[0] ||
-    (typeof r.eventDate === 'string' ? r.eventDate : '') ||
     '';
   const heroLocationLine = locationText;
   const mapToneFuneralLike = Boolean(

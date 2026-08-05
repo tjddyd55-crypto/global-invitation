@@ -58,15 +58,6 @@ export default function VisualTemplatePreviewScreen({ visualTemplateId }: Props)
           <strong>{def.name}</strong>
           <span>샘플 미리보기</span>
         </div>
-        <button
-          type="button"
-          className={styles.cta}
-          disabled={busy || Boolean(creatingConcept)}
-          onClick={() => void handleCreate()}
-          data-testid="preview-create-cta"
-        >
-          {busy ? '생성 중...' : '이 템플릿으로 만들기'}
-        </button>
       </header>
 
       <div className={styles.frame}>
@@ -86,8 +77,9 @@ export default function VisualTemplatePreviewScreen({ visualTemplateId }: Props)
           className={styles.ctaWide}
           disabled={busy || Boolean(creatingConcept)}
           onClick={() => void handleCreate()}
+          data-testid="preview-create-cta"
         >
-          이 템플릿으로 초대장 만들기
+          {busy ? '생성 중...' : '이 템플릿으로 초대장 만들기'}
         </button>
       </div>
     </div>

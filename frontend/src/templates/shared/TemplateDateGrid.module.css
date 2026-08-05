@@ -1,55 +1,73 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
-  font-size: 9px;
+  gap: 4px 2px;
+  font-size: 12px;
+  line-height: 1;
   text-align: center;
 }
 .grid span {
-  height: 20px;
+  aspect-ratio: 1 / 1;
+  min-height: 30px;
   display: grid;
   place-items: center;
+  font-variant-numeric: tabular-nums;
 }
 .weekday {
-  opacity: 0.55;
-  font-size: 8px;
+  min-height: 22px !important;
+  aspect-ratio: auto !important;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  opacity: 0.5;
 }
 .on {
+  position: relative;
   border: 1px solid currentColor;
   border-radius: 50%;
+  font-weight: 600;
 }
 
 .editorial .on {
   border-radius: 50%;
-  border-width: 1px;
+  border-color: #a63d33;
+  color: #a63d33;
 }
 .garden .on {
-  background: #dba6ab;
+  background: #d59aa0;
   color: #fff;
   border: 0;
   border-radius: 48% 52% 44% 56%;
 }
 .night .on {
   background: #c6b171;
-  color: #111;
+  color: #10100f;
   border: 0;
-  border-radius: 0;
+  border-radius: 2px;
 }
 .clean .on {
-  background: #2d7669;
+  background: #1f6f62;
   color: #fff;
   border: 0;
-  border-radius: 0;
+  border-radius: 2px;
 }
 .festive .on {
-  background: #fa6540;
+  background: #f0562f;
   color: #fff;
   border: 0;
   border-radius: 50%;
 }
 .culture .on {
-  background: #d85c3b;
+  background: #d1502c;
   color: #fff;
   border: 0;
   border-radius: 0;
+}
+
+@media (max-width: 374px) {
+  .grid {
+    font-size: 11px;
+  }
+  .grid span {
+    min-height: 27px;
+  }
 }

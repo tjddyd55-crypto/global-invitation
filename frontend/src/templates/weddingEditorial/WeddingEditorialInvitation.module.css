@@ -1,96 +1,131 @@
+/* WEDDING 04 — Modern Editorial (Figma Make: ed-* sections) */
 .page {
   --ink: #1a1a1a;
+  --soft: #55504b;
   --muted: #8a8178;
   --accent: #a63d33;
+  --line: #e3ded7;
   --paper: #ffffff;
-  max-width: 375px;
+  --gutter: 26px;
+
+  max-width: 430px;
   margin: 0 auto;
   background: var(--paper);
   color: var(--ink);
-  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  font-family: var(--font-gi-noto), 'Apple SD Gothic Neo', system-ui, sans-serif;
   overflow-x: hidden;
 }
 
+/* ── Hero ─────────────────────────────────────────── */
 .hero {
   position: relative;
-  padding: 0 0 40px;
+  padding-bottom: 52px;
 }
 .heroMedia {
   position: relative;
-  height: 300px;
+  height: 340px;
   overflow: hidden;
   background: #f1ede8;
 }
 .heroImage {
   width: 100%;
-  height: 100%;
+  height: 118%;
   object-fit: cover;
-  animation: edPan 8s ease-out both;
+  object-position: center 38%;
+  transform: translateY(var(--gi-parallax, 0px));
+  animation: edPan 9s ease-out both;
 }
 .heroPlaceholder {
   display: grid;
   place-items: center;
-  height: 300px;
+  height: 340px;
   font-size: 12px;
   color: var(--muted);
 }
 .heroRail {
   position: absolute;
-  top: 24px;
-  right: 14px;
+  top: 22px;
+  right: 16px;
   margin: 0;
   writing-mode: vertical-rl;
-  letter-spacing: 0.22em;
-  font-size: 11px;
+  letter-spacing: 0.3em;
+  font-size: 10px;
   color: #fff;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+.heroFrame {
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
 }
 
 .names {
-  padding: 32px 28px 0;
+  padding: 34px var(--gutter) 0;
 }
 .eyebrow {
-  margin: 0 0 14px;
-  font-size: 10px;
-  letter-spacing: 0.32em;
+  margin: 0 0 16px;
+  font-size: 9px;
+  letter-spacing: 0.38em;
   color: var(--muted);
 }
 .title {
   margin: 0;
-  font-family: 'DM Serif Display', 'Gowun Batang', serif;
-  font-size: 38px;
-  line-height: 1.15;
+  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-size: 42px;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
   font-weight: 400;
+  word-break: keep-all;
 }
 .divider {
   display: block;
-  width: 56px;
+  width: 64px;
   height: 1px;
-  margin: 20px 0;
+  margin: 22px 0;
   background: var(--accent);
 }
 .subtitle {
-  margin: 0 0 12px;
-  font-size: 13px;
-  line-height: 1.8;
-  color: #55504b;
+  margin: 0 0 18px;
+  font-family: var(--font-gi-gowun), serif;
+  font-size: 14px;
+  line-height: 1.95;
+  color: var(--soft);
+  word-break: keep-all;
 }
 .heroMeta {
   margin: 0;
   font-size: 12px;
-  letter-spacing: 0.06em;
+  line-height: 1.9;
+  letter-spacing: 0.04em;
   color: var(--muted);
 }
 .heroMetaLine {
   display: block;
-  margin-top: 4px;
+}
+.scrollCue {
+  display: block;
+  width: 1px;
+  height: 40px;
+  margin: 30px 0 0;
+  background: linear-gradient(var(--line), transparent);
 }
 
+/* ── Section chrome ───────────────────────────────── */
 .sectionLabel {
-  margin: 0 0 18px;
-  font-size: 10px;
-  letter-spacing: 0.3em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  font-size: 9px;
+  letter-spacing: 0.34em;
   color: var(--accent);
+}
+.sectionLabel::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
 }
 .placeholder {
   margin: 0;
@@ -99,33 +134,39 @@
   opacity: 0.75;
 }
 
+/* ── Letter ───────────────────────────────────────── */
 .letter {
-  padding: 48px 28px;
+  padding: 8px var(--gutter) 56px;
 }
 .letterLine {
-  margin: 0 0 8px;
-  font-family: 'Gowun Batang', serif;
+  margin: 0 0 6px;
+  font-family: var(--font-gi-gowun), serif;
   font-size: 14px;
-  line-height: 2.1;
+  line-height: 2.15;
   color: #3d3833;
+  word-break: keep-all;
 }
 
+/* ── Couple ───────────────────────────────────────── */
 .profiles {
-  padding: 8px 28px 48px;
+  padding: 0 var(--gutter) 56px;
 }
 .profileRow {
   display: grid;
-  grid-template-columns: 116px 1fr;
-  gap: 18px;
+  grid-template-columns: 124px 1fr;
+  gap: 20px;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 26px;
 }
 .profileRowFlip {
-  grid-template-columns: 1fr 116px;
-  direction: rtl;
+  grid-template-columns: 1fr 124px;
+}
+.profileRowFlip .profileFrame {
+  order: 2;
 }
 .profileRowFlip .profileText {
-  direction: ltr;
+  order: 1;
+  text-align: right;
 }
 .profileFrame {
   position: relative;
@@ -139,43 +180,52 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 28%;
 }
 .profileInitial {
-  font-family: 'DM Serif Display', serif;
-  font-size: 26px;
+  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-size: 28px;
   color: var(--muted);
 }
-.profileText {
-  text-align: left;
-}
 .profileRole {
-  margin: 0 0 6px;
-  font-size: 10px;
-  letter-spacing: 0.24em;
+  margin: 0 0 8px;
+  font-size: 9px;
+  letter-spacing: 0.3em;
   color: var(--muted);
 }
 .profileName {
-  margin: 0 0 6px;
-  font-family: 'DM Serif Display', 'Gowun Batang', serif;
-  font-size: 22px;
+  margin: 0 0 8px;
+  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-size: 24px;
+  line-height: 1.2;
 }
 .profileMeta {
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   font-size: 11px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: #6f6862;
+  word-break: keep-all;
 }
 .profileContact {
-  display: inline-block;
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
   border: 1px solid var(--accent);
   color: var(--accent);
   font-size: 11px;
+  letter-spacing: 0.05em;
   text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.profileContact:active {
+  background: var(--accent);
+  color: #fff;
 }
 
+/* ── Gallery (editorial collage) ──────────────────── */
 .gallery {
-  padding: 8px 20px 48px;
+  padding: 0 var(--gutter) 56px;
 }
 .collage {
   display: grid;
@@ -185,64 +235,105 @@
 .collageCell {
   padding: 0;
   border: 0;
+  margin: 0;
   background: #f1ede8;
   cursor: pointer;
   aspect-ratio: 3 / 4;
   overflow: hidden;
+  display: block;
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+  transition-delay: calc(var(--cell-index, 0) * 70ms);
 }
-.collageCell:nth-child(3n + 1) {
+:global(.gi-reveal.is-visible) .collageCell {
+  opacity: 1;
+  transform: none;
+}
+.collageCell:nth-child(6n + 1) {
   grid-column: 1 / -1;
   aspect-ratio: 4 / 3;
 }
-.collageCell:nth-child(4n) {
-  transform: translateY(10px);
+.collageCell:nth-child(6n + 5) {
+  aspect-ratio: 1 / 1;
+}
+.collageCell:nth-child(6n) {
+  aspect-ratio: 1 / 1;
+  margin-top: 14px;
 }
 .collageImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.collageCell:active .collageImage {
+  transform: scale(1.03);
+}
+.galleryCount {
+  margin: 26px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+  text-align: right;
 }
 
+/* ── Schedule ─────────────────────────────────────── */
 .schedule {
-  padding: 8px 28px 48px;
+  padding: 0 var(--gutter) 56px;
 }
 .scheduleHead {
   display: flex;
-  align-items: baseline;
-  gap: 16px;
-  margin-bottom: 24px;
+  align-items: flex-end;
+  gap: 18px;
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--line);
 }
 .scheduleMonth {
-  font-family: 'DM Serif Display', serif;
-  font-size: 72px;
-  line-height: 0.85;
+  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-size: 76px;
+  line-height: 0.78;
   color: var(--accent);
+}
+.scheduleMeta {
+  padding-bottom: 4px;
 }
 .scheduleYear {
   margin: 0 0 6px;
-  font-size: 11px;
-  letter-spacing: 0.28em;
+  font-size: 10px;
+  letter-spacing: 0.3em;
   color: var(--muted);
 }
 .scheduleDate {
   margin: 0;
   font-size: 13px;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+.scheduleNote {
+  margin: 18px 0 0;
+  font-size: 11.5px;
+  line-height: 1.8;
+  color: var(--soft);
+  word-break: keep-all;
 }
 .dateGrid {
   color: var(--ink);
 }
 
+/* ── Shared blocks ────────────────────────────────── */
 .location,
 .accounts,
 .rsvp {
   padding: 0 0 8px;
 }
-
 .accountsEmpty {
-  padding: 24px 28px;
+  padding: 24px var(--gutter);
   text-align: center;
 }
-
 .anchor {
   height: 1px;
   margin: 0;
@@ -250,18 +341,54 @@
   border: 0;
   overflow: hidden;
 }
+.footer {
+  padding: 34px var(--gutter) 44px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.footerMark {
+  margin: 0;
+  font-family: var(--font-gi-dm-serif), Georgia, serif;
+  font-size: 15px;
+  letter-spacing: 0.28em;
+  color: var(--muted);
+}
 
 @keyframes edPan {
   from {
-    transform: scale(1.06);
+    transform: scale(1.07) translateY(var(--gi-parallax, 0px));
   }
   to {
-    transform: scale(1);
+    transform: scale(1) translateY(var(--gi-parallax, 0px));
+  }
+}
+
+@media (max-width: 374px) {
+  .page {
+    --gutter: 20px;
+  }
+  .title {
+    font-size: 36px;
+  }
+  .scheduleMonth {
+    font-size: 64px;
+  }
+  .profileRow {
+    grid-template-columns: 104px 1fr;
+  }
+  .profileRowFlip {
+    grid-template-columns: 1fr 104px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .heroImage {
     animation: none;
+    transform: none;
+  }
+  .collageCell {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }

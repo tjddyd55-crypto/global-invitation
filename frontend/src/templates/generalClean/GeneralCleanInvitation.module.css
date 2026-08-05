@@ -1,61 +1,67 @@
+/* GENERAL 04 — Clean Event */
 .page {
-  --ink: #1f2937;
-  --muted: #6b7280;
-  --accent: #2d7669;
-  --line: #e5e7eb;
-  max-width: 375px;
+  --ink: #1c2430;
+  --soft: #3f4b5a;
+  --muted: #6b7785;
+  --accent: #1f6f62;
+  --line: #e4e7eb;
+  --gutter: 24px;
+
+  max-width: 430px;
   margin: 0 auto;
   background: #ffffff;
   color: var(--ink);
-  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  font-family: var(--font-gi-noto), 'Apple SD Gothic Neo', system-ui, sans-serif;
   overflow-x: hidden;
 }
 
 .hero {
-  padding: 56px 24px 28px;
+  padding: 56px var(--gutter) 28px;
 }
 .eyebrow {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.34em;
   color: var(--accent);
 }
 .title {
-  margin: 0 0 12px;
-  font-size: 28px;
+  margin: 0 0 14px;
+  font-size: 30px;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
   word-break: keep-all;
 }
 .subtitle {
   margin: 0;
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: var(--muted);
+  word-break: keep-all;
 }
 .rule {
   display: block;
-  width: 40px;
+  width: 44px;
   height: 3px;
-  margin-top: 20px;
+  margin-top: 22px;
   background: var(--accent);
 }
 
 .sectionTitle {
-  margin: 0 0 12px;
-  font-size: 15px;
+  margin: 0 0 14px;
+  font-size: 14px;
   font-weight: 700;
+  letter-spacing: 0.04em;
 }
 .placeholder {
   margin: 0;
   font-size: 12px;
   color: var(--muted);
-  opacity: 0.85;
 }
 
 .facts {
-  padding: 0 24px 28px;
+  padding: 0 var(--gutter) 28px;
 }
 .factGrid {
   display: grid;
@@ -66,35 +72,47 @@
   border-bottom: 1px solid var(--line);
 }
 .factCell {
-  padding: 16px 8px;
+  padding: 18px 10px;
   border-right: 1px solid var(--line);
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+  transition-delay: calc(var(--fact-index, 0) * 90ms);
+}
+:global(.gi-reveal.is-visible) .factCell {
+  opacity: 1;
+  transform: none;
 }
 .factCell:last-child {
   border-right: 0;
 }
 .factLabel {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   color: var(--accent);
 }
 .factValue {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 12.5px;
+  line-height: 1.55;
   word-break: keep-all;
 }
 
 .banner {
-  margin: 0 0 28px;
-  background: #f3f4f6;
+  margin: 0 0 32px;
+  background: #f3f5f7;
+  overflow: hidden;
 }
 .bannerImage {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
+  object-position: center;
 }
 .bannerPlaceholder {
   display: grid;
@@ -105,22 +123,24 @@
 }
 
 .copy {
-  padding: 0 24px 36px;
+  padding: 0 var(--gutter) 40px;
 }
 .copyLine {
   margin: 0 0 8px;
   font-size: 14px;
-  line-height: 1.9;
-  color: #374151;
+  line-height: 1.95;
+  color: var(--soft);
+  word-break: keep-all;
 }
 
 .schedule {
-  padding: 0 24px 36px;
+  padding: 0 var(--gutter) 40px;
 }
 .scheduleDate {
   margin: 0 0 18px;
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--muted);
+  word-break: keep-all;
 }
 .dateGrid {
   color: var(--ink);
@@ -129,12 +149,12 @@
   margin: 18px 0 0;
   padding-left: 16px;
   font-size: 13px;
-  line-height: 1.9;
-  color: #374151;
+  line-height: 1.95;
+  color: var(--soft);
 }
 
 .gallery {
-  padding: 0 24px 36px;
+  padding: 0 var(--gutter) 40px;
 }
 .archiveGrid {
   display: grid;
@@ -144,10 +164,12 @@
 .archiveCell {
   padding: 0;
   border: 0;
-  background: #f3f4f6;
+  margin: 0;
+  background: #f3f5f7;
   aspect-ratio: 1 / 1;
   overflow: hidden;
   cursor: pointer;
+  display: block;
 }
 .archiveImage {
   width: 100%;
@@ -160,16 +182,45 @@
 .rsvp {
   padding-bottom: 8px;
 }
-
 .accountsEmpty {
-  padding: 24px;
+  padding: 24px var(--gutter);
   text-align: center;
 }
-
 .anchor {
   height: 1px;
   margin: 0;
   padding: 0;
   border: 0;
   overflow: hidden;
+}
+.footer {
+  padding: 28px var(--gutter) 44px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.footerMark {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: var(--muted);
+}
+
+@media (max-width: 374px) {
+  .page {
+    --gutter: 18px;
+  }
+  .title {
+    font-size: 26px;
+  }
+  .factValue {
+    font-size: 11.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .factCell {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

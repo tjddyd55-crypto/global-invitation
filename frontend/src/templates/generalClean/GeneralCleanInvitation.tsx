@@ -5,7 +5,7 @@
  * GENERAL 04 — Clean Event
  * 제목·일정 정보를 먼저 전달하는 모듈형 브로슈어 레이아웃.
  */
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import GalleryLightboxDialog from '@/src/templates/shared/GalleryLightboxDialog';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
@@ -60,8 +60,12 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
           <InvitationReveal variant="fade" delayMs={80}>
             {facts.length > 0 ? (
               <dl className={styles.factGrid}>
-                {facts.map((fact) => (
-                  <div key={fact.label} className={styles.factCell}>
+                {facts.map((fact, index) => (
+                  <div
+                    key={fact.label}
+                    className={styles.factCell}
+                    style={{ '--fact-index': index } as CSSProperties}
+                  >
                     <dt className={styles.factLabel}>{fact.label}</dt>
                     <dd className={styles.factValue}>{fact.value}</dd>
                   </div>
@@ -119,7 +123,7 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
             className={styles.dateGrid}
           />
         </InvitationReveal>
-        {model.scheduleLines.length > 1 ? (
+        {model.scheduleLines.length > 0 ? (
           <ul className={styles.scheduleList}>
             {model.scheduleLines.map((line, index) => (
               <li key={`schedule-${index}`}>{line}</li>
@@ -205,6 +209,10 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
 
       <section data-section-id="music" data-preview-section="music" className={styles.anchor} aria-hidden />
       <section data-section-id="share" data-preview-section="share" className={styles.anchor} aria-hidden />
+
+      <footer className={styles.footer}>
+        <p className={styles.footerMark}>{model.dateCompact || 'EVENT'}</p>
+      </footer>
 
       <GalleryLightboxDialog
         items={model.gallery.items}

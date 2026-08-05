@@ -5,7 +5,7 @@
  * GENERAL 05 — Festive Color
  * 포스터형 히어로 + 스크랩북 갤러리 + 티켓형 안내.
  */
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import GalleryLightboxDialog from '@/src/templates/shared/GalleryLightboxDialog';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
@@ -55,7 +55,7 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
         {model.dateParts ? (
           <p className={styles.sticker}>
             <span className={styles.stickerMonth}>{`${model.dateParts.month}.${model.dateParts.day}`}</span>
-            <span className={styles.stickerWeekday}>{model.dateParts.weekday}</span>
+            <span className={styles.stickerWeekday}>{model.dateParts.weekdayEn}</span>
           </p>
         ) : null}
       </section>
@@ -98,19 +98,22 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
           <InvitationReveal variant="rise">
             <h2 className={styles.sectionTitle}>스냅</h2>
           </InvitationReveal>
-          <div className={styles.scrapbook}>
-            {model.gallery.items.map((item, index) => (
-              <button
-                key={item.id || item.url}
-                type="button"
-                className={styles.scrapCell}
-                onClick={() => setLightboxIndex(index)}
-                aria-label={`${index + 1}번째 사진 크게 보기`}
-              >
-                <ImageWithFallback className={styles.scrapImage} src={item.url} alt={item.alt} />
-              </button>
-            ))}
-          </div>
+          <InvitationReveal variant="fade">
+            <div className={styles.scrapbook}>
+              {model.gallery.items.map((item, index) => (
+                <button
+                  key={item.id || item.url}
+                  type="button"
+                  className={styles.scrapCell}
+                  style={{ '--cell-index': index % 8 } as CSSProperties}
+                  onClick={() => setLightboxIndex(index)}
+                  aria-label={`${index + 1}번째 사진 크게 보기`}
+                >
+                  <ImageWithFallback className={styles.scrapImage} src={item.url} alt={item.alt} />
+                </button>
+              ))}
+            </div>
+          </InvitationReveal>
         </section>
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">

@@ -4,7 +4,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import {
   listActiveVisualTemplates,
   type VisualTemplateDefinition,
@@ -91,13 +91,11 @@ export default function VisualTemplateCatalog() {
         {templates.map((def) => (
           <li key={def.id} className={styles.card} data-testid={`template-card-${def.id}`}>
             <div className={styles.thumbWrap}>
-              <Image
+              <ImageWithFallback
                 src={def.thumbnailAsset}
-                alt=""
-                width={240}
-                height={400}
+                alt={`${def.name} 템플릿 미리보기 이미지`}
                 className={styles.thumb}
-                unoptimized
+                fallback={<span className={styles.thumbFallback}>{def.name}</span>}
               />
             </div>
             <div className={styles.body}>

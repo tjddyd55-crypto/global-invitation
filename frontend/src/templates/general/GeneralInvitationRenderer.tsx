@@ -17,6 +17,7 @@ import {
 } from '@/src/invitation/accountItems';
 import { getInvitationRsvpSettings } from '@/src/invitation/rsvpSettings';
 import { getInvitationScheduleCalendarModel } from '@/src/invitation/scheduleCalendar';
+import { getInvitationScheduleDisplay } from '@/src/invitation/scheduleDisplay';
 import styles from './GeneralInvitationRenderer.module.css';
 
 type GeneralInvitationRendererProps = {
@@ -77,7 +78,15 @@ export default function GeneralInvitationRenderer({
   const introBody = (data.content || '').trim();
   const hasIntro = Boolean(introQuote || introBody);
   const heroImage = (data.heroImage || '').trim();
-  const eventWhen = (data.weddingDateTime || '').trim();
+  const scheduleDisplay = getInvitationScheduleDisplay({
+    weddingDate: data.weddingDate instanceof Date || typeof data.weddingDate === 'string' ? data.weddingDate : null,
+    eventDate: data.eventDate,
+    weddingDateTime: data.weddingDateTime,
+  });
+  const storedWhen = (data.weddingDateTime || '').trim();
+  const eventWhen =
+    scheduleDisplay?.full ||
+    (storedWhen && !/^\d{4}[-/]\d{1,2}/.test(storedWhen) ? storedWhen : '');
   const place = (data.locationText || data.venueName || data.address || '').trim();
   const venueDetail = (data.detailAddress || data.venueDetail || '').trim();
   const scheduleCalendar = getInvitationScheduleCalendarModel({

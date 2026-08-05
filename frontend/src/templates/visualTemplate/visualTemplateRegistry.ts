@@ -1,6 +1,7 @@
-import type { ComponentType } from 'react';
+﻿import type { ComponentType } from 'react';
 import type { VisualTemplateId, VisualTemplateConcept } from './ids';
 import { listVisualTemplatesForConcept } from './ids';
+import { templateThumbnailAsset } from './templateSampleAssets';
 
 export type InvitationRenderMode = 'TEMPLATE_PREVIEW' | 'EDITOR_PREVIEW' | 'PUBLIC';
 
@@ -11,7 +12,7 @@ export type VisualTemplateDefinition = {
   name: string;
   description: string;
   styleTags: string[];
-  /** Relative public path or CDN URL; R2 in Phase 2E */
+  /** R2 shared object key — `cdnImageSrc` 로 절대 URL 로 정규화해서 사용 */
   thumbnailAsset: string;
   sortOrder: number;
   isActive: boolean;
@@ -41,7 +42,7 @@ const DEFINITIONS: Record<VisualTemplateId, VisualTemplateDefinition> = {
     name: '클래식',
     description: '정석적인 웨딩 초대장 레이아웃으로 모든 정보를 차분하게 전달합니다',
     styleTags: ['클래식', '정갈함', '전통'],
-    thumbnailAsset: '/templates/visual/WEDDING_01_CLASSIC/thumbnail.svg',
+    thumbnailAsset: templateThumbnailAsset('WEDDING_01_CLASSIC'),
     sortOrder: 10,
     isActive: true,
     version: 1,
@@ -52,7 +53,7 @@ const DEFINITIONS: Record<VisualTemplateId, VisualTemplateDefinition> = {
     name: '모던 에디토리얼',
     description: '웨딩 매거진처럼 세련되고 비대칭적인 디자인',
     styleTags: ['고급스러움', '사진중심', '매거진'],
-    thumbnailAsset: '/templates/visual/WEDDING_04_EDITORIAL/thumbnail.svg',
+    thumbnailAsset: templateThumbnailAsset('WEDDING_04_EDITORIAL'),
     sortOrder: 20,
     isActive: true,
     version: 1,
@@ -63,7 +64,7 @@ const DEFINITIONS: Record<VisualTemplateId, VisualTemplateDefinition> = {
     name: '로맨틱 가든',
     description: '부드러운 아치와 편지 형식의 따뜻한 정원 감성',
     styleTags: ['로맨틱', '자연', '따뜻한'],
-    thumbnailAsset: '/templates/visual/WEDDING_05_GARDEN/thumbnail.svg',
+    thumbnailAsset: templateThumbnailAsset('WEDDING_05_GARDEN'),
     sortOrder: 30,
     isActive: true,
     version: 1,
@@ -74,7 +75,7 @@ const DEFINITIONS: Record<VisualTemplateId, VisualTemplateDefinition> = {
     name: '미니멀 나이트',
     description: '어두운 시네마틱 히어로와 절제된 타이포그래피',
     styleTags: ['미니멀', '다크', '시네마틱'],
-    thumbnailAsset: '/templates/visual/WEDDING_06_NIGHT/thumbnail.svg',
+    thumbnailAsset: templateThumbnailAsset('WEDDING_06_NIGHT'),
     sortOrder: 40,
     isActive: true,
     version: 1,
@@ -85,7 +86,7 @@ const DEFINITIONS: Record<VisualTemplateId, VisualTemplateDefinition> = {
     name: '클래식',
     description: '일반 행사에 맞춘 기본 레이아웃으로 정보를 명확히 전달합니다',
     styleTags: ['클래식', '정보형', '담백함'],
-    thumbnailAsset: '/templates/visual/GENERAL_01_CLASSIC/thumbnail.svg',
+    thumbnailAsset: templateThumbnailAsset('GENERAL_01_CLASSIC'),
     sortOrder: 10,
     isActive: true,
     version: 1,
@@ -96,7 +97,7 @@ const DEFINITIONS: Record<VisualTemplateId, VisualTemplateDefinition> = {
     name: '클린 이벤트',
     description: '제목과 일정 중심의 정돈된 브로슈어형 디자인',
     styleTags: ['클린', '모듈형', '정보중심'],
-    thumbnailAsset: '/templates/visual/GENERAL_04_CLEAN/thumbnail.svg',
+    thumbnailAsset: templateThumbnailAsset('GENERAL_04_CLEAN'),
     sortOrder: 20,
     isActive: true,
     version: 1,
@@ -107,7 +108,7 @@ const DEFINITIONS: Record<VisualTemplateId, VisualTemplateDefinition> = {
     name: '페스티브 컬러',
     description: '포스터형 히어로와 컬러 블록이 돋보이는 축제 감성',
     styleTags: ['컬러풀', '페스티벌', '포스터'],
-    thumbnailAsset: '/templates/visual/GENERAL_05_FESTIVE/thumbnail.svg',
+    thumbnailAsset: templateThumbnailAsset('GENERAL_05_FESTIVE'),
     sortOrder: 30,
     isActive: true,
     version: 1,
@@ -118,7 +119,7 @@ const DEFINITIONS: Record<VisualTemplateId, VisualTemplateDefinition> = {
     name: '컬처 앤 엑시비션',
     description: '전시·공연에 어울리는 비대칭 포스터와 그리드 구성',
     styleTags: ['전시', '문화', '포스터'],
-    thumbnailAsset: '/templates/visual/GENERAL_06_CULTURE/thumbnail.svg',
+    thumbnailAsset: templateThumbnailAsset('GENERAL_06_CULTURE'),
     sortOrder: 40,
     isActive: true,
     version: 1,

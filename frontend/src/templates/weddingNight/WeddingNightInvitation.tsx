@@ -65,13 +65,19 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
           </div>
         ) : null}
         <div className={styles.heroText}>
-          <h1 className={styles.title}>{model.title}</h1>
-          {model.dateParts ? (
-            <p className={styles.heroDate}>
-              {`${model.dateParts.year}. ${model.dateParts.month}. ${model.dateParts.day}`}
-            </p>
+          <InvitationReveal variant="mask" delayMs={120}>
+            <h1 className={styles.title}>{model.title}</h1>
+          </InvitationReveal>
+          {model.dateCompact ? (
+            <InvitationReveal variant="rise" delayMs={280}>
+              <p className={styles.heroDate}>{model.dateCompact}</p>
+            </InvitationReveal>
           ) : null}
-          {model.venueName ? <p className={styles.heroVenue}>{model.venueName}</p> : null}
+          {model.venueName ? (
+            <InvitationReveal variant="rise" delayMs={360}>
+              <p className={styles.heroVenue}>{model.venueName}</p>
+            </InvitationReveal>
+          ) : null}
         </div>
       </section>
 
@@ -79,7 +85,9 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
         <section className={styles.intro} data-section-id="greeting" data-preview-section="greeting">
           <InvitationReveal variant="rise">
             {model.subtitle ? <p className={styles.introQuote}>{model.subtitle}</p> : null}
-            <span className={styles.hairline} aria-hidden />
+            <InvitationReveal variant="draw" delayMs={160}>
+              <span className={styles.hairline} aria-hidden />
+            </InvitationReveal>
             {model.hasGreeting ? (
               model.greetingLines.map((line, index) => (
                 <p key={`greeting-${index}`} className={styles.introLine}>
@@ -201,6 +209,13 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
 
       <section data-section-id="music" data-preview-section="music" className={styles.anchor} aria-hidden />
       <section data-section-id="share" data-preview-section="share" className={styles.anchor} aria-hidden />
+
+      <footer className={styles.footer}>
+        <p className={styles.footerMark}>
+          <span className={styles.musicRing} aria-hidden />
+          {model.dateCompact || 'WEDDING'}
+        </p>
+      </footer>
 
       <GalleryLightboxDialog
         items={model.gallery.items}

@@ -8,9 +8,20 @@ type InvitationRevealProps = {
   className?: string;
   /** Stagger delay in ms */
   delayMs?: number;
-  variant?: 'rise' | 'fade' | 'blur' | 'wipe' | 'mask';
+  variant?: InvitationRevealVariant;
   once?: boolean;
 };
+
+export type InvitationRevealVariant =
+  | 'rise'
+  | 'fade'
+  | 'blur'
+  | 'wipe'
+  | 'mask'
+  | 'draw'
+  | 'slideLeft'
+  | 'slideRight'
+  | 'zoom';
 
 /**
  * In-view once reveal. Honors prefers-reduced-motion (shows final state immediately).

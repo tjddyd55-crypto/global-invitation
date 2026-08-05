@@ -1,56 +1,62 @@
+/* GENERAL 05 — Festive Color */
 .page {
   --sun: #ffe34d;
   --grape: #301f6c;
-  --tangerine: #fa6540;
+  --tangerine: #f0562f;
   --paper: #fffdf4;
-  max-width: 375px;
+  --gutter: 24px;
+
+  max-width: 430px;
   margin: 0 auto;
   background: var(--paper);
   color: var(--grape);
-  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  font-family: var(--font-gi-noto), 'Apple SD Gothic Neo', system-ui, sans-serif;
   overflow-x: hidden;
 }
 
 .hero {
   position: relative;
-  padding: 40px 24px 36px;
+  padding: 42px var(--gutter) 46px;
   background: var(--sun);
   overflow: hidden;
 }
 .shape {
   position: absolute;
   border-radius: 50%;
-  opacity: 0.85;
+  pointer-events: none;
 }
 .shapeOne {
-  width: 120px;
-  height: 120px;
-  top: -34px;
-  right: -28px;
+  width: 132px;
+  height: 132px;
+  top: -40px;
+  right: -34px;
   background: var(--tangerine);
+  animation: festiveFloat 7s ease-in-out infinite;
 }
 .shapeTwo {
-  width: 80px;
-  height: 80px;
-  bottom: 24px;
-  left: -26px;
+  width: 88px;
+  height: 88px;
+  bottom: 28px;
+  left: -30px;
   background: var(--grape);
   opacity: 0.18;
+  animation: festiveFloat 9s ease-in-out infinite reverse;
 }
 .photo {
   position: relative;
   width: 78%;
-  margin: 0 auto 24px;
+  margin: 0 auto 26px;
   transform: rotate(-3deg);
   background: #fff;
   padding: 8px;
-  box-shadow: 0 8px 20px rgba(48, 31, 108, 0.18);
+  box-shadow: 0 10px 24px rgba(48, 31, 108, 0.18);
 }
 .photoImage {
   display: block;
   width: 100%;
   aspect-ratio: 4 / 5;
   object-fit: cover;
+  object-position: center 35%;
 }
 .photoPlaceholder {
   display: grid;
@@ -61,45 +67,51 @@
 }
 .title {
   position: relative;
-  margin: 0 0 8px;
-  font-size: 30px;
+  margin: 0 0 10px;
+  font-size: 32px;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
   word-break: keep-all;
 }
 .subtitle {
   position: relative;
   margin: 0;
-  font-size: 13px;
-  line-height: 1.7;
+  max-width: 78%;
+  font-size: 13.5px;
+  line-height: 1.75;
   color: #4a3a8a;
+  word-break: keep-all;
 }
 .sticker {
   position: absolute;
-  right: 18px;
-  bottom: 18px;
+  right: 16px;
+  bottom: 16px;
   margin: 0;
-  padding: 10px 12px;
+  padding: 12px 14px;
   background: var(--tangerine);
   color: #fff;
   text-align: center;
+  border-radius: 4px;
   transform: rotate(-9deg);
-  animation: festivePop 0.6s ease-out both;
+  animation: festivePop 0.65s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  box-shadow: 0 8px 18px rgba(240, 86, 47, 0.35);
 }
 .stickerMonth {
   display: block;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.05;
 }
 .stickerWeekday {
   display: block;
+  margin-top: 4px;
   font-size: 10px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.22em;
 }
 
 .sectionTitle {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   font-size: 16px;
   font-weight: 800;
 }
@@ -110,7 +122,7 @@
 }
 
 .basic {
-  padding: 20px 24px 4px;
+  padding: 22px var(--gutter) 6px;
 }
 .chipRow {
   display: flex;
@@ -118,60 +130,74 @@
   gap: 8px;
 }
 .chip {
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: 999px;
   border: 2px solid var(--grape);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
+  word-break: keep-all;
 }
 
 .copy {
-  padding: 24px 24px 32px;
+  padding: 26px var(--gutter) 34px;
 }
 .copyLine {
   margin: 0 0 8px;
   font-size: 14px;
-  line-height: 1.9;
+  line-height: 1.95;
   color: #3d3170;
+  word-break: keep-all;
 }
 
 .gallery {
-  padding: 0 24px 32px;
+  padding: 0 var(--gutter) 34px;
 }
 .scrapbook {
   columns: 2;
-  column-gap: 10px;
+  column-gap: 12px;
 }
 .scrapCell {
   display: block;
   width: 100%;
-  margin: 0 0 10px;
-  padding: 6px;
+  margin: 0 0 12px;
+  padding: 7px;
   border: 0;
   background: #fff;
-  box-shadow: 0 4px 12px rgba(48, 31, 108, 0.12);
+  box-shadow: 0 5px 14px rgba(48, 31, 108, 0.12);
   cursor: pointer;
   break-inside: avoid;
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+  transition-delay: calc(var(--cell-index, 0) * 60ms);
+}
+:global(.gi-reveal.is-visible) .scrapCell {
+  opacity: 1;
+  transform: none;
 }
 .scrapCell:nth-child(3n) {
-  transform: rotate(1.5deg);
+  rotate: 1.5deg;
 }
 .scrapCell:nth-child(4n) {
-  transform: rotate(-1.8deg);
+  rotate: -1.8deg;
 }
 .scrapImage {
   display: block;
   width: 100%;
+  aspect-ratio: 3 / 4;
   object-fit: cover;
 }
 
 .schedule {
-  padding: 0 24px 32px;
+  padding: 0 var(--gutter) 34px;
 }
 .scheduleDate {
   margin: 0 0 16px;
-  font-size: 13px;
+  font-size: 13.5px;
   color: #5a4a9a;
+  word-break: keep-all;
 }
 .calendarCard {
   padding: 18px 16px;
@@ -188,7 +214,7 @@
 }
 
 .ticketWrap {
-  margin: 0 24px 8px;
+  margin: 0 var(--gutter) 8px;
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 6px 18px rgba(48, 31, 108, 0.1);
@@ -210,6 +236,7 @@
   margin: 0 0 4px;
   font-size: 16px;
   font-weight: 800;
+  word-break: keep-all;
 }
 .ticketMeta {
   margin: 0;
@@ -219,16 +246,13 @@
 .accounts {
   padding-bottom: 18px;
 }
-
 .rsvp {
   padding-bottom: 8px;
 }
-
 .accountsEmpty {
-  padding: 24px;
+  padding: 24px var(--gutter);
   text-align: center;
 }
-
 .anchor {
   height: 1px;
   margin: 0;
@@ -240,16 +264,41 @@
 @keyframes festivePop {
   from {
     opacity: 0;
-    transform: rotate(-9deg) scale(0.94);
+    transform: rotate(-9deg) scale(0.9);
   }
   to {
     opacity: 1;
     transform: rotate(-9deg) scale(1);
   }
 }
+@keyframes festiveFloat {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(6px, -8px);
+  }
+}
+
+@media (max-width: 374px) {
+  .page {
+    --gutter: 18px;
+  }
+  .title {
+    font-size: 28px;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .sticker {
+  .sticker,
+  .shapeOne,
+  .shapeTwo {
     animation: none;
+  }
+  .scrapCell {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }

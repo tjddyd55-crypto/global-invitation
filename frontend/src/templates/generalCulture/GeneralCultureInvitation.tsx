@@ -69,11 +69,7 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
           <InvitationReveal variant="mask">
             <h1 className={styles.title}>{model.title}</h1>
           </InvitationReveal>
-          {model.dateParts ? (
-            <p className={styles.heroDate}>
-              {`${model.dateParts.year}.${model.dateParts.month}.${model.dateParts.day}`}
-            </p>
-          ) : null}
+          {model.dateCompact ? <p className={styles.heroDate}>{model.dateCompact}</p> : null}
         </div>
         <div className={styles.heroMediaCol}>
           {showHeroMedia ? (
