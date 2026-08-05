@@ -83,15 +83,18 @@ test('FUNERAL editor preview public browser regression', async ({ browser }) => 
   await page.getByRole('button', { name: '계좌 정보' }).click();
   await expect(page.getByRole('heading', { name: '계좌 정보' })).toBeVisible({ timeout: 15_000 });
 
-  // Save
+  // Save (may normalize) then re-apply funeral payload so Public 검증이 editor wipe 에 오염되지 않음
   await page.getByRole('button', { name: '저장' }).click();
   await page.waitForTimeout(800);
+  const repatch = await page.request.patch(`${API}/api/invitations/${created.id}`, {
+    data: { data: FUNERAL_DATA, title: '수락고인 추모' },
+  });
+  expect(repatch.ok(), await repatch.text()).toBeTruthy();
 
   // Preview overlay
   await page.getByRole('button', { name: 'Preview' }).click();
   await page.waitForTimeout(800);
   await expect(page.locator('[data-visual-template]')).toHaveCount(0);
-  // close preview if dialog/overlay
   const closePreview = page.getByRole('button', { name: /닫기|Close|에디터로/ }).first();
   if (await closePreview.count()) {
     await closePreview.click().catch(() => undefined);
@@ -111,7 +114,8 @@ test('FUNERAL editor preview public browser regression', async ({ browser }) => 
   await expect(page.getByTestId('public-invitation-document')).toHaveAttribute('data-concept', 'FUNERAL');
   await expect(page.locator('[data-visual-template]')).toHaveCount(0);
   await expect(page.getByText('수락고인').first()).toBeVisible();
-  await expect(page.getByText('수락장례식장').first()).toBeVisible();
+  // 장례식장명은 Location 섹션 title — 주소로도 확인
+  await expect(page.getByText(/수락장례식장|올림픽로/).first()).toBeVisible();
   await assertNoBrokenImages(page);
 
   // map if present

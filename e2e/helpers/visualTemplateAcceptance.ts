@@ -89,6 +89,7 @@ export function buildRichWeddingData(id: VisualTemplateCaseId, title: string) {
     accountEnabled: true,
     accountsTitle: '마음 전하실 곳',
     music: { enabled: true, musicKey: 'piano_soft', sourceType: 'SHARED', loop: false, title: 'Piano Soft' },
+    rsvp: { enabled: true, buttonLabel: '참석 여부 알리기' },
     transportInfo: ['2호선 선릉역 도보 5분'],
     parkingInfo: ['지하 2시간 무료'],
   };
@@ -131,6 +132,7 @@ export function buildRichGeneralData(id: VisualTemplateCaseId, title: string) {
     accountEnabled: true,
     accountsTitle: '참가비 · 후원',
     music: { enabled: true, musicKey: 'piano_soft', sourceType: 'SHARED', loop: false, title: 'Piano Soft' },
+    rsvp: { enabled: true, buttonLabel: '참석 여부 확인' },
     transportInfo: ['홍대입구역 2번 출구'],
     parkingInfo: ['건물 주차 유료'],
   };

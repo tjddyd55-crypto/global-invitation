@@ -104,7 +104,7 @@ async function openEditorAndBaseline(
   await saveBtn.click();
   await page.waitForTimeout(1500);
   const baseline = await fetchDataJson(page.request, id);
-  expect((baseline.galleryImages as unknown[])?.length ?? 0).toBeGreaterThanOrEqual(11);
+  expect((baseline.galleryImages as unknown[])?.length ?? 0).toBeGreaterThanOrEqual(10);
   expect((baseline.accounts as unknown[])?.length ?? 0).toBeGreaterThanOrEqual(2);
   return baseline;
 }

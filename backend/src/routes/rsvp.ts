@@ -113,8 +113,18 @@ function validateAttendanceFilter(value: string): value is 'yes' | 'no' | 'maybe
 }
 
 function isRsvpEnabled(invitationData: unknown): boolean {
-  const data = invitationData as { rsvp?: { enabled?: boolean } } | null;
-  return data?.rsvp?.enabled === true;
+  if (!invitationData || typeof invitationData !== 'object' || Array.isArray(invitationData)) {
+    return false;
+  }
+  const data = invitationData as {
+    rsvpEnabled?: unknown;
+    rsvp?: { enabled?: unknown };
+    attendanceEnabled?: unknown;
+  };
+  if (data.rsvp?.enabled === true) return true;
+  if (data.rsvpEnabled === true) return true;
+  if (data.attendanceEnabled === true) return true;
+  return false;
 }
 
 function isRsvpClosed(deadline: Date | null | undefined): boolean {
