@@ -1,11 +1,10 @@
-# Visual Template — 최종 검증 핸드오프
+# Visual Template — 구현·시각 마감 기록
 
 **작성일:** 2026-08-05  
-**환경:** Railway `development` only (`main` / `production` 미반영)  
-**최종 판정:** **조건부 완료**
+**환경:** Railway `development` only  
+**최종 판정(승격):** → [`docs/VISUAL_TEMPLATE_FINAL_ACCEPTANCE.md`](./VISUAL_TEMPLATE_FINAL_ACCEPTANCE.md) (**완료**)
 
-이번 문서는 이전 polish 완료 보고를 그대로 복사하지 않고, 코드·R2·Playwright·배포 상태를 **재검증한 결과**를 기록한다.  
-검증하지 않은 항목은 통과로 표기하지 않는다.
+본 문서는 구현·SSOT·시각 마감 기록이다. 최종 인터랙션·FUNERAL·deep-diff·push 검증은 Final Acceptance 문서를 본다.
 
 ---
 

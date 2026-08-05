@@ -155,7 +155,13 @@ test('WEDDING deep-diff across Classic→Editorial→Garden→Night→Classic', 
     previous = next;
   }
 
-  await page.goto(`${FE}/i/${created.shareSlug}`, { waitUntil: 'networkidle' });
+  // Editor save unpublishes — Public 확인 전 재발행
+  const republish = await page.request.post(`${API}/api/invitations/${created.id}/publish`);
+  expect(republish.ok(), await republish.text()).toBeTruthy();
+  const republished = (await republish.json()) as { shareSlug?: string };
+  const shareSlug = republished.shareSlug || created.shareSlug;
+
+  await page.goto(`${FE}/i/${shareSlug}`, { waitUntil: 'networkidle' });
   await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 60_000 });
   await expect(page.locator('[data-visual-template="WEDDING_01_CLASSIC"]').first()).toBeVisible();
   await expect(page.getByText(title).first()).toBeVisible();
@@ -209,7 +215,13 @@ test('GENERAL deep-diff across Classic→Clean→Festive→Culture→Classic', a
     previous = next;
   }
 
-  await page.goto(`${FE}/i/${created.shareSlug}`, { waitUntil: 'networkidle' });
+  // Editor save unpublishes — Public 확인 전 재발행
+  const republish = await page.request.post(`${API}/api/invitations/${created.id}/publish`);
+  expect(republish.ok(), await republish.text()).toBeTruthy();
+  const republished = (await republish.json()) as { shareSlug?: string };
+  const shareSlug = republished.shareSlug || created.shareSlug;
+
+  await page.goto(`${FE}/i/${shareSlug}`, { waitUntil: 'networkidle' });
   await expect(page.locator('[data-visual-template="GENERAL_01_CLASSIC"]').first()).toBeVisible({
     timeout: 60_000,
   });

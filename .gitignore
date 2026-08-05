@@ -48,6 +48,13 @@ playwright-report/
 test-results/
 artifacts/design-qa/*.png
 !artifacts/design-qa/.gitkeep
+tmp-*
+artifacts/**
+!artifacts/visual-template-acceptance/
+!artifacts/visual-template-acceptance/**
+!artifacts/r2-template-audit.json
+artifacts/visual-template-acceptance/*.png
+artifacts/visual-template-acceptance/motion-*.png
 
 # secrets (평문 계정정보 - 절대 커밋 금지)
 초대장_계정정보.txt

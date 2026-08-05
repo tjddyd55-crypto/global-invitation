@@ -1,0 +1,220 @@
+{
+  "log": [
+    {
+      "id": "WEDDING_04_EDITORIAL",
+      "revealCount": 14,
+      "sample": [
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--draw is-visible",
+          "opacity": "1",
+          "transform": "matrix(1, 0, 0, 1, 0, 0)",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        }
+      ],
+      "verdict": "보임"
+    },
+    {
+      "id": "WEDDING_05_GARDEN",
+      "revealCount": 11,
+      "sample": [
+        {
+          "className": "gi-reveal gi-reveal--blur is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--blur is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--slideLeft is-visible",
+          "opacity": "0.99827",
+          "transform": "matrix(1, 0, 0, 1, -0.0484439, 0)",
+          "animation": "none"
+        }
+      ],
+      "verdict": "보임"
+    },
+    {
+      "id": "WEDDING_06_NIGHT",
+      "revealCount": 10,
+      "sample": [
+        {
+          "className": "gi-reveal gi-reveal--mask",
+          "opacity": "0",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--draw is-visible",
+          "opacity": "1",
+          "transform": "matrix(1, 0, 0, 1, 0, 0)",
+          "animation": "none"
+        }
+      ],
+      "verdict": "보임"
+    },
+    {
+      "id": "GENERAL_04_CLEAN",
+      "revealCount": 7,
+      "sample": [
+        {
+          "className": "gi-reveal gi-reveal--fade is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--fade is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--fade is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--fade is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--fade is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        }
+      ],
+      "verdict": "보임"
+    },
+    {
+      "id": "GENERAL_05_FESTIVE",
+      "revealCount": 5,
+      "sample": [
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--fade is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise",
+          "opacity": "0",
+          "transform": "matrix(1, 0, 0, 1, 0, 16)",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--fade",
+          "opacity": "0",
+          "transform": "none",
+          "animation": "none"
+        }
+      ],
+      "verdict": "보임"
+    },
+    {
+      "id": "GENERAL_06_CULTURE",
+      "revealCount": 4,
+      "sample": [
+        {
+          "className": "gi-reveal gi-reveal--mask",
+          "opacity": "0",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--wipe",
+          "opacity": "0",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--rise is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        },
+        {
+          "className": "gi-reveal gi-reveal--fade is-visible",
+          "opacity": "1",
+          "transform": "none",
+          "animation": "none"
+        }
+      ],
+      "verdict": "보임"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "report": [
+    {
+      "name": "sparse WEDDING with templateType",
+      "shareSlug": "vp0omtfat",
+      "expectTemplate": "WEDDING_04_EDITORIAL",
+      "status": "PASS"
+    },
+    {
+      "name": "sparse GENERAL without templateType",
+      "shareSlug": "6c8xmkbyku",
+      "expectTemplate": "GENERAL_04_CLEAN",
+      "status": "PASS"
+    },
+    {
+      "name": "title only WEDDING",
+      "shareSlug": "glxwjm0it",
+      "expectTemplate": "WEDDING_05_GARDEN",
+      "status": "PASS"
+    },
+    {
+      "name": "date only GENERAL",
+      "shareSlug": "1daa06agte",
+      "expectTemplate": "GENERAL_05_FESTIVE",
+      "status": "PASS"
+    },
+    {
+      "name": "no visualTemplateId → Classic fallback",
+      "shareSlug": "amfvaa9o",
+      "expectTemplate": "WEDDING_01_CLASSIC",
+      "status": "PASS"
+    },
+    {
+      "name": "no gallery/accounts/rsvp/music/map",
+      "shareSlug": "m5p7aiie",
+      "expectTemplate": "GENERAL_06_CULTURE",
+      "status": "PASS"
+    }
+  ]
+}

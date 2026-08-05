@@ -1,0 +1,312 @@
+﻿{
+  "publicUrl": "https://cdn.platform-assets.com",
+  "expected": 34,
+  "listed": 34,
+  "missing": [],
+  "orphan": [],
+  "httpOk": 34,
+  "mimeOk": 34,
+  "decodeOk": 34,
+  "zeroByte": 0,
+  "tinyUnder1500": 0,
+  "sample": [
+    {
+      "rel": "WEDDING_01_CLASSIC/hero.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 102926,
+      "decoded": true
+    },
+    {
+      "rel": "WEDDING_01_CLASSIC/thumbnail.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 30152,
+      "decoded": true
+    },
+    {
+      "rel": "WEDDING_04_EDITORIAL/hero.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 48172,
+      "decoded": true
+    }
+  ],
+  "all": [
+    {
+      "rel": "WEDDING_01_CLASSIC/hero.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 102926,
+      "decoded": true
+    },
+    {
+      "rel": "WEDDING_01_CLASSIC/thumbnail.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 30152,
+      "decoded": true
+    },
+    {
+      "rel": "WEDDING_04_EDITORIAL/hero.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 48172,
+      "decoded": true
+    },
+    {
+      "rel": "WEDDING_04_EDITORIAL/thumbnail.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 24332,
+      "decoded": true
+    },
+    {
+      "rel": "WEDDING_05_GARDEN/hero.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 146580,
+      "decoded": true
+    },
+    {
+      "rel": "WEDDING_05_GARDEN/thumbnail.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 35104,
+      "decoded": true
+    },
+    {
+      "rel": "WEDDING_06_NIGHT/hero.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 31512,
+      "decoded": true
+    },
+    {
+      "rel": "WEDDING_06_NIGHT/thumbnail.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 15018,
+      "decoded": true
+    },
+    {
+      "rel": "GENERAL_01_CLASSIC/hero.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 47152,
+      "decoded": true
+    },
+    {
+      "rel": "GENERAL_01_CLASSIC/thumbnail.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 22224,
+      "decoded": true
+    },
+    {
+      "rel": "GENERAL_04_CLEAN/hero.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 74050,
+      "decoded": true
+    },
+    {
+      "rel": "GENERAL_04_CLEAN/thumbnail.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 34482,
+      "decoded": true
+    },
+    {
+      "rel": "GENERAL_05_FESTIVE/hero.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 139084,
+      "decoded": true
+    },
+    {
+      "rel": "GENERAL_05_FESTIVE/thumbnail.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 37986,
+      "decoded": true
+    },
+    {
+      "rel": "GENERAL_06_CULTURE/hero.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 80144,
+      "decoded": true
+    },
+    {
+      "rel": "GENERAL_06_CULTURE/thumbnail.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 18900,
+      "decoded": true
+    },
+    {
+      "rel": "shared-wedding/photo-01.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 43880,
+      "decoded": true
+    },
+    {
+      "rel": "shared-wedding/photo-02.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 73058,
+      "decoded": true
+    },
+    {
+      "rel": "shared-wedding/photo-03.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 92560,
+      "decoded": true
+    },
+    {
+      "rel": "shared-wedding/photo-04.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 59432,
+      "decoded": true
+    },
+    {
+      "rel": "shared-wedding/photo-05.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 123882,
+      "decoded": true
+    },
+    {
+      "rel": "shared-wedding/photo-06.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 55884,
+      "decoded": true
+    },
+    {
+      "rel": "shared-wedding/photo-07.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 31018,
+      "decoded": true
+    },
+    {
+      "rel": "shared-wedding/photo-08.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 54592,
+      "decoded": true
+    },
+    {
+      "rel": "shared-wedding/groom.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 10716,
+      "decoded": true
+    },
+    {
+      "rel": "shared-wedding/bride.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 14180,
+      "decoded": true
+    },
+    {
+      "rel": "shared-general/photo-01.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 52546,
+      "decoded": true
+    },
+    {
+      "rel": "shared-general/photo-02.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 37236,
+      "decoded": true
+    },
+    {
+      "rel": "shared-general/photo-03.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 44388,
+      "decoded": true
+    },
+    {
+      "rel": "shared-general/photo-04.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 58664,
+      "decoded": true
+    },
+    {
+      "rel": "shared-general/photo-05.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 85368,
+      "decoded": true
+    },
+    {
+      "rel": "shared-general/photo-06.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 31264,
+      "decoded": true
+    },
+    {
+      "rel": "shared-general/photo-07.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 92196,
+      "decoded": true
+    },
+    {
+      "rel": "shared-general/photo-08.webp",
+      "headStatus": 200,
+      "httpStatus": 200,
+      "contentType": "image/webp",
+      "size": 22004,
+      "decoded": true
+    }
+  ]
+}

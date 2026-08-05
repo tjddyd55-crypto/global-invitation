@@ -1,0 +1,440 @@
+{
+  "diffs": [
+    {
+      "from": "GENERAL_01_CLASSIC",
+      "to": "GENERAL_04_CLEAN",
+      "changed": [],
+      "before": {
+        "title": "딥디프일반 17413",
+        "subtitle": "일반 행사 부제",
+        "conceptType": "GENERAL",
+        "templateType": "FULL",
+        "venueName": "수락 컨퍼런스홀",
+        "venueDetail": "B1 오디토리움",
+        "address": "서울특별시 마포구 양화로 45",
+        "heroImage": "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+        "galleryImages": [
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-01.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-02.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-03.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-04.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-05.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-06.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-07.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-08.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_05_FESTIVE/hero.webp"
+        ],
+        "galleryCount": 10,
+        "galleryDisplayMode": "SLIDE",
+        "accounts": [
+          {
+            "bank": "카카오뱅크",
+            "role": "참가비",
+            "holder": "수락행사",
+            "number": "3333-01-1234567"
+          },
+          {
+            "bank": "토스뱅크",
+            "role": "후원금",
+            "holder": "수락행사",
+            "number": "1000-2222-3333"
+          }
+        ],
+        "accountCount": 2,
+        "rsvpEnabled": true,
+        "mapLat": 37.5563,
+        "mapLng": 126.922,
+        "mapProvider": "NAVER",
+        "music": {
+          "enabled": true,
+          "musicKey": "piano_soft",
+          "sourceType": "SHARED"
+        },
+        "groomName": "",
+        "brideName": "",
+        "introQuote": "함께하는 기록",
+        "content": "일반 행사 안내입니다."
+      },
+      "after": {
+        "title": "딥디프일반 17413",
+        "subtitle": "일반 행사 부제",
+        "conceptType": "GENERAL",
+        "templateType": "FULL",
+        "venueName": "수락 컨퍼런스홀",
+        "venueDetail": "B1 오디토리움",
+        "address": "서울특별시 마포구 양화로 45",
+        "heroImage": "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+        "galleryImages": [
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-01.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-02.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-03.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-04.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-05.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-06.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-07.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-08.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_05_FESTIVE/hero.webp"
+        ],
+        "galleryCount": 10,
+        "galleryDisplayMode": "SLIDE",
+        "accounts": [
+          {
+            "bank": "카카오뱅크",
+            "role": "참가비",
+            "holder": "수락행사",
+            "number": "3333-01-1234567"
+          },
+          {
+            "bank": "토스뱅크",
+            "role": "후원금",
+            "holder": "수락행사",
+            "number": "1000-2222-3333"
+          }
+        ],
+        "accountCount": 2,
+        "rsvpEnabled": true,
+        "mapLat": 37.5563,
+        "mapLng": 126.922,
+        "mapProvider": "NAVER",
+        "music": {
+          "enabled": true,
+          "musicKey": "piano_soft",
+          "sourceType": "SHARED"
+        },
+        "groomName": "",
+        "brideName": "",
+        "introQuote": "함께하는 기록",
+        "content": "일반 행사 안내입니다."
+      }
+    },
+    {
+      "from": "GENERAL_04_CLEAN",
+      "to": "GENERAL_05_FESTIVE",
+      "changed": [],
+      "before": {
+        "title": "딥디프일반 17413",
+        "subtitle": "일반 행사 부제",
+        "conceptType": "GENERAL",
+        "templateType": "FULL",
+        "venueName": "수락 컨퍼런스홀",
+        "venueDetail": "B1 오디토리움",
+        "address": "서울특별시 마포구 양화로 45",
+        "heroImage": "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+        "galleryImages": [
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-01.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-02.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-03.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-04.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-05.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-06.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-07.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-08.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_05_FESTIVE/hero.webp"
+        ],
+        "galleryCount": 10,
+        "galleryDisplayMode": "SLIDE",
+        "accounts": [
+          {
+            "bank": "카카오뱅크",
+            "role": "참가비",
+            "holder": "수락행사",
+            "number": "3333-01-1234567"
+          },
+          {
+            "bank": "토스뱅크",
+            "role": "후원금",
+            "holder": "수락행사",
+            "number": "1000-2222-3333"
+          }
+        ],
+        "accountCount": 2,
+        "rsvpEnabled": true,
+        "mapLat": 37.5563,
+        "mapLng": 126.922,
+        "mapProvider": "NAVER",
+        "music": {
+          "enabled": true,
+          "musicKey": "piano_soft",
+          "sourceType": "SHARED"
+        },
+        "groomName": "",
+        "brideName": "",
+        "introQuote": "함께하는 기록",
+        "content": "일반 행사 안내입니다."
+      },
+      "after": {
+        "title": "딥디프일반 17413",
+        "subtitle": "일반 행사 부제",
+        "conceptType": "GENERAL",
+        "templateType": "FULL",
+        "venueName": "수락 컨퍼런스홀",
+        "venueDetail": "B1 오디토리움",
+        "address": "서울특별시 마포구 양화로 45",
+        "heroImage": "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+        "galleryImages": [
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-01.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-02.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-03.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-04.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-05.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-06.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-07.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-08.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_05_FESTIVE/hero.webp"
+        ],
+        "galleryCount": 10,
+        "galleryDisplayMode": "SLIDE",
+        "accounts": [
+          {
+            "bank": "카카오뱅크",
+            "role": "참가비",
+            "holder": "수락행사",
+            "number": "3333-01-1234567"
+          },
+          {
+            "bank": "토스뱅크",
+            "role": "후원금",
+            "holder": "수락행사",
+            "number": "1000-2222-3333"
+          }
+        ],
+        "accountCount": 2,
+        "rsvpEnabled": true,
+        "mapLat": 37.5563,
+        "mapLng": 126.922,
+        "mapProvider": "NAVER",
+        "music": {
+          "enabled": true,
+          "musicKey": "piano_soft",
+          "sourceType": "SHARED"
+        },
+        "groomName": "",
+        "brideName": "",
+        "introQuote": "함께하는 기록",
+        "content": "일반 행사 안내입니다."
+      }
+    },
+    {
+      "from": "GENERAL_05_FESTIVE",
+      "to": "GENERAL_06_CULTURE",
+      "changed": [],
+      "before": {
+        "title": "딥디프일반 17413",
+        "subtitle": "일반 행사 부제",
+        "conceptType": "GENERAL",
+        "templateType": "FULL",
+        "venueName": "수락 컨퍼런스홀",
+        "venueDetail": "B1 오디토리움",
+        "address": "서울특별시 마포구 양화로 45",
+        "heroImage": "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+        "galleryImages": [
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-01.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-02.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-03.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-04.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-05.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-06.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-07.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-08.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_05_FESTIVE/hero.webp"
+        ],
+        "galleryCount": 10,
+        "galleryDisplayMode": "SLIDE",
+        "accounts": [
+          {
+            "bank": "카카오뱅크",
+            "role": "참가비",
+            "holder": "수락행사",
+            "number": "3333-01-1234567"
+          },
+          {
+            "bank": "토스뱅크",
+            "role": "후원금",
+            "holder": "수락행사",
+            "number": "1000-2222-3333"
+          }
+        ],
+        "accountCount": 2,
+        "rsvpEnabled": true,
+        "mapLat": 37.5563,
+        "mapLng": 126.922,
+        "mapProvider": "NAVER",
+        "music": {
+          "enabled": true,
+          "musicKey": "piano_soft",
+          "sourceType": "SHARED"
+        },
+        "groomName": "",
+        "brideName": "",
+        "introQuote": "함께하는 기록",
+        "content": "일반 행사 안내입니다."
+      },
+      "after": {
+        "title": "딥디프일반 17413",
+        "subtitle": "일반 행사 부제",
+        "conceptType": "GENERAL",
+        "templateType": "FULL",
+        "venueName": "수락 컨퍼런스홀",
+        "venueDetail": "B1 오디토리움",
+        "address": "서울특별시 마포구 양화로 45",
+        "heroImage": "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+        "galleryImages": [
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-01.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-02.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-03.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-04.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-05.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-06.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-07.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-08.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_05_FESTIVE/hero.webp"
+        ],
+        "galleryCount": 10,
+        "galleryDisplayMode": "SLIDE",
+        "accounts": [
+          {
+            "bank": "카카오뱅크",
+            "role": "참가비",
+            "holder": "수락행사",
+            "number": "3333-01-1234567"
+          },
+          {
+            "bank": "토스뱅크",
+            "role": "후원금",
+            "holder": "수락행사",
+            "number": "1000-2222-3333"
+          }
+        ],
+        "accountCount": 2,
+        "rsvpEnabled": true,
+        "mapLat": 37.5563,
+        "mapLng": 126.922,
+        "mapProvider": "NAVER",
+        "music": {
+          "enabled": true,
+          "musicKey": "piano_soft",
+          "sourceType": "SHARED"
+        },
+        "groomName": "",
+        "brideName": "",
+        "introQuote": "함께하는 기록",
+        "content": "일반 행사 안내입니다."
+      }
+    },
+    {
+      "from": "GENERAL_06_CULTURE",
+      "to": "GENERAL_01_CLASSIC",
+      "changed": [],
+      "before": {
+        "title": "딥디프일반 17413",
+        "subtitle": "일반 행사 부제",
+        "conceptType": "GENERAL",
+        "templateType": "FULL",
+        "venueName": "수락 컨퍼런스홀",
+        "venueDetail": "B1 오디토리움",
+        "address": "서울특별시 마포구 양화로 45",
+        "heroImage": "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+        "galleryImages": [
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-01.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-02.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-03.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-04.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-05.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-06.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-07.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-08.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_05_FESTIVE/hero.webp"
+        ],
+        "galleryCount": 10,
+        "galleryDisplayMode": "SLIDE",
+        "accounts": [
+          {
+            "bank": "카카오뱅크",
+            "role": "참가비",
+            "holder": "수락행사",
+            "number": "3333-01-1234567"
+          },
+          {
+            "bank": "토스뱅크",
+            "role": "후원금",
+            "holder": "수락행사",
+            "number": "1000-2222-3333"
+          }
+        ],
+        "accountCount": 2,
+        "rsvpEnabled": true,
+        "mapLat": 37.5563,
+        "mapLng": 126.922,
+        "mapProvider": "NAVER",
+        "music": {
+          "enabled": true,
+          "musicKey": "piano_soft",
+          "sourceType": "SHARED"
+        },
+        "groomName": "",
+        "brideName": "",
+        "introQuote": "함께하는 기록",
+        "content": "일반 행사 안내입니다."
+      },
+      "after": {
+        "title": "딥디프일반 17413",
+        "subtitle": "일반 행사 부제",
+        "conceptType": "GENERAL",
+        "templateType": "FULL",
+        "venueName": "수락 컨퍼런스홀",
+        "venueDetail": "B1 오디토리움",
+        "address": "서울특별시 마포구 양화로 45",
+        "heroImage": "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+        "galleryImages": [
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-01.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-02.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-03.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-04.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-05.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-06.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-07.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/shared-general/photo-08.webp",
+          "https://cdn.platform-assets.com/invitation/shared/images/templates/GENERAL_05_FESTIVE/hero.webp"
+        ],
+        "galleryCount": 10,
+        "galleryDisplayMode": "SLIDE",
+        "accounts": [
+          {
+            "bank": "카카오뱅크",
+            "role": "참가비",
+            "holder": "수락행사",
+            "number": "3333-01-1234567"
+          },
+          {
+            "bank": "토스뱅크",
+            "role": "후원금",
+            "holder": "수락행사",
+            "number": "1000-2222-3333"
+          }
+        ],
+        "accountCount": 2,
+        "rsvpEnabled": true,
+        "mapLat": 37.5563,
+        "mapLng": 126.922,
+        "mapProvider": "NAVER",
+        "music": {
+          "enabled": true,
+          "musicKey": "piano_soft",
+          "sourceType": "SHARED"
+        },
+        "groomName": "",
+        "brideName": "",
+        "introQuote": "함께하는 기록",
+        "content": "일반 행사 안내입니다."
+      }
+    }
+  ]
+}

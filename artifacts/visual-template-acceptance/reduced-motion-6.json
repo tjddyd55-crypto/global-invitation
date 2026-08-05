@@ -1,0 +1,34 @@
+{
+  "report": [
+    {
+      "id": "WEDDING_04_EDITORIAL",
+      "status": "PASS",
+      "hiddenCount": 0
+    },
+    {
+      "id": "WEDDING_05_GARDEN",
+      "status": "PASS",
+      "hiddenCount": 0
+    },
+    {
+      "id": "WEDDING_06_NIGHT",
+      "status": "PASS",
+      "hiddenCount": 0
+    },
+    {
+      "id": "GENERAL_04_CLEAN",
+      "status": "PASS",
+      "hiddenCount": 0
+    },
+    {
+      "id": "GENERAL_05_FESTIVE",
+      "status": "PASS",
+      "hiddenCount": 0
+    },
+    {
+      "id": "GENERAL_06_CULTURE",
+      "status": "PASS",
+      "hiddenCount": 0
+    }
+  ]
+}

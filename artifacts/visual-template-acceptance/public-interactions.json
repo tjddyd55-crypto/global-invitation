@@ -1,0 +1,59 @@
+{
+  "results": {
+    "WEDDING_04_EDITORIAL": {
+      "basic": "PASS",
+      "gallery": "PASS",
+      "accounts": "PASS",
+      "map": "PASS",
+      "music": "PASS",
+      "share": "PASS",
+      "rsvp": "PASS"
+    },
+    "WEDDING_05_GARDEN": {
+      "basic": "PASS",
+      "gallery": "PASS",
+      "accounts": "PASS",
+      "map": "PASS",
+      "music": "PASS",
+      "share": "PASS",
+      "rsvp": "PASS"
+    },
+    "WEDDING_06_NIGHT": {
+      "basic": "PASS",
+      "gallery": "PASS",
+      "accounts": "PASS",
+      "map": "PASS",
+      "music": "PASS",
+      "share": "PASS",
+      "rsvp": "PASS"
+    },
+    "GENERAL_04_CLEAN": {
+      "basic": "PASS",
+      "gallery": "PASS",
+      "accounts": "PASS",
+      "map": "PASS",
+      "music": "PASS",
+      "share": "PASS",
+      "rsvp": "PASS"
+    },
+    "GENERAL_05_FESTIVE": {
+      "basic": "PASS",
+      "gallery": "PASS",
+      "accounts": "PASS",
+      "map": "PASS",
+      "music": "PASS",
+      "share": "PASS",
+      "rsvp": "PASS"
+    },
+    "GENERAL_06_CULTURE": {
+      "basic": "PASS",
+      "gallery": "PASS",
+      "accounts": "PASS",
+      "map": "PASS",
+      "music": "PASS",
+      "share": "PASS",
+      "rsvp": "PASS"
+    }
+  },
+  "pageErrors": []
+}

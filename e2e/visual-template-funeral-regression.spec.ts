@@ -125,7 +125,7 @@ test('FUNERAL editor preview public browser regression', async ({ browser }) => 
   }
 
   // share block
-  await expect(page.getByTestId('invitation-share-block').or(page.getByText('Share').first())).toBeVisible();
+  await expect(page.getByTestId('invitation-share-block')).toBeVisible();
 
   // reload persistence
   await page.reload({ waitUntil: 'networkidle' });
