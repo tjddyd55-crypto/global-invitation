@@ -9,9 +9,18 @@ type Step4CoupleInfoProps = {
   bride: WeddingEditorPerson;
   onGroomChange: (value: Partial<WeddingEditorPerson>) => void;
   onBrideChange: (value: Partial<WeddingEditorPerson>) => void;
+  onPersistGroomClear?: () => Promise<void>;
+  onPersistBrideClear?: () => Promise<void>;
 };
 
-export default function Step4CoupleInfo({ groom, bride, onGroomChange, onBrideChange }: Step4CoupleInfoProps) {
+export default function Step4CoupleInfo({
+  groom,
+  bride,
+  onGroomChange,
+  onBrideChange,
+  onPersistGroomClear,
+  onPersistBrideClear,
+}: Step4CoupleInfoProps) {
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
@@ -38,6 +47,9 @@ export default function Step4CoupleInfo({ groom, bride, onGroomChange, onBrideCh
             thumbnailRole="couple"
             onChange={(photo) => onGroomChange({ photo })}
             onClear={() => onGroomChange({ photo: '' })}
+            onPersistClear={onPersistGroomClear}
+            clearTestId="groom-image-clear"
+            inputTestId="groom-upload-input"
           />
           <label className={styles.field}>
             <span className={styles.fieldLabel}>연락처 (선택)</span>
@@ -77,6 +89,9 @@ export default function Step4CoupleInfo({ groom, bride, onGroomChange, onBrideCh
             thumbnailRole="couple"
             onChange={(photo) => onBrideChange({ photo })}
             onClear={() => onBrideChange({ photo: '' })}
+            onPersistClear={onPersistBrideClear}
+            clearTestId="bride-image-clear"
+            inputTestId="bride-upload-input"
           />
           <label className={styles.field}>
             <span className={styles.fieldLabel}>연락처 (선택)</span>

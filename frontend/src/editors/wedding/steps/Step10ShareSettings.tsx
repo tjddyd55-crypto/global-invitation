@@ -5,6 +5,9 @@ import styles from '../weddingEditor.module.css';
 import type { WeddingEditorShare } from '../state/weddingEditor.types';
 import InvitationShareCardPreview from '@/src/components/share/InvitationShareCardPreview';
 import type { InvitationSharePreviewModel } from '@/src/invitation/sharePreviewModel';
+import { deleteMediaFile } from '@/src/lib/mediaApi';
+import { persistThenDeleteMedia } from '../lib/persistThenDeleteMedia';
+import { useState } from 'react';
 
 type Step10ShareSettingsProps = {
   value: WeddingEditorShare;
@@ -29,12 +32,57 @@ export default function Step10ShareSettings({
 }: Step10ShareSettingsProps) {
   const hero = (heroImage || '').trim();
   const hasHero = Boolean(hero);
+  const [clearError, setClearError] = useState<string | null>(null);
+  const [cleanupWarning, setCleanupWarning] = useState<string | null>(null);
+  const [clearingExtra, setClearingExtra] = useState(false);
+
+  const customShareUrl = value.ogImageMode === 'CUSTOM' ? (value.ogImage || '').trim() : '';
+  const shouldDeleteCustomShare = Boolean(customShareUrl) && customShareUrl !== hero;
 
   const applySharePatch = async (patch: Partial<WeddingEditorShare>) => {
     onChange(patch);
     if (onPersistShareChange) {
       await onPersistShareChange(patch);
     }
+  };
+
+  const clearShareImage = async (options?: { fromUploader?: boolean }) => {
+    const previous = {
+      ogImage: value.ogImage,
+      ogImageMode: value.ogImageMode,
+    };
+    const next = { ogImage: '', ogImageMode: 'NONE' as const };
+    const remoteUrl = shouldDeleteCustomShare ? customShareUrl : '';
+
+    setClearError(null);
+    setCleanupWarning(null);
+    if (!options?.fromUploader) setClearingExtra(true);
+
+    const status = await persistThenDeleteMedia({
+      applyDraftRemoval: () => onChange(next),
+      rollbackDraft: () => onChange(previous),
+      persistDraft: async () => {
+        if (onPersistShareChange) {
+          await onPersistShareChange(next);
+        }
+      },
+      deleteRemote: remoteUrl
+        ? async () => {
+            await deleteMediaFile(remoteUrl);
+          }
+        : null,
+    });
+
+    if (status === 'persist_failed') {
+      setClearError('변경사항을 저장하지 못했습니다. 다시 시도해 주세요.');
+    } else if (status === 'delete_failed') {
+      setCleanupWarning(
+        '이미지는 제거되었습니다. 저장소 파일 정리는 나중에 다시 시도될 수 있습니다.'
+      );
+    }
+
+    if (!options?.fromUploader) setClearingExtra(false);
+    return status;
   };
 
   return (
@@ -81,11 +129,18 @@ export default function Step10ShareSettings({
             });
           }}
           onClear={() => {
-            void applySharePatch({ ogImage: '', ogImageMode: 'NONE' });
+            onChange({ ogImage: '', ogImageMode: 'NONE' });
           }}
+          onPersistClear={async () => {
+            if (onPersistShareChange) {
+              await onPersistShareChange({ ogImage: '', ogImageMode: 'NONE' });
+            }
+          }}
+          shouldDeleteRemote={shouldDeleteCustomShare}
           uploadAssetType="asset"
           thumbnailRole="openGraph"
           inputTestId="og-image-input"
+          clearTestId="og-image-clear"
         />
         <div className={styles.uploaderActions}>
           <button
@@ -95,7 +150,7 @@ export default function Step10ShareSettings({
               if (!hasHero) return;
               void applySharePatch({ ogImage: hero, ogImageMode: 'HERO' });
             }}
-            disabled={!hasHero || persistingShareImage}
+            disabled={!hasHero || persistingShareImage || clearingExtra}
             data-testid="og-use-hero"
           >
             대표 이미지 사용
@@ -104,20 +159,30 @@ export default function Step10ShareSettings({
             type="button"
             className={styles.buttonSubtle}
             onClick={() => {
-              void applySharePatch({ ogImage: '', ogImageMode: 'NONE' });
+              void clearShareImage();
             }}
-            disabled={persistingShareImage}
+            disabled={persistingShareImage || clearingExtra}
             data-testid="og-clear-image"
           >
-            이미지 제거
+            {clearingExtra ? '제거 중...' : '이미지 제거'}
           </button>
         </div>
         {!hasHero ? (
           <p className={styles.fieldDescription}>대표 이미지가 없어 ‘대표 이미지 사용’을 쓸 수 없습니다.</p>
         ) : null}
-        {persistingShareImage ? (
+        {persistingShareImage || clearingExtra ? (
           <p className={styles.fieldDescription} data-testid="og-image-persisting">
             공유 이미지 설정을 저장하는 중…
+          </p>
+        ) : null}
+        {clearError ? (
+          <p className={styles.fieldDescription} data-testid="og-image-error">
+            {clearError}
+          </p>
+        ) : null}
+        {cleanupWarning ? (
+          <p className={styles.fieldDescription} data-testid="og-image-cleanup-warning">
+            {cleanupWarning}
           </p>
         ) : null}
         {showInlineShareCardPreview && sharePreviewModel ? (

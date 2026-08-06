@@ -28,6 +28,7 @@ import { createPresignedUploadUrl, headObject, type HeadObjectResult } from '../
 import { deleteFile, readFileBuffer, uploadFile } from '../lib/storage/uploadToR2';
 import { canDeleteByStorageKey, isMediaTemplatePrivilegedRole } from '../lib/media/mediaDeleteAuthorization';
 import { deleteStoredMediaByObjectKey, resolveStorageKeyFromUrl } from '../storage/mediaStorage';
+import { assertInvitationUserMediaSafeToDelete } from '../lib/tempInvitationMedia';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_AUDIO_SIZE_BYTES = 10 * 1024 * 1024;
@@ -845,6 +846,9 @@ export async function deleteMediaForAuthenticatedUser(
   if (!allowed) {
     throw new Error('UNAUTHORIZED_MEDIA_ACCESS');
   }
+
+  // Fail closed: never delete R2 while any active Invitation still references the object.
+  await assertInvitationUserMediaSafeToDelete(key);
 
   await deleteStoredMediaByObjectKey(key);
   await markMediaDeletedByObjectKey({ objectKey: key, userId: user.id }).catch((error) => {

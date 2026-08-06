@@ -18,3 +18,4 @@ export {
 } from './scanInvitationReferences';
 export { auditTempInvitationMedia } from './auditTempInvitationMedia';
 export { cleanupTempInvitationMedia } from './cleanupTempInvitationMedia';
+export { assertInvitationUserMediaSafeToDelete } from './assertSafeToDelete';

@@ -7,12 +7,13 @@ import type { WeddingEditorHero } from '../state/weddingEditor.types';
 type Step2HeroImageProps = {
   value: WeddingEditorHero;
   onChange: (value: Partial<WeddingEditorHero>) => void;
+  onPersistClear?: () => Promise<void>;
 };
 
 /**
  * Figma Make Hero upload step — callout + dashed upload (4:3 / 10MB).
  */
-export default function Step2HeroImage({ value, onChange }: Step2HeroImageProps) {
+export default function Step2HeroImage({ value, onChange, onPersistClear }: Step2HeroImageProps) {
   return (
     <section className={`${styles.stepSection} ${styles.stepSectionNoTitle}`}>
       <div className={styles.heroCallout}>
@@ -35,9 +36,11 @@ export default function Step2HeroImage({ value, onChange }: Step2HeroImageProps)
         value={value.heroImage}
         onChange={(heroImage) => onChange({ heroImage })}
         onClear={() => onChange({ heroImage: '' })}
+        onPersistClear={onPersistClear}
         uploadAssetType="hero"
         thumbnailRole="hero"
         inputTestId="hero-upload-input"
+        clearTestId="hero-image-clear"
         required
         priority
       />

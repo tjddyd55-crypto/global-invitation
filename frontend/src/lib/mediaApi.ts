@@ -619,6 +619,13 @@ export async function deleteMediaFile(fileUrl: string, objectKey?: string) {
     if (failure.errorCode === 'UNAUTHORIZED_MEDIA_ACCESS' || response.status === 403) {
       throw new MediaApiError('이미지 삭제 권한이 없습니다.', 403, 'UNAUTHORIZED_MEDIA_ACCESS');
     }
+    if (failure.errorCode === 'MEDIA_STILL_REFERENCED' || response.status === 409) {
+      throw new MediaApiError(
+        '아직 초대장에서 사용 중인 이미지는 삭제할 수 없습니다. 저장 후 다시 시도해 주세요.',
+        409,
+        'MEDIA_STILL_REFERENCED'
+      );
+    }
     throw new MediaApiError('이미지 삭제에 실패했습니다.', response.status, failure.errorCode || 'DELETE_FAILED');
   }
 

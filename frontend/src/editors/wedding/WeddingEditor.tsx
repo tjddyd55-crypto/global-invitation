@@ -68,6 +68,8 @@ export default function WeddingEditor({
   const [persistingShareImage, setPersistingShareImage] = useState(false);
   const [siteOrigin, setSiteOrigin] = useState('');
   const previewLoggedRef = useRef(false);
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const shell = useEditorShell();
 
   useEffect(() => {
@@ -163,25 +165,54 @@ export default function WeddingEditor({
   const handleGalleryDisplayModeChange = async (mode: 'SLIDE' | 'GRID_EXPAND') => {
     dispatch({ type: 'SET_GALLERY_DISPLAY_MODE', payload: mode });
     if (!onSave) return;
+    const base = stateRef.current;
     await onSave({
-      ...state,
-      gallery: { ...state.gallery, displayMode: mode },
+      ...base,
+      gallery: { ...base.gallery, displayMode: mode },
     });
   };
 
   const handleGalleryPersist = async (images: WeddingEditorState['gallery']['images']) => {
     if (!onSave) return;
     await onSave({
-      ...state,
-      gallery: { ...state.gallery, images },
+      ...stateRef.current,
+      gallery: { ...stateRef.current.gallery, images },
+    });
+  };
+
+  const handleHeroPersistClear = async () => {
+    if (!onSave) return;
+    const base = stateRef.current;
+    await onSave({
+      ...base,
+      hero: { ...base.hero, heroImage: '' },
+    });
+  };
+
+  const handleGroomPersistClear = async () => {
+    if (!onSave) return;
+    const base = stateRef.current;
+    await onSave({
+      ...base,
+      groom: { ...base.groom, photo: '' },
+    });
+  };
+
+  const handleBridePersistClear = async () => {
+    if (!onSave) return;
+    const base = stateRef.current;
+    await onSave({
+      ...base,
+      bride: { ...base.bride, photo: '' },
     });
   };
 
   const handlePersistShareChange = async (payload: Partial<WeddingEditorState['share']>) => {
+    const base = stateRef.current;
     const nextState: WeddingEditorState = {
-      ...state,
+      ...base,
       share: {
-        ...state.share,
+        ...base.share,
         ...payload,
       },
     };
@@ -221,7 +252,13 @@ export default function WeddingEditor({
           />
         );
       case 'hero':
-        return <Step2HeroImage value={state.hero} onChange={(payload) => dispatch({ type: 'SET_HERO', payload })} />;
+        return (
+          <Step2HeroImage
+            value={state.hero}
+            onChange={(payload) => dispatch({ type: 'SET_HERO', payload })}
+            onPersistClear={onSave ? handleHeroPersistClear : undefined}
+          />
+        );
       case 'couple':
         return (
           <Step4CoupleInfo
@@ -229,6 +266,8 @@ export default function WeddingEditor({
             bride={state.bride}
             onGroomChange={(payload) => dispatch({ type: 'SET_GROOM', payload })}
             onBrideChange={(payload) => dispatch({ type: 'SET_BRIDE', payload })}
+            onPersistGroomClear={onSave ? handleGroomPersistClear : undefined}
+            onPersistBrideClear={onSave ? handleBridePersistClear : undefined}
           />
         );
       case 'schedule':

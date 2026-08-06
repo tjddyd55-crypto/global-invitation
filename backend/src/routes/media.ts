@@ -586,6 +586,15 @@ router.delete('/', async (req, res) => {
     if (deleteError instanceof Error && deleteError.message === 'UNAUTHORIZED_MEDIA_ACCESS') {
       return res.status(403).json({ error: 'UNAUTHORIZED_MEDIA_ACCESS' });
     }
+    if (deleteError instanceof Error && deleteError.message === 'PROTECTED_SHARED_MEDIA') {
+      return res.status(403).json({ error: 'PROTECTED_SHARED_MEDIA' });
+    }
+    if (deleteError instanceof Error && deleteError.message === 'MEDIA_STILL_REFERENCED') {
+      return res.status(409).json({ error: 'MEDIA_STILL_REFERENCED' });
+    }
+    if (deleteError instanceof Error && deleteError.message === 'MEDIA_REFERENCE_SCAN_FAILED') {
+      return res.status(503).json({ error: 'MEDIA_REFERENCE_SCAN_FAILED' });
+    }
     if (deleteError instanceof Error && deleteError.message === 'R2_STORAGE_NOT_CONFIGURED') {
       return res.status(503).json({ error: 'R2_STORAGE_NOT_CONFIGURED' });
     }

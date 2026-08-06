@@ -1,8 +1,9 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import AppImage from '@/src/components/media/AppImage';
 import { deleteMediaFile, uploadMediaImage, type MediaUploadAssetType } from '@/src/lib/mediaApi';
+import { persistThenDeleteMedia } from '../lib/persistThenDeleteMedia';
 import styles from '../weddingEditor.module.css';
 
 type ImageUploaderProps = {
@@ -11,9 +12,17 @@ type ImageUploaderProps = {
   value?: string;
   onChange: (url: string) => void;
   onClear?: () => void;
+  /**
+   * Persist invitation draft after local clear (gallery-style).
+   * Remote DELETE runs only after this resolves successfully.
+   */
+  onPersistClear?: () => Promise<void>;
+  /** When false, only draft is cleared (e.g. share HERO mode reuses hero object). */
+  shouldDeleteRemote?: boolean;
   required?: boolean;
   uploadAssetType?: MediaUploadAssetType;
   inputTestId?: string;
+  clearTestId?: string;
   /** LCP: 대표(히어로) 미리보기에만 사용 */
   priority?: boolean;
   /** Editor 전용 썸네일 레이아웃 — Public 비율과 분리 */
@@ -32,25 +41,34 @@ export default function ImageUploader({
   value,
   onChange,
   onClear,
+  onPersistClear,
+  shouldDeleteRemote = true,
   required,
   uploadAssetType = 'gallery',
   inputTestId,
+  clearTestId,
   priority,
   thumbnailRole = 'default',
 }: ImageUploaderProps) {
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [cleanupWarning, setCleanupWarning] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const clearInFlightRef = useRef(false);
+
+  const busy = uploading || clearing;
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || busy) return;
 
     setUploading(true);
     setProgress(0);
     setError(null);
+    setCleanupWarning(null);
 
     try {
       if (value) {
@@ -59,7 +77,7 @@ export default function ImageUploader({
 
       const uploaded = await uploadMediaImage(file, {
         assetType: uploadAssetType,
-        onProgress: (value) => setProgress(value),
+        onProgress: (next) => setProgress(next),
       });
       onChange(uploaded.url);
     } catch (uploadError) {
@@ -72,19 +90,47 @@ export default function ImageUploader({
   };
 
   const handleClear = async () => {
-    if (!value) return;
+    if (!value || clearInFlightRef.current || busy) return;
     const previousUrl = value;
-    revokeIfObjectUrl(previousUrl);
-    onClear?.();
-    if (!onClear) {
-      onChange('');
+    clearInFlightRef.current = true;
+    setClearing(true);
+    setError(null);
+    setCleanupWarning(null);
+
+    const status = await persistThenDeleteMedia({
+      applyDraftRemoval: () => {
+        revokeIfObjectUrl(previousUrl);
+        onClear?.();
+        if (!onClear) {
+          onChange('');
+        }
+      },
+      rollbackDraft: () => {
+        onChange(previousUrl);
+      },
+      persistDraft: async () => {
+        if (onPersistClear) {
+          await onPersistClear();
+        }
+      },
+      deleteRemote:
+        shouldDeleteRemote && !previousUrl.startsWith('blob:')
+          ? async () => {
+              await deleteMediaFile(previousUrl);
+            }
+          : null,
+    });
+
+    if (status === 'persist_failed') {
+      setError('변경사항을 저장하지 못했습니다. 다시 시도해 주세요.');
+    } else if (status === 'delete_failed') {
+      setCleanupWarning(
+        '이미지는 제거되었습니다. 저장소 파일 정리는 나중에 다시 시도될 수 있습니다.'
+      );
     }
-    // Draft 참조 제거 후 R2/MediaFile 정리. 실패해도 UI는 비운 상태 유지 (72h orphan cleanup이 재시도).
-    if (!previousUrl.startsWith('blob:')) {
-      void deleteMediaFile(previousUrl).catch((cleanupError) => {
-        console.warn('[ImageUploader] media delete failed', cleanupError);
-      });
-    }
+
+    setClearing(false);
+    clearInFlightRef.current = false;
   };
 
   const previewClass =
@@ -116,6 +162,7 @@ export default function ImageUploader({
             data-testid={thumbnailRole === 'couple' ? 'editor-couple-thumbnail' : undefined}
             onClick={() => setLightboxOpen(true)}
             aria-label={`${label} 원본 보기`}
+            disabled={busy}
           >
             <AppImage src={value} alt={`${label} preview`} priority={priority} />
           </button>
@@ -129,12 +176,18 @@ export default function ImageUploader({
               : styles.uploaderActions
           }
         >
-          <label className={styles.buttonGhost} htmlFor={inputId}>
-            {uploading ? '업로드 중...' : '이미지 선택'}
+          <label className={styles.buttonGhost} htmlFor={inputId} aria-disabled={busy}>
+            {uploading ? '업로드 중...' : clearing ? '제거 중...' : '이미지 선택'}
           </label>
           {value && (
-            <button type="button" className={styles.buttonSubtle} onClick={() => void handleClear()} disabled={uploading}>
-              제거
+            <button
+              type="button"
+              className={styles.buttonSubtle}
+              onClick={() => void handleClear()}
+              disabled={busy}
+              data-testid={clearTestId || 'image-uploader-clear'}
+            >
+              {clearing ? '제거 중...' : '제거'}
             </button>
           )}
         </div>
@@ -143,7 +196,21 @@ export default function ImageUploader({
             <div className={styles.uploadProgressBar} style={{ width: `${progress}%` }} />
           </div>
         )}
-        {error && <p className={styles.fieldDescription}>{error}</p>}
+        {clearing ? (
+          <p className={styles.fieldDescription} data-testid="image-uploader-persist-status">
+            저장 후 이미지를 정리하는 중…
+          </p>
+        ) : null}
+        {error && (
+          <p className={styles.fieldDescription} data-testid="image-uploader-error">
+            {error}
+          </p>
+        )}
+        {cleanupWarning && (
+          <p className={styles.fieldDescription} data-testid="image-uploader-cleanup-warning">
+            {cleanupWarning}
+          </p>
+        )}
         <input
           id={inputId}
           type="file"
@@ -151,7 +218,7 @@ export default function ImageUploader({
           className={styles.hiddenInput}
           data-testid={inputTestId}
           onChange={(event) => void handleFileChange(event)}
-          disabled={uploading}
+          disabled={busy}
         />
       </div>
       {lightboxOpen && value ? (

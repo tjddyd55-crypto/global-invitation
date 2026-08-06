@@ -7,6 +7,7 @@ import {
   shouldDeleteRemoteGalleryAsset,
 } from '@/src/invitation/galleryAsset';
 import { deleteMediaFile, MediaApiError, uploadMediaImage } from '@/src/lib/mediaApi';
+import { persistThenDeleteMedia } from '../lib/persistThenDeleteMedia';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorImage } from '../state/weddingEditor.types';
 
@@ -115,26 +116,26 @@ export default function MultiImageUploader({
     nextImages: WeddingEditorImage[],
     previousImages: WeddingEditorImage[]
   ): Promise<boolean> => {
-    onChange(nextImages);
-    if (!onPersist) {
-      return true;
-    }
     setPersistStatus('saving');
     setError(null);
-    try {
-      await onPersist(nextImages);
-      setPersistStatus('saved');
-      return true;
-    } catch (persistError) {
-      onChange(previousImages);
+    const status = await persistThenDeleteMedia({
+      applyDraftRemoval: () => onChange(nextImages),
+      rollbackDraft: () => onChange(previousImages),
+      persistDraft: async () => {
+        if (onPersist) {
+          await onPersist(nextImages);
+        }
+      },
+    });
+
+    if (status === 'persist_failed') {
       setPersistStatus('error');
-      if (persistError instanceof MediaApiError && persistError.errorCode === 'AUTH_REQUIRED') {
-        setError(persistError.message);
-      } else {
-        setError('변경사항을 저장하지 못했습니다. 다시 시도해 주세요.');
-      }
+      setError('변경사항을 저장하지 못했습니다. 다시 시도해 주세요.');
       return false;
     }
+
+    setPersistStatus('saved');
+    return true;
   };
 
   const cleanupRemoteAsset = (item: WeddingEditorImage) => {
