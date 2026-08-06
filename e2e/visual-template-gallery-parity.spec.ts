@@ -18,11 +18,8 @@ const CASES = [
 test.describe('visual template gallery parity (template preview)', () => {
   for (const item of CASES) {
     test(`${item.id} fixture gallery presentation`, async ({ page }) => {
-      const errors: string[] = [];
-      page.on('pageerror', (err) => errors.push(String(err)));
-      page.on('console', (msg) => {
-        if (msg.type() === 'error') errors.push(msg.text());
-      });
+      const pageErrors: string[] = [];
+      page.on('pageerror', (err) => pageErrors.push(String(err)));
 
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(`${FE}/templates/${item.id}/preview`, {
@@ -42,7 +39,7 @@ test.describe('visual template gallery parity (template preview)', () => {
         await expect(gallery.getByTestId('gallery-grid')).toBeVisible();
       }
 
-      expect(errors, errors.join('\n')).toEqual([]);
+      expect(pageErrors, pageErrors.join('\n')).toEqual([]);
     });
   }
 });

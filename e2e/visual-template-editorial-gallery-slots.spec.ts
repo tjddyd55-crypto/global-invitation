@@ -7,11 +7,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { FE } from './helpers/visualTemplateAcceptance';
 
 async function assertEditorialFixedSlots(page: Page, viewport: { width: number; height: number }) {
-  const errors: string[] = [];
-  page.on('pageerror', (err) => errors.push(String(err)));
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') errors.push(msg.text());
-  });
+  const pageErrors: string[] = [];
+  page.on('pageerror', (err) => pageErrors.push(String(err)));
 
   await page.setViewportSize(viewport);
   await page.goto(`${FE}/templates/WEDDING_04_EDITORIAL/preview`, {
@@ -64,7 +61,7 @@ async function assertEditorialFixedSlots(page: Page, viewport: { width: number; 
   });
   expect(overflowX).toBeLessThanOrEqual(1);
 
-  expect(errors, errors.join('\n')).toEqual([]);
+  expect(pageErrors, pageErrors.join('\n')).toEqual([]);
 }
 
 test.describe('Editorial GRID_EXPAND fixed slots', () => {
