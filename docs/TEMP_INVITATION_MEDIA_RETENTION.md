@@ -100,10 +100,21 @@ QA fixture: ATTACHED 보호 · TEMP 삭제 · recent 보호 · CleanupJob overla
 
 ## Persist-then-delete 마감 (2026-08-07)
 
-- Hero / Groom / Bride / Share → Gallery와 동일 순서
-- Playwright: `e2e/temp-invitation-media-lifecycle.spec.ts`
-- Backend unit: temp media + shared delete guard
-- Frontend unit: persistThenDeleteMedia helper
+- Hero / Groom / Bride / Share → Gallery와 동일 순서 (`persistThenDeleteMedia`)
+- draft load 시 `''` 을 DEFAULT 이미지로 되돌리지 않음 (`||` → typeof string 보존)
+- Backend `MEDIA_STILL_REFERENCED` (409) active-ref 가드
+- Playwright `e2e/temp-invitation-media-lifecycle.spec.ts`: **5 passed**
+  - hero success + ordering
+  - groom/bride success + ordering
+  - persist failure → rollback + delete 0
+  - delete failure → UI 제거 유지
+  - step back / reload → cleanup API 0
+- Backend unit: temp media 13 + mediaDeleteAuthorization
+- Frontend unit: persistThenDeleteMedia 4
+- FE/BE build: pass
+- deployed SHA: `660fe5a`
+- FE deployment: `c8e67d73-a325-48c9-a8d2-82b76dcd10fe`
+- BE deployment: `43984f80-22ba-4685-b50c-abc3aa5b8137`
 - automatic cleanup: **false**
 - main/production: **미반영**
 
