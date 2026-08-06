@@ -59,8 +59,8 @@ export default function Step5Gallery({
           >
             <span className={styles.galleryModeTitle}>나열형</span>
             <span className={styles.galleryModeDesc}>
-              여러 사진을 한 화면에 나열해서 보여줍니다. 선택한 템플릿의 고유한 갤러리 구성으로
-              표시됩니다. 더 보기를 누르면 전체 사진이 펼쳐집니다.
+              여러 사진을 선택한 템플릿의 고유한 배열로 보여줍니다. 사진 비율에 따라 일부는 잘려
+              보일 수 있으며, 사진을 누르면 원본 전체를 확인할 수 있습니다.
             </span>
             <span className={styles.galleryModeIcon} aria-hidden>
               ▦
