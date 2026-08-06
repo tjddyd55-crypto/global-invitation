@@ -1,0 +1,94 @@
+.section {
+  padding: 0 0 48px;
+}
+
+.sectionLabelPad {
+  padding: 0 var(--gutter, 26px);
+}
+
+.filmStrip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0 var(--gutter, 26px) 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.filmStrip::-webkit-scrollbar {
+  display: none;
+}
+
+.filmCell {
+  flex: 0 0 84%;
+  scroll-snap-align: center;
+  padding: 0;
+  border: 0;
+  margin: 0;
+  background: #1c1c19;
+  cursor: pointer;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  display: block;
+}
+
+.filmImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
+  filter: grayscale(0.35);
+}
+
+.filmHint {
+  margin: 12px var(--gutter, 26px) 0;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--muted, #9a958c);
+  text-align: right;
+}
+
+.filmCounter {
+  margin: 0 var(--gutter, 26px) 10px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--gold, #c6b28a);
+}
+
+.cinematic {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3px;
+  padding: 0 var(--gutter, 26px);
+  background: #0c0c0b;
+}
+
+.cinematicCell {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  background: #1c1c19;
+  cursor: pointer;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  display: block;
+}
+
+.cinematicCell:nth-child(5n + 1) {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 9;
+}
+
+.cinematicImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  filter: grayscale(0.2);
+}
+
+.padExpand {
+  padding: 0 var(--gutter, 26px);
+  color: var(--gold, #c6b28a);
+}

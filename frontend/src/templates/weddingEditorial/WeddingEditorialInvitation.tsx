@@ -6,9 +6,7 @@
  * 매거진 편집 레이아웃. 데이터 정규화는 templateInvitationModel 이 담당하고
  * 이 파일은 레이아웃·모션만 기술한다.
  */
-import { useState, type CSSProperties } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
-import GalleryLightboxDialog from '@/src/templates/shared/GalleryLightboxDialog';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
@@ -22,6 +20,7 @@ import {
   type TemplatePerson,
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
+import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
 import styles from './WeddingEditorialInvitation.module.css';
 
 function ProfileRow({ person, flip }: { person: TemplatePerson; flip: boolean }) {
@@ -54,7 +53,6 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   // CSS 변수는 상속되므로 컨테이너에 걸고 이미지가 소비한다.
   const heroRef = useHeroParallax<HTMLDivElement>(0.1, 30);
 
@@ -152,28 +150,14 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
       ) : null}
 
       {model.gallery.hasItems ? (
-        <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <InvitationReveal variant="rise">
-            <p className={styles.sectionLabel}>GALLERY</p>
-          </InvitationReveal>
-          <InvitationReveal variant="fade">
-            <div className={styles.collage}>
-              {model.gallery.items.map((item, index) => (
-                <button
-                  key={item.id || item.url}
-                  type="button"
-                  className={styles.collageCell}
-                  style={{ '--cell-index': index % 6 } as CSSProperties}
-                  onClick={() => setLightboxIndex(index)}
-                  aria-label={`${index + 1}번째 사진 크게 보기`}
-                >
-                  <ImageWithFallback className={styles.collageImage} src={item.url} alt={item.alt} />
-                </button>
-              ))}
-            </div>
-            <p className={styles.galleryCount}>{`${model.gallery.items.length} PHOTOS`}</p>
-          </InvitationReveal>
-        </section>
+        <VisualTemplateGallery
+          visualTemplateId="WEDDING_04_EDITORIAL"
+          items={model.gallery.items}
+          displayMode={model.gallery.displayMode}
+          sectionLabel="GALLERY"
+          labelClassName={styles.sectionLabel}
+          lockBodyScroll={flags.isPublic}
+        />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
           <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
@@ -266,14 +250,6 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
       <footer className={styles.footer}>
         <p className={styles.footerMark}>{model.dateCompact}</p>
       </footer>
-
-      <GalleryLightboxDialog
-        items={model.gallery.items}
-        openIndex={lightboxIndex}
-        onClose={() => setLightboxIndex(null)}
-        onChangeIndex={setLightboxIndex}
-        lockBodyScroll={flags.isPublic}
-      />
     </div>
   );
 }

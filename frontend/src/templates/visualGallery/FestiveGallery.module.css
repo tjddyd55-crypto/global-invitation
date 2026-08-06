@@ -1,0 +1,56 @@
+.section {
+  padding: 0 var(--gutter, 26px) 34px;
+}
+
+.scrapbook {
+  columns: 2;
+  column-gap: 12px;
+}
+
+.scrapCell {
+  display: block;
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 7px;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 5px 14px rgba(48, 31, 108, 0.12);
+  cursor: pointer;
+  break-inside: avoid;
+}
+
+.scrapCell:nth-child(3n) {
+  rotate: 1.5deg;
+}
+
+.scrapCell:nth-child(4n) {
+  rotate: -1.8deg;
+}
+
+.scrapImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: center 22%;
+}
+
+.scrapCell:nth-child(5n) .scrapImage {
+  aspect-ratio: 1 / 1;
+}
+
+.scrapCell:nth-child(7n) .scrapImage {
+  aspect-ratio: 4 / 5;
+}
+
+.slideShell :global(.galleryMainImage) {
+  border: 6px solid #fff;
+  box-shadow: 0 8px 20px rgba(48, 31, 108, 0.18);
+  object-fit: cover;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrapCell {
+    rotate: 0deg !important;
+  }
+}

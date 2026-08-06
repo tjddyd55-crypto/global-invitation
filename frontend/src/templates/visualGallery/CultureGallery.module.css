@@ -1,0 +1,69 @@
+.section {
+  padding: 36px 0 36px var(--gutter, 26px);
+}
+
+.posterStrip {
+  display: flex;
+  gap: 12px;
+  padding-right: var(--gutter, 26px);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.posterStrip::-webkit-scrollbar {
+  display: none;
+}
+
+.posterCell {
+  flex: 0 0 70%;
+  padding: 0;
+  border: 0;
+  margin: 0;
+  background: #e6e1d7;
+  aspect-ratio: 3 / 4;
+  scroll-snap-align: start;
+  cursor: pointer;
+  overflow: hidden;
+  display: block;
+}
+
+.posterImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
+}
+
+.posterGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding-right: var(--gutter, 26px);
+}
+
+.posterGridCell {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  background: #e6e1d7;
+  aspect-ratio: 3 / 4;
+  cursor: pointer;
+  overflow: hidden;
+  display: block;
+  border: 1px solid var(--line, #1a1a1a);
+}
+
+.posterGridCell:nth-child(5n + 1) {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 10;
+}
+
+.posterIndex {
+  margin: 0 0 12px;
+  padding-right: var(--gutter, 26px);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--ink, #1a1a1a);
+}

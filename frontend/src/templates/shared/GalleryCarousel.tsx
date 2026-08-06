@@ -12,6 +12,8 @@ type GalleryCarouselProps = {
   className?: string;
   /** GENERAL 등 concept tone — accent만 변경 */
   tone?: 'wedding' | 'general' | 'funeral';
+  /** Template-specific presentation marker for QA / parity checks */
+  presentation?: string;
 };
 
 const SWIPE_THRESHOLD_PX = 40;
@@ -22,6 +24,7 @@ export default function GalleryCarousel({
   hintText = '밀어서 더 많은 이미지 보기',
   className,
   tone = 'wedding',
+  presentation,
 }: GalleryCarouselProps) {
   const [index, setIndex] = useState(0);
   const [failed, setFailed] = useState<Record<string, true>>({});
@@ -56,6 +59,8 @@ export default function GalleryCarousel({
       className={`${styles.albumSection} ${styles[`tone_${tone}`]} ${className ?? ''}`.trim()}
       aria-label="Gallery"
       data-testid="public-gallery"
+      data-gallery-layout="SLIDE"
+      data-gallery-presentation={presentation || undefined}
       data-section-id="gallery"
       data-preview-section="gallery"
       data-gallery-count={visible.length}

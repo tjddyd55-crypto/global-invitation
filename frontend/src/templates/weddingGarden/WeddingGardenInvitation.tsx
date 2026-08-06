@@ -5,9 +5,7 @@
  * WEDDING 05 — Romantic Garden
  * 아치 히어로 + 편지형 인사말 + 폴라로이드 갤러리.
  */
-import { useState, type CSSProperties } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
-import GalleryLightboxDialog from '@/src/templates/shared/GalleryLightboxDialog';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
@@ -20,6 +18,7 @@ import {
   type TemplatePerson,
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
+import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
 import styles from './WeddingGardenInvitation.module.css';
 
 function PersonCard({ person, offset }: { person: TemplatePerson; offset: boolean }) {
@@ -49,7 +48,6 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
 
@@ -150,29 +148,14 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
       </section>
 
       {model.gallery.hasItems ? (
-        <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <InvitationReveal variant="rise">
-            <p className={styles.sectionLabel}>우리의 순간</p>
-          </InvitationReveal>
-          <InvitationReveal variant="fade">
-            <div className={styles.polaroidGrid}>
-              {model.gallery.items.map((item, index) => (
-                <button
-                  key={item.id || item.url}
-                  type="button"
-                  className={styles.polaroid}
-                  style={{ '--cell-index': index % 6 } as CSSProperties}
-                  onClick={() => setLightboxIndex(index)}
-                  aria-label={`${index + 1}번째 사진 크게 보기`}
-                >
-                  <span className={styles.polaroidFrame}>
-                    <ImageWithFallback className={styles.polaroidImage} src={item.url} alt={item.alt} />
-                  </span>
-                </button>
-              ))}
-            </div>
-          </InvitationReveal>
-        </section>
+        <VisualTemplateGallery
+          visualTemplateId="WEDDING_05_GARDEN"
+          items={model.gallery.items}
+          displayMode={model.gallery.displayMode}
+          sectionLabel="우리의 순간"
+          labelClassName={styles.sectionLabel}
+          lockBodyScroll={flags.isPublic}
+        />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
           <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
@@ -236,14 +219,6 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
         <span className={styles.leaf} aria-hidden />
         <p className={styles.footerMark}>{model.dateText}</p>
       </footer>
-
-      <GalleryLightboxDialog
-        items={model.gallery.items}
-        openIndex={lightboxIndex}
-        onClose={() => setLightboxIndex(null)}
-        onChangeIndex={setLightboxIndex}
-        lockBodyScroll={flags.isPublic}
-      />
     </div>
   );
 }

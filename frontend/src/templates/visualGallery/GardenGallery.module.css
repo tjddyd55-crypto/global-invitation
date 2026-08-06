@@ -1,0 +1,83 @@
+.section {
+  padding: 0 var(--gutter, 26px) 48px;
+}
+
+.polaroidGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.polaroid {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  display: block;
+}
+
+.polaroid:nth-child(4n + 1) {
+  rotate: -1.6deg;
+}
+
+.polaroid:nth-child(4n + 2) {
+  rotate: 1.4deg;
+  margin-top: 16px;
+}
+
+.polaroid:nth-child(4n + 3) {
+  rotate: 1deg;
+}
+
+.polaroid:nth-child(4n) {
+  rotate: -1.2deg;
+  margin-top: 12px;
+}
+
+.polaroid:first-child {
+  grid-column: 1 / -1;
+  rotate: 0deg;
+  margin-top: 0;
+}
+
+.polaroidFrame {
+  display: block;
+  padding: 10px 10px 26px;
+  background: var(--card, #fffaf3);
+  border: 1px solid var(--line, #e4d8c8);
+  box-shadow: 0 12px 26px -20px rgba(93, 79, 60, 0.7);
+  border-radius: 4px 4px 12px 12px;
+}
+
+.polaroid:first-child .polaroidFrame {
+  padding-bottom: 30px;
+  border-radius: 18px 18px 22px 22px;
+}
+
+.polaroidImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: center 22%;
+  background: #efe8dc;
+  border-radius: 2px;
+}
+
+.polaroid:first-child .polaroidImage {
+  aspect-ratio: 4 / 3;
+  border-radius: 14px 14px 4px 4px;
+}
+
+.slideShell :global(.galleryMainImage) {
+  border-radius: 18px;
+  object-fit: cover;
+  object-position: center 22%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .polaroid {
+    rotate: 0deg !important;
+  }
+}

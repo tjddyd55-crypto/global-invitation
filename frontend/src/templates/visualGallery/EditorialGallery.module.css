@@ -1,0 +1,73 @@
+.section {
+  padding: 0 var(--gutter, 26px) 56px;
+}
+
+.collage {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.collageCell {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  background: #f1ede8;
+  cursor: pointer;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  display: block;
+}
+
+.collageCell:nth-child(6n + 1) {
+  grid-column: 1 / -1;
+  aspect-ratio: 4 / 3;
+}
+
+.collageCell:nth-child(6n + 5),
+.collageCell:nth-child(6n) {
+  aspect-ratio: 1 / 1;
+}
+
+.collageCell:nth-child(6n) {
+  margin-top: 14px;
+}
+
+.collageImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.galleryCount {
+  margin: 26px 0 0;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--muted, #8a8178);
+  text-align: right;
+}
+
+.slideShell {
+  padding: 0;
+}
+
+.slideFrame {
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: #f1ede8;
+}
+
+.slideFrame :global(img),
+.slideFrame :global(.galleryMainImage) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collageCell {
+    transition: none;
+  }
+}

@@ -5,9 +5,7 @@
  * WEDDING 06 — Minimal Night
  * 다크 시네마틱 히어로 + 가로 필름 갤러리.
  */
-import { useState } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
-import GalleryLightboxDialog from '@/src/templates/shared/GalleryLightboxDialog';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
@@ -20,6 +18,7 @@ import {
   type TemplatePerson,
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
+import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
 import styles from './WeddingNightInvitation.module.css';
 
 function ContactLine({ person }: { person: TemplatePerson }) {
@@ -40,7 +39,6 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
 
@@ -112,25 +110,14 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
       ) : null}
 
       {model.gallery.hasItems ? (
-        <section className={styles.film} data-section-id="gallery" data-preview-section="gallery">
-          <InvitationReveal variant="fade">
-            <p className={styles.sectionLabel}>FILM</p>
-          </InvitationReveal>
-          <div className={styles.filmStrip}>
-            {model.gallery.items.map((item, index) => (
-              <button
-                key={item.id || item.url}
-                type="button"
-                className={styles.filmCell}
-                onClick={() => setLightboxIndex(index)}
-                aria-label={`${index + 1}번째 사진 크게 보기`}
-              >
-                <ImageWithFallback className={styles.filmImage} src={item.url} alt={item.alt} />
-              </button>
-            ))}
-          </div>
-          <p className={styles.filmHint}>밀어서 더 많은 사진 보기</p>
-        </section>
+        <VisualTemplateGallery
+          visualTemplateId="WEDDING_06_NIGHT"
+          items={model.gallery.items}
+          displayMode={model.gallery.displayMode}
+          sectionLabel="FILM"
+          labelClassName={styles.sectionLabel}
+          lockBodyScroll={flags.isPublic}
+        />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.film} data-section-id="gallery" data-preview-section="gallery">
           <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
@@ -216,14 +203,6 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
           {model.dateCompact || 'WEDDING'}
         </p>
       </footer>
-
-      <GalleryLightboxDialog
-        items={model.gallery.items}
-        openIndex={lightboxIndex}
-        onClose={() => setLightboxIndex(null)}
-        onChangeIndex={setLightboxIndex}
-        lockBodyScroll={flags.isPublic}
-      />
     </div>
   );
 }

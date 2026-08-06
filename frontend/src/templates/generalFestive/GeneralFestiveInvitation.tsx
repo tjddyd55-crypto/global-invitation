@@ -5,9 +5,7 @@
  * GENERAL 05 — Festive Color
  * 포스터형 히어로 + 스크랩북 갤러리 + 티켓형 안내.
  */
-import { useState, type CSSProperties } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
-import GalleryLightboxDialog from '@/src/templates/shared/GalleryLightboxDialog';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
@@ -18,13 +16,13 @@ import {
   resolveTemplateRenderFlags,
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
+import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
 import styles from './GeneralFestiveInvitation.module.css';
 
 export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
   const chips = [model.dateText, model.venueName, model.venueDetail].filter(Boolean);
@@ -94,27 +92,14 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
       ) : null}
 
       {model.gallery.hasItems ? (
-        <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <InvitationReveal variant="rise">
-            <h2 className={styles.sectionTitle}>스냅</h2>
-          </InvitationReveal>
-          <InvitationReveal variant="fade">
-            <div className={styles.scrapbook}>
-              {model.gallery.items.map((item, index) => (
-                <button
-                  key={item.id || item.url}
-                  type="button"
-                  className={styles.scrapCell}
-                  style={{ '--cell-index': index % 8 } as CSSProperties}
-                  onClick={() => setLightboxIndex(index)}
-                  aria-label={`${index + 1}번째 사진 크게 보기`}
-                >
-                  <ImageWithFallback className={styles.scrapImage} src={item.url} alt={item.alt} />
-                </button>
-              ))}
-            </div>
-          </InvitationReveal>
-        </section>
+        <VisualTemplateGallery
+          visualTemplateId="GENERAL_05_FESTIVE"
+          items={model.gallery.items}
+          displayMode={model.gallery.displayMode}
+          sectionLabel="스냅"
+          labelClassName={styles.sectionTitle}
+          lockBodyScroll={flags.isPublic}
+        />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
           <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
@@ -198,14 +183,6 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
 
       <section data-section-id="music" data-preview-section="music" className={styles.anchor} aria-hidden />
       <section data-section-id="share" data-preview-section="share" className={styles.anchor} aria-hidden />
-
-      <GalleryLightboxDialog
-        items={model.gallery.items}
-        openIndex={lightboxIndex}
-        onClose={() => setLightboxIndex(null)}
-        onChangeIndex={setLightboxIndex}
-        lockBodyScroll={flags.isPublic}
-      />
     </div>
   );
 }

@@ -1,0 +1,36 @@
+.section {
+  padding: 0 var(--gutter, 26px) 40px;
+}
+
+.archiveGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.archiveCell {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  background: #f3f5f7;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  cursor: pointer;
+  display: block;
+}
+
+.archiveCell:nth-child(3n) {
+  aspect-ratio: 1 / 1;
+}
+
+.archiveImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.slideShell :global(.galleryMainImage) {
+  object-fit: cover;
+  object-position: center 20%;
+}

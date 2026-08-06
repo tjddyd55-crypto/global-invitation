@@ -5,9 +5,8 @@
  * GENERAL 04 — Clean Event
  * 제목·일정 정보를 먼저 전달하는 모듈형 브로슈어 레이아웃.
  */
-import { useState, type CSSProperties } from 'react';
+import { type CSSProperties } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
-import GalleryLightboxDialog from '@/src/templates/shared/GalleryLightboxDialog';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
@@ -18,6 +17,7 @@ import {
   resolveTemplateRenderFlags,
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
+import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
 import styles from './GeneralCleanInvitation.module.css';
 
 type Fact = { label: string; value: string };
@@ -34,7 +34,6 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const facts = buildFacts(model.dateText, model.venueName, model.venueDetail);
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
@@ -133,24 +132,14 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
       </section>
 
       {model.gallery.hasItems ? (
-        <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <InvitationReveal variant="fade">
-            <h2 className={styles.sectionTitle}>지난 기록</h2>
-          </InvitationReveal>
-          <div className={styles.archiveGrid}>
-            {model.gallery.items.map((item, index) => (
-              <button
-                key={item.id || item.url}
-                type="button"
-                className={styles.archiveCell}
-                onClick={() => setLightboxIndex(index)}
-                aria-label={`${index + 1}번째 사진 크게 보기`}
-              >
-                <ImageWithFallback className={styles.archiveImage} src={item.url} alt={item.alt} />
-              </button>
-            ))}
-          </div>
-        </section>
+        <VisualTemplateGallery
+          visualTemplateId="GENERAL_04_CLEAN"
+          items={model.gallery.items}
+          displayMode={model.gallery.displayMode}
+          sectionLabel="지난 기록"
+          labelClassName={styles.sectionTitle}
+          lockBodyScroll={flags.isPublic}
+        />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
           <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
@@ -213,14 +202,6 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
       <footer className={styles.footer}>
         <p className={styles.footerMark}>{model.dateCompact || 'EVENT'}</p>
       </footer>
-
-      <GalleryLightboxDialog
-        items={model.gallery.items}
-        openIndex={lightboxIndex}
-        onClose={() => setLightboxIndex(null)}
-        onChangeIndex={setLightboxIndex}
-        lockBodyScroll={flags.isPublic}
-      />
     </div>
   );
 }

@@ -41,7 +41,10 @@ export default function Step5Gallery({
             onClick={() => onDisplayModeChange?.('SLIDE')}
           >
             <span className={styles.galleryModeTitle}>슬라이드형</span>
-            <span className={styles.galleryModeDesc}>사진을 좌우로 넘겨서 볼 수 있습니다.</span>
+            <span className={styles.galleryModeDesc}>
+              사진을 좌우로 넘겨서 한 장씩 볼 수 있습니다. 선택한 템플릿 디자인에 맞는 슬라이드로
+              표시됩니다.
+            </span>
             <span className={styles.galleryModeIcon} aria-hidden>
               ▭▭
             </span>
@@ -56,7 +59,8 @@ export default function Step5Gallery({
           >
             <span className={styles.galleryModeTitle}>나열형</span>
             <span className={styles.galleryModeDesc}>
-              사진을 격자로 보여주고, 더 보기를 누르면 전체 사진이 펼쳐집니다.
+              여러 사진을 한 화면에 나열해서 보여줍니다. 선택한 템플릿의 고유한 갤러리 구성으로
+              표시됩니다. 더 보기를 누르면 전체 사진이 펼쳐집니다.
             </span>
             <span className={styles.galleryModeIcon} aria-hidden>
               ▦

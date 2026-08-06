@@ -8,7 +8,6 @@
  */
 import { useState } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
-import GalleryLightboxDialog from '@/src/templates/shared/GalleryLightboxDialog';
 import InvitationAccountsSection from '@/src/templates/shared/InvitationAccountsSection';
 import InvitationRsvpSection from '@/src/templates/shared/InvitationRsvpSection';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
@@ -19,6 +18,7 @@ import {
   resolveTemplateRenderFlags,
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
+import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
 import styles from './GeneralCultureInvitation.module.css';
 
 const SHARE_DONE_MESSAGE = '링크가 복사되었습니다';
@@ -38,7 +38,6 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '', onShare, onKakaoShare } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [shareNotice, setShareNotice] = useState('');
 
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
@@ -144,22 +143,14 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
       </section>
 
       {model.gallery.hasItems ? (
-        <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <p className={styles.sectionNumber}>03 — POSTER</p>
-          <div className={styles.posterStrip}>
-            {model.gallery.items.map((item, index) => (
-              <button
-                key={item.id || item.url}
-                type="button"
-                className={styles.posterCell}
-                onClick={() => setLightboxIndex(index)}
-                aria-label={`${index + 1}번째 사진 크게 보기`}
-              >
-                <ImageWithFallback className={styles.posterImage} src={item.url} alt={item.alt} />
-              </button>
-            ))}
-          </div>
-        </section>
+        <VisualTemplateGallery
+          visualTemplateId="GENERAL_06_CULTURE"
+          items={model.gallery.items}
+          displayMode={model.gallery.displayMode}
+          sectionLabel="03 — POSTER"
+          labelClassName={styles.sectionNumber}
+          lockBodyScroll={flags.isPublic}
+        />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
           <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
@@ -243,14 +234,6 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
       </section>
 
       <section data-section-id="music" data-preview-section="music" className={styles.anchor} aria-hidden />
-
-      <GalleryLightboxDialog
-        items={model.gallery.items}
-        openIndex={lightboxIndex}
-        onClose={() => setLightboxIndex(null)}
-        onChangeIndex={setLightboxIndex}
-        lockBodyScroll={flags.isPublic}
-      />
     </div>
   );
 }

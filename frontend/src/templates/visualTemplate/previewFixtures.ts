@@ -16,6 +16,7 @@ import {
   WEDDING_BRIDE_PROFILE,
   WEDDING_GROOM_PROFILE,
 } from './templateSampleAssets';
+import { getPreviewFixtureGalleryMode } from '@/src/templates/visualGallery/resolveVisualGalleryPresentation';
 
 /** Classic renderer 는 `weddingDateTime` 문자열을 그대로 출력하므로 사람이 읽는 값으로 채운다. */
 function readableDateTime(isoDate: string): string {
@@ -188,7 +189,7 @@ function weddingFixture(visualTemplateId: VisualTemplateId): WeddingInvitationDa
     commentsEnabled: true,
     heroImage: templateHeroAsset(visualTemplateId),
     galleryImages: gallery,
-    galleryDisplayMode: 'GRID_EXPAND',
+    galleryDisplayMode: getPreviewFixtureGalleryMode(visualTemplateId),
     heroTitle: coupleNames,
     heroSubtitle: readableDateTime(WEDDING_EVENT.eventDate),
     coupleNames,
@@ -256,7 +257,7 @@ function generalFixture(visualTemplateId: VisualTemplateId): WeddingInvitationDa
     commentsEnabled: true,
     heroImage: templateHeroAsset(visualTemplateId),
     galleryImages: gallery,
-    galleryDisplayMode: 'SLIDE',
+    galleryDisplayMode: getPreviewFixtureGalleryMode(visualTemplateId),
     heroTitle: event.title,
     heroSubtitle: event.subtitle,
     coupleNames: '',
