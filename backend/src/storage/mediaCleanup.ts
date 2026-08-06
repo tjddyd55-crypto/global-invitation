@@ -8,6 +8,11 @@ import {
   listAllObjectKeysUnderPrefix,
 } from '../lib/storage/uploadToR2';
 import { invitationEntityPrefix, templateEntityPrefix } from '../lib/media/keys';
+import {
+  getInvitationAssetEnvironment,
+  getInvitationRootPrefix,
+  parseInvitationUserAssetKey,
+} from '../lib/invitationAssetKeys';
 import { deleteImageByUrl, deleteMediaObjectKey, deleteStoragePrefix, sanitizePathSegment } from './mediaStorage';
 
 /** 신규 업로드에서는 사용하지 않는 구 스토리지 경로 (점진 삭제 대상) */
@@ -55,7 +60,7 @@ export async function runLegacyMediaStorageGradualPurge(): Promise<number> {
   return deleted;
 }
 
-/** 스펙 기준 스테이징 temp/{sessionId}/… 및 구 invitation/temp/ 스테이징 정리 */
+/** 스펙 기준 스테이징 temp/{sessionId}/… 및 invitation/{env}/temp/ 스테이징 정리 */
 export async function purgeStaleTempStagingObjects(maxAgeMs: number): Promise<number> {
   const cutoff = new Date(Date.now() - maxAgeMs);
   const onDelete = (key: string) => console.log('[R2_DELETE]', key);
@@ -67,6 +72,17 @@ export async function purgeStaleTempStagingObjects(maxAgeMs: number): Promise<nu
   });
   total += await deleteStaleObjectsUnderPrefix({
     prefix: 'invitation/temp/',
+    olderThan: cutoff,
+    onEachDelete: onDelete,
+  });
+  // Canonical staging: invitation/{environment}/temp/{userId}/...
+  total += await deleteStaleObjectsUnderPrefix({
+    prefix: 'invitation/development/temp/',
+    olderThan: cutoff,
+    onEachDelete: onDelete,
+  });
+  total += await deleteStaleObjectsUnderPrefix({
+    prefix: 'invitation/production/temp/',
     olderThan: cutoff,
     onEachDelete: onDelete,
   });
@@ -158,12 +174,50 @@ export async function collectInvitationCleanupR2Keys(params: {
       ownerRefId: params.invitationId,
       deletedAt: null,
     },
-    select: { objectKey: true },
+    select: { objectKey: true, ownerId: true },
   });
+
+  const canonicalPrefixes = new Set<string>();
   for (const row of mediaRows) {
     const key = row.objectKey?.trim();
-    if (key) {
-      unique.add(key);
+    if (!key) continue;
+    unique.add(key);
+    const parsed = parseInvitationUserAssetKey(key);
+    if (parsed?.variant === 'canonical') {
+      canonicalPrefixes.add(
+        [
+          getInvitationRootPrefix(),
+          parsed.environment,
+          'users',
+          parsed.userId,
+          'invitations',
+          parsed.invitationId,
+          '',
+        ].join('/')
+      );
+    }
+  }
+
+  for (const ownerId of new Set(mediaRows.map((row) => row.ownerId).filter(Boolean))) {
+    canonicalPrefixes.add(
+      [
+        getInvitationRootPrefix(),
+        getInvitationAssetEnvironment(),
+        'users',
+        sanitizePathSegment(ownerId),
+        'invitations',
+        normalizedId,
+        '',
+      ].join('/')
+    );
+  }
+
+  for (const canonicalPrefix of canonicalPrefixes) {
+    try {
+      const listed = await listAllObjectKeysUnderPrefix(canonicalPrefix);
+      for (const listedKey of listed) unique.add(listedKey);
+    } catch (error) {
+      console.warn('[cleanup] list canonical invitation prefix failed', canonicalPrefix, error);
     }
   }
 

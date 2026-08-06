@@ -2,10 +2,14 @@ import prisma from '../lib/prisma';
 import { deleteFile } from '../lib/storage/uploadToR2';
 import { resolveR2Config } from '../lib/storage/r2Client';
 import { purgeStaleTempStagingObjects, runLegacyMediaStorageGradualPurge } from '../storage/mediaCleanup';
+import { cleanupTempInvitationMedia, isTempMediaCleanupEnabled } from '../lib/tempInvitationMedia';
 
 const TICK_MS = 60_000;
 const JOB_BATCH_SIZE = 100;
 const TEMP_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+/** Unreferenced MediaFile cleanup at most once per hour when enabled. */
+const TEMP_MEDIA_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
+let lastTempMediaCleanupAt = 0;
 
 function isR2Configured(): boolean {
   try {
@@ -57,6 +61,27 @@ async function purgeStaleTempUploads(): Promise<void> {
   await purgeStaleTempStagingObjects(TEMP_MAX_AGE_MS);
 }
 
+async function purgeUnreferencedTempInvitationMedia(): Promise<void> {
+  if (!isR2Configured() || !isTempMediaCleanupEnabled()) {
+    return;
+  }
+  const now = Date.now();
+  if (now - lastTempMediaCleanupAt < TEMP_MEDIA_CLEANUP_INTERVAL_MS) {
+    return;
+  }
+  lastTempMediaCleanupAt = now;
+
+  const result = await cleanupTempInvitationMedia({ execute: true });
+  console.info('[cleanup] temp invitation media', {
+    aborted: result.aborted,
+    abortReason: result.abortReason,
+    planned: result.planned,
+    deletedR2: result.deletedR2,
+    softDeletedDb: result.softDeletedDb,
+    failed: result.failed.length,
+  });
+}
+
 async function runCleanupTick(): Promise<void> {
   try {
     await processPendingCleanupJobs();
@@ -67,6 +92,11 @@ async function runCleanupTick(): Promise<void> {
     await purgeStaleTempUploads();
   } catch (error) {
     console.error('[cleanupWorker] temp purge failed', error);
+  }
+  try {
+    await purgeUnreferencedTempInvitationMedia();
+  } catch (error) {
+    console.error('[cleanupWorker] unreferenced invitation media purge failed', error);
   }
   try {
     await runLegacyMediaStorageGradualPurge();
