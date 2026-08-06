@@ -47,24 +47,20 @@ async function loginInBrowser(page: Page, email: string) {
       sameSite: 'None',
     },
   ]);
+  await page.goto('/m', { waitUntil: 'domcontentloaded', timeout: 90_000 });
 }
 
 async function createWeddingInvitation(page: Page) {
-  const created = await page.evaluate(async ({ api }) => {
-    const res = await fetch(`${api}/api/invitations`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        conceptType: 'WEDDING',
-        language: 'ko',
-        templateKey: 'invitation_full',
-      }),
-    });
-    return { ok: res.ok, status: res.status, data: await res.json() };
-  }, { api: API });
-  expect(created.ok, JSON.stringify(created)).toBeTruthy();
-  return created.data.id as string;
+  const res = await page.request.post(`${API}/api/invitations`, {
+    data: {
+      conceptType: 'WEDDING',
+      language: 'ko',
+      templateKey: 'invitation_full',
+    },
+  });
+  expect(res.ok(), `create invitation HTTP ${res.status()}`).toBeTruthy();
+  const data = (await res.json()) as { id: string };
+  return data.id;
 }
 
 function trackOrdering(page: Page, invitationId: string) {

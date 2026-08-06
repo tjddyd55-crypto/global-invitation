@@ -342,7 +342,8 @@ export function createWeddingEditorStateFromDraft(
       venueDetail: runtimeData.venueDetail || runtimeData.detailAddress || base.basic.venueDetail,
     },
     hero: {
-      heroImage: runtimeData.heroImage || base.hero.heroImage,
+      // Empty string is intentional clear — do not fall back to DEFAULT_HERO_IMAGE via ||
+      heroImage: typeof runtimeData.heroImage === 'string' ? runtimeData.heroImage : base.hero.heroImage,
       overlayText: runtimeData.heroOverlayText || base.hero.overlayText,
     },
     invitationMessage: {
@@ -351,13 +352,19 @@ export function createWeddingEditorStateFromDraft(
     },
     groom: {
       name: stripRolePrefix(runtimeData.groom?.name || runtimeData.groomName || '') || base.groom.name,
-      photo: runtimeData.groom?.image || base.groom.photo,
+      photo:
+        typeof runtimeData.groom?.image === 'string'
+          ? runtimeData.groom.image
+          : base.groom.photo,
       phone: runtimeData.groom?.phone || runtimeData.groomPhone || base.groom.phone,
       parentsText: runtimeData.groom?.parentsText || runtimeData.parentsInfo || base.groom.parentsText,
     },
     bride: {
       name: stripRolePrefix(runtimeData.bride?.name || runtimeData.brideName || '') || base.bride.name,
-      photo: runtimeData.bride?.image || base.bride.photo,
+      photo:
+        typeof runtimeData.bride?.image === 'string'
+          ? runtimeData.bride.image
+          : base.bride.photo,
       phone: runtimeData.bride?.phone || runtimeData.bridePhone || base.bride.phone,
       parentsText: runtimeData.bride?.parentsText || runtimeData.parentsInfo || base.bride.parentsText,
     },

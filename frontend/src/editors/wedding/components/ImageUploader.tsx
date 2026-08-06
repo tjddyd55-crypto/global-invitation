@@ -35,6 +35,10 @@ function revokeIfObjectUrl(url?: string) {
   }
 }
 
+function isRemoteDeletableUrl(url: string): boolean {
+  return /^https?:\/\//i.test((url || '').trim());
+}
+
 export default function ImageUploader({
   label,
   description,
@@ -114,7 +118,7 @@ export default function ImageUploader({
         }
       },
       deleteRemote:
-        shouldDeleteRemote && !previousUrl.startsWith('blob:')
+        shouldDeleteRemote && isRemoteDeletableUrl(previousUrl)
           ? async () => {
               await deleteMediaFile(previousUrl);
             }
