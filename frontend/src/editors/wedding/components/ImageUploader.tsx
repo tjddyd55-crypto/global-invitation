@@ -2,7 +2,7 @@
 
 import { useId, useState } from 'react';
 import AppImage from '@/src/components/media/AppImage';
-import { uploadMediaImage, type MediaUploadAssetType } from '@/src/lib/mediaApi';
+import { deleteMediaFile, uploadMediaImage, type MediaUploadAssetType } from '@/src/lib/mediaApi';
 import styles from '../weddingEditor.module.css';
 
 type ImageUploaderProps = {
@@ -73,10 +73,17 @@ export default function ImageUploader({
 
   const handleClear = async () => {
     if (!value) return;
-    revokeIfObjectUrl(value);
+    const previousUrl = value;
+    revokeIfObjectUrl(previousUrl);
     onClear?.();
     if (!onClear) {
       onChange('');
+    }
+    // Draft 참조 제거 후 R2/MediaFile 정리. 실패해도 UI는 비운 상태 유지 (72h orphan cleanup이 재시도).
+    if (!previousUrl.startsWith('blob:')) {
+      void deleteMediaFile(previousUrl).catch((cleanupError) => {
+        console.warn('[ImageUploader] media delete failed', cleanupError);
+      });
     }
   };
 
