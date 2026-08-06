@@ -8,6 +8,7 @@
   --gold: #c6b171;
   --line: rgba(198, 177, 113, 0.28);
   --gutter: 26px;
+  --invitation-content-inline: var(--gutter);
 
   max-width: 430px;
   margin: 0 auto;
@@ -237,9 +238,13 @@
   color: var(--muted);
 }
 
-.accounts,
+.accounts {
+  padding: 28px var(--invitation-content-inline, var(--gutter)) 16px;
+  box-sizing: border-box;
+}
 .rsvp {
-  padding: 0 0 8px;
+  padding: 48px var(--invitation-content-inline, var(--gutter)) 40px;
+  box-sizing: border-box;
 }
 .accountsEmpty {
   padding: 24px var(--gutter);

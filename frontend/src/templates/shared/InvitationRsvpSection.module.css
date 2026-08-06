@@ -1,6 +1,7 @@
 .section {
   width: 100%;
-  padding: 56px 24px;
+  /* 수평 여백 SSOT — CTA width:100% 는 이 padding 안쪽 기준 */
+  padding: 56px var(--invitation-content-inline, var(--gutter, 24px));
   box-sizing: border-box;
   text-align: center;
 }

@@ -7,6 +7,7 @@
   --line: #e3ded7;
   --paper: #ffffff;
   --gutter: 26px;
+  --invitation-content-inline: var(--gutter);
 
   max-width: 430px;
   margin: 0 auto;
@@ -325,10 +326,18 @@
 }
 
 /* ── Shared blocks ────────────────────────────────── */
-.location,
-.accounts,
-.rsvp {
+.location {
+  /* LocationMapSection 내부 padding 유지 — 바깥만 세로 간격 조정 */
   padding: 0 0 8px;
+}
+.accounts {
+  /* 공통 섹션 좌우 0 덮어쓰기 제거 → 템플릿 gutter 와 동일 기준선 */
+  padding: 28px var(--invitation-content-inline, var(--gutter)) 16px;
+  box-sizing: border-box;
+}
+.rsvp {
+  padding: 48px var(--invitation-content-inline, var(--gutter)) 40px;
+  box-sizing: border-box;
 }
 .accountsEmpty {
   padding: 24px var(--gutter);

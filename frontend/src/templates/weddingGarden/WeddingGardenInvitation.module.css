@@ -9,6 +9,7 @@
   --sage: #7d8a6a;
   --line: #e6ded0;
   --gutter: 26px;
+  --invitation-content-inline: var(--gutter);
 
   max-width: 430px;
   margin: 0 auto;
@@ -360,10 +361,16 @@
 }
 
 /* ── Shared blocks ────────────────────────────────── */
-.location,
-.accounts,
-.rsvp {
+.location {
   padding: 0 0 8px;
+}
+.accounts {
+  padding: 28px var(--invitation-content-inline, var(--gutter)) 16px;
+  box-sizing: border-box;
+}
+.rsvp {
+  padding: 48px var(--invitation-content-inline, var(--gutter)) 40px;
+  box-sizing: border-box;
 }
 .accountsEmpty {
   padding: 24px var(--gutter);

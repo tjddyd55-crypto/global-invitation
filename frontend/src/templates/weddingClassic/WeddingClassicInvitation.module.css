@@ -1,6 +1,7 @@
 /* document = parent 폭 100% (모바일 viewport / Desktop 375 column). 구조는 컨셉 공통 · 스타일만 분기 */
 
 .page {
+  --invitation-content-inline: 24px;
   width: 100%;
   max-width: none;
   min-width: 0;
