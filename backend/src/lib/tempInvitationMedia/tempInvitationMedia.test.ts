@@ -22,24 +22,32 @@ test('retention invalid → 72 fallback', () => {
   assert.equal(resolveTempMediaRetentionHours(0), DEFAULT_TEMP_MEDIA_RETENTION_HOURS);
   assert.equal(resolveTempMediaRetentionHours(-1), DEFAULT_TEMP_MEDIA_RETENTION_HOURS);
   assert.equal(resolveTempMediaRetentionHours(12), DEFAULT_TEMP_MEDIA_RETENTION_HOURS);
+  assert.equal(resolveTempMediaRetentionHours(23), DEFAULT_TEMP_MEDIA_RETENTION_HOURS);
   assert.equal(resolveTempMediaRetentionHours('nope'), DEFAULT_TEMP_MEDIA_RETENTION_HOURS);
 });
 
 test('retention clamps to max 720', () => {
   assert.equal(resolveTempMediaRetentionHours(9000), 720);
+  assert.equal(resolveTempMediaRetentionHours(721), 720);
+  assert.equal(resolveTempMediaRetentionHours(720), 720);
   assert.equal(resolveTempMediaRetentionHours(48), 48);
   assert.equal(resolveTempMediaRetentionHours(24), 24);
+  assert.equal(resolveTempMediaRetentionHours(72), 72);
 });
 
 test('batch size defaults and clamps', () => {
   assert.equal(resolveTempMediaCleanupBatchSize(undefined), 100);
   assert.equal(resolveTempMediaCleanupBatchSize(0), 100);
+  assert.equal(resolveTempMediaCleanupBatchSize(1), 1);
   assert.equal(resolveTempMediaCleanupBatchSize(50), 50);
+  assert.equal(resolveTempMediaCleanupBatchSize(100), 100);
   assert.equal(resolveTempMediaCleanupBatchSize(9999), 500);
 });
 
 test('safety threshold default', () => {
   assert.equal(resolveTempMediaSafetyThreshold(undefined), 1000);
+  assert.equal(resolveTempMediaSafetyThreshold(0), 1000);
+  assert.equal(resolveTempMediaSafetyThreshold(-5), 1000);
   assert.equal(resolveTempMediaSafetyThreshold(250), 250);
 });
 
@@ -74,6 +82,17 @@ test('non-canonical and foreign prefixes excluded', () => {
   assert.equal(isEligibleTempInvitationUserAssetKey('development/invitation/users/x/invitations/y/gallery/a.webp'), false);
   assert.equal(isEligibleTempInvitationUserAssetKey('other-project/users/x/file.webp'), false);
   assert.equal(isEligibleTempInvitationUserAssetKey('invitation/development/temp/user/upload/a.webp'), false);
+});
+
+test('shared asset assert blocks delete without scan', async () => {
+  const { assertInvitationUserMediaSafeToDelete } = await import('./assertSafeToDelete');
+  await assert.rejects(
+    () =>
+      assertInvitationUserMediaSafeToDelete(
+        'invitation/shared/images/templates/WEDDING_04_EDITORIAL/hero.webp'
+      ),
+    /PROTECTED_SHARED_MEDIA/
+  );
 });
 
 test('CDN URL and query string normalize to object key', () => {

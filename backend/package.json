@@ -25,6 +25,8 @@
     "delete:r2:legacy-invitation": "tsx scripts/delete-legacy-invitation-r2-assets.ts",
     "invitation:media:audit": "tsx scripts/audit-temp-invitation-media.ts",
     "invitation:media:cleanup": "tsx scripts/cleanup-temp-invitation-media.ts",
+    "invitation:media:verify-dev": "tsx scripts/verify-temp-invitation-media-dev.ts",
+    "invitation:media:lifecycle-fixtures": "tsx scripts/lifecycle-temp-media-fixtures.ts",
     "test:temp-media": "tsx --test src/lib/tempInvitationMedia/tempInvitationMedia.test.ts"
   },
   "dependencies": {
