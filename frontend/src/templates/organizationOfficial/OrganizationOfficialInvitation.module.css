@@ -1,0 +1,243 @@
+/* ORGANIZATION 01 — Official (navy brand theme) */
+.page {
+  --ink: #0b1f3a;
+  --soft: #243852;
+  --muted: #5a6b7d;
+  --brand-accent: #0b1f3a;
+  --line: #d9e0e8;
+  --gutter: 24px;
+  --surface: #f4f7fa;
+
+  max-width: 430px;
+  margin: 0 auto;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-gi-noto), 'Apple SD Gothic Neo', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+.brandHeader {
+  padding: 28px var(--gutter) 20px;
+  background: linear-gradient(180deg, var(--surface) 0%, #ffffff 100%);
+  border-bottom: 1px solid var(--line);
+}
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.brandLogo {
+  flex-shrink: 0;
+}
+.brandText {
+  min-width: 0;
+}
+.orgName {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+}
+.orgEnglish {
+  margin: 4px 0 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  word-break: keep-all;
+}
+
+.heroPhoto {
+  margin: 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+.heroImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  object-position: center;
+}
+.heroPlaceholder {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.titleBlock {
+  padding: 36px var(--gutter) 24px;
+}
+.eyebrow {
+  margin: 0 0 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  color: var(--brand-accent);
+}
+.title {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.rule {
+  display: block;
+  width: 40px;
+  height: 3px;
+  margin-top: 20px;
+  background: var(--brand-accent);
+}
+
+.sectionTitle {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+.placeholder {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.facts {
+  padding: 0 var(--gutter) 28px;
+}
+.factGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.factCell {
+  padding: 18px 10px;
+  border-right: 1px solid var(--line);
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+  transition-delay: calc(var(--fact-index, 0) * 90ms);
+}
+:global(.gi-reveal.is-visible) .factCell {
+  opacity: 1;
+  transform: none;
+}
+.factCell:last-child {
+  border-right: 0;
+}
+.factLabel {
+  margin: 0 0 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--brand-accent);
+}
+.factValue {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.copy {
+  padding: 0 var(--gutter) 40px;
+}
+.copyLine {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.95;
+  color: var(--soft);
+  word-break: keep-all;
+}
+
+.schedule {
+  padding: 0 var(--gutter) 40px;
+}
+.scheduleDate {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  color: var(--muted);
+  word-break: keep-all;
+}
+.dateGrid {
+  color: var(--ink);
+}
+.scheduleList {
+  margin: 18px 0 0;
+  padding-left: 16px;
+  font-size: 13px;
+  line-height: 1.95;
+  color: var(--soft);
+}
+
+.gallery {
+  padding: 0 var(--gutter) 40px;
+}
+
+.location,
+.accounts,
+.rsvp {
+  padding-bottom: 8px;
+}
+.accountsEmpty {
+  padding: 24px var(--gutter);
+  text-align: center;
+}
+.anchor {
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+.footer {
+  padding: 28px var(--gutter) 44px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  background: var(--surface);
+}
+.footerMark {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  word-break: keep-all;
+}
+
+@media (max-width: 374px) {
+  .page {
+    --gutter: 18px;
+  }
+  .title {
+    font-size: 24px;
+  }
+  .factValue {
+    font-size: 11.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .factCell {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

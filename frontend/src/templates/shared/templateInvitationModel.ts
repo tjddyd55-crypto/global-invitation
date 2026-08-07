@@ -177,7 +177,14 @@ function buildGallery(data: WeddingInvitationData): TemplateGalleryModel {
 }
 
 function resolveConceptType(data: WeddingInvitationData): InvitationConceptType {
-  return data.conceptType === 'WEDDING' || data.conceptType === 'FUNERAL' ? data.conceptType : 'GENERAL';
+  if (
+    data.conceptType === 'WEDDING' ||
+    data.conceptType === 'FUNERAL' ||
+    data.conceptType === 'ORGANIZATION'
+  ) {
+    return data.conceptType;
+  }
+  return 'GENERAL';
 }
 
 export function buildTemplateInvitationModel(data: WeddingInvitationData): TemplateInvitationModel {

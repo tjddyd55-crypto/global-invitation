@@ -6,6 +6,7 @@ import {
   isWeddingInvitationData,
   resolveInvitationConceptType,
 } from '@/src/invitation/schemas';
+import { normalizeOrganizationBranding } from '@/src/invitation/conceptTypes';
 import FuneralClassicInvitation from '@/src/templates/funeralClassic/FuneralClassicInvitation';
 import { buildWeddingClassicData, getSampleWeddingInvitation } from '@/src/templates/weddingClassic/data';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
@@ -87,7 +88,7 @@ function stringArrayOrEmpty(value: unknown): string[] {
  */
 function toSparseWeddingLike(
   data: Record<string, unknown>,
-  conceptType: 'WEDDING' | 'GENERAL'
+  conceptType: 'WEDDING' | 'GENERAL' | 'ORGANIZATION'
 ): WeddingInvitationData {
   const eventDate = textOrEmpty(data.eventDate);
   const parsedDate = eventDate ? new Date(eventDate) : new Date(0);
@@ -136,6 +137,7 @@ function toSparseWeddingLike(
       data.bride && typeof data.bride === 'object'
         ? (data.bride as WeddingInvitationData['bride'])
         : { name: textOrEmpty(data.brideName) },
+    organization: normalizeOrganizationBranding(data.organization),
   };
 }
 
@@ -151,7 +153,7 @@ function resolveWeddingLikePayload(data: InvitationRuntimeData): WeddingInvitati
       return null;
     }
     const concept = resolveInvitationConceptType(record as InvitationRuntimeData);
-    if (concept === 'WEDDING' || concept === 'GENERAL') {
+    if (concept === 'WEDDING' || concept === 'GENERAL' || concept === 'ORGANIZATION') {
       return toSparseWeddingLike(record, concept);
     }
   }
@@ -160,7 +162,7 @@ function resolveWeddingLikePayload(data: InvitationRuntimeData): WeddingInvitati
 
 /**
  * Concept SSOT renderer — Preview / Public / Template Preview 동일 분기.
- * WEDDING/GENERAL → VisualInvitationHost (visualTemplateId).
+ * WEDDING/GENERAL/ORGANIZATION → VisualInvitationHost (visualTemplateId).
  * FUNERAL → 기존 Classic only (visual registry 제외).
  */
 export default function RenderInvitationByConcept(props: RenderInvitationByConceptProps) {
@@ -226,7 +228,10 @@ export default function RenderInvitationByConcept(props: RenderInvitationByConce
     );
   }
 
-  const resolvedConcept = conceptType === 'WEDDING' || conceptType === 'GENERAL' ? conceptType : 'GENERAL';
+  const resolvedConcept =
+    conceptType === 'WEDDING' || conceptType === 'GENERAL' || conceptType === 'ORGANIZATION'
+      ? conceptType
+      : 'GENERAL';
 
   return (
     <VisualInvitationHost
