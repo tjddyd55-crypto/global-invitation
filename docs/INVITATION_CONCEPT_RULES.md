@@ -35,6 +35,14 @@
 ### GENERAL
 - 확장 필드 없음 (공통 필드만 사용)
 
+### ORGANIZATION
+- `organization.name`
+- `organization.englishName`
+- `organization.logo`
+- `organization.accentColor` (hex `#RRGGBB`, 기본 `#0B1F3A`)
+- visual template: `ORGANIZATION_01_OFFICIAL` (공식 초청)
+- GENERAL 하위가 아님 — 최상위 conceptType
+
 ## 3) 저장 규칙
 
 - `dataJson`에는 **공통 필드 + 해당 컨셉 확장 필드만** 저장.
