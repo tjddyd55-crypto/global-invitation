@@ -14,7 +14,8 @@ export type VisualGalleryPresentation =
   | 'night'
   | 'clean'
   | 'festive'
-  | 'culture';
+  | 'culture'
+  | 'official';
 
 export type ResolvedVisualGallery = {
   presentation: VisualGalleryPresentation;
@@ -32,6 +33,8 @@ const PRESENTATION_BY_ID: Record<VisualTemplateId, VisualGalleryPresentation> = 
   GENERAL_04_CLEAN: 'clean',
   GENERAL_05_FESTIVE: 'festive',
   GENERAL_06_CULTURE: 'culture',
+  /** Official gallery reuses clean layout presentation */
+  ORGANIZATION_01_OFFICIAL: 'official',
 };
 
 /** Template Preview fixture — representative mode only (customers may pick either). */

@@ -1,7 +1,7 @@
 import type { Invitation } from '@/src/models/invitation';
 import { getInvitationOpenGraphSettings } from '@/src/invitation/openGraphSettings';
 
-export type InvitationConceptKind = 'WEDDING' | 'FUNERAL' | 'GENERAL';
+export type InvitationConceptKind = 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
 
 export type SharePresentation = {
   concept: InvitationConceptKind;
@@ -32,12 +32,14 @@ const TONE = {
   WEDDING: '소중한 날에 함께해 주세요',
   FUNERAL: '삼가 알려드립니다',
   GENERAL: '행사에 초대드립니다',
+  ORGANIZATION: '공식 자리에 함께해 주세요',
 } as const;
 
 const DEFAULT_TITLE: Record<InvitationConceptKind, string> = {
   WEDDING: '결혼식에 초대합니다',
   FUNERAL: '부고 안내',
   GENERAL: '행사에 초대합니다',
+  ORGANIZATION: '공식 행사에 초대합니다',
 };
 
 /** detailLines: 메타/OG 본문과 동일 상한 */
@@ -53,7 +55,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function pickConcept(data: Record<string, unknown>, inv: Record<string, unknown>): InvitationConceptKind {
   const a = data.conceptType ?? inv.conceptType;
-  if (a === 'WEDDING' || a === 'FUNERAL' || a === 'GENERAL') return a;
+  if (a === 'WEDDING' || a === 'FUNERAL' || a === 'GENERAL' || a === 'ORGANIZATION') return a;
   return 'GENERAL';
 }
 

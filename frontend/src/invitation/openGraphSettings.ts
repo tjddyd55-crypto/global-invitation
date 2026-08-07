@@ -33,19 +33,25 @@ const DEFAULT_TITLE = {
   WEDDING: '결혼식에 초대합니다',
   FUNERAL: '부고 안내',
   GENERAL: '행사에 초대합니다',
+  ORGANIZATION: '공식 행사에 초대합니다',
 } as const;
 
 const DEFAULT_DESCRIPTION = {
   WEDDING: '소중한 날에 함께해 주세요',
   FUNERAL: '삼가 알려드립니다',
   GENERAL: '행사에 초대드립니다',
+  ORGANIZATION: '공식 자리에 함께해 주세요',
 } as const;
 
 /** Kakao feed 등 imageUrl 권장 시 NONE 상태 — 인증 없는 정적 이미지 (상대경로는 SITE_URL로 절대화) */
-export const CONCEPT_SHARE_FALLBACK_IMAGE: Record<'WEDDING' | 'FUNERAL' | 'GENERAL', string> = {
+export const CONCEPT_SHARE_FALLBACK_IMAGE: Record<
+  'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION',
+  string
+> = {
   WEDDING: '/images/placeholder.png',
   FUNERAL: '/images/placeholder.png',
   GENERAL: '/images/placeholder.png',
+  ORGANIZATION: '/images/placeholder.png',
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -128,7 +134,7 @@ export function resolveAbsoluteOpenGraphImageUrl(
 }
 
 export function getConceptOpenGraphFallbackImage(
-  concept: 'WEDDING' | 'FUNERAL' | 'GENERAL' = 'WEDDING',
+  concept: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION' = 'WEDDING',
   siteOrigin?: string
 ): string {
   const raw = CONCEPT_SHARE_FALLBACK_IMAGE[concept] || CONCEPT_SHARE_FALLBACK_IMAGE.WEDDING;
@@ -141,7 +147,9 @@ export function getConceptOpenGraphFallbackImage(
 
 function pickConcept(data: Record<string, unknown>, inv: Record<string, unknown>): keyof typeof DEFAULT_TITLE {
   const value = data.conceptType ?? inv.conceptType;
-  if (value === 'WEDDING' || value === 'FUNERAL' || value === 'GENERAL') return value;
+  if (value === 'WEDDING' || value === 'FUNERAL' || value === 'GENERAL' || value === 'ORGANIZATION') {
+    return value;
+  }
   return 'GENERAL';
 }
 

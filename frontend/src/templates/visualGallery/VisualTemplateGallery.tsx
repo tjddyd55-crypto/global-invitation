@@ -75,6 +75,7 @@ export default function VisualTemplateGallery({
     case 'night':
       return <NightGallery {...shared} />;
     case 'clean':
+    case 'official':
       return <CleanGallery {...shared} />;
     case 'festive':
       return <FestiveGallery {...shared} />;

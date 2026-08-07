@@ -1,7 +1,10 @@
+import type { VisualTemplateConceptType } from '@/src/invitation/conceptTypes';
+import { isVisualTemplateConceptType } from '@/src/invitation/conceptTypes';
+
 const STORAGE_KEY = 'gi_pending_visual_template_v1';
 
 export type PendingVisualTemplate = {
-  conceptType: 'WEDDING' | 'GENERAL';
+  conceptType: VisualTemplateConceptType;
   visualTemplateId: string;
   createdAt: number;
 };
@@ -21,10 +24,7 @@ export function readPendingVisualTemplate(): PendingVisualTemplate | null {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PendingVisualTemplate;
-    if (
-      (parsed.conceptType !== 'WEDDING' && parsed.conceptType !== 'GENERAL') ||
-      typeof parsed.visualTemplateId !== 'string'
-    ) {
+    if (!isVisualTemplateConceptType(parsed.conceptType) || typeof parsed.visualTemplateId !== 'string') {
       return null;
     }
     return parsed;

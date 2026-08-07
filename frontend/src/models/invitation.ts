@@ -3,7 +3,7 @@ export interface Invitation {
   slug: string;
   shareSlug?: string | null;
   templateType?: 'FULL';
-  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
   templateId?: string | null;
   title?: string | null;
   eventDate?: string | null;

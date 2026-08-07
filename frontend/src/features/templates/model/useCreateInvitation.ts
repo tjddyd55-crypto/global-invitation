@@ -4,15 +4,22 @@ import { useCallback, useState, type ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import { createInvitation } from '@/src/lib/api';
 import { fetchCurrentUser } from '@/src/shared/auth';
-import { BookOpenIcon, CalendarDaysIcon, HeartIcon } from '@/src/ui/icons/ConceptIcons';
+import {
+  BookOpenIcon,
+  BuildingIcon,
+  CalendarDaysIcon,
+  HeartIcon,
+} from '@/src/ui/icons/ConceptIcons';
 import { sanitizeVisualTemplateIdForSave } from '@/src/templates/visualTemplate/resolveVisualTemplateId';
 import {
   clearPendingVisualTemplate,
   savePendingVisualTemplate,
   VISUAL_TEMPLATE_RESUME_PATH,
 } from '@/src/features/templates/model/pendingVisualTemplate';
+import type { InvitationConceptType } from '@/src/invitation/conceptTypes';
+import { isVisualTemplateConceptType } from '@/src/invitation/conceptTypes';
 
-export type ConceptType = 'WEDDING' | 'FUNERAL' | 'GENERAL';
+export type ConceptType = InvitationConceptType;
 
 const CONCEPT_CREATE_NEXT_PATH = '/create/concept';
 
@@ -86,6 +93,26 @@ export const CONCEPT_OPTIONS: Array<{
     ],
     Icon: CalendarDaysIcon,
   },
+  {
+    value: 'ORGANIZATION',
+    label: '기업·단체 행사로 시작',
+    badge: '기업·단체 행사',
+    description: '회사·협회·기관·단체의 공식 행사를 위한 초대장',
+    fieldsSummary: '조직 로고, 행사 소개, 일정, 장소, 갤러리, 참가비, 참석 여부',
+    accent: '#0B1F3A',
+    accentSoft: '#E8EEF5',
+    accentActiveBg: '#F3F6FA',
+    features: [
+      '조직 로고 · 조직명',
+      '공식 행사 소개',
+      '세부 일정 · 장소',
+      '갤러리',
+      '참가비 · 계좌',
+      '참석 여부 RSVP',
+      '주최 · 문의',
+    ],
+    Icon: BuildingIcon,
+  },
 ];
 
 export interface UseCreateInvitationResult {
@@ -104,8 +131,8 @@ export function useCreateInvitation(): UseCreateInvitationResult {
     async (concept: ConceptType, visualTemplateId?: string) => {
       if (creatingConcept) return;
 
-      // WEDDING/GENERAL without template → catalog step
-      if ((concept === 'WEDDING' || concept === 'GENERAL') && !visualTemplateId) {
+      // Visual-template concepts without template → catalog step
+      if (isVisualTemplateConceptType(concept) && !visualTemplateId) {
         router.push(`/create/templates?concept=${concept}`);
         return;
       }
@@ -115,7 +142,7 @@ export function useCreateInvitation(): UseCreateInvitationResult {
       try {
         const user = await fetchCurrentUser({ useCache: false });
         if (!user) {
-          if (visualTemplateId && (concept === 'WEDDING' || concept === 'GENERAL')) {
+          if (visualTemplateId && isVisualTemplateConceptType(concept)) {
             savePendingVisualTemplate({
               conceptType: concept,
               visualTemplateId,
@@ -128,10 +155,9 @@ export function useCreateInvitation(): UseCreateInvitationResult {
           return;
         }
 
-        const sanitized =
-          concept === 'WEDDING' || concept === 'GENERAL'
-            ? sanitizeVisualTemplateIdForSave(visualTemplateId, concept)
-            : undefined;
+        const sanitized = isVisualTemplateConceptType(concept)
+          ? sanitizeVisualTemplateIdForSave(visualTemplateId, concept)
+          : undefined;
 
         const created = await createInvitation({
           templateKey: 'invitation_full',
@@ -143,7 +169,7 @@ export function useCreateInvitation(): UseCreateInvitationResult {
       } catch (err) {
         const message = err instanceof Error ? err.message : '초대장 생성에 실패했습니다.';
         if (message.includes('401') || message.toUpperCase().includes('UNAUTHORIZED')) {
-          if (visualTemplateId && (concept === 'WEDDING' || concept === 'GENERAL')) {
+          if (visualTemplateId && isVisualTemplateConceptType(concept)) {
             savePendingVisualTemplate({
               conceptType: concept,
               visualTemplateId,

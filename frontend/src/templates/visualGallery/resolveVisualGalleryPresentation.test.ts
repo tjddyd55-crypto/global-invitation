@@ -30,6 +30,7 @@ const NEW_TEMPLATES = [
   ['GENERAL_04_CLEAN', 'clean'],
   ['GENERAL_05_FESTIVE', 'festive'],
   ['GENERAL_06_CULTURE', 'culture'],
+  ['ORGANIZATION_01_OFFICIAL', 'official'],
 ] as const;
 
 for (const [id, presentation] of NEW_TEMPLATES) {
@@ -70,4 +71,5 @@ test('preview fixture modes', () => {
   assert.equal(getPreviewFixtureGalleryMode('GENERAL_06_CULTURE'), 'SLIDE');
   assert.equal(getPreviewFixtureGalleryMode('WEDDING_01_CLASSIC'), 'GRID_EXPAND');
   assert.equal(getPreviewFixtureGalleryMode('GENERAL_01_CLASSIC'), 'SLIDE');
+  assert.equal(getPreviewFixtureGalleryMode('ORGANIZATION_01_OFFICIAL'), 'GRID_EXPAND');
 });

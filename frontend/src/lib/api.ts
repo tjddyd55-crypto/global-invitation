@@ -47,7 +47,7 @@ export interface InvitationSummary {
 
 export type CreateInvitationInput = {
   templateKey?: string;
-  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
   /** dataJson.visualTemplateId SSOT — engine key stays invitation_full */
   visualTemplateId?: string;
 };

@@ -502,7 +502,10 @@ router.post('/', async (req, res) => {
 
     const conceptRaw = normalizeText(req.body?.conceptType) || normalizeText(req.body?.concept);
     const conceptType =
-      conceptRaw === 'WEDDING' || conceptRaw === 'FUNERAL' || conceptRaw === 'GENERAL'
+      conceptRaw === 'WEDDING' ||
+      conceptRaw === 'FUNERAL' ||
+      conceptRaw === 'GENERAL' ||
+      conceptRaw === 'ORGANIZATION'
         ? conceptRaw
         : null;
 

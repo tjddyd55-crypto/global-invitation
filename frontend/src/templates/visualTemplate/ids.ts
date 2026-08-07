@@ -12,15 +12,17 @@ export const VISUAL_TEMPLATE_IDS = [
   'GENERAL_04_CLEAN',
   'GENERAL_05_FESTIVE',
   'GENERAL_06_CULTURE',
+  'ORGANIZATION_01_OFFICIAL',
 ] as const;
 
 export type VisualTemplateId = (typeof VISUAL_TEMPLATE_IDS)[number];
 
-export type VisualTemplateConcept = 'WEDDING' | 'GENERAL';
+export type VisualTemplateConcept = 'WEDDING' | 'GENERAL' | 'ORGANIZATION';
 
 export const DEFAULT_VISUAL_TEMPLATE_BY_CONCEPT: Record<VisualTemplateConcept, VisualTemplateId> = {
   WEDDING: 'WEDDING_01_CLASSIC',
   GENERAL: 'GENERAL_01_CLASSIC',
+  ORGANIZATION: 'ORGANIZATION_01_OFFICIAL',
 };
 
 export const VISUAL_TEMPLATE_CONCEPT: Record<VisualTemplateId, VisualTemplateConcept> = {
@@ -32,6 +34,7 @@ export const VISUAL_TEMPLATE_CONCEPT: Record<VisualTemplateId, VisualTemplateCon
   GENERAL_04_CLEAN: 'GENERAL',
   GENERAL_05_FESTIVE: 'GENERAL',
   GENERAL_06_CULTURE: 'GENERAL',
+  ORGANIZATION_01_OFFICIAL: 'ORGANIZATION',
 };
 
 export function isVisualTemplateId(value: unknown): value is VisualTemplateId {

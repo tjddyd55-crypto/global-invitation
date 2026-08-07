@@ -17,6 +17,7 @@ import {
   WEDDING_GROOM_PROFILE,
 } from './templateSampleAssets';
 import { getPreviewFixtureGalleryMode } from '@/src/templates/visualGallery/resolveVisualGalleryPresentation';
+import { DEFAULT_BRAND_ACCENT_COLOR } from '@/src/invitation/conceptTypes';
 
 /** Classic renderer 는 `weddingDateTime` 문자열을 그대로 출력하므로 사람이 읽는 값으로 채운다. */
 function readableDateTime(isoDate: string): string {
@@ -35,6 +36,11 @@ const GENERAL_SIBLINGS: Record<string, VisualTemplateId[]> = {
   GENERAL_04_CLEAN: ['GENERAL_06_CULTURE', 'GENERAL_01_CLASSIC'],
   GENERAL_05_FESTIVE: ['GENERAL_01_CLASSIC', 'GENERAL_04_CLEAN'],
   GENERAL_06_CULTURE: ['GENERAL_04_CLEAN', 'GENERAL_01_CLASSIC'],
+};
+
+/** ORGANIZATION 단일 템플릿 — sibling hero 없음 (GENERAL photo pack 재사용) */
+const ORGANIZATION_SIBLINGS: Record<string, VisualTemplateId[]> = {
+  ORGANIZATION_01_OFFICIAL: [],
 };
 
 /** 웨딩은 템플릿마다 같은 예식을 다른 분위기로 보여준다 — 비교가 쉬워진다. */
@@ -282,6 +288,85 @@ function generalFixture(visualTemplateId: VisualTemplateId): WeddingInvitationDa
   };
 }
 
+const ORGANIZATION_EVENT = {
+  title: '2026 회장단 이·취임식',
+  subtitle: '새로운 리더십, 더 나은 지역사회를 향한 출발',
+  greeting: [
+    '새로운 리더십의 출발과 지역사회의 더 나은 변화를 함께하는 뜻깊은 자리에 귀하를 정중히 초대합니다.',
+  ],
+  eventDate: '2026-12-18T18:30:00',
+  scheduleLine: '18:00 등록 및 리셉션 · 18:30 개회 및 이·취임식 · 19:30 네트워킹 디너',
+  venueName: '시그니엘 부산 그랜드볼룸',
+  venueDetail: '',
+  address: '부산광역시 해운대구 중동 해운대로 265',
+  mapLat: 35.1595,
+  mapLng: 129.1604,
+  accountsTitle: '참가비 안내',
+  accounts: [
+    { role: '참가비', bank: '부산은행', number: '000-0000-0000', holder: '부산청년리더협회' },
+  ],
+  transportInfo: ['부산도시철도 2호선 해운대역 도보 이용'],
+  parkingInfo: ['호텔 주차 안내 데스크에 문의해 주세요'],
+  organization: {
+    name: '부산청년리더협회',
+    englishName: 'BUSAN YOUNG LEADERS ASSOCIATION',
+    accentColor: DEFAULT_BRAND_ACCENT_COLOR,
+  },
+};
+
+function organizationFixture(visualTemplateId: VisualTemplateId): WeddingInvitationData {
+  const event = ORGANIZATION_EVENT;
+  const gallery = buildSampleGallery(
+    visualTemplateId,
+    ORGANIZATION_SIBLINGS[visualTemplateId] ?? []
+  );
+
+  return {
+    templateType: 'FULL',
+    conceptType: 'ORGANIZATION',
+    visualTemplateId,
+    title: event.title,
+    subtitle: event.subtitle,
+    content: event.greeting.join('\n'),
+    eventDate: event.eventDate,
+    locationText: event.venueName,
+    venueDetail: event.venueDetail,
+    venueName: event.venueName,
+    schedule: [event.scheduleLine],
+    rsvpEnabled: true,
+    guestbookEnabled: true,
+    commentsEnabled: true,
+    heroImage: templateHeroAsset(visualTemplateId),
+    galleryImages: gallery,
+    galleryDisplayMode: getPreviewFixtureGalleryMode(visualTemplateId),
+    heroTitle: event.title,
+    heroSubtitle: event.subtitle,
+    coupleNames: '',
+    introQuote: event.subtitle,
+    introText: event.greeting,
+    weddingDate: new Date(event.eventDate),
+    weddingDateTime: readableDateTime(event.eventDate),
+    address: event.address,
+    formattedAddress: event.address,
+    detailAddress: `${event.address} ${event.venueDetail}`,
+    mapLat: event.mapLat,
+    mapLng: event.mapLng,
+    mapProvider: 'GOOGLE',
+    groomName: '',
+    brideName: '',
+    accounts: event.accounts,
+    accountEnabled: true,
+    accountsTitle: event.accountsTitle,
+    organization: event.organization,
+    music: { enabled: true, sourceType: 'SHARED', loop: true },
+    transportInfo: event.transportInfo,
+    parkingInfo: event.parkingInfo,
+  };
+}
+
 export function getVisualTemplatePreviewFixture(id: VisualTemplateId): WeddingInvitationData {
-  return VISUAL_TEMPLATE_CONCEPT[id] === 'WEDDING' ? weddingFixture(id) : generalFixture(id);
+  const concept = VISUAL_TEMPLATE_CONCEPT[id];
+  if (concept === 'WEDDING') return weddingFixture(id);
+  if (concept === 'ORGANIZATION') return organizationFixture(id);
+  return generalFixture(id);
 }

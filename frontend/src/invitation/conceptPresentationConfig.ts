@@ -2,7 +2,9 @@
  * Concept presentation SSOT — Editor / Preview / Public 공통.
  * 페이지별 if 중복 금지. Wedding fallback 금지.
  */
-export type InvitationConceptType = 'WEDDING' | 'FUNERAL' | 'GENERAL';
+import type { InvitationConceptType } from '@/src/invitation/conceptTypes';
+
+export type { InvitationConceptType } from '@/src/invitation/conceptTypes';
 
 export type ConceptSectionKey =
   | 'hero'
@@ -16,7 +18,8 @@ export type ConceptSectionKey =
   | 'rsvp'
   | 'comments'
   | 'share'
-  | 'footer';
+  | 'footer'
+  | 'organization';
 
 export type ConceptPresentationConfig = {
   couple: boolean;
@@ -35,6 +38,7 @@ export type ConceptPresentationConfig = {
   music: boolean;
   /** 신규 초대장 기본값 — 자동 삽입 금지 */
   musicDefaultEnabled: boolean;
+  organization: boolean;
   sections: ConceptSectionKey[];
   commentsTitle: string;
   commentsSubtitle: string;
@@ -55,6 +59,7 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     comments: true,
     music: true,
     musicDefaultEnabled: false,
+    organization: false,
     sections: [
       'hero',
       'introduction',
@@ -85,6 +90,7 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     comments: true,
     music: true,
     musicDefaultEnabled: false,
+    organization: false,
     sections: [
       'hero',
       'deceased',
@@ -113,6 +119,7 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     comments: true,
     music: true,
     musicDefaultEnabled: false,
+    organization: false,
     sections: [
       'hero',
       'introduction',
@@ -129,12 +136,48 @@ const CONFIG: Record<InvitationConceptType, ConceptPresentationConfig> = {
     commentsSubtitle: '행사에 전할 메시지를 남겨주세요',
     commentsPlaceholder: '축하나 응원의 메시지를 남겨주세요',
   },
+  ORGANIZATION: {
+    couple: false,
+    deceased: false,
+    schedule: true,
+    gallery: true,
+    account: true,
+    accountOptional: true,
+    accountDefaultEnabled: true,
+    accountsTitle: '참가비 안내',
+    rsvp: true,
+    comments: true,
+    music: true,
+    musicDefaultEnabled: false,
+    organization: true,
+    sections: [
+      'hero',
+      'organization',
+      'introduction',
+      'schedule',
+      'gallery',
+      'location',
+      'account',
+      'rsvp',
+      'comments',
+      'share',
+      'footer',
+    ],
+    commentsTitle: '메시지를 남겨주세요',
+    commentsSubtitle: '행사에 전할 메시지를 남겨주세요',
+    commentsPlaceholder: '참석 소감이나 응원의 메시지를 남겨주세요',
+  },
 };
 
 export function getConceptPresentationConfig(
   conceptType: InvitationConceptType | string | null | undefined
 ): ConceptPresentationConfig {
-  if (conceptType === 'WEDDING' || conceptType === 'FUNERAL' || conceptType === 'GENERAL') {
+  if (
+    conceptType === 'WEDDING' ||
+    conceptType === 'FUNERAL' ||
+    conceptType === 'GENERAL' ||
+    conceptType === 'ORGANIZATION'
+  ) {
     return CONFIG[conceptType];
   }
   // 불명 → Wedding 금지. GENERAL 정책으로 안전 폴백.
@@ -185,6 +228,8 @@ export function getInvitationSections(
         return config.couple;
       case 'deceased':
         return config.deceased;
+      case 'organization':
+        return config.organization;
       default:
         return true;
     }

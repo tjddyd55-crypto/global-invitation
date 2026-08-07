@@ -40,6 +40,10 @@ const LOADERS: Record<VisualTemplateId, Loader> = {
     import('@/src/templates/generalCulture/GeneralCultureInvitation').then((m) => ({
       default: m.default as ComponentType<VisualTemplateRendererProps>,
     })),
+  ORGANIZATION_01_OFFICIAL: () =>
+    import('@/src/templates/organizationOfficial/OrganizationOfficialInvitation').then((m) => ({
+      default: m.default as ComponentType<VisualTemplateRendererProps>,
+    })),
 };
 
 export function loadVisualTemplateRenderer(id: VisualTemplateId): ReturnType<Loader> {

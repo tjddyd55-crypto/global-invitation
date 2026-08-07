@@ -124,6 +124,17 @@ const DEFINITIONS: Record<VisualTemplateId, VisualTemplateDefinition> = {
     isActive: true,
     version: 1,
   },
+  ORGANIZATION_01_OFFICIAL: {
+    id: 'ORGANIZATION_01_OFFICIAL',
+    conceptType: 'ORGANIZATION',
+    name: '공식',
+    description: '기관·단체 행사에 맞는 공식적인 브랜드 헤더 레이아웃',
+    styleTags: ['공식', '기관', '네이비'],
+    thumbnailAsset: templateThumbnailAsset('ORGANIZATION_01_OFFICIAL'),
+    sortOrder: 10,
+    isActive: true,
+    version: 1,
+  },
 };
 
 export function getVisualTemplateDefinition(id: VisualTemplateId): VisualTemplateDefinition {

@@ -6,10 +6,10 @@ import {
   type VisualTemplateId,
 } from './ids';
 
-type ConceptLike = 'WEDDING' | 'FUNERAL' | 'GENERAL' | string | null | undefined;
+type ConceptLike = 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION' | string | null | undefined;
 
-function asWeddingOrGeneral(concept: ConceptLike): VisualTemplateConcept | null {
-  if (concept === 'WEDDING' || concept === 'GENERAL') return concept;
+function asVisualTemplateConcept(concept: ConceptLike): VisualTemplateConcept | null {
+  if (concept === 'WEDDING' || concept === 'GENERAL' || concept === 'ORGANIZATION') return concept;
   return null;
 }
 
@@ -21,7 +21,7 @@ export function resolveVisualTemplateId(
   data: { visualTemplateId?: unknown; conceptType?: unknown } | null | undefined,
   conceptOverride?: ConceptLike
 ): VisualTemplateId | null {
-  const concept = asWeddingOrGeneral(
+  const concept = asVisualTemplateConcept(
     conceptOverride ?? (typeof data?.conceptType === 'string' ? data.conceptType : null)
   );
   if (!concept) return null;
@@ -40,7 +40,7 @@ export function sanitizeVisualTemplateIdForSave(
   visualTemplateId: unknown,
   conceptType: ConceptLike
 ): VisualTemplateId | undefined {
-  const concept = asWeddingOrGeneral(conceptType);
+  const concept = asVisualTemplateConcept(conceptType);
   if (!concept) return undefined;
   if (!isVisualTemplateId(visualTemplateId)) return undefined;
   if (VISUAL_TEMPLATE_CONCEPT[visualTemplateId] !== concept) return undefined;

@@ -61,3 +61,21 @@ export function CalendarDaysIcon(props: IconProps) {
     </BaseIcon>
   );
 }
+
+/** Organization concept — Building2 */
+export function BuildingIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M6 22V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v18" />
+      <path d="M6 12h12" />
+      <path d="M6 16h12" />
+      <path d="M10 8h.01" />
+      <path d="M14 8h.01" />
+      <path d="M10 12h.01" />
+      <path d="M14 12h.01" />
+      <path d="M10 16h.01" />
+      <path d="M14 16h.01" />
+      <path d="M3 22h18" />
+    </BaseIcon>
+  );
+}

@@ -3,11 +3,15 @@ import type { FuneralInvitation } from '@/src/templates/funeralClassic/data';
 import type { MessageCardSimple } from '@/src/models/messageSimple';
 import type { MessageCardData } from '@/src/models/messageCard';
 import type { BrandedMessageCard } from '@/src/models/messageBranded';
+import {
+  isInvitationConceptType,
+  type InvitationConceptType,
+} from '@/src/invitation/conceptTypes';
 
 export type WeddingInvitationData = WeddingClassicData;
 export type FuneralInvitationData = FuneralInvitation;
 export type InvitationTemplateType = 'FULL';
-export type InvitationConceptType = 'WEDDING' | 'FUNERAL' | 'GENERAL';
+export type { InvitationConceptType };
 export type MessageSimpleInvitationData = MessageCardSimple;
 export type MessageThankYouInvitationData = MessageCardData;
 export type MessageBrandedInvitationData = BrandedMessageCard;
@@ -47,7 +51,7 @@ function isStringOrStringArray(value: unknown): boolean {
 function isCommonFullFields(value: JsonRecord): boolean {
   return (
     value.templateType === 'FULL' &&
-    isConceptType(value.conceptType) &&
+    isInvitationConceptType(value.conceptType) &&
     typeof value.title === 'string' &&
     typeof value.heroImage === 'string' &&
     isStringOrStringArray(value.content) &&
@@ -64,17 +68,17 @@ function hasWeddingDate(value: unknown): value is Date {
   return value instanceof Date && !Number.isNaN(value.getTime());
 }
 
-function isConceptType(value: unknown): value is InvitationConceptType {
-  return value === 'WEDDING' || value === 'FUNERAL' || value === 'GENERAL';
-}
-
 export function isWeddingInvitationData(value: unknown): value is WeddingInvitationData {
   if (!isRecord(value)) return false;
   if (isCommonFullFields(value)) {
-    return value.conceptType === 'WEDDING' || value.conceptType === 'GENERAL';
+    return (
+      value.conceptType === 'WEDDING' ||
+      value.conceptType === 'GENERAL' ||
+      value.conceptType === 'ORGANIZATION'
+    );
   }
   if (value.templateType !== undefined && value.templateType !== 'FULL') return false;
-  if (value.conceptType !== undefined && !isConceptType(value.conceptType)) return false;
+  if (value.conceptType !== undefined && !isInvitationConceptType(value.conceptType)) return false;
   if (typeof value.heroImage !== 'string') return false;
   if (typeof value.heroTitle !== 'string') return false;
   if (typeof value.heroSubtitle !== 'string') return false;
@@ -167,7 +171,7 @@ export function resolveInvitationConceptType(
   value: unknown,
   templateKey?: string | null
 ): InvitationConceptType {
-  if (isRecord(value) && isConceptType(value.conceptType)) {
+  if (isRecord(value) && isInvitationConceptType(value.conceptType)) {
     return value.conceptType;
   }
   if (isFuneralInvitationData(value) || templateKey === 'funeral_classic') {

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 /* eslint-disable i18next/no-literal-string */
 
 import { useCallback, useMemo, useState } from 'react';
@@ -19,10 +19,10 @@ import {
 import { fetchCurrentUser } from '@/src/shared/auth';
 import styles from './VisualTemplateCatalog.module.css';
 
-type ConceptFilter = 'WEDDING' | 'GENERAL';
+type ConceptFilter = 'WEDDING' | 'GENERAL' | 'ORGANIZATION';
 
 function resolveConcept(raw: string | null): ConceptFilter | null {
-  if (raw === 'WEDDING' || raw === 'GENERAL') return raw;
+  if (raw === 'WEDDING' || raw === 'GENERAL' || raw === 'ORGANIZATION') return raw;
   return null;
 }
 
@@ -81,7 +81,12 @@ export default function VisualTemplateCatalog() {
         </Link>
         <h1 className={styles.title}>템플릿을 골라 보세요</h1>
         <p className={styles.desc}>
-          {concept === 'WEDDING' ? '결혼식' : '일반 행사'}에 맞는 디자인을 미리 보고 선택할 수 있습니다.
+          {concept === 'WEDDING'
+            ? '결혼식'
+            : concept === 'ORGANIZATION'
+              ? '기업·단체 행사'
+              : '일반 행사'}
+          에 맞는 디자인을 미리 보고 결정할 수 있습니다.
         </p>
       </header>
 

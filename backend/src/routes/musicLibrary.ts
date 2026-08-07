@@ -20,10 +20,12 @@ function normalizeText(value: unknown): string {
 function parseConcept(value: unknown): Exclude<InvitationMusicCategory, 'COMMON'> | undefined {
   const normalized = normalizeText(value).toUpperCase();
   if (!normalized) return undefined;
-  if (!USER_CONCEPTS.has(normalized as InvitationMusicCategory)) {
+  // ORGANIZATION reuses GENERAL catalog — Prisma InvitationMusicCategory 미확장
+  const mapped = normalized === 'ORGANIZATION' ? 'GENERAL' : normalized;
+  if (!USER_CONCEPTS.has(mapped as InvitationMusicCategory)) {
     throw new InvitationMusicLibraryError('INVALID_MUSIC_CONCEPT', 400);
   }
-  return normalized as Exclude<InvitationMusicCategory, 'COMMON'>;
+  return mapped as Exclude<InvitationMusicCategory, 'COMMON'>;
 }
 
 router.get('/', async (req, res) => {
