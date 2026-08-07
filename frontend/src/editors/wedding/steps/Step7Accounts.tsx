@@ -8,7 +8,7 @@ import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentati
 type Step7AccountsProps = {
   accounts: WeddingEditorAccount[];
   onChange: (accounts: WeddingEditorAccount[]) => void;
-  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
   accountEnabled: boolean;
   accountsTitle: string;
   onAccountEnabledChange: (enabled: boolean) => void;
@@ -27,13 +27,14 @@ export default function Step7Accounts({
   const config = getConceptPresentationConfig(conceptType);
   const isOptional = config.accountOptional;
   const showForm = !isOptional || accountEnabled;
+  const isEventLike = conceptType === 'GENERAL' || conceptType === 'ORGANIZATION';
 
   return (
     <section className={styles.stepSection} data-testid="step-accounts">
       <div className={styles.sectionHeader}>
-        <h2>{conceptType === 'GENERAL' ? '참가비·계좌 정보' : '계좌 정보'}</h2>
+        <h2>{isEventLike ? '참가비·계좌 정보' : '계좌 정보'}</h2>
         <p>
-          {conceptType === 'GENERAL'
+          {isEventLike
             ? '참가비, 회비, 등록비 또는 후원금을 받을 계좌를 안내할 수 있습니다.'
             : '복수 계좌 추가/삭제/복제 기능을 제공합니다.'}
         </p>

@@ -1,4 +1,5 @@
 import { I18N_KEYS, SUPPORTED_LANGUAGES, translate, type Language } from '@/src/i18n';
+import type { OrganizationBranding } from '@/src/invitation/conceptTypes';
 import { formatDate, formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/lib/api';
 
@@ -33,9 +34,11 @@ export type WeddingClassicMessage = {
 
 export type WeddingClassicData = {
   templateType: 'FULL';
-  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
   /** Visual template SSOT — optional; missing → Classic fallback at read time */
   visualTemplateId?: string;
+  /** ORGANIZATION branding — logo / name / accent */
+  organization?: OrganizationBranding;
   /** 공통 필드 */
   title: string;
   /** 부제·영웅 보조 줄 */
@@ -139,7 +142,7 @@ export type WeddingClassicData = {
   rsvpButton?: string;
   rsvpButtonLabel?: string;
   accountsTitle?: string;
-  /** GENERAL 선택형 계좌 ON/OFF. WEDDING/FUNERAL은 보통 생략(계좌 존재 시 표시). */
+  /** GENERAL/ORGANIZATION 선택형 계좌 ON/OFF. WEDDING/FUNERAL은 보통 생략(계좌 존재 시 표시). */
   accountEnabled?: boolean;
   messagesTitle?: string;
   messages?: WeddingClassicMessage[];

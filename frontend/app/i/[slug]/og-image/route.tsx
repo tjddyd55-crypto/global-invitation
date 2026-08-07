@@ -28,6 +28,7 @@ const FALLBACK_BG: Record<InvitationConceptKind, string> = {
     'repeating-linear-gradient(125deg, rgba(255,255,255,0.03) 0px, transparent 1px, transparent 6px, rgba(255,255,255,0.02) 7px)',
   ].join(', '),
   GENERAL: 'linear-gradient(138deg, #f8fafc 0%, #eef2ff 44%, #e8edff 72%, #ffffff 100%)',
+  ORGANIZATION: 'linear-gradient(148deg, #f4f7fa 0%, #e8eef5 40%, #d9e4f0 72%, #ffffff 100%)',
 };
 
 function resolveSlug(params: { slug?: string | string[] }): string {

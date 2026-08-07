@@ -3,6 +3,7 @@ import type { WeddingEditorState } from '@/src/editors/wedding/state/weddingEdit
 
 export type EditorSectionKey =
   | 'setup'
+  | 'organization'
   | 'message'
   | 'hero'
   | 'couple'
@@ -25,6 +26,7 @@ type ConceptType = WeddingEditorState['setup']['conceptType'];
 /**
  * Concept editor steps SSOT — PC sidebar / mobile stepper / nav 공통.
  * GENERAL은 일정 입력을 기본 정보에 통합하므로 schedule editor step 없음.
+ * ORGANIZATION은 branding step 추가 (organization key).
  * Preview/Public `schedule` 섹션은 renderer 전용으로 계속 존재한다.
  */
 export function resolveVisibleSections(conceptType: ConceptType): EditorSectionItem[] {
@@ -52,6 +54,21 @@ export function resolveVisibleSections(conceptType: ConceptType): EditorSectionI
       { id: 4, key: 'schedule', title: '장례 일정', previewSectionId: 'schedule' },
       { id: 5, key: 'location', title: '위치 안내', previewSectionId: 'location' },
       { id: 6, key: 'accounts', title: '계좌 정보', previewSectionId: 'accounts' },
+      { id: 7, key: 'rsvp', title: '참석 여부', previewSectionId: 'rsvp' },
+      { id: 8, key: 'music', title: '음악 설정', previewSectionId: 'music' },
+      { id: 9, key: 'share', title: '공유 설정', previewSectionId: 'share' },
+    ];
+  }
+
+  if (conceptType === 'ORGANIZATION') {
+    return [
+      { id: 0, key: 'setup', title: '기본 정보', previewSectionId: 'basic' },
+      { id: 1, key: 'organization', title: '기관 브랜딩', previewSectionId: 'organization' },
+      { id: 2, key: 'message', title: '행사 소개', previewSectionId: 'greeting' },
+      { id: 3, key: 'hero', title: '대표 이미지', previewSectionId: 'hero' },
+      { id: 4, key: 'gallery', title: '갤러리', previewSectionId: 'gallery' },
+      { id: 5, key: 'location', title: '위치 안내', previewSectionId: 'location' },
+      { id: 6, key: 'accounts', title: '참가비·계좌 정보', previewSectionId: 'accounts' },
       { id: 7, key: 'rsvp', title: '참석 여부', previewSectionId: 'rsvp' },
       { id: 8, key: 'music', title: '음악 설정', previewSectionId: 'music' },
       { id: 9, key: 'share', title: '공유 설정', previewSectionId: 'share' },

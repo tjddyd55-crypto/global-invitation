@@ -47,15 +47,19 @@ export default function Step1BasicInfo({
           venuePlaceholder: '예: 서울아산병원장례식장 특실',
           detailPlaceholder: '예: 조문 시간: 오전 10시 - 오후 8시',
         }
-      : conceptType === 'GENERAL'
+      : conceptType === 'GENERAL' || conceptType === 'ORGANIZATION'
         ? {
             title: '행사 제목',
             subtitle: '행사 부제 (선택)',
             datetime: '행사 날짜/시간',
             venue: '장소명',
             detail: '홀 이름 (선택)',
-            titlePlaceholder: '예: 초대합니다',
-            subtitlePlaceholder: '예: 함께 만드는 미래',
+            titlePlaceholder:
+              conceptType === 'ORGANIZATION' ? '예: 2026 회장단 이·취임식' : '예: 초대합니다',
+            subtitlePlaceholder:
+              conceptType === 'ORGANIZATION'
+                ? '예: 부산청년리더협회와 함께하는 공식 초청'
+                : '예: 함께 만드는 미래',
             venuePlaceholder: '예: 코엑스 컨퍼런스홀',
             detailPlaceholder: '예: 3층 오디토리움',
           }

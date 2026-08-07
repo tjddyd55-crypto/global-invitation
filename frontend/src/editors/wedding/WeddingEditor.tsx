@@ -16,6 +16,7 @@ import Step7Accounts from './steps/Step7Accounts';
 import Step8Extras from './steps/Step8Extras';
 import Step9MusicSettings from './steps/Step9MusicSettings';
 import Step10ShareSettings from './steps/Step10ShareSettings';
+import StepOrganizationBranding from './steps/StepOrganizationBranding';
 import { buildWeddingClassicPreviewData } from './state/weddingEditor.mapper';
 import { weddingEditorReducer } from './state/weddingEditor.reducer';
 import type { WeddingEditorState } from './state/weddingEditor.types';
@@ -231,7 +232,9 @@ export default function WeddingEditor({
       ? '결혼식 초대장'
       : state.setup.conceptType === 'FUNERAL'
         ? '부고장'
-        : '일반 행사';
+        : state.setup.conceptType === 'ORGANIZATION'
+          ? '기관 행사'
+          : '일반 행사';
 
   const renderStep = () => {
     switch (activeSection) {
@@ -241,6 +244,13 @@ export default function WeddingEditor({
             value={state.basic}
             conceptType={state.setup.conceptType}
             onChange={(payload) => dispatch({ type: 'SET_BASIC', payload })}
+          />
+        );
+      case 'organization':
+        return (
+          <StepOrganizationBranding
+            value={state.organization}
+            onChange={(payload) => dispatch({ type: 'SET_ORGANIZATION', payload })}
           />
         );
       case 'message':
@@ -526,7 +536,9 @@ export default function WeddingEditor({
               focusSectionId={activeSection}
               scrollRequestId={previewScrollRequestId}
               conceptType={
-                state.setup.conceptType === 'FUNERAL' || state.setup.conceptType === 'GENERAL'
+                state.setup.conceptType === 'FUNERAL' ||
+                state.setup.conceptType === 'GENERAL' ||
+                state.setup.conceptType === 'ORGANIZATION'
                   ? state.setup.conceptType
                   : 'WEDDING'
               }
@@ -572,7 +584,9 @@ export default function WeddingEditor({
                 focusSectionId={activeSection}
                 scrollRequestId={previewScrollRequestId}
                 conceptType={
-                  state.setup.conceptType === 'FUNERAL' || state.setup.conceptType === 'GENERAL'
+                  state.setup.conceptType === 'FUNERAL' ||
+                  state.setup.conceptType === 'GENERAL' ||
+                  state.setup.conceptType === 'ORGANIZATION'
                     ? state.setup.conceptType
                     : 'WEDDING'
                 }

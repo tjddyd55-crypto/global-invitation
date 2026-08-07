@@ -16,6 +16,11 @@ export function weddingEditorReducer(state: WeddingEditorState, action: WeddingE
       return { ...state, hero: { ...state.hero, ...action.payload } };
     case 'SET_INVITATION_MESSAGE':
       return { ...state, invitationMessage: { ...state.invitationMessage, ...action.payload } };
+    case 'SET_ORGANIZATION':
+      return {
+        ...state,
+        organization: { ...(state.organization || {}), ...action.payload },
+      };
     case 'SET_GROOM':
       return { ...state, groom: { ...state.groom, ...action.payload } };
     case 'SET_BRIDE':

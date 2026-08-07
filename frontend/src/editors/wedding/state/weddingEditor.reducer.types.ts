@@ -10,6 +10,7 @@ import type {
   WeddingEditorSetup,
   WeddingEditorShare,
   WeddingEditorImage,
+  WeddingEditorOrganization,
   WeddingEditorState,
 } from './weddingEditor.types';
 
@@ -19,6 +20,7 @@ export type WeddingEditorAction =
   | { type: 'SET_BASIC'; payload: Partial<WeddingEditorBasic> }
   | { type: 'SET_HERO'; payload: Partial<WeddingEditorHero> }
   | { type: 'SET_INVITATION_MESSAGE'; payload: Partial<WeddingEditorInvitationMessage> }
+  | { type: 'SET_ORGANIZATION'; payload: Partial<WeddingEditorOrganization> }
   | { type: 'SET_GROOM'; payload: Partial<WeddingEditorPerson> }
   | { type: 'SET_BRIDE'; payload: Partial<WeddingEditorPerson> }
   | { type: 'SET_GALLERY_IMAGES'; payload: WeddingEditorImage[] }

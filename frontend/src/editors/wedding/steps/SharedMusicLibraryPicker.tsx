@@ -13,10 +13,11 @@ import {
   releaseInvitationMusicPlayback,
 } from '@/src/invitation/musicPlaybackController';
 import { fetchMusicLibrary, type PublicMusicTrack } from '@/src/shared/api';
+import { musicCategoryForConcept, type InvitationConceptType } from '@/src/invitation/conceptTypes';
 import styles from '../weddingEditor.module.css';
 
 type SharedMusicLibraryPickerProps = {
-  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  conceptType: InvitationConceptType;
   selectedTrackId?: string;
   legacyMusicKey?: string;
   onSelect: (track: PublicMusicTrack) => void;
@@ -54,7 +55,7 @@ export default function SharedMusicLibraryPicker({
     const timer = window.setTimeout(() => {
       setIsLoading(true);
       setError(null);
-      void fetchMusicLibrary({ concept: conceptType, search })
+      void fetchMusicLibrary({ concept: musicCategoryForConcept(conceptType), search })
         .then((nextTracks) => {
           if (isCurrent) setTracks(nextTracks);
         })

@@ -1,15 +1,19 @@
+import type { OrganizationBranding } from '@/src/invitation/conceptTypes';
+
 export type WeddingEditorSetup = {
   invitationType: 'wedding';
   templateKey: 'invitation_full';
   /** 에디터 진입 시 페이지에서 고정; 런타임 변경 불가 */
-  readonly conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  readonly conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
   language: 'ko' | 'en' | 'mn';
   /**
-   * dataJson.visualTemplateId — WEDDING/GENERAL only.
+   * dataJson.visualTemplateId — WEDDING/GENERAL/ORGANIZATION.
    * Missing at load → UI uses Classic fallback without writing until explicit change/save.
    */
   visualTemplateId?: string;
 };
+
+export type WeddingEditorOrganization = OrganizationBranding;
 
 export type WeddingEditorBasic = {
   title: string;
@@ -90,7 +94,7 @@ export type WeddingEditorExtras = {
   rsvpEnabled: boolean;
   guestbookEnabled: boolean;
   rsvpButtonText?: string;
-  /** GENERAL 선택형 계좌 — OFF여도 accounts 데이터 유지 가능 */
+  /** GENERAL/ORGANIZATION 선택형 계좌 — OFF여도 accounts 데이터 유지 가능 */
   accountEnabled?: boolean;
   /** 공개 섹션 제목 (미입력 시 concept 기본 라벨) */
   accountsTitle?: string;
@@ -120,6 +124,7 @@ export type WeddingEditorState = {
   basic: WeddingEditorBasic;
   hero: WeddingEditorHero;
   invitationMessage: WeddingEditorInvitationMessage;
+  organization: WeddingEditorOrganization;
   groom: WeddingEditorPerson;
   bride: WeddingEditorPerson;
   gallery: WeddingEditorGallery;

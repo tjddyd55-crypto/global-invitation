@@ -12,10 +12,11 @@ import {
   releaseInvitationMusicPlayback,
 } from '@/src/invitation/musicPlaybackController';
 import SharedMusicLibraryPicker from './SharedMusicLibraryPicker';
+import type { InvitationConceptType } from '@/src/invitation/conceptTypes';
 
 type Step9MusicSettingsProps = {
   value: WeddingEditorExtras;
-  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  conceptType: InvitationConceptType;
   onChange: (value: Partial<WeddingEditorExtras>) => void;
 };
 

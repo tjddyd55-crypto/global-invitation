@@ -3,6 +3,12 @@ import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/lib/api';
 import { buildWeddingClassicHeroTitle } from '@/src/templates/weddingClassic/data';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
+import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
+import {
+  DEFAULT_BRAND_ACCENT_COLOR,
+  isInvitationConceptType,
+  normalizeOrganizationBranding,
+} from '@/src/invitation/conceptTypes';
 import { sanitizeGalleryItems } from '@/src/invitation/galleryAsset';
 import { normalizeGalleryDisplayMode } from '@/src/invitation/galleryDisplay';
 import type {
@@ -102,25 +108,32 @@ function normalizeTemplateKey(): 'invitation_full' {
   return 'invitation_full';
 }
 
-function normalizeConceptType(value: unknown): 'WEDDING' | 'FUNERAL' | 'GENERAL' {
-  if (value === 'FUNERAL' || value === 'GENERAL') return value;
+function normalizeConceptType(value: unknown): EditorConceptType {
+  if (isInvitationConceptType(value)) return value;
   return 'WEDDING';
+}
+
+function isEventLikeConcept(conceptType: EditorConceptType): boolean {
+  return conceptType === 'GENERAL' || conceptType === 'ORGANIZATION';
 }
 
 function getDefaultTitleByConcept(conceptType: EditorConceptType): string {
   if (conceptType === 'FUNERAL') return '부고를 전합니다';
+  if (conceptType === 'ORGANIZATION') return '행사에 초대합니다';
   if (conceptType === 'GENERAL') return '초대합니다';
   return '결혼식에 초대합니다';
 }
 
 function getDefaultMessageByConcept(conceptType: EditorConceptType): string {
   if (conceptType === 'FUNERAL') return '삼가 고인의 명복을 빕니다.';
+  if (conceptType === 'ORGANIZATION') return '뜻깊은 자리에 함께해 주시기 바랍니다.';
   if (conceptType === 'GENERAL') return '행사에 초대드립니다.';
   return '소중한 분들을 모시고\n결혼식을 올리게 되었습니다.';
 }
 
 function getDefaultQuoteByConcept(conceptType: EditorConceptType): string {
   if (conceptType === 'FUNERAL') return '삼가 고인의 명복을 빕니다.';
+  if (conceptType === 'ORGANIZATION') return '함께 만드는 내일을 위해';
   if (conceptType === 'GENERAL') return '뜻깊은 시간에 함께해 주세요.';
   return DEFAULT_INTRO_QUOTE;
 }
@@ -218,6 +231,8 @@ export function createWeddingEditorState(
   const defaultTitle = getDefaultTitleByConcept(conceptType);
   const defaultMessage = getDefaultMessageByConcept(conceptType);
   const defaultQuote = getDefaultQuoteByConcept(conceptType);
+  const conceptConfig = getConceptPresentationConfig(conceptType);
+  const eventLike = isEventLikeConcept(conceptType);
 
   return {
     setup: {
@@ -241,6 +256,12 @@ export function createWeddingEditorState(
     invitationMessage: {
       quote: defaultQuote,
       body: resolveMessage(invitation?.message ?? null, defaultMessage),
+    },
+    organization: {
+      name: '',
+      englishName: '',
+      logo: '',
+      accentColor: DEFAULT_BRAND_ACCENT_COLOR,
     },
     groom: {
       name: groomName,
@@ -272,16 +293,15 @@ export function createWeddingEditorState(
       transportInfo: [...DEFAULT_TRANSPORT],
       parkingInfo: [...DEFAULT_PARKING],
     },
-    accounts:
-      conceptType === 'GENERAL' ? [] : buildDefaultAccounts({ groomName, brideName }),
+    accounts: eventLike ? [] : buildDefaultAccounts({ groomName, brideName }),
     extras: {
       rsvpEnabled: true,
       guestbookEnabled: true,
       rsvpButtonText: translate(language, I18N_KEYS.weddingClassic.rsvpButton),
-      accountEnabled: conceptType === 'GENERAL' ? false : true,
+      accountEnabled: conceptConfig.accountDefaultEnabled,
       accountsTitle:
-        conceptType === 'GENERAL'
-          ? '참가비 및 입금 안내'
+        eventLike
+          ? conceptConfig.accountsTitle
           : translate(language, I18N_KEYS.weddingClassic.accountsTitle),
       musicEnabled: false,
       musicSourceType: undefined,
@@ -350,6 +370,16 @@ export function createWeddingEditorStateFromDraft(
       quote: runtimeData.introQuote || base.invitationMessage.quote,
       body: normalizedContent ?? normalizedLegacyIntroText ?? base.invitationMessage.body,
     },
+    organization: (() => {
+      const next = normalizeOrganizationBranding(
+        (runtimeData as { organization?: unknown }).organization
+      );
+      return {
+        ...base.organization,
+        ...next,
+        accentColor: next.accentColor || base.organization.accentColor || DEFAULT_BRAND_ACCENT_COLOR,
+      };
+    })(),
     groom: {
       name: stripRolePrefix(runtimeData.groom?.name || runtimeData.groomName || '') || base.groom.name,
       photo:

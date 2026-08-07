@@ -16,11 +16,13 @@ export type EditorPreviewSectionId =
   | 'comments'
   | 'music'
   | 'share'
-  | 'deceased';
+  | 'deceased'
+  | 'organization';
 
 /** editorSteps EditorSectionKey 와 동일 */
 export type EditorStepKey =
   | 'setup'
+  | 'organization'
   | 'message'
   | 'hero'
   | 'couple'
@@ -37,6 +39,7 @@ export const PREVIEW_SECTION_SCROLL_OFFSET = 12;
 
 const WEDDING_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
   setup: 'hero',
+  organization: 'hero',
   message: 'greeting',
   hero: 'hero',
   couple: 'couple',
@@ -56,6 +59,23 @@ const WEDDING_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
  */
 const GENERAL_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
   setup: 'basic',
+  organization: 'basic',
+  message: 'greeting',
+  hero: 'hero',
+  couple: 'greeting',
+  schedule: 'basic',
+  gallery: 'gallery',
+  location: 'location',
+  accounts: 'accounts',
+  rsvp: 'rsvp',
+  music: 'music',
+  share: 'share',
+};
+
+/** ORGANIZATION — branding step scrolls to organization header */
+const ORGANIZATION_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
+  setup: 'basic',
+  organization: 'organization',
   message: 'greeting',
   hero: 'hero',
   couple: 'greeting',
@@ -70,6 +90,7 @@ const GENERAL_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
 
 const FUNERAL_STEP_TO_SECTION: Record<EditorStepKey, EditorPreviewSectionId> = {
   setup: 'hero',
+  organization: 'hero',
   message: 'greeting',
   hero: 'hero',
   couple: 'deceased',
@@ -97,18 +118,21 @@ const SECTION_QUERY_IDS: Record<EditorPreviewSectionId, string[]> = {
   music: ['music'],
   share: ['share'],
   deceased: ['deceased'],
+  organization: ['organization'],
 };
 
 export function resolveEditorPreviewSectionId(
   stepKey: string,
-  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL' = 'WEDDING'
+  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION' = 'WEDDING'
 ): EditorPreviewSectionId {
   const map =
     conceptType === 'FUNERAL'
       ? FUNERAL_STEP_TO_SECTION
-      : conceptType === 'GENERAL'
-        ? GENERAL_STEP_TO_SECTION
-        : WEDDING_STEP_TO_SECTION;
+      : conceptType === 'ORGANIZATION'
+        ? ORGANIZATION_STEP_TO_SECTION
+        : conceptType === 'GENERAL'
+          ? GENERAL_STEP_TO_SECTION
+          : WEDDING_STEP_TO_SECTION;
   const key = stepKey as EditorStepKey;
   return map[key] || 'hero';
 }

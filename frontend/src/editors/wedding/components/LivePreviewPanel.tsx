@@ -27,7 +27,7 @@ type LivePreviewPanelProps = {
   focusSectionId?: string | null;
   /** Increment to re-scroll even when the same step is selected again */
   scrollRequestId?: number;
-  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
 };
 
 /**

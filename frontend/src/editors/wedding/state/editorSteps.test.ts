@@ -32,3 +32,16 @@ test('funeral has 10 steps with music then share', () => {
   assert.equal(steps[8]?.key, 'music');
   assert.equal(steps[9]?.key, 'share');
 });
+
+test('organization has 10 steps with branding then music/share', () => {
+  const steps = resolveVisibleSections('ORGANIZATION');
+  assert.equal(steps.length, 10);
+  assert.equal(steps[0]?.key, 'setup');
+  assert.equal(steps[1]?.key, 'organization');
+  assert.equal(steps[1]?.title, '기관 브랜딩');
+  assert.equal(steps[1]?.previewSectionId, 'organization');
+  assert.ok(!steps.some((s) => s.key === 'couple'));
+  assert.ok(!steps.some((s) => s.key === 'schedule'));
+  assert.equal(steps[8]?.key, 'music');
+  assert.equal(steps[9]?.key, 'share');
+});

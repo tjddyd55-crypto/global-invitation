@@ -37,6 +37,10 @@ export function computeEditorCompleteness(state: WeddingEditorState): {
         total += 1;
         if (isNonEmpty(state.invitationMessage.body)) completed += 1;
         break;
+      case 'organization':
+        total += 1;
+        if (isNonEmpty(state.organization?.name)) completed += 1;
+        break;
       case 'hero':
         total += 1;
         if (isNonEmpty(state.hero.heroImage)) completed += 1;
@@ -73,7 +77,7 @@ export function computeEditorCompleteness(state: WeddingEditorState): {
         break;
       case 'accounts': {
         const enabled =
-          state.setup.conceptType === 'GENERAL'
+          state.setup.conceptType === 'GENERAL' || state.setup.conceptType === 'ORGANIZATION'
             ? Boolean(state.extras.accountEnabled)
             : true;
         if (!enabled) {

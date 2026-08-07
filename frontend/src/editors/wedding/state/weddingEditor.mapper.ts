@@ -4,6 +4,10 @@ import {
 } from '@/src/templates/weddingClassic/data';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
+import {
+  DEFAULT_BRAND_ACCENT_COLOR,
+  normalizeOrganizationBranding,
+} from '@/src/invitation/conceptTypes';
 import { sanitizeGalleryItems } from '@/src/invitation/galleryAsset';
 import { normalizeGalleryDisplayMode } from '@/src/invitation/galleryDisplay';
 import { buildOpenGraphSaveFields } from '@/src/invitation/openGraphSettings';
@@ -11,6 +15,10 @@ import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/models/invitation';
 import { sanitizeVisualTemplateIdForSave } from '@/src/templates/visualTemplate/resolveVisualTemplateId';
 import type { WeddingEditorState } from './weddingEditor.types';
+
+function isEventLikeConcept(conceptType: WeddingEditorState['setup']['conceptType']): boolean {
+  return conceptType === 'GENERAL' || conceptType === 'ORGANIZATION';
+}
 
 function parseWeddingDate(eventDateTime: string): Date {
   const parsed = new Date(eventDateTime);
@@ -214,7 +222,16 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     };
   }
 
-  if (state.setup.conceptType === 'GENERAL') {
+  if (isEventLikeConcept(state.setup.conceptType)) {
+    const organization =
+      state.setup.conceptType === 'ORGANIZATION'
+        ? normalizeOrganizationBranding({
+            name: state.organization?.name,
+            englishName: state.organization?.englishName,
+            logo: state.organization?.logo,
+            accentColor: state.organization?.accentColor || DEFAULT_BRAND_ACCENT_COLOR,
+          })
+        : undefined;
     return {
       ...base,
       // heroSubtitle 은 날짜가 아니라 사용자 부제. 날짜는 weddingDateTime/schedule 만.
@@ -232,6 +249,16 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
       accountEnabled,
       groom: { image: '', name: '', phone: '', parentsText: '' },
       bride: { image: '', name: '', phone: '', parentsText: '' },
+      ...(organization && Object.keys(organization).length > 0
+        ? {
+            organization: {
+              ...organization,
+              accentColor: organization.accentColor || DEFAULT_BRAND_ACCENT_COLOR,
+            },
+          }
+        : state.setup.conceptType === 'ORGANIZATION'
+          ? { organization: { accentColor: DEFAULT_BRAND_ACCENT_COLOR } }
+          : {}),
     };
   }
 

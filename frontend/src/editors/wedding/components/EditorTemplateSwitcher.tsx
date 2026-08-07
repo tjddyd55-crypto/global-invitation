@@ -12,27 +12,37 @@ import type { VisualTemplateId } from '@/src/templates/visualTemplate/ids';
 import styles from './EditorTemplateSwitcher.module.css';
 
 type Props = {
-  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
   visualTemplateId?: string;
   onChange: (nextId: VisualTemplateId) => void;
 };
+
+function isSwitchableConcept(
+  conceptType: Props['conceptType']
+): conceptType is 'WEDDING' | 'GENERAL' | 'ORGANIZATION' {
+  return conceptType === 'WEDDING' || conceptType === 'GENERAL' || conceptType === 'ORGANIZATION';
+}
 
 export default function EditorTemplateSwitcher({ conceptType, visualTemplateId, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [confirmId, setConfirmId] = useState<VisualTemplateId | null>(null);
 
   const options = useMemo(() => {
-    if (conceptType !== 'WEDDING' && conceptType !== 'GENERAL') return [];
+    if (!isSwitchableConcept(conceptType)) return [];
     return listActiveVisualTemplates(conceptType);
   }, [conceptType]);
 
-  if (conceptType !== 'WEDDING' && conceptType !== 'GENERAL') {
+  if (!isSwitchableConcept(conceptType)) {
     return null;
   }
 
   const resolved =
     resolveVisualTemplateId({ conceptType, visualTemplateId }, conceptType) ??
-    (conceptType === 'WEDDING' ? 'WEDDING_01_CLASSIC' : 'GENERAL_01_CLASSIC');
+    (conceptType === 'WEDDING'
+      ? 'WEDDING_01_CLASSIC'
+      : conceptType === 'ORGANIZATION'
+        ? 'ORGANIZATION_01_OFFICIAL'
+        : 'GENERAL_01_CLASSIC');
   const current = getVisualTemplateDefinition(resolved);
 
   return (

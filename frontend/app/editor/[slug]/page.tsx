@@ -65,7 +65,12 @@ function trackEvent(payload: Parameters<typeof logEvent>[0]) {
 }
 
 function resolveConceptFromQuery(value: string | null): InvitationConceptType | null {
-  if (value === 'WEDDING' || value === 'FUNERAL' || value === 'GENERAL') {
+  if (
+    value === 'WEDDING' ||
+    value === 'FUNERAL' ||
+    value === 'GENERAL' ||
+    value === 'ORGANIZATION'
+  ) {
     return value;
   }
   return null;
@@ -375,10 +380,12 @@ export default function EditorPage() {
     const runtimeRaw = (invitation.dataJson ?? invitation.data) as Record<string, unknown> | undefined;
     const runtimeData = runtimeRaw as WeddingInvitationData | undefined;
     // isWeddingInvitationData 가 엄격해 sparse/부분 저장본에서 기본값 폴백으로
-    // gallery·music·accounts 가 덮어씌워지지 않도록 WEDDING/GENERAL 은 draft 경로를 우선한다.
+    // gallery·music·accounts 가 덮어씌워지지 않도록 WEDDING/GENERAL/ORGANIZATION 은 draft 경로를 우선한다.
     const useDraft =
       Boolean(runtimeData) &&
-      (editorType === 'WEDDING' || editorType === 'GENERAL') &&
+      (editorType === 'WEDDING' ||
+        editorType === 'GENERAL' ||
+        editorType === 'ORGANIZATION') &&
       (isWeddingInvitationData(runtimeData) ||
         runtimeRaw?.templateType === 'FULL' ||
         runtimeRaw?.conceptType === editorType);

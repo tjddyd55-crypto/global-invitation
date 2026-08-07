@@ -6,8 +6,8 @@ import type { WeddingEditorAccount } from '../state/weddingEditor.types';
 type AccountListEditorProps = {
   accounts: WeddingEditorAccount[];
   onChange: (accounts: WeddingEditorAccount[]) => void;
-  /** GENERAL: 용도 placeholder 등 */
-  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL';
+  /** GENERAL/ORGANIZATION: 용도 placeholder 등 */
+  conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
 };
 
 function buildId() {
@@ -32,7 +32,7 @@ export default function AccountListEditor({
   onChange,
   conceptType = 'WEDDING',
 }: AccountListEditorProps) {
-  const isGeneral = conceptType === 'GENERAL';
+  const isGeneral = conceptType === 'GENERAL' || conceptType === 'ORGANIZATION';
 
   const handleAdd = () => {
     onChange([

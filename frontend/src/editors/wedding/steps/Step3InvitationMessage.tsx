@@ -11,13 +11,16 @@ type Step3InvitationMessageProps = {
 
 export default function Step3InvitationMessage({ value, conceptType, onChange }: Step3InvitationMessageProps) {
   const labels =
-    conceptType === 'GENERAL'
+    conceptType === 'GENERAL' || conceptType === 'ORGANIZATION'
       ? {
           title: '행사 소개',
           description: '행사 소개 문구를 입력합니다.',
           quote: '강조 문구 (선택)',
           body: '행사 소개',
-          placeholder: '행사에 초대드립니다.',
+          placeholder:
+            conceptType === 'ORGANIZATION'
+              ? '뜻깊은 자리에 함께해 주시기 바랍니다.'
+              : '행사에 초대드립니다.',
         }
       : {
           title: '인사말',
