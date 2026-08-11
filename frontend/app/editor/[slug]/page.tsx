@@ -6,7 +6,6 @@ import type { Invitation } from '@/src/lib/api';
 import {
   cloneTemplateInvitation,
   getInvitationForEditor,
-  publishInvitationById,
   saveInvitationDraftById,
 } from '@/src/lib/api';
 import WeddingEditor from '@/src/editors/wedding/WeddingEditor';
@@ -516,16 +515,10 @@ export default function EditorPage() {
     setSaveNotice(null);
     try {
       await handleSave(state);
-      await publishInvitationById(invitation.id, requestedToken);
-      const updated = await getInvitationForEditor(invitation.id, requestedToken);
-      setInvitation(updated);
-      setLastDraftSlug(updated.slug);
-      setDraftStatus('published');
-      setLastSavedAt(updated.updatedAt ?? new Date().toISOString());
-      setSaveNotice('공개가 완료되었습니다. 공유 링크를 복사해 전달해 보세요.');
-      router.push(`/my-invitations/${invitation.id}/complete`);
+      // 결제·발행 게이트는 Payment 페이지 + Backend SSOT 가 담당한다.
+      router.push(`/invitations/${invitation.id}/payment`);
     } catch {
-      setSaveError('공개에 실패했습니다. 권한 또는 저장 상태를 확인해 주세요.');
+      setSaveError('저장 후 결제 화면으로 이동하지 못했습니다. 다시 시도해 주세요.');
     } finally {
       setPublishing(false);
     }
@@ -596,16 +589,9 @@ export default function EditorPage() {
     try {
       const saved = await saveFuneralDraft(state);
       if (!saved) return;
-      await publishInvitationById(invitation.id, requestedToken);
-      const updated = await getInvitationForEditor(invitation.id, requestedToken);
-      setInvitation(updated);
-      setLastDraftSlug(updated.slug);
-      setDraftStatus('published');
-      setLastSavedAt(updated.updatedAt ?? new Date().toISOString());
-      setSaveNotice('공개가 완료되었습니다.');
-      router.push(`/my-invitations/${invitation.id}/complete`);
+      router.push(`/invitations/${invitation.id}/payment`);
     } catch {
-      setSaveError('공개에 실패했습니다. 권한 또는 저장 상태를 확인해 주세요.');
+      setSaveError('저장 후 결제 화면으로 이동하지 못했습니다. 다시 시도해 주세요.');
     } finally {
       setPublishing(false);
     }

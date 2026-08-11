@@ -328,6 +328,9 @@ export async function publishInvitationById(id: string, token?: string | null): 
   if (response.status === 403) {
     throw new Error('FORBIDDEN');
   }
+  if (response.status === 402) {
+    throw new Error('PAYMENT_REQUIRED');
+  }
   if (!response.ok) {
     throw new Error('Failed to publish invitation');
   }

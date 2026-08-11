@@ -5,6 +5,7 @@ import prisma from '../lib/prisma';
 import { generateSlug } from '../utils/slug';
 import { getAuthUser, getGuestToken } from '../lib/auth';
 import { collectInvitationCleanupR2Keys } from '../storage/mediaCleanup';
+import { hasPaidEntitlement } from '../lib/payments/service';
 
 const router = Router();
 const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
@@ -592,6 +593,12 @@ router.get('/share/:slug', async (req, res) => {
       return res.status(404).json({ error: 'NOT_FOUND' });
     }
 
+    const paid = await hasPaidEntitlement(invitation.id);
+    if (!paid) {
+      // Guest must not be sent to payment; unpaid public looks like not published.
+      return res.status(404).json({ error: 'NOT_FOUND' });
+    }
+
     return res.status(200).json({
       ...toPublicInvitation(invitation),
       shareUrl: `/i/${shareSlug}`,
@@ -667,6 +674,12 @@ router.post('/:id/publish', async (req, res) => {
       userId: user?.id,
       guestToken,
     });
+
+    const paid = await hasPaidEntitlement(invitation.id);
+    if (!paid) {
+      console.info('[publish] payment required', { invitationId: invitation.id, userId: user?.id || null });
+      return res.status(402).json({ error: 'PAYMENT_REQUIRED' });
+    }
 
     const shareSlug = invitation.shareSlug || (await createUniqueShareSlug());
     await prisma.invitation.update({
