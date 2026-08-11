@@ -1,0 +1,164 @@
+@import '../../marketing/tokens/marketingTokens.css';
+
+.page {
+  min-height: 100vh;
+  background: var(--mk-bg);
+  color: var(--mk-text);
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  width: min(100%, 640px);
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  flex: 1;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.heroTitle {
+  margin: 0 0 12px;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.heroLead {
+  margin: 0;
+  color: var(--mk-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.card {
+  background: var(--mk-card);
+  border: 1px solid var(--mk-border);
+  border-radius: var(--mk-radius-card);
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(31, 41, 55, 0.04);
+}
+
+.emailLabel {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+  color: var(--mk-muted);
+  font-weight: 600;
+}
+
+.email {
+  display: inline-block;
+  margin: 0 0 24px;
+  font-size: clamp(1rem, 3.5vw, 1.25rem);
+  font-weight: 650;
+  color: var(--mk-text);
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.email:hover {
+  color: var(--mk-primary);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: var(--mk-radius-btn);
+  background: var(--mk-primary);
+  color: #fff;
+  font-weight: 650;
+  font-size: 1rem;
+  text-decoration: none;
+  margin-bottom: 12px;
+}
+
+.cta:hover {
+  background: var(--mk-primary-hover);
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--mk-primary);
+  outline-offset: 3px;
+}
+
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: var(--mk-radius-btn);
+  background: #fff;
+  color: var(--mk-text);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border: 1px solid #d2cbbf;
+  cursor: pointer;
+}
+
+.copyBtn:hover {
+  background: #faf8f4;
+}
+
+.copyBtn:focus-visible {
+  outline: 2px solid var(--mk-primary);
+  outline-offset: 3px;
+}
+
+.topics {
+  margin-top: 32px;
+}
+
+.topicsTitle {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.topicList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.topicList li {
+  background: var(--mk-card);
+  border: 1px solid var(--mk-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 0.9375rem;
+  color: var(--mk-muted);
+}
+
+.hint {
+  margin: 20px 0 0;
+  font-size: 0.8125rem;
+  color: var(--mk-muted);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.footerWrap {
+  padding: 0 20px 28px;
+}
+
+@media (min-width: 1024px) {
+  .main {
+    padding: 48px 24px 80px;
+  }
+
+  .card {
+    padding: 36px 40px;
+  }
+}

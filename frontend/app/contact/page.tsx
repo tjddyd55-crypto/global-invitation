@@ -1,27 +1,11 @@
-'use client';
+import type { Metadata } from 'next';
+import ContactPage from '@/src/features/contact/ui/ContactPage';
 
-import MarketingLayout from '@/src/components/MarketingLayout';
-import styles from '@/src/components/MarketingContent.module.css';
-import { useI18n } from '@/src/contexts/I18nContext';
-import { I18N_KEYS } from '@/src/i18n';
+export const metadata: Metadata = {
+  title: '문의하기 | Invite',
+  description: '서비스 이용·결제·오류 관련 문의를 이메일로 보내 주세요.',
+};
 
-const SUPPORT_EMAIL = 'tjddyd55@gmail.com';
-
-export default function ContactPage() {
-  const { t } = useI18n();
-
-  return (
-    <MarketingLayout>
-      <section className={styles.section}>
-        <h1 className={styles.title}>{t(I18N_KEYS.marketing.contactTitle)}</h1>
-        <p className={styles.subtitle}>{t(I18N_KEYS.marketing.contactSubtitle)}</p>
-        <div className={styles.infoRow}>
-          <strong>{t(I18N_KEYS.marketing.contactEmailLabel)}</strong>
-          <a className={styles.link} href={`mailto:${SUPPORT_EMAIL}`}>
-            {SUPPORT_EMAIL}
-          </a>
-        </div>
-      </section>
-    </MarketingLayout>
-  );
+export default function ContactRoutePage() {
+  return <ContactPage />;
 }
