@@ -12,7 +12,16 @@ test.describe('ORGANIZATION concept flow', () => {
     viewport: { width: 390, height: 844 },
   });
 
-  test('public template preview renders ORGANIZATION_01_OFFICIAL', async ({ page }) => {
+  test('public template preview renders ORGANIZATION_01_OFFICIAL with sample logo', async ({
+    page,
+  }) => {
+    const logoResponses: number[] = [];
+    page.on('response', (response) => {
+      if (response.url().includes('/ORGANIZATION_01_OFFICIAL/logo.webp')) {
+        logoResponses.push(response.status());
+      }
+    });
+
     await page.goto('/templates/ORGANIZATION_01_OFFICIAL/preview', {
       waitUntil: 'domcontentloaded',
       timeout: 90_000,
@@ -23,9 +32,54 @@ test.describe('ORGANIZATION concept flow', () => {
     await expect(doc).toHaveAttribute('data-concept', 'ORGANIZATION');
     await expect(page.getByText('2026 회장단 이·취임식').first()).toBeVisible();
     await expect(page.getByText('부산청년리더협회').first()).toBeVisible();
+
+    const brandLogo = page.getByTestId('organization-brand-logo').first();
+    await expect(brandLogo).toBeVisible();
+    const logoImg = brandLogo.locator('img');
+    await expect(logoImg).toBeVisible({ timeout: 30_000 });
+    await expect
+      .poll(async () => logoImg.evaluate((el: HTMLImageElement) => el.naturalWidth), {
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(0);
+    await expect
+      .poll(async () => logoImg.evaluate((el: HTMLImageElement) => el.naturalHeight), {
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(0);
+    expect(logoResponses.some((status) => status === 200)).toBeTruthy();
+    await expect(page.getByTestId('preview-create-cta')).toBeVisible();
   });
 
-  test('create API accepts ORGANIZATION concept', async ({ request }) => {
+  test('organization preview logo fits at 360 without horizontal overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.goto('/templates/ORGANIZATION_01_OFFICIAL/preview', {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+    await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 60_000 });
+    const overflow = await page.evaluate(() => {
+      const root = document.documentElement;
+      return root.scrollWidth > root.clientWidth + 1;
+    });
+    expect(overflow).toBeFalsy();
+    const logoBox = await page.getByTestId('organization-brand-logo').first().boundingBox();
+    expect(logoBox).toBeTruthy();
+    expect((logoBox?.x ?? 0) + (logoBox?.width ?? 0)).toBeLessThanOrEqual(360 + 1);
+  });
+
+  test('wedding preview regression still renders garden sample', async ({ page }) => {
+    await page.goto('/templates/WEDDING_05_GARDEN/preview', {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+    await expect(page.getByTestId('visual-template-preview')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByText('김민준').first()).toBeVisible();
+  });
+
+  test('create API accepts ORGANIZATION concept without sample logo persistence', async ({
+    request,
+  }) => {
     const login = await request.post(`${BE}/api/test-login`, {
       data: { email: 'org-e2e@example.com' },
     });
@@ -40,6 +94,10 @@ test.describe('ORGANIZATION concept flow', () => {
     });
     expect(create.ok()).toBeTruthy();
     const body = await create.json();
-    expect(body?.id || body?.invitation?.id).toBeTruthy();
+    const invitation = body?.invitation || body;
+    expect(invitation?.id).toBeTruthy();
+    const dataJson = invitation?.dataJson || invitation?.data || {};
+    const logo = dataJson?.organization?.logo;
+    expect(logo == null || logo === '').toBeTruthy();
   });
 });
