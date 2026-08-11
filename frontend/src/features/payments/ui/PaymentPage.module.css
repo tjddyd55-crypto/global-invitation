@@ -1,9 +1,7 @@
-@import '../../marketing/tokens/marketingTokens.css';
-
 .page {
   min-height: 100vh;
-  background: var(--mk-bg);
-  color: var(--mk-text);
+  background: var(--mk-bg, #f7f3ec);
+  color: var(--mk-text, #1f2937);
   display: flex;
   flex-direction: column;
   padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
