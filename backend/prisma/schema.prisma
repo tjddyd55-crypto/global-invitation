@@ -48,6 +48,14 @@ enum CreatorPayoutStatus {
   CANCELLED
 }
 
+enum InvitationPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+  REFUNDED
+}
+
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email     String?  @unique
@@ -133,12 +141,55 @@ model Invitation {
   comments       InvitationComment[]
   templateUsages TemplateUsage[]
   templateClones TemplateClone[]
+  payments       InvitationPayment[]
 
   @@index([ownerId])
   @@index([guestToken])
   @@index([templateId])
   @@index([isDeleted])
   @@map("invitations")
+}
+
+model InvitationPayment {
+  id                 String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invitationId       String                   @map("invitation_id") @db.Uuid
+  userId             String?                  @map("user_id") @db.Uuid
+  provider           String
+  providerCheckoutId String?                  @map("provider_checkout_id")
+  providerPaymentId  String?                  @map("provider_payment_id")
+  providerOrderId    String?                  @map("provider_order_id")
+  currency           String                   @default("USD")
+  listPriceAmount    Int                      @map("list_price_amount")
+  chargedAmount      Int                      @map("charged_amount")
+  promotionCode      String?                  @map("promotion_code")
+  status             InvitationPaymentStatus  @default(PENDING)
+  paidAt             DateTime?                @map("paid_at") @db.Timestamptz(6)
+  failedAt           DateTime?                @map("failed_at") @db.Timestamptz(6)
+  canceledAt         DateTime?                @map("canceled_at") @db.Timestamptz(6)
+  refundedAt         DateTime?                @map("refunded_at") @db.Timestamptz(6)
+  rawProviderStatus  String?                  @map("raw_provider_status")
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@index([invitationId, status])
+  @@index([invitationId, createdAt])
+  @@unique([provider, providerCheckoutId])
+  @@unique([provider, providerPaymentId])
+  @@map("invitation_payments")
+}
+
+model PaymentWebhookEvent {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider        String
+  providerEventId String   @map("provider_event_id")
+  eventType       String?  @map("event_type")
+  processedAt     DateTime @default(now()) @map("processed_at") @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([provider, providerEventId])
+  @@map("payment_webhook_events")
 }
 
 model InvitationComment {
