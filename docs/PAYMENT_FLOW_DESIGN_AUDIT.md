@@ -35,6 +35,13 @@
 - Price SSOT: 정상가 $30 / 오픈 할인 -$20 / 결제 $10
 - Variant B (`PAYMENT_PROMO_VARIANT_B`)는 비교용 · 최종 SSOT 아님
 - Provider 브랜드 CTA 문구 없음 (`$10 결제하고 발행하기`)
+- **Payment CTA color SSOT (SaaS Primary):** `#4F46E5`  
+  - Source: Editor `desktopPublish`, Auth/Main Create CTA, Figma Categories indigo frames, `marketingTokens --mk-primary`  
+  - Hover reference: `giUi --gi-primary-hover` `#4a3fc4` (token) / common indigo-700 `#4338CA`  
+  - Disabled: opacity `0.55` (`giUi.primaryButton:disabled`)  
+  - Secondary: white + border (`giUi.secondaryButton`)  
+  - **Not used for Payment actions:** Invitation Organization navy `#0B1F3A` / Figma `Brand/Primary` (renderer theme)  
+  - Success/Failed semantic colors = status only; action buttons stay Primary/Secondary
 
 ## 4. 승인 후 2차 구현 계획 (미착수)
 
