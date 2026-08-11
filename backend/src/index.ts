@@ -23,6 +23,7 @@ import adminTemplateSubmissionsRouter from './routes/adminTemplateSubmissions';
 import adminSuperRouter from './routes/adminSuper';
 import testLoginRouter from './routes/testLogin';
 import notificationsRouter from './routes/notifications';
+import paymentsRouter from './routes/payments';
 import { startCleanupWorker } from './workers/cleanupWorker';
 import { attachGuestSession } from './middleware/guestSessionMiddleware';
 import { guestRateLimit } from './middleware/guestRateLimit';
@@ -80,7 +81,14 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    const url = ((req as { originalUrl?: string; url?: string }).originalUrl || req.url || '');
+    if (url.includes('/api/payments/webhook')) {
+      (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(buf);
+    }
+  },
+}));
 // Legacy fallback for pre-R2 records only. New uploads use direct-to-R2.
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
@@ -157,6 +165,7 @@ app.use('/api/rsvp', rsvpRouter);
 app.use('/api/media', mediaRouter);
 app.use('/api/music-library', musicLibraryRouter);
 app.use('/api/test-login', testLoginRouter);
+app.use('/api', paymentsRouter);
 
 // Start server
 app.listen(PORT, () => {
