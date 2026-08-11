@@ -36,7 +36,7 @@ export default function StepOrganizationBranding({
             type="text"
             value={value.name ?? ''}
             onChange={(event) => onChange({ name: event.target.value })}
-            placeholder="예: 부산청년리더협회"
+            placeholder="예: 서울광진청년회의소"
             data-testid="organization-name-input"
           />
         </label>
@@ -46,7 +46,7 @@ export default function StepOrganizationBranding({
             type="text"
             value={value.englishName ?? ''}
             onChange={(event) => onChange({ englishName: event.target.value })}
-            placeholder="예: BUSAN YOUNG LEADERS ASSOCIATION"
+            placeholder="예: JCI Seoul Gwangjin"
             data-testid="organization-english-name-input"
           />
         </label>

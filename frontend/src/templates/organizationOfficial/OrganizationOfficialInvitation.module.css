@@ -228,6 +228,18 @@
   color: var(--muted);
   word-break: keep-all;
 }
+.footerEnglish {
+  margin: 0;
+  max-width: 100%;
+  padding: 0 4px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  color: var(--muted);
+  word-break: keep-all;
+  text-wrap: balance;
+}
 .footerTitle {
   margin: 0;
   font-size: 11px;

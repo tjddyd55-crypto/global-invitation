@@ -25,7 +25,12 @@ test('ORGANIZATION preview fixture includes logo and keeps gallery photos', () =
   const fixture = getVisualTemplatePreviewFixture('ORGANIZATION_01_OFFICIAL');
   assert.equal(fixture.conceptType, 'ORGANIZATION');
   assert.equal(fixture.visualTemplateId, 'ORGANIZATION_01_OFFICIAL');
-  assert.equal(fixture.organization?.name, '부산청년리더협회');
+  assert.equal(fixture.organization?.name, '서울광진청년회의소');
+  assert.equal(fixture.organization?.englishName, 'JCI Seoul Gwangjin');
+  assert.equal(
+    fixture.organization?.englishFullName,
+    'Junior Chamber International Seoul Gwangjin'
+  );
   assert.equal(fixture.organization?.logo, ORGANIZATION_SAMPLE_LOGO);
   assert.ok(fixture.heroImage);
   assert.equal(fixture.heroImage, templateHeroAsset('ORGANIZATION_01_OFFICIAL'));

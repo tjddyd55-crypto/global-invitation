@@ -228,6 +228,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
         ? normalizeOrganizationBranding({
             name: state.organization?.name,
             englishName: state.organization?.englishName,
+            englishFullName: state.organization?.englishFullName,
             logo: state.organization?.logo,
             accentColor: state.organization?.accentColor || DEFAULT_BRAND_ACCENT_COLOR,
           })

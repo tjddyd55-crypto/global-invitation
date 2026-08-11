@@ -45,7 +45,10 @@ export function normalizeBrandAccentColor(value: unknown): string {
 
 export type OrganizationBranding = {
   name?: string;
+  /** Hero 등 짧은 영문 표기 (예: JCI Seoul Gwangjin) */
   englishName?: string;
+  /** Footer/Organizer 보조 풀 영문 (예: Junior Chamber International Seoul Gwangjin) */
+  englishFullName?: string;
   logo?: string;
   accentColor?: string;
 };
@@ -55,11 +58,14 @@ export function normalizeOrganizationBranding(value: unknown): OrganizationBrand
   const record = value as Record<string, unknown>;
   const name = typeof record.name === 'string' ? record.name.trim() : '';
   const englishName = typeof record.englishName === 'string' ? record.englishName.trim() : '';
+  const englishFullName =
+    typeof record.englishFullName === 'string' ? record.englishFullName.trim() : '';
   const logo = typeof record.logo === 'string' ? record.logo.trim() : '';
   const accentRaw = typeof record.accentColor === 'string' ? record.accentColor.trim() : '';
   const next: OrganizationBranding = {};
   if (name) next.name = name;
   if (englishName) next.englishName = englishName;
+  if (englishFullName) next.englishFullName = englishFullName;
   if (logo) next.logo = logo;
   if (accentRaw && HEX_COLOR_RE.test(accentRaw)) next.accentColor = accentRaw.toUpperCase();
   return next;

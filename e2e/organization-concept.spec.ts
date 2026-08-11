@@ -31,7 +31,9 @@ test.describe('ORGANIZATION concept flow', () => {
     await expect(doc).toHaveAttribute('data-visual-template', 'ORGANIZATION_01_OFFICIAL');
     await expect(doc).toHaveAttribute('data-concept', 'ORGANIZATION');
     await expect(page.getByText('2026 회장단 이·취임식').first()).toBeVisible();
-    await expect(page.getByText('부산청년리더협회').first()).toBeVisible();
+    await expect(page.getByText('서울광진청년회의소').first()).toBeVisible();
+    await expect(page.getByText('JCI Seoul Gwangjin').first()).toBeVisible();
+    await expect(page.getByText('Junior Chamber International Seoul Gwangjin').first()).toBeVisible();
 
     const brandLogo = page.getByTestId('organization-brand-logo').first();
     await expect(brandLogo).toBeVisible();

@@ -47,6 +47,7 @@ export default function OrganizationOfficialInvitation(props: VisualTemplateProp
   const accent = normalizeBrandAccentColor(organization.accentColor || DEFAULT_BRAND_ACCENT_COLOR);
   const orgName = organization.name || '';
   const orgEnglish = organization.englishName || '';
+  const orgEnglishFull = organization.englishFullName || orgEnglish;
   const facts = buildFacts(model.dateText, model.venueName, model.venueDetail);
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
 
@@ -251,6 +252,7 @@ export default function OrganizationOfficialInvitation(props: VisualTemplateProp
           />
         ) : null}
         <p className={styles.footerMark}>{orgName || model.dateCompact || 'OFFICIAL'}</p>
+        {orgEnglishFull ? <p className={styles.footerEnglish}>{orgEnglishFull}</p> : null}
         {model.title ? <p className={styles.footerTitle}>{model.title}</p> : null}
       </footer>
     </div>

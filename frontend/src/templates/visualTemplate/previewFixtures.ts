@@ -304,13 +304,14 @@ const ORGANIZATION_EVENT = {
   mapLng: 129.1604,
   accountsTitle: '참가비 안내',
   accounts: [
-    { role: '참가비', bank: '부산은행', number: '000-0000-0000', holder: '부산청년리더협회' },
+    { role: '참가비', bank: '국민은행', number: '000-0000-0000', holder: '서울광진청년회의소' },
   ],
   transportInfo: ['부산도시철도 2호선 해운대역 도보 이용'],
   parkingInfo: ['호텔 주차 안내 데스크에 문의해 주세요'],
   organization: {
-    name: '부산청년리더협회',
-    englishName: 'BUSAN YOUNG LEADERS ASSOCIATION',
+    name: '서울광진청년회의소',
+    englishName: 'JCI Seoul Gwangjin',
+    englishFullName: 'Junior Chamber International Seoul Gwangjin',
     logo: ORGANIZATION_SAMPLE_LOGO,
     accentColor: DEFAULT_BRAND_ACCENT_COLOR,
   },

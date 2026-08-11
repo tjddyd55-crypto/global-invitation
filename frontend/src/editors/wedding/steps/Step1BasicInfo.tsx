@@ -58,7 +58,7 @@ export default function Step1BasicInfo({
               conceptType === 'ORGANIZATION' ? '예: 2026 회장단 이·취임식' : '예: 초대합니다',
             subtitlePlaceholder:
               conceptType === 'ORGANIZATION'
-                ? '예: 부산청년리더협회와 함께하는 공식 초청'
+                ? '예: 서울광진청년회의소와 함께하는 공식 초청'
                 : '예: 함께 만드는 미래',
             venuePlaceholder: '예: 코엑스 컨퍼런스홀',
             detailPlaceholder: '예: 3층 오디토리움',
