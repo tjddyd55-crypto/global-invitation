@@ -239,7 +239,19 @@ export default function OrganizationOfficialInvitation(props: VisualTemplateProp
       <section data-section-id="share" data-preview-section="share" className={styles.anchor} aria-hidden />
 
       <footer className={styles.footer}>
+        {organization.logo ? (
+          <OrganizationBrandLogo
+            logo={organization.logo}
+            name={orgName}
+            englishName={orgEnglish}
+            accentColor={accent}
+            compact
+            decorative
+            className={styles.footerLogo}
+          />
+        ) : null}
         <p className={styles.footerMark}>{orgName || model.dateCompact || 'OFFICIAL'}</p>
+        {model.title ? <p className={styles.footerTitle}>{model.title}</p> : null}
       </footer>
     </div>
   );

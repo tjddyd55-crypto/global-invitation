@@ -12,6 +12,7 @@ import type { VisualTemplateId } from './ids';
 import { VISUAL_TEMPLATE_CONCEPT } from './ids';
 import {
   buildSampleGallery,
+  ORGANIZATION_SAMPLE_LOGO,
   templateHeroAsset,
   WEDDING_BRIDE_PROFILE,
   WEDDING_GROOM_PROFILE,
@@ -310,6 +311,7 @@ const ORGANIZATION_EVENT = {
   organization: {
     name: '부산청년리더협회',
     englishName: 'BUSAN YOUNG LEADERS ASSOCIATION',
+    logo: ORGANIZATION_SAMPLE_LOGO,
     accentColor: DEFAULT_BRAND_ACCENT_COLOR,
   },
 };

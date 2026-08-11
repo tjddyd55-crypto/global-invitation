@@ -66,3 +66,6 @@ secrets.txt
 reports/r2-invitation-cleanup/
 .r2-cleanup-*.json
 .r2-cleanup-*.csv
+
+# local brand source inputs (WebP는 R2 shared sample asset으로만 발행)
+logo/

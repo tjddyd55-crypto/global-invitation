@@ -18,8 +18,8 @@ function photoKeys(folder: string): string[] {
 }
 
 /**
- * ORGANIZATION 전용 R2 폴더 발행 전 — 공식 행사 톤의 GENERAL hero/thumb 을 재사용.
- * 이후 `ORGANIZATION_01_OFFICIAL/hero.webp` 발행 시 이 alias 를 제거한다.
+ * ORGANIZATION hero/thumb — 전용 사진 pack 발행 전 GENERAL_01_CLASSIC 재사용.
+ * logo 는 ORGANIZATION_01_OFFICIAL 전용 key (alias 없음).
  */
 const ORGANIZATION_ASSET_ALIAS: Partial<Record<VisualTemplateId, VisualTemplateId>> = {
   ORGANIZATION_01_OFFICIAL: 'GENERAL_01_CLASSIC',
@@ -37,11 +37,24 @@ export function templateThumbnailAsset(id: VisualTemplateId): string {
   return `${TEMPLATE_ASSET_PREFIX}/${resolved}/thumbnail.webp`;
 }
 
+/**
+ * Organization 브랜드 로고 (Template Preview fixture 전용 shared sample).
+ * 사용자 draft 에 자동 복사하지 않는다.
+ */
+export function templateOrganizationLogoAsset(id: VisualTemplateId): string | undefined {
+  if (VISUAL_TEMPLATE_CONCEPT[id] !== 'ORGANIZATION') return undefined;
+  return `${TEMPLATE_ASSET_PREFIX}/${id}/logo.webp`;
+}
+
 export const WEDDING_SAMPLE_PHOTOS = photoKeys('shared-wedding');
 /** GENERAL curated sample set — ORGANIZATION galleries reuse these keys (no separate org photo pack). */
 export const GENERAL_SAMPLE_PHOTOS = photoKeys('shared-general');
 /** Alias for ORGANIZATION fixtures — same R2 keys as GENERAL_SAMPLE_PHOTOS. */
 export const ORGANIZATION_SAMPLE_PHOTOS = GENERAL_SAMPLE_PHOTOS;
+
+/** ORGANIZATION_01_OFFICIAL Preview fixture logo key */
+export const ORGANIZATION_SAMPLE_LOGO =
+  templateOrganizationLogoAsset('ORGANIZATION_01_OFFICIAL') as string;
 
 export const WEDDING_GROOM_PROFILE = `${TEMPLATE_ASSET_PREFIX}/shared-wedding/groom.webp`;
 export const WEDDING_BRIDE_PROFILE = `${TEMPLATE_ASSET_PREFIX}/shared-wedding/bride.webp`;
