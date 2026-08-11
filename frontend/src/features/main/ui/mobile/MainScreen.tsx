@@ -123,7 +123,7 @@ export default function MainScreen() {
             초대장 만들기
             <ArrowRightIcon size={18} />
           </Link>
-          <Link href="/i/sample" className={styles.secondaryCta}>
+          <Link href="/templates/WEDDING_05_GARDEN/preview" className={styles.secondaryCta}>
             완성 예시 보기
           </Link>
         </div>
