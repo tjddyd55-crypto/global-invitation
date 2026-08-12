@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/src/shared/hooks';
-import { getCreateInvitationEntryPath } from '@/src/shared/auth/authEntryPaths';
+import { getCreateInvitationEntryPath, getConceptCardEntryPath } from '@/src/shared/auth/authEntryPaths';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
 import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import {
@@ -11,53 +11,8 @@ import {
   CheckIcon,
   SparklesIcon,
 } from '@/src/ui/icons/MarketingIcons';
-import { HeartIcon as HeartConcept, BookOpenIcon as BookConcept, CalendarDaysIcon as CalConcept } from '@/src/ui/icons/ConceptIcons';
+import { listMainConceptCards } from '@/src/features/main/model/mainConceptCards';
 import styles from './DesktopMainScreen.module.css';
-
-/** Figma DesktopMainScreen conceptCards — GENERAL features include payment account */
-const CONCEPT_CARDS = [
-  {
-    key: 'wedding',
-    Icon: HeartConcept,
-    iconBg: '#FCE7F3',
-    color: '#BE185D',
-    badgeBg: '#FCE7F3',
-    title: '결혼식 초대장',
-    desc: '정성스러운 청첩장으로 소중한 분들을 초대하세요',
-    badge: '결혼식',
-    features: ['신랑 · 신부 정보', '예식장 · 위치 안내', '사진 갤러리', '계좌 정보', '참석 여부 RSVP', '방명록/댓글'],
-  },
-  {
-    key: 'funeral',
-    Icon: BookConcept,
-    iconBg: '#F3F4F6',
-    color: '#374151',
-    badgeBg: '#F3F4F6',
-    title: '부고장',
-    desc: '고인을 기리며 조문 안내를 정중하게 전달하세요',
-    badge: '부고장',
-    features: ['고인 정보', '빈소 · 발인 일정', '장례식장 위치', '조의금 계좌', '추모 메시지', '방명록/댓글'],
-  },
-  {
-    key: 'general',
-    Icon: CalConcept,
-    iconBg: '#DBEAFE',
-    color: '#1D4ED8',
-    badgeBg: '#DBEAFE',
-    title: '일반 행사',
-    desc: '세미나, 파티, 모임 등 다양한 행사를 안내하세요',
-    badge: '일반 행사',
-    features: [
-      '행사 소개',
-      '세부 일정',
-      '갤러리',
-      'Google 위치',
-      '참가비 · 계좌 정보',
-      '참석 여부 RSVP',
-      '댓글',
-    ],
-  },
-] as const;
 
 const TRUST = ['이메일 인증 하나로 시작', '비밀번호 필요 없음', '게스트 앱 설치 불필요'];
 
@@ -67,7 +22,9 @@ const TRUST = ['이메일 인증 하나로 시작', '비밀번호 필요 없음'
 export default function DesktopMainScreen() {
   const { status } = useAuth();
   const ctaDisabled = status === 'loading';
-  const createHref = getCreateInvitationEntryPath(status === 'loading' ? 'unauthenticated' : status);
+  const authStatus = status === 'loading' ? 'unauthenticated' : status;
+  const createHref = getCreateInvitationEntryPath(authStatus);
+  const conceptCards = listMainConceptCards();
 
   return (
     <div className={styles.page} data-testid="desktop-main-screen">
@@ -86,7 +43,7 @@ export default function DesktopMainScreen() {
               가장 쉽게 전하세요
             </h1>
             <p className={styles.heroDesc}>
-              결혼식, 부고장, 행사 초대장을 이메일 인증 후 간편하게 만들고 공유할 수 있습니다.
+              결혼식, 부고장, 일반 행사, 기업·단체 초대장을 이메일 인증 후 간편하게 만들고 공유할 수 있습니다.
             </p>
             <div className={styles.heroActions}>
               <Link
@@ -156,32 +113,33 @@ export default function DesktopMainScreen() {
           <h2 className={styles.conceptsTitle}>어떤 초대장이 필요하세요?</h2>
         </div>
         <div className={styles.conceptGrid}>
-          {CONCEPT_CARDS.map((card) => {
+          {conceptCards.map((card) => {
             const Icon = card.Icon;
+            const href = getConceptCardEntryPath(card.value, authStatus);
             return (
               <Link
                 key={card.key}
-                href={ctaDisabled ? '#' : createHref}
+                href={ctaDisabled ? '#' : href}
                 className={styles.conceptCard}
-                style={{ ['--card-accent' as string]: card.color }}
+                style={{ ['--card-accent' as string]: card.accent }}
                 data-testid={`main-concept-${card.key}`}
                 aria-disabled={ctaDisabled}
                 onClick={(event) => {
                   if (ctaDisabled) event.preventDefault();
                 }}
               >
-                <span className={styles.conceptIcon} style={{ background: card.iconBg, color: card.color }}>
+                <span className={styles.conceptIcon} style={{ background: card.accentSoft, color: card.accent }}>
                   <Icon size={28} />
                 </span>
-                <span className={styles.conceptBadge} style={{ background: card.badgeBg, color: card.color }}>
+                <span className={styles.conceptBadge} style={{ background: card.accentSoft, color: card.accent }}>
                   {card.badge}
                 </span>
-                <h3 className={styles.conceptTitle}>{card.title}</h3>
-                <p className={styles.conceptDesc}>{card.desc}</p>
+                <h3 className={styles.conceptTitle}>{card.homeTitle}</h3>
+                <p className={styles.conceptDesc}>{card.homeDescription}</p>
                 <ul className={styles.featureList}>
                   {card.features.map((feature) => (
                     <li key={feature}>
-                      <span className={styles.featureDot} style={{ background: card.iconBg, color: card.color }}>
+                      <span className={styles.featureDot} style={{ background: card.accentSoft, color: card.accent }}>
                         <CheckIcon size={10} />
                       </span>
                       {feature}

@@ -32,7 +32,9 @@ export type { AuthStatus } from './authStatus';
 export {
   CONCEPT_CREATE_PATH,
   MY_INVITATIONS_PATH,
+  ORGANIZATION_TEMPLATES_PATH,
   getCreateInvitationEntryPath,
+  getConceptCardEntryPath,
   getLoginEntryPath,
   getMyInvitationsEntryPath,
   requireAuthenticatedNextPath,

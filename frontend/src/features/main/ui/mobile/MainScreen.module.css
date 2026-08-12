@@ -1,70 +1,11 @@
 .page {
   min-height: 100%;
   background: #f7f3ec;
-  padding-top: 40px;
-}
-
-.nav {
-  padding: 0 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
-}
-
-.navActions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.logoutLink {
-  border: none;
-  background: none;
-  padding: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #6b7280;
-  cursor: pointer;
-}
-
-.loginLink {
-  font-size: 14px;
-  font-weight: 600;
-  color: #4f46e5;
-  text-decoration: none;
-  background: rgba(79, 70, 229, 0.08);
-  border-radius: 20px;
-  padding: 8px 14px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 20px;
-  font-weight: 700;
-  color: #1f2937;
-  letter-spacing: -0.5px;
-}
-
-.brand svg {
-  color: #4f46e5;
-}
-
-.myLink {
-  font-size: 14px;
-  font-weight: 500;
-  color: #4f46e5;
-  background: rgba(79, 70, 229, 0.08);
-  border-radius: 20px;
-  padding: 8px 16px;
-  text-decoration: none;
 }
 
 .heroPad,
 .conceptsPad {
-  padding: 0 16px;
+  padding: 24px 16px 0;
   margin-bottom: 40px;
 }
 

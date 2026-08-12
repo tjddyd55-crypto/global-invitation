@@ -1,7 +1,9 @@
 import type { AuthStatus } from './authStatus';
+import type { InvitationConceptType } from '@/src/invitation/conceptTypes';
 
 export const CONCEPT_CREATE_PATH = '/create/concept';
 export const MY_INVITATIONS_PATH = '/my-invitations';
+export const ORGANIZATION_TEMPLATES_PATH = '/create/templates?concept=ORGANIZATION';
 
 /**
  * 「로그인」 진입 경로 SSOT — 비로그인 전용.
@@ -19,6 +21,19 @@ export function getCreateInvitationEntryPath(status: AuthStatus): string {
     return CONCEPT_CREATE_PATH;
   }
   return `/auth/email?next=${encodeURIComponent(CONCEPT_CREATE_PATH)}`;
+}
+
+/** Home category card → concept flow. ORGANIZATION skips picker into its template catalog. */
+export function getConceptCardEntryPath(
+  concept: InvitationConceptType,
+  status: AuthStatus
+): string {
+  if (concept === 'ORGANIZATION') {
+    return status === 'authenticated'
+      ? ORGANIZATION_TEMPLATES_PATH
+      : requireAuthenticatedNextPath(ORGANIZATION_TEMPLATES_PATH);
+  }
+  return getCreateInvitationEntryPath(status);
 }
 
 /**
