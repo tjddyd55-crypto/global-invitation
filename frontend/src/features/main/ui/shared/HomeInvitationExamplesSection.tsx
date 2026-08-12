@@ -2,6 +2,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { listHomeInvitationExamples } from '@/src/features/main/model/homeInvitationPreview';
+import { useNearViewport } from '@/src/features/main/model/useNearViewport';
 import HomeInvitationPreviewFrame from './HomeInvitationPreviewFrame';
 import styles from './HomeInvitationExamplesSection.module.css';
 
@@ -13,9 +14,11 @@ export default function HomeInvitationExamplesSection({
   layout = 'desktop',
 }: HomeInvitationExamplesSectionProps) {
   const examples = listHomeInvitationExamples();
+  const { ref, isNear } = useNearViewport(true);
 
   return (
     <section
+      ref={ref}
       className={styles.section}
       data-layout={layout}
       id="examples"
@@ -29,7 +32,7 @@ export default function HomeInvitationExamplesSection({
       <div className={styles.grid}>
         {examples.map((example) => (
           <article key={example.id} className={styles.card}>
-            <HomeInvitationPreviewFrame example={example} size="card" defer />
+            <HomeInvitationPreviewFrame example={example} size="card" mount={isNear} />
             <h3 className={styles.label}>{example.label}</h3>
             <p className={styles.caption}>{example.caption}</p>
           </article>

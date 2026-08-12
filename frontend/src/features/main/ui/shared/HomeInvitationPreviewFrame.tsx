@@ -19,6 +19,7 @@ type HomeInvitationPreviewFrameProps = {
   size?: 'hero' | 'compact' | 'card';
   showGlow?: boolean;
   defer?: boolean;
+  mount?: boolean;
 };
 
 export default function HomeInvitationPreviewFrame({
@@ -27,12 +28,14 @@ export default function HomeInvitationPreviewFrame({
   size = 'hero',
   showGlow = false,
   defer = false,
+  mount = true,
 }: HomeInvitationPreviewFrameProps) {
   const resolved = example ?? getHomeInvitationExample(exampleId);
   const { ref, isNear } = useNearViewport(defer);
+  const ready = mount && isNear;
   const data = useMemo(
-    () => (isNear ? getHomeInvitationExampleData(resolved.id) : null),
-    [isNear, resolved.id]
+    () => (ready ? getHomeInvitationExampleData(resolved.id) : null),
+    [ready, resolved.id]
   );
 
   return (

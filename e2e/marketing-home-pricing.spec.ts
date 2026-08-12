@@ -116,6 +116,15 @@ test.describe('marketing header and home categories', () => {
       await expect(
         page.getByTestId('home-example-wedding').getByTestId('public-invitation-document')
       ).toBeVisible({ timeout: 60_000 });
+      await expect(
+        page.getByTestId('home-example-funeral').getByTestId('public-invitation-document')
+      ).toBeVisible();
+      await expect(
+        page.getByTestId('home-example-general').getByTestId('public-invitation-document')
+      ).toBeVisible();
+      await expect(
+        page.getByTestId('home-example-organization').getByTestId('public-invitation-document')
+      ).toHaveAttribute('data-visual-template', 'ORGANIZATION_02_JCI');
       await assertNoHorizontalOverflow(page);
     }
   });
