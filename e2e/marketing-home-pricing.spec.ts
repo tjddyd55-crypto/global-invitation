@@ -39,6 +39,12 @@ test.describe('marketing header and home categories', () => {
     const org = page.getByTestId('main-concept-organization');
     await expect(org).toBeVisible();
     await expect(org).toContainText('기업·단체 초대장');
+    await expect(page.getByTestId('marketing-desktop-header')).not.toHaveAttribute(
+      'data-auth-state',
+      'loading',
+      { timeout: 30_000 }
+    );
+    await expect(org).not.toHaveAttribute('href', '#');
     const href = await org.getAttribute('href');
     expect(href || '').toMatch(/concept=ORGANIZATION|concept%3DORGANIZATION/);
   });
