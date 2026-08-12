@@ -473,7 +473,7 @@ function GlobalHeaderContent() {
   };
 
   return (
-    <header className={styles.header}>
+    <header className={styles.header} data-testid="global-header">
       <div className={styles.shell}>
         <Link href="/" className={styles.brand}>
           Global Invitation

@@ -12,9 +12,11 @@ import MarketingMobileHeader from './MarketingMobileHeader';
  */
 export default function MarketingSiteHeader(props: MarketingDesktopHeaderProps) {
   return (
-    <ResponsivePlatformBoundary
-      mobile={<MarketingMobileHeader />}
-      desktop={<MarketingDesktopHeader {...props} />}
-    />
+    <div data-testid="marketing-site-header">
+      <ResponsivePlatformBoundary
+        mobile={<MarketingMobileHeader />}
+        desktop={<MarketingDesktopHeader {...props} />}
+      />
+    </div>
   );
 }

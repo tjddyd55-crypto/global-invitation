@@ -1,6 +1,7 @@
 /**
- * SaaS GlobalHeader / LanguageModal 을 숨기는 앱 presentation 경로 SSOT.
- * /m · /pc(QA) 및 canonical viewport 앱 화면을 포함한다.
+ * SaaS GlobalHeader / LanguageModal 을 숨기는 presentation 경로 SSOT.
+ * /m · /pc(QA), canonical viewport 앱 화면, 그리고 자체 MarketingSiteHeader 를
+ * 그리는 public marketing 페이지(/ , /pricing, /contact)를 포함한다.
  */
 export function isPlatformAppPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
@@ -16,6 +17,9 @@ export function isPlatformAppPath(pathname: string | null | undefined): boolean 
 
   // Canonical app surfaces (공식 URL — viewport shell)
   if (pathname === '/') return true;
+  // Marketing pages own MarketingSiteHeader — do not also mount SaaS GlobalHeader.
+  if (pathname === '/pricing' || pathname.startsWith('/pricing/')) return true;
+  if (pathname === '/contact' || pathname.startsWith('/contact/')) return true;
   if (pathname === '/editor' || pathname.startsWith('/editor/')) return true;
   if (pathname === '/templates' || pathname.startsWith('/templates/')) return true;
   if (pathname === '/my-invitations' || pathname.startsWith('/my-invitations/')) return true;

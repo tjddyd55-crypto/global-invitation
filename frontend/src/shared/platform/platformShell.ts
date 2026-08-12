@@ -13,7 +13,14 @@ function normalizePathname(pathname: string): string {
 export function getPlatformShellForPath(pathname: string): PlatformShell {
   const path = normalizePathname(pathname);
 
-  if (path === '/' || path === '/create' || path === '/create/concept' || path === '/templates') {
+  if (
+    path === '/' ||
+    path === '/pricing' ||
+    path === '/contact' ||
+    path === '/create' ||
+    path === '/create/concept' ||
+    path === '/templates'
+  ) {
     return 'marketing';
   }
 
