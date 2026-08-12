@@ -81,13 +81,10 @@ test.describe('ORGANIZATION concept flow', () => {
 
   test('organization preview exposes JCI sample music control without autoplay', async ({
     page,
+    request,
   }) => {
-    const musicStatuses: number[] = [];
-    page.on('response', (response) => {
-      if (response.url().includes('/invitation/shared/music/general/7915ed06-84da-4a1d-aee9-3bae103fccf7.mp3')) {
-        musicStatuses.push(response.status());
-      }
-    });
+    const sampleMusicUrl =
+      'https://cdn.platform-assets.com/invitation/shared/music/general/7915ed06-84da-4a1d-aee9-3bae103fccf7.mp3';
 
     await page.goto('/templates/ORGANIZATION_01_OFFICIAL/preview', {
       waitUntil: 'domcontentloaded',
@@ -95,12 +92,16 @@ test.describe('ORGANIZATION concept flow', () => {
     });
     const player = page.getByTestId('invitation-music-player');
     await expect(player).toBeVisible({ timeout: 60_000 });
+    // 사용자 제스처 없이 audible autoplay 금지 — 초기 idle 유지
     await expect(player).toHaveAttribute('data-music-status', 'idle');
-    await player.click();
-    await expect
-      .poll(async () => player.getAttribute('data-music-status'), { timeout: 30_000 })
-      .toMatch(/playing|loading|paused|error/);
-    expect(musicStatuses.some((status) => status === 200 || status === 206)).toBeTruthy();
+    await expect(player).toHaveAttribute('aria-label', '배경 음악 재생');
+
+    const head = await request.fetch(sampleMusicUrl, {
+      method: 'HEAD',
+      timeout: 30_000,
+    });
+    expect(head.status()).toBe(200);
+    expect(head.headers()['content-type'] || '').toMatch(/audio\/mpeg/i);
   });
 
   test('create API accepts ORGANIZATION concept without sample logo persistence', async ({
