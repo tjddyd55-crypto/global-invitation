@@ -12,6 +12,8 @@ import {
   SparklesIcon,
 } from '@/src/ui/icons/MarketingIcons';
 import { listMainConceptCards } from '@/src/features/main/model/mainConceptCards';
+import { HOME_PREVIEW_PATH } from '@/src/features/main/model/homeInvitationPreview';
+import HomeInvitationPreviewPhone from '@/src/features/main/ui/shared/HomeInvitationPreviewPhone';
 import styles from './DesktopMainScreen.module.css';
 
 const TRUST = ['이메일 인증 하나로 시작', '비밀번호 필요 없음', '게스트 앱 설치 불필요'];
@@ -58,7 +60,7 @@ export default function DesktopMainScreen() {
                 초대장 만들기
                 <ArrowRightIcon size={18} />
               </Link>
-              <Link href="/templates/WEDDING_05_GARDEN/preview" className={styles.secondaryCta}>
+              <Link href={HOME_PREVIEW_PATH} className={styles.secondaryCta}>
                 완성 예시 보기
               </Link>
             </div>
@@ -75,30 +77,7 @@ export default function DesktopMainScreen() {
           </div>
 
           <div className={styles.heroVisual}>
-            <div className={styles.phoneGlow} aria-hidden />
-            <div className={styles.phoneMockup} role="img" aria-label="초대장 미리보기">
-              <div className={styles.phoneNotch} aria-hidden />
-              <div className={styles.phoneHero}>
-                <span className={styles.phoneBadge}>결혼식</span>
-                <p className={styles.phoneTitle}>
-                  이준혁 ♥ 김지은
-                  <br />
-                  결혼식에 초대합니다
-                </p>
-                <p className={styles.phoneMeta}>2025년 11월 15일 토요일</p>
-              </div>
-              <div className={styles.phoneBody}>
-                <div className={styles.phoneBlock}>
-                  <p className={styles.phoneBlockLabel}>인사말</p>
-                  <p className={styles.phoneBlockText}>저희 두 사람이 사랑으로...</p>
-                </div>
-                <div className={styles.phoneBlock}>
-                  <p className={styles.phoneBlockLabel}>예식장</p>
-                  <p className={styles.phoneBlockText}>더 웨딩홀 그랜드볼룸</p>
-                </div>
-                <div className={styles.phoneRsvp}>참석 여부 알리기</div>
-              </div>
-            </div>
+            <HomeInvitationPreviewPhone />
           </div>
         </div>
       </section>

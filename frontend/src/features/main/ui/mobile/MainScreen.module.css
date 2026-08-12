@@ -4,9 +4,15 @@
 }
 
 .heroPad,
-.conceptsPad {
+.conceptsPad,
+.previewPad {
   padding: 24px 16px 0;
   margin-bottom: 40px;
+}
+
+.previewPad {
+  display: flex;
+  justify-content: center;
 }
 
 .heroCard {

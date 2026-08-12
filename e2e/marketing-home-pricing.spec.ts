@@ -67,6 +67,13 @@ test.describe('marketing header and home categories', () => {
     await expect(page.getByTestId('main-concept-cards')).toBeVisible({ timeout: 60_000 });
     await expect(page.getByTestId('global-header')).toHaveCount(0);
     await expect(page.getByTestId('marketing-desktop-header')).toHaveCount(1);
+    await expect(page.getByTestId('home-invitation-preview')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId('public-invitation-document')).toHaveAttribute(
+      'data-visual-template',
+      'WEDDING_05_GARDEN'
+    );
+    await expect(page.getByTestId('hero-create-cta')).toBeVisible();
     await expect(page.getByTestId('main-concept-wedding')).toBeVisible();
     await expect(page.getByTestId('main-concept-funeral')).toBeVisible();
     await expect(page.getByTestId('main-concept-general')).toBeVisible();
@@ -81,5 +88,16 @@ test.describe('marketing header and home categories', () => {
     await expect(org).not.toHaveAttribute('href', '#');
     const href = await org.getAttribute('href');
     expect(href || '').toMatch(/concept=ORGANIZATION|concept%3DORGANIZATION/);
+  });
+
+  test('home invitation preview stays clipped on mobile', async ({ page }) => {
+    for (const width of [360, 390]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(`${FE}/`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+      await expect(page.getByTestId('home-invitation-preview')).toBeVisible({ timeout: 60_000 });
+      await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 60_000 });
+      await expect(page.getByTestId('hero-create-cta')).toBeVisible();
+      await assertNoHorizontalOverflow(page);
+    }
   });
 });

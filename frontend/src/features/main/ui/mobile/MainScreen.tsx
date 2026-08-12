@@ -8,6 +8,8 @@ import MarketingMobileHeader from '@/src/features/marketing/ui/MarketingMobileHe
 import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import { ArrowRightIcon } from '@/src/ui/icons/MarketingIcons';
 import { listMainConceptCards } from '@/src/features/main/model/mainConceptCards';
+import { HOME_PREVIEW_PATH } from '@/src/features/main/model/homeInvitationPreview';
+import HomeInvitationPreviewPhone from '@/src/features/main/ui/shared/HomeInvitationPreviewPhone';
 import styles from './MainScreen.module.css';
 
 /** Figma Make MainScreen — MCP 소스 카피/구조 */
@@ -45,10 +47,14 @@ export default function MainScreen() {
             초대장 만들기
             <ArrowRightIcon size={18} />
           </Link>
-          <Link href="/templates/WEDDING_05_GARDEN/preview" className={styles.secondaryCta}>
+          <Link href={HOME_PREVIEW_PATH} className={styles.secondaryCta}>
             완성 예시 보기
           </Link>
         </div>
+      </div>
+
+      <div className={styles.previewPad}>
+        <HomeInvitationPreviewPhone size="compact" />
       </div>
 
       <div className={styles.conceptsPad}>
