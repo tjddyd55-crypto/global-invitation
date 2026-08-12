@@ -2,7 +2,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useState } from 'react';
-import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
+import MarketingSiteHeader from '@/src/features/marketing/ui/MarketingSiteHeader';
 import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/src/shared/marketing/supportContact';
 import styles from './ContactPage.module.css';
@@ -28,7 +28,7 @@ export default function ContactPage() {
 
   return (
     <div className={styles.page} data-testid="contact-page">
-      <MarketingDesktopHeader />
+      <MarketingSiteHeader />
       <main className={styles.main}>
         <header className={styles.hero}>
           <h1 className={styles.heroTitle}>문의하기</h1>

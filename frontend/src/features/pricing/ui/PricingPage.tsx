@@ -2,7 +2,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
-import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
+import MarketingSiteHeader from '@/src/features/marketing/ui/MarketingSiteHeader';
 import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import { getCreateInvitationEntryPath } from '@/src/shared/auth/authEntryPaths';
 import { useAuth } from '@/src/shared/hooks';
@@ -60,7 +60,7 @@ export default function PricingPage() {
 
   return (
     <div className={styles.page} data-testid="pricing-page">
-      <MarketingDesktopHeader />
+      <MarketingSiteHeader />
       <main className={styles.main}>
         <header className={styles.hero}>
           <h1 className={styles.heroTitle}>필요한 만큼만 결제하세요</h1>
