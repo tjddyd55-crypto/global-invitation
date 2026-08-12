@@ -15,6 +15,11 @@
   --preview-frame-height: 460px;
 }
 
+.shell[data-size='card'] {
+  --preview-frame-width: 230px;
+  --preview-frame-height: 420px;
+}
+
 .glow {
   position: absolute;
   width: 360px;
@@ -25,22 +30,22 @@
   pointer-events: none;
 }
 
-.shell[data-size='compact'] .glow {
-  width: 280px;
-  height: 280px;
-}
-
 .phone {
   width: var(--preview-frame-width);
   height: var(--preview-frame-height);
-  border-radius: 36px;
+  border-radius: 32px;
   background: #fbf7f0;
   box-shadow:
-    0 28px 64px rgba(61, 58, 51, 0.16),
+    0 20px 48px rgba(61, 58, 51, 0.14),
     0 0 0 1px rgba(61, 58, 51, 0.08);
   overflow: hidden;
   position: relative;
   z-index: 1;
+}
+
+.shell[data-size='card'] .phone,
+.shell[data-size='compact'] .phone {
+  border-radius: 28px;
 }
 
 .hit {
@@ -50,27 +55,18 @@
   border-radius: inherit;
 }
 
-.shell[data-size='compact'] .phone {
-  border-radius: 28px;
-}
-
 .notch {
   position: absolute;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 96px;
-  height: 22px;
+  width: 88px;
+  height: 20px;
   background: #1f1b16;
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
   z-index: 2;
   pointer-events: none;
-}
-
-.shell[data-size='compact'] .notch {
-  width: 78px;
-  height: 18px;
 }
 
 .clip {
@@ -91,6 +87,12 @@
   transform: scale(var(--preview-scale));
   transform-origin: top left;
   overflow: hidden;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  background: #fbf7f0;
 }
 
 .scale :global([data-testid='visual-template-loading']),

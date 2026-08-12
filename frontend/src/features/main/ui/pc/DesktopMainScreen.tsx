@@ -12,8 +12,8 @@ import {
   SparklesIcon,
 } from '@/src/ui/icons/MarketingIcons';
 import { listMainConceptCards } from '@/src/features/main/model/mainConceptCards';
-import { HOME_PREVIEW_PATH } from '@/src/features/main/model/homeInvitationPreview';
-import HomeInvitationPreviewPhone from '@/src/features/main/ui/shared/HomeInvitationPreviewPhone';
+import HomeInvitationPreviewFrame from '@/src/features/main/ui/shared/HomeInvitationPreviewFrame';
+import HomeInvitationExamplesSection from '@/src/features/main/ui/shared/HomeInvitationExamplesSection';
 import styles from './DesktopMainScreen.module.css';
 
 const TRUST = ['이메일 인증 하나로 시작', '비밀번호 필요 없음', '게스트 앱 설치 불필요'];
@@ -60,7 +60,7 @@ export default function DesktopMainScreen() {
                 초대장 만들기
                 <ArrowRightIcon size={18} />
               </Link>
-              <Link href={HOME_PREVIEW_PATH} className={styles.secondaryCta}>
+              <Link href="#examples" className={styles.secondaryCta}>
                 완성 예시 보기
               </Link>
             </div>
@@ -77,7 +77,7 @@ export default function DesktopMainScreen() {
           </div>
 
           <div className={styles.heroVisual}>
-            <HomeInvitationPreviewPhone />
+            <HomeInvitationPreviewFrame exampleId="wedding" size="hero" showGlow />
           </div>
         </div>
       </section>
@@ -86,7 +86,9 @@ export default function DesktopMainScreen() {
         <div className={styles.divider} />
       </div>
 
-      <section className={styles.concepts} id="examples" data-testid="main-concept-cards">
+      <HomeInvitationExamplesSection />
+
+      <section className={styles.concepts} id="service-intro" data-testid="main-concept-cards">
         <div className={styles.conceptsHead}>
           <p className={styles.conceptsEyebrow}>초대장 종류</p>
           <h2 className={styles.conceptsTitle}>어떤 초대장이 필요하세요?</h2>

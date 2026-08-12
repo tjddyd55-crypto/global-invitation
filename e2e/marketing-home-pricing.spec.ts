@@ -68,11 +68,23 @@ test.describe('marketing header and home categories', () => {
     await expect(page.getByTestId('global-header')).toHaveCount(0);
     await expect(page.getByTestId('marketing-desktop-header')).toHaveCount(1);
     await expect(page.getByTestId('home-invitation-preview')).toBeVisible({ timeout: 60_000 });
-    await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 60_000 });
-    await expect(page.getByTestId('public-invitation-document')).toHaveAttribute(
+    await expect(page.getByTestId('public-invitation-document').first()).toHaveAttribute(
       'data-visual-template',
       'WEDDING_05_GARDEN'
     );
+    const examples = page.getByTestId('home-invitation-examples');
+    await examples.scrollIntoViewIfNeeded();
+    await expect(examples).toBeVisible();
+    await expect(page.getByTestId('home-example-wedding')).toBeVisible();
+    await expect(page.getByTestId('home-example-funeral')).toBeVisible();
+    await expect(page.getByTestId('home-example-general')).toBeVisible();
+    await expect(page.getByTestId('home-example-organization')).toBeVisible();
+    await expect(
+      page.getByTestId('home-example-funeral').getByTestId('public-invitation-document')
+    ).toBeVisible({ timeout: 60_000 });
+    await expect(
+      page.getByTestId('home-example-organization').getByTestId('public-invitation-document')
+    ).toHaveAttribute('data-visual-template', 'ORGANIZATION_02_JCI');
     await expect(page.getByTestId('hero-create-cta')).toBeVisible();
     await expect(page.getByTestId('main-concept-wedding')).toBeVisible();
     await expect(page.getByTestId('main-concept-funeral')).toBeVisible();
@@ -90,13 +102,20 @@ test.describe('marketing header and home categories', () => {
     expect(href || '').toMatch(/concept=ORGANIZATION|concept%3DORGANIZATION/);
   });
 
-  test('home invitation preview stays clipped on mobile', async ({ page }) => {
-    for (const width of [360, 390]) {
+  test('home invitation examples stay clipped on mobile', async ({ page }) => {
+    for (const width of [360, 390, 430]) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto(`${FE}/`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
-      await expect(page.getByTestId('home-invitation-preview')).toBeVisible({ timeout: 60_000 });
-      await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 60_000 });
-      await expect(page.getByTestId('hero-create-cta')).toBeVisible();
+      await expect(page.getByTestId('hero-create-cta')).toBeVisible({ timeout: 60_000 });
+      const examples = page.getByTestId('home-invitation-examples');
+      await examples.scrollIntoViewIfNeeded();
+      await expect(page.getByTestId('home-example-wedding')).toBeVisible();
+      await expect(page.getByTestId('home-example-funeral')).toBeVisible();
+      await expect(page.getByTestId('home-example-general')).toBeVisible();
+      await expect(page.getByTestId('home-example-organization')).toBeVisible();
+      await expect(
+        page.getByTestId('home-example-wedding').getByTestId('public-invitation-document')
+      ).toBeVisible({ timeout: 60_000 });
       await assertNoHorizontalOverflow(page);
     }
   });
