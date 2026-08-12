@@ -215,7 +215,9 @@ test.describe('ORGANIZATION concept flow', () => {
 
     const guidance = page.getByTestId('organization-logo-upload-guidance');
     await expect(guidance).toBeVisible();
-    await expect(guidance).toContainText('1200px');
+    await expect(guidance).toContainText('투명 배경');
+    await expect(guidance).not.toContainText('3:1');
+    await expect(guidance).toContainText(/PNG|WEBP|WebP/i);
 
     await page.getByTestId('organization-preset-jci').click();
     await expect(page.getByTestId('organization-preset-jci')).toHaveAttribute('aria-checked', 'true', {
@@ -243,5 +245,74 @@ test.describe('ORGANIZATION concept flow', () => {
     expect(overflow).toBeFalsy();
 
     await context.close();
+  });
+
+  test('template selector shows Official and JCI cards', async ({ page }) => {
+    await page.goto('/create/templates?concept=ORGANIZATION', {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+    await expect(page.getByText('공식', { exact: true }).first()).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByText('JCI', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('JCI 행사와 공식 초청에 맞춘 브랜드 템플릿').first()).toBeVisible();
+  });
+
+  test('public template preview renders ORGANIZATION_02_JCI', async ({ page }) => {
+    await page.goto('/templates/ORGANIZATION_02_JCI/preview', {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+    const doc = page.getByTestId('public-invitation-document');
+    await expect(doc).toBeVisible({ timeout: 60_000 });
+    await expect(doc).toHaveAttribute('data-visual-template', 'ORGANIZATION_02_JCI');
+    await expect(page.getByText('서울광진청년회의소').first()).toBeVisible();
+    await expect(page.getByTestId('organization-brand-logo').first()).toBeVisible();
+  });
+
+  test('JCI create API applies preset assets without sample names', async ({ request }) => {
+    const login = await request.post(`${BE}/api/test-login`, {
+      data: { email: `org-jci-create-${Date.now()}@example.com` },
+    });
+    expect(login.ok()).toBeTruthy();
+
+    const createPayload = {
+      templateKey: 'invitation_full',
+      conceptType: 'ORGANIZATION',
+      visualTemplateId: 'ORGANIZATION_02_JCI',
+      data: {
+        conceptType: 'ORGANIZATION',
+        visualTemplateId: 'ORGANIZATION_02_JCI',
+        templateType: 'FULL',
+        organization: {
+          presetId: 'JCI',
+          name: '',
+          englishName: '',
+          logo: 'invitation/shared/images/templates/ORGANIZATION_01_OFFICIAL/logo.webp',
+          accentColor: '#0097D7',
+        },
+        music: {
+          enabled: true,
+          sourceType: 'SHARED',
+          trackId: '7e718468-fe68-4903-8cda-3a7ab613483b',
+          fileUrl:
+            'invitation/shared/music/general/7915ed06-84da-4a1d-aee9-3bae103fccf7.mp3',
+          title: 'JCI Creed Song',
+          loop: true,
+        },
+      },
+    };
+
+    const create = await request.post(`${BE}/api/invitations`, { data: createPayload });
+    expect(create.ok()).toBeTruthy();
+    const body = await create.json();
+    const invitation = body?.invitation || body;
+    const dataJson = invitation?.dataJson || invitation?.data || {};
+    expect(dataJson.visualTemplateId).toBe('ORGANIZATION_02_JCI');
+    expect(dataJson.organization?.presetId).toBe('JCI');
+    expect(dataJson.organization?.logo).toContain('ORGANIZATION_01_OFFICIAL/logo.webp');
+    expect(dataJson.organization?.name === '' || dataJson.organization?.name == null).toBeTruthy();
+    expect(String(dataJson.organization?.name || '')).not.toContain('서울광진');
+    expect(dataJson.music?.enabled).toBe(true);
+    expect(dataJson.music?.title).toBe('JCI Creed Song');
   });
 });

@@ -1169,6 +1169,42 @@
   display: block;
 }
 
+/* Organization logo — compact contain preview (not hero/gallery scale) */
+.editorLogoImageCard .uploaderBody {
+  align-items: flex-start;
+  max-height: 160px;
+  padding: 0.75rem;
+}
+
+.editorLogoThumbnail {
+  width: auto;
+  max-width: 100%;
+  max-height: 120px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.editorLogoThumbnail > div {
+  width: auto !important;
+  height: auto !important;
+  max-height: 104px;
+  min-height: 0;
+}
+
+.editorLogoThumbnail img {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100%;
+  max-height: 104px;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 0;
+  display: block;
+}
+
 .editorOgThumbnail {
   width: 100%;
   max-height: 220px;

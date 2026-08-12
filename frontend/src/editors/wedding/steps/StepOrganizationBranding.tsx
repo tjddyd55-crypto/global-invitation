@@ -236,7 +236,7 @@ export default function StepOrganizationBranding({
         onClear={() => onChange({ logo: '' })}
         onPersistClear={onPersistClear}
         uploadAssetType="asset"
-        thumbnailRole="default"
+        thumbnailRole="logo"
         inputTestId="organization-logo-input"
         clearTestId="organization-logo-clear"
       />

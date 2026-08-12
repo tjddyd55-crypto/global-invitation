@@ -62,8 +62,8 @@ export function resolveVisibleSections(conceptType: ConceptType): EditorSectionI
 
   if (conceptType === 'ORGANIZATION') {
     return [
-      { id: 0, key: 'setup', title: '기본 정보', previewSectionId: 'basic' },
-      { id: 1, key: 'organization', title: '기관 브랜딩', previewSectionId: 'organization' },
+      { id: 0, key: 'organization', title: '기관 브랜딩', previewSectionId: 'organization' },
+      { id: 1, key: 'setup', title: '기본 정보', previewSectionId: 'basic' },
       { id: 2, key: 'message', title: '행사 소개', previewSectionId: 'greeting' },
       { id: 3, key: 'hero', title: '대표 이미지', previewSectionId: 'hero' },
       { id: 4, key: 'gallery', title: '갤러리', previewSectionId: 'gallery' },

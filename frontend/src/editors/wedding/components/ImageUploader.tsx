@@ -27,7 +27,7 @@ type ImageUploaderProps = {
   /** LCP: 대표(히어로) 미리보기에만 사용 */
   priority?: boolean;
   /** Editor 전용 썸네일 레이아웃 — Public 비율과 분리 */
-  thumbnailRole?: 'default' | 'couple' | 'hero' | 'openGraph';
+  thumbnailRole?: 'default' | 'couple' | 'hero' | 'openGraph' | 'logo';
 };
 
 function revokeIfObjectUrl(url?: string) {
@@ -151,14 +151,19 @@ export default function ImageUploader({
         ? `${styles.uploaderPreview} ${styles.editorHeroThumbnail}`
         : thumbnailRole === 'openGraph'
           ? `${styles.uploaderPreview} ${styles.editorOgThumbnail}`
-          : styles.uploaderPreview;
+          : thumbnailRole === 'logo'
+            ? `${styles.uploaderPreview} ${styles.editorLogoThumbnail}`
+            : styles.uploaderPreview;
+
+  const uploaderClass =
+    thumbnailRole === 'couple'
+      ? `${styles.uploader} ${styles.editorCoupleImageCard}`
+      : thumbnailRole === 'logo'
+        ? `${styles.uploader} ${styles.editorLogoImageCard}`
+        : styles.uploader;
 
   return (
-    <div
-      className={
-        thumbnailRole === 'couple' ? `${styles.uploader} ${styles.editorCoupleImageCard}` : styles.uploader
-      }
-    >
+    <div className={uploaderClass}>
       <div className={styles.fieldHeader}>
         <label className={styles.fieldLabel} htmlFor={inputId}>
           {label} {required && <span className={styles.required}>*</span>}
@@ -170,7 +175,13 @@ export default function ImageUploader({
           <button
             type="button"
             className={previewClass}
-            data-testid={thumbnailRole === 'couple' ? 'editor-couple-thumbnail' : undefined}
+            data-testid={
+              thumbnailRole === 'couple'
+                ? 'editor-couple-thumbnail'
+                : thumbnailRole === 'logo'
+                  ? 'editor-logo-thumbnail'
+                  : undefined
+            }
             onClick={() => setLightboxOpen(true)}
             aria-label={`${label} 원본 보기`}
             disabled={busy}
