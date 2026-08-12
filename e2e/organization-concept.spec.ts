@@ -203,6 +203,7 @@ test.describe('ORGANIZATION concept flow', () => {
       timeout: 90_000,
     });
 
+    await page.getByRole('button', { name: /기관 브랜딩/ }).first().click();
     const branding = page.getByTestId('step-organization-branding');
     await expect(branding).toBeVisible({ timeout: 60_000 });
     const guidance = page.getByTestId('organization-logo-upload-guidance');
@@ -220,16 +221,9 @@ test.describe('ORGANIZATION concept flow', () => {
     });
     expect(overflow).toBeFalsy();
 
-    // Music step — ORGANIZATION stepper index may differ; open by label.
-    const musicStepNav = page.getByRole('button', { name: /음악 설정/ }).first();
-    if (await musicStepNav.isVisible().catch(() => false)) {
-      await musicStepNav.click();
-    } else {
-      await page.getByTestId(/stepper-item-/).filter({ hasText: '음악 설정' }).click();
-    }
-
+    await page.getByRole('button', { name: /음악 설정/ }).first().click();
     await expect(page.getByTestId('editor-music-step')).toBeVisible({ timeout: 30_000 });
-    await page.getByTestId('editor-music-enabled-toggle').click();
+    await page.getByTestId('editor-music-enabled-toggle-input').check();
     await expect(page.getByText('AUTH_REQUIRED')).toHaveCount(0);
     await expect(page.getByText('JCI Creed Song', { exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText('JCI Creed Song 2', { exact: true })).toBeVisible();
