@@ -5,10 +5,30 @@ import { buildAuthHeaders } from '@/src/lib/auth';
 import { cdnImageSrc } from '@/src/lib/image';
 import { compressImage } from '@/src/lib/imageCompression';
 
-const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+/** Client-side image upload limit — keep UI guidance in sync. */
+export const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_AUDIO_SIZE_BYTES = 10 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+export const ALLOWED_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+const ALLOWED_IMAGE_TYPES = new Set<string>(ALLOWED_IMAGE_MIME_TYPES);
 const ALLOWED_AUDIO_TYPES = new Set(['audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/x-m4a']);
+
+export function formatMaxImageSizeLabel(bytes: number = MAX_IMAGE_SIZE_BYTES): string {
+  const mb = bytes / (1024 * 1024);
+  return Number.isInteger(mb) ? `${mb}MB` : `${mb.toFixed(1)}MB`;
+}
+
+/** User-facing format list matching ALLOWED_IMAGE_MIME_TYPES (JPG not JPEG). */
+export function formatAllowedImageFormatsLabel(
+  mimeTypes: readonly string[] = ALLOWED_IMAGE_MIME_TYPES
+): string {
+  const labels = mimeTypes.map((mime) => {
+    if (mime === 'image/jpeg') return 'JPG';
+    if (mime === 'image/png') return 'PNG';
+    if (mime === 'image/webp') return 'WebP';
+    return mime.replace(/^image\//, '').toUpperCase();
+  });
+  return labels.join('/');
+}
 
 export type UploadedMediaFile = {
   mediaId?: string;

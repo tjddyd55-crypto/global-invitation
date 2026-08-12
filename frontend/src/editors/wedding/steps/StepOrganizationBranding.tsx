@@ -7,6 +7,7 @@ import {
   type OrganizationBranding,
 } from '@/src/invitation/conceptTypes';
 import ImageUploader from '../components/ImageUploader';
+import { getOrganizationLogoUploadGuidance } from './organizationLogoUploadGuidance';
 import styles from '../weddingEditor.module.css';
 
 type StepOrganizationBrandingProps = {
@@ -21,6 +22,7 @@ export default function StepOrganizationBranding({
   onPersistClear,
 }: StepOrganizationBrandingProps) {
   const accent = normalizeBrandAccentColor(value.accentColor);
+  const logoGuidance = getOrganizationLogoUploadGuidance();
 
   return (
     <section className={styles.stepSection} data-testid="step-organization-branding">
@@ -54,7 +56,6 @@ export default function StepOrganizationBranding({
 
       <ImageUploader
         label="로고"
-        description="JPG, PNG, WEBP · 권장 정사각 · 최대 10MB"
         value={value.logo}
         onChange={(logo) => onChange({ logo })}
         onClear={() => onChange({ logo: '' })}
@@ -64,6 +65,11 @@ export default function StepOrganizationBranding({
         inputTestId="organization-logo-input"
         clearTestId="organization-logo-clear"
       />
+      <p className={styles.helperText} data-testid="organization-logo-upload-guidance">
+        {logoGuidance.primary}
+        <br />
+        {logoGuidance.secondary}
+      </p>
 
       <label className={styles.field}>
         <span className={styles.fieldLabel}>브랜드 색상</span>
@@ -71,14 +77,18 @@ export default function StepOrganizationBranding({
           <input
             type="color"
             value={accent}
-            onChange={(event) => onChange({ accentColor: normalizeBrandAccentColor(event.target.value) })}
+            onChange={(event) =>
+              onChange({ accentColor: normalizeBrandAccentColor(event.target.value) })
+            }
             aria-label="브랜드 색상"
             data-testid="organization-accent-color"
           />
           <input
             type="text"
             value={accent}
-            onChange={(event) => onChange({ accentColor: normalizeBrandAccentColor(event.target.value) })}
+            onChange={(event) =>
+              onChange({ accentColor: normalizeBrandAccentColor(event.target.value) })
+            }
             placeholder={DEFAULT_BRAND_ACCENT_COLOR}
             style={{ maxWidth: 120 }}
           />
