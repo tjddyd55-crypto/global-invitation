@@ -208,6 +208,28 @@ export default function WeddingEditor({
     });
   };
 
+  const handleOrganizationPersistClear = async () => {
+    if (!onSave) return;
+    const base = stateRef.current;
+    await onSave({
+      ...base,
+      organization: { ...base.organization, logo: '' },
+    });
+  };
+
+  const handleOrganizationPresetPersist = async (
+    organization: WeddingEditorState['organization'],
+    musicPatch: Partial<WeddingEditorState['extras']>
+  ) => {
+    if (!onSave) return;
+    const base = stateRef.current;
+    await onSave({
+      ...base,
+      organization,
+      extras: { ...base.extras, ...musicPatch },
+    });
+  };
+
   const handlePersistShareChange = async (payload: Partial<WeddingEditorState['share']>) => {
     const base = stateRef.current;
     const nextState: WeddingEditorState = {
@@ -250,7 +272,11 @@ export default function WeddingEditor({
         return (
           <StepOrganizationBranding
             value={state.organization}
+            music={state.extras}
             onChange={(payload) => dispatch({ type: 'SET_ORGANIZATION', payload })}
+            onChangeMusic={(payload) => dispatch({ type: 'SET_EXTRAS', payload })}
+            onPersistClear={onSave ? handleOrganizationPersistClear : undefined}
+            onPersistPresetApply={onSave ? handleOrganizationPresetPersist : undefined}
           />
         );
       case 'message':

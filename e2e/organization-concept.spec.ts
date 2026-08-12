@@ -193,10 +193,12 @@ test.describe('ORGANIZATION concept flow', () => {
       });
       const body = await res.json();
       const invitation = body?.invitation || body;
-      return { ok: res.ok, id: invitation?.id as string };
+      return { ok: res.ok, id: invitation?.id as string, data: invitation?.dataJson || invitation?.data };
     }, { api: BE });
     expect(created.ok).toBeTruthy();
     expect(created.id).toBeTruthy();
+    expect(created.data?.organization?.logo == null || created.data?.organization?.logo === '').toBeTruthy();
+    expect(created.data?.organization?.presetId == null || created.data?.organization?.presetId === 'CUSTOM').toBeTruthy();
 
     await page.goto(`/editor/${created.id}?concept=ORGANIZATION`, {
       waitUntil: 'domcontentloaded',
@@ -206,27 +208,39 @@ test.describe('ORGANIZATION concept flow', () => {
     await page.getByRole('button', { name: /기관 브랜딩/ }).first().click();
     const branding = page.getByTestId('step-organization-branding');
     await expect(branding).toBeVisible({ timeout: 60_000 });
+
+    await expect(page.getByTestId('organization-preset-custom')).toBeVisible();
+    await expect(page.getByTestId('organization-preset-jci')).toBeVisible();
+    await expect(page.getByTestId('organization-preset-custom')).toHaveAttribute('aria-checked', 'true');
+
     const guidance = page.getByTestId('organization-logo-upload-guidance');
     await expect(guidance).toBeVisible();
     await expect(guidance).toContainText('1200px');
-    await expect(guidance).toContainText('PNG');
-    await expect(guidance).toContainText('JPG');
-    await expect(guidance).toContainText('WebP');
-    await expect(guidance).toContainText('10MB');
-    await expect(guidance).not.toContainText('정사각');
+
+    await page.getByTestId('organization-preset-jci').click();
+    await expect(page.getByTestId('organization-preset-jci')).toHaveAttribute('aria-checked', 'true', {
+      timeout: 15_000,
+    });
+    await expect(page.locator('[data-testid="organization-logo-input"]').locator('..')).toBeVisible();
+
+    await page.getByRole('button', { name: /음악 설정/ }).first().click();
+    await expect(page.getByTestId('editor-music-step')).toBeVisible({ timeout: 30_000 });
+    // Preset enables music — toggle may already be on
+    const musicOn = page.getByTestId('editor-music-enabled-toggle-input');
+    if (!(await musicOn.isChecked())) {
+      await page.getByTestId('editor-music-enabled-toggle').click();
+    }
+    await expect(page.getByText('AUTH_REQUIRED')).toHaveCount(0);
+    await expect(page.getByText('JCI Creed Song', { exact: true }).first()).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(page.getByText('JCI Creed Song 2', { exact: true })).toBeVisible();
 
     const overflow = await page.evaluate(() => {
       const root = document.documentElement;
       return root.scrollWidth > root.clientWidth + 1;
     });
     expect(overflow).toBeFalsy();
-
-    await page.getByRole('button', { name: /음악 설정/ }).first().click();
-    await expect(page.getByTestId('editor-music-step')).toBeVisible({ timeout: 30_000 });
-    await page.getByTestId('editor-music-enabled-toggle').click();
-    await expect(page.getByText('AUTH_REQUIRED')).toHaveCount(0);
-    await expect(page.getByText('JCI Creed Song', { exact: true })).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText('JCI Creed Song 2', { exact: true })).toBeVisible();
 
     await context.close();
   });

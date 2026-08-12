@@ -43,6 +43,12 @@ export function normalizeBrandAccentColor(value: unknown): string {
   return HEX_COLOR_RE.test(trimmed) ? trimmed.toUpperCase() : DEFAULT_BRAND_ACCENT_COLOR;
 }
 
+import {
+  isOrganizationPresetId,
+  normalizeOrganizationPresetId,
+  type OrganizationPresetId,
+} from '@/src/invitation/organizationPresets';
+
 export type OrganizationBranding = {
   name?: string;
   /** Hero 등 짧은 영문 표기 (예: JCI Seoul Gwangjin) */
@@ -51,6 +57,8 @@ export type OrganizationBranding = {
   englishFullName?: string;
   logo?: string;
   accentColor?: string;
+  /** Brand preset — assets-only; does not drive render-time logo/music */
+  presetId?: OrganizationPresetId;
 };
 
 export function normalizeOrganizationBranding(value: unknown): OrganizationBranding {
@@ -68,5 +76,10 @@ export function normalizeOrganizationBranding(value: unknown): OrganizationBrand
   if (englishFullName) next.englishFullName = englishFullName;
   if (logo) next.logo = logo;
   if (accentRaw && HEX_COLOR_RE.test(accentRaw)) next.accentColor = accentRaw.toUpperCase();
+  if (isOrganizationPresetId(record.presetId)) {
+    next.presetId = record.presetId;
+  } else if (record.presetId != null && String(record.presetId).trim()) {
+    next.presetId = normalizeOrganizationPresetId(record.presetId);
+  }
   return next;
 }

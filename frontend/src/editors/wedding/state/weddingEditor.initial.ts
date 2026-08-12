@@ -262,6 +262,7 @@ export function createWeddingEditorState(
       englishName: '',
       logo: '',
       accentColor: DEFAULT_BRAND_ACCENT_COLOR,
+      presetId: 'CUSTOM',
     },
     groom: {
       name: groomName,
@@ -377,6 +378,7 @@ export function createWeddingEditorStateFromDraft(
       return {
         ...base.organization,
         ...next,
+        presetId: next.presetId || base.organization.presetId || 'CUSTOM',
         accentColor: next.accentColor || base.organization.accentColor || DEFAULT_BRAND_ACCENT_COLOR,
       };
     })(),

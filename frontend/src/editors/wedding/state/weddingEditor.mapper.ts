@@ -231,6 +231,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
             englishFullName: state.organization?.englishFullName,
             logo: state.organization?.logo,
             accentColor: state.organization?.accentColor || DEFAULT_BRAND_ACCENT_COLOR,
+            presetId: state.organization?.presetId || 'CUSTOM',
           })
         : undefined;
     return {

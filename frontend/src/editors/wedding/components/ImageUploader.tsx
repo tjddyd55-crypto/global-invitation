@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from 'react';
 import AppImage from '@/src/components/media/AppImage';
 import { deleteMediaFile, uploadMediaImage, type MediaUploadAssetType } from '@/src/lib/mediaApi';
+import { isSharedInvitationAssetUrlOrKey } from '@/src/invitation/galleryAsset';
 import { persistThenDeleteMedia } from '../lib/persistThenDeleteMedia';
 import styles from '../weddingEditor.module.css';
 
@@ -36,7 +37,13 @@ function revokeIfObjectUrl(url?: string) {
 }
 
 function isRemoteDeletableUrl(url: string): boolean {
-  return /^https?:\/\//i.test((url || '').trim());
+  const trimmed = (url || '').trim();
+  if (!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith('invitation/')) {
+    return false;
+  }
+  // Shared invitation assets must never be deleted from uploader clear/replace.
+  if (isSharedInvitationAssetUrlOrKey(trimmed)) return false;
+  return /^https?:\/\//i.test(trimmed);
 }
 
 export default function ImageUploader({

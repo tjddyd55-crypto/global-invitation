@@ -1,28 +1,123 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
+import { useState } from 'react';
 import {
   DEFAULT_BRAND_ACCENT_COLOR,
   normalizeBrandAccentColor,
   type OrganizationBranding,
 } from '@/src/invitation/conceptTypes';
+import {
+  listOrganizationPresets,
+  normalizeOrganizationPresetId,
+  type OrganizationPresetId,
+} from '@/src/invitation/organizationPresets';
+import { cdnImageSrc } from '@/src/lib/image';
+import { deleteMediaFile } from '@/src/lib/mediaApi';
+import { shouldDeleteRemoteGalleryAsset } from '@/src/invitation/galleryAsset';
 import ImageUploader from '../components/ImageUploader';
 import { getOrganizationLogoUploadGuidance } from './organizationLogoUploadGuidance';
+import {
+  applyOrganizationPreset,
+  matchesOrganizationPresetDefaults,
+  type OrganizationPresetMusicSnapshot,
+} from '../lib/applyOrganizationPreset';
+import { persistThenDeleteMedia } from '../lib/persistThenDeleteMedia';
 import styles from '../weddingEditor.module.css';
 
 type StepOrganizationBrandingProps = {
   value: OrganizationBranding;
+  music: OrganizationPresetMusicSnapshot;
   onChange: (value: Partial<OrganizationBranding>) => void;
+  onChangeMusic: (value: Partial<OrganizationPresetMusicSnapshot>) => void;
   onPersistClear?: () => Promise<void>;
+  /** Persist full organization + music after preset apply (for lifecycle). */
+  onPersistPresetApply?: (
+    organization: OrganizationBranding,
+    music: OrganizationPresetMusicSnapshot
+  ) => Promise<void>;
 };
 
 export default function StepOrganizationBranding({
   value,
+  music,
   onChange,
+  onChangeMusic,
   onPersistClear,
+  onPersistPresetApply,
 }: StepOrganizationBrandingProps) {
   const accent = normalizeBrandAccentColor(value.accentColor);
   const logoGuidance = getOrganizationLogoUploadGuidance();
+  const selectedPreset = normalizeOrganizationPresetId(value.presetId);
+  const presets = listOrganizationPresets();
+  const [pendingJciConfirm, setPendingJciConfirm] = useState(false);
+  const [applying, setApplying] = useState(false);
+
+  const applyPreset = async (presetId: OrganizationPresetId) => {
+    if (applying) return;
+    const result = applyOrganizationPreset({
+      presetId,
+      organization: value,
+      music,
+    });
+
+    if (presetId === 'CUSTOM') {
+      onChange({ presetId: 'CUSTOM' });
+      return;
+    }
+
+    setApplying(true);
+    const previousLogo = result.previousLogo;
+    const shouldDeletePrevious = shouldDeleteRemoteGalleryAsset({ url: previousLogo });
+
+    const status = await persistThenDeleteMedia({
+      applyDraftRemoval: () => {
+        onChange(result.organization);
+        onChangeMusic(result.music);
+      },
+      rollbackDraft: () => {
+        onChange(value);
+        onChangeMusic(music);
+      },
+      persistDraft: async () => {
+        if (onPersistPresetApply) {
+          await onPersistPresetApply(result.organization, result.music);
+        }
+      },
+      deleteRemote:
+        shouldDeletePrevious && previousLogo
+          ? async () => {
+              await deleteMediaFile(previousLogo);
+            }
+          : null,
+    });
+
+    setApplying(false);
+    if (status === 'persist_failed') {
+      // rollback already applied by helper
+      return;
+    }
+  };
+
+  const handleSelectPreset = (presetId: OrganizationPresetId) => {
+    if (presetId === selectedPreset && presetId === 'CUSTOM') return;
+    if (presetId === 'CUSTOM') {
+      void applyPreset('CUSTOM');
+      return;
+    }
+    if (presetId === 'JCI') {
+      const alreadyDefaults = matchesOrganizationPresetDefaults('JCI', value, music);
+      const hasDifferentAssets =
+        selectedPreset === 'JCI'
+          ? !alreadyDefaults
+          : Boolean((value.logo || '').trim() || music.musicEnabled || music.musicTrackId);
+      if (hasDifferentAssets && !alreadyDefaults) {
+        setPendingJciConfirm(true);
+        return;
+      }
+      void applyPreset('JCI');
+    }
+  };
 
   return (
     <section className={styles.stepSection} data-testid="step-organization-branding">
@@ -30,6 +125,86 @@ export default function StepOrganizationBranding({
         <h2>기관 브랜딩</h2>
         <p>기관명·로고·브랜드 색상을 입력하면 초대장 상단에 반영됩니다.</p>
       </div>
+
+      <div className={styles.presetBlock} data-testid="organization-preset-selector">
+        <span className={styles.fieldLabel} id="organization-preset-label">
+          기관 선택
+        </span>
+        <div
+          className={styles.presetGrid}
+          role="radiogroup"
+          aria-labelledby="organization-preset-label"
+        >
+          {presets.map((preset) => {
+            const selected = selectedPreset === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                aria-label={preset.label}
+                disabled={applying}
+                className={`${styles.presetCard} ${selected ? styles.presetCardSelected : ''}`}
+                data-testid={`organization-preset-${preset.id.toLowerCase()}`}
+                onClick={() => handleSelectPreset(preset.id)}
+              >
+                <span className={styles.presetCardMedia}>
+                  {preset.logoKey ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={cdnImageSrc(preset.logoKey)}
+                      alt=""
+                      className={styles.presetCardLogo}
+                    />
+                  ) : (
+                    <span className={styles.presetCardIcon} aria-hidden>
+                      +
+                    </span>
+                  )}
+                </span>
+                <span className={styles.presetCardLabel}>{preset.label}</span>
+                {preset.description ? (
+                  <span className={styles.presetCardHint}>{preset.description}</span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {pendingJciConfirm ? (
+        <div
+          className={styles.presetConfirm}
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="jci-preset-confirm-title"
+          data-testid="organization-preset-jci-confirm"
+        >
+          <h3 id="jci-preset-confirm-title">JCI 기본 설정을 적용할까요?</h3>
+          <p>현재 로고와 음악이 JCI 기본 설정으로 변경됩니다.</p>
+          <div className={styles.presetConfirmActions}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => setPendingJciConfirm(false)}
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              className={styles.primaryButton}
+              data-testid="organization-preset-jci-confirm-apply"
+              onClick={() => {
+                setPendingJciConfirm(false);
+                void applyPreset('JCI');
+              }}
+            >
+              적용
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className={styles.fieldGrid}>
         <label className={styles.field}>
