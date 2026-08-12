@@ -247,14 +247,57 @@ test.describe('ORGANIZATION concept flow', () => {
     await context.close();
   });
 
-  test('template selector shows Official and JCI cards', async ({ page }) => {
+  test('template selector shows Official and JCI cards', async ({ browser }) => {
+    test.setTimeout(180_000);
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    const email = `org-catalog-${Date.now()}@example.com`;
+
+    const login = await page.request.post(`${BE}/api/test-login`, { data: { email } });
+    expect(login.ok()).toBeTruthy();
+    const loginBody = await login.json();
+    const cookies = await page.context().cookies(BE);
+    const auth = cookies.find((c) => c.name === 'auth_session_token');
+    expect(auth).toBeTruthy();
+
+    await page.context().clearCookies();
+    await page.context().addCookies([
+      {
+        name: auth!.name,
+        value: auth!.value,
+        domain: auth!.domain,
+        path: auth!.path || '/',
+        expires: auth!.expires,
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+      },
+    ]);
+
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.evaluate(
+      ({ token, userId, userEmail }) => {
+        window.localStorage.setItem(
+          'auth_session_v1',
+          JSON.stringify({
+            token,
+            user: { id: userId, email: userEmail, role: 'USER' },
+          })
+        );
+      },
+      { token: auth!.value, userId: loginBody.userId as string, userEmail: email }
+    );
+
     await page.goto('/create/templates?concept=ORGANIZATION', {
       waitUntil: 'domcontentloaded',
       timeout: 90_000,
     });
-    await expect(page.getByText('공식', { exact: true }).first()).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId('visual-template-catalog')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByText('공식', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('JCI', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('JCI 행사와 공식 초청에 맞춘 브랜드 템플릿').first()).toBeVisible();
+
+    await context.close();
   });
 
   test('public template preview renders ORGANIZATION_02_JCI', async ({ page }) => {
