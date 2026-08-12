@@ -6,11 +6,18 @@ import {
 import prisma from '../prisma';
 import { getInvitationPricingSnapshot } from '../pricing/invitationPricing';
 import {
-  createProviderCheckout,
+  assertTossKeySafety,
+  buildOrderId,
   getFrontendBaseUrl,
+  getPaymentOrderName,
+  getTossClientKey,
+  getTossSecretKey,
+  mapTossPaymentStatus,
   resolvePaymentProvider,
-  type PaymentProviderName,
+  resolveTossChargeAmount,
 } from './provider';
+import { confirmTossPayment, getTossPaymentByKey } from './tossClient';
+import type { ConfirmPaymentInput, PreparePaymentResult } from './types';
 
 export async function findPaidPayment(invitationId: string): Promise<InvitationPayment | null> {
   return prisma.invitationPayment.findFirst({
@@ -22,20 +29,9 @@ export async function findPaidPayment(invitationId: string): Promise<InvitationP
   });
 }
 
+/** Publish/public entitlement: valid PAID payment row only. */
 export async function hasPaidEntitlement(invitationId: string): Promise<boolean> {
-  const paid = await findPaidPayment(invitationId);
-  return Boolean(paid);
-}
-
-export async function syncInvitationPaidFlags(invitationId: string, paidAt: Date): Promise<void> {
-  await prisma.invitation.update({
-    where: { id: invitationId },
-    data: {
-      isPaid: true,
-      canShare: true,
-      paidAt,
-    },
-  });
+  return Boolean(await findPaidPayment(invitationId));
 }
 
 export async function getPaymentSummaryForInvitation(invitationId: string) {
@@ -56,26 +52,71 @@ export async function getPaymentSummaryForInvitation(invitationId: string) {
     paidAt: paid?.paidAt?.toISOString() ?? null,
     latestStatus: latest?.status ?? null,
     latestPaymentId: latest?.id ?? null,
+    provider: latest?.provider ?? null,
   };
 }
 
-type CheckoutCreateResult =
-  | { ok: true; alreadyPaid: false; paymentId: string; checkoutUrl: string; provider: PaymentProviderName }
-  | { ok: true; alreadyPaid: true; paymentId: string }
-  | { ok: false; code: 'ALREADY_PAID' | 'CHECKOUT_FAILED'; message: string };
+function parseProviderMeta(raw: string | null): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
 
-export async function createCheckoutAttempt(input: {
+export function getExpectedProviderAmount(payment: InvitationPayment): number | null {
+  const meta = parseProviderMeta(payment.rawProviderStatus);
+  if (typeof meta.tossAmount === 'number') return meta.tossAmount;
+  if (payment.provider === 'mock') return payment.chargedAmount;
+  return null;
+}
+
+export function getExpectedProviderCurrency(payment: InvitationPayment): string {
+  const meta = parseProviderMeta(payment.rawProviderStatus);
+  if (typeof meta.tossCurrency === 'string') return meta.tossCurrency.toUpperCase();
+  return payment.currency.toUpperCase();
+}
+
+export async function preparePaymentAttempt(input: {
   invitationId: string;
   userId?: string | null;
-}): Promise<CheckoutCreateResult> {
+}): Promise<PreparePaymentResult> {
   const existingPaid = await findPaidPayment(input.invitationId);
   if (existingPaid) {
     return { ok: true, alreadyPaid: true, paymentId: existingPaid.id };
   }
 
   const provider = resolvePaymentProvider();
-  const pricing = getInvitationPricingSnapshot();
+  const charge = resolveTossChargeAmount(provider);
+  if (!charge.ok) {
+    return { ok: false, code: charge.code, message: charge.message };
+  }
 
+  let clientKey: string | null = null;
+  if (provider === 'toss_payments') {
+    clientKey = getTossClientKey();
+    if (!clientKey) {
+      return {
+        ok: false,
+        code: 'MISSING_TOSS_KEYS',
+        message: 'NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY (or TOSS_PAYMENTS_CLIENT_KEY) is required',
+      };
+    }
+    try {
+      const secret = getTossSecretKey();
+      assertTossKeySafety(clientKey, secret);
+    } catch (error) {
+      return {
+        ok: false,
+        code: 'MISSING_TOSS_KEYS',
+        message: error instanceof Error ? error.message : 'Toss key validation failed',
+      };
+    }
+  }
+
+  const pricing = getInvitationPricingSnapshot();
   const attempt = await prisma.invitationPayment.create({
     data: {
       invitationId: input.invitationId,
@@ -89,67 +130,55 @@ export async function createCheckoutAttempt(input: {
     },
   });
 
+  const orderId = buildOrderId(attempt.id);
   const frontend = getFrontendBaseUrl();
-  const successUrl =
-    `${frontend}/invitations/${input.invitationId}/payment` +
-    `?status=processing&paymentId=${encodeURIComponent(attempt.id)}`;
-  const cancelUrl =
-    `${frontend}/invitations/${input.invitationId}/payment` +
-    `?status=canceled&paymentId=${encodeURIComponent(attempt.id)}`;
+  const successUrl = `${frontend}/invitations/${input.invitationId}/payment/success`;
+  const failUrl = `${frontend}/invitations/${input.invitationId}/payment/fail`;
 
-  try {
-    const session = await createProviderCheckout({
-      provider,
-      invitationId: input.invitationId,
-      paymentAttemptId: attempt.id,
-      successUrl,
-      cancelUrl,
-    });
+  const meta = {
+    phase: 'prepared',
+    tossAmount: charge.amount.value,
+    tossCurrency: charge.amount.currency,
+  };
 
-    await prisma.invitationPayment.update({
-      where: { id: attempt.id },
-      data: {
-        providerCheckoutId: session.providerCheckoutId,
-        rawProviderStatus: 'checkout_created',
-      },
-    });
+  await prisma.invitationPayment.update({
+    where: { id: attempt.id },
+    data: {
+      providerOrderId: orderId,
+      providerCheckoutId: orderId,
+      rawProviderStatus: JSON.stringify(meta),
+    },
+  });
 
-    console.info('[payments] checkout created', {
-      invitationId: input.invitationId,
-      paymentAttemptId: attempt.id,
-      provider,
-      userId: input.userId || null,
-    });
+  console.info('[payments] prepare created', {
+    invitationId: input.invitationId,
+    paymentAttemptId: attempt.id,
+    orderId,
+    provider,
+    userId: input.userId || null,
+  });
 
-    return {
-      ok: true,
-      alreadyPaid: false,
-      paymentId: attempt.id,
-      checkoutUrl: session.checkoutUrl,
-      provider,
-    };
-  } catch (error) {
-    await prisma.invitationPayment.update({
-      where: { id: attempt.id },
-      data: {
-        status: InvitationPaymentStatus.FAILED,
-        failedAt: new Date(),
-        rawProviderStatus: 'checkout_create_failed',
-      },
-    });
-    console.error('[payments] checkout create failed', {
-      invitationId: input.invitationId,
-      paymentAttemptId: attempt.id,
-      error: error instanceof Error ? error.message : 'unknown',
-    });
-    return { ok: false, code: 'CHECKOUT_FAILED', message: 'Failed to create checkout' };
-  }
+  return {
+    ok: true,
+    alreadyPaid: false,
+    paymentId: attempt.id,
+    orderId,
+    provider,
+    orderName: getPaymentOrderName(),
+    domainCurrency: pricing.currency,
+    domainChargedAmountCents: pricing.chargedAmountCents,
+    amount: charge.amount,
+    successUrl,
+    failUrl,
+    clientKey,
+  };
 }
 
 export async function markPaymentStatus(input: {
   paymentId?: string;
-  provider: string;
+  provider?: string;
   providerCheckoutId?: string | null;
+  providerOrderId?: string | null;
   providerPaymentId?: string | null;
   status: InvitationPaymentStatus;
   currency?: string | null;
@@ -161,6 +190,10 @@ export async function markPaymentStatus(input: {
 
   if (input.paymentId) {
     payment = await prisma.invitationPayment.findUnique({ where: { id: input.paymentId } });
+  } else if (input.providerOrderId) {
+    payment = await prisma.invitationPayment.findFirst({
+      where: { providerOrderId: input.providerOrderId },
+    });
   } else if (input.providerCheckoutId) {
     payment = await prisma.invitationPayment.findFirst({
       where: {
@@ -170,10 +203,7 @@ export async function markPaymentStatus(input: {
     });
   } else if (input.providerPaymentId) {
     payment = await prisma.invitationPayment.findFirst({
-      where: {
-        provider: input.provider,
-        providerPaymentId: input.providerPaymentId,
-      },
+      where: { providerPaymentId: input.providerPaymentId },
     });
   }
 
@@ -187,21 +217,20 @@ export async function markPaymentStatus(input: {
 
   if (input.status === InvitationPaymentStatus.PAID) {
     if (!input.skipAmountCheck) {
-      if (input.currency && input.currency.toUpperCase() !== payment.currency.toUpperCase()) {
+      const expectedAmount = getExpectedProviderAmount(payment);
+      const expectedCurrency = getExpectedProviderCurrency(payment);
+      if (input.currency && input.currency.toUpperCase() !== expectedCurrency) {
         console.warn('[payments] currency mismatch', {
           paymentId: payment.id,
-          expected: payment.currency,
+          expected: expectedCurrency,
           actual: input.currency,
         });
         return { ok: false, reason: 'CURRENCY_MISMATCH' };
       }
-      if (
-        typeof input.amountCents === 'number' &&
-        input.amountCents !== payment.chargedAmount
-      ) {
+      if (typeof input.amountCents === 'number' && expectedAmount !== null && input.amountCents !== expectedAmount) {
         console.warn('[payments] amount mismatch', {
           paymentId: payment.id,
-          expected: payment.chargedAmount,
+          expected: expectedAmount,
           actual: input.amountCents,
         });
         return { ok: false, reason: 'AMOUNT_MISMATCH' };
@@ -227,8 +256,9 @@ export async function markPaymentStatus(input: {
           status: InvitationPaymentStatus.PAID,
           paidAt,
           providerPaymentId: input.providerPaymentId || payment!.providerPaymentId,
+          providerOrderId: input.providerOrderId || payment!.providerOrderId,
           providerCheckoutId: input.providerCheckoutId || payment!.providerCheckoutId,
-          rawProviderStatus: input.rawProviderStatus || 'paid',
+          rawProviderStatus: input.rawProviderStatus || payment!.rawProviderStatus,
         },
       });
 
@@ -277,6 +307,157 @@ export async function markPaymentStatus(input: {
   });
 
   return { ok: true, payment: updated };
+}
+
+export async function confirmPaymentAttempt(
+  input: ConfirmPaymentInput
+): Promise<
+  | { ok: true; payment: InvitationPayment; alreadyPaid: boolean }
+  | { ok: false; code: string; message: string }
+> {
+  const payment = await prisma.invitationPayment.findFirst({
+    where: {
+      invitationId: input.invitationId,
+      providerOrderId: input.orderId,
+    },
+  });
+
+  if (!payment) {
+    return { ok: false, code: 'PAYMENT_NOT_FOUND', message: 'Payment attempt not found for orderId' };
+  }
+
+  if (payment.status === InvitationPaymentStatus.PAID) {
+    return { ok: true, payment, alreadyPaid: true };
+  }
+
+  if (payment.status !== InvitationPaymentStatus.PENDING) {
+    return { ok: false, code: 'ATTEMPT_NOT_PENDING', message: `Attempt status is ${payment.status}` };
+  }
+
+  const expectedAmount = getExpectedProviderAmount(payment);
+  if (expectedAmount === null || input.amount !== expectedAmount) {
+    return { ok: false, code: 'AMOUNT_MISMATCH', message: 'Amount does not match prepared attempt' };
+  }
+
+  if (payment.provider === 'mock') {
+    const marked = await markPaymentStatus({
+      paymentId: payment.id,
+      provider: 'mock',
+      providerOrderId: input.orderId,
+      providerPaymentId: input.paymentKey,
+      status: InvitationPaymentStatus.PAID,
+      currency: getExpectedProviderCurrency(payment),
+      amountCents: expectedAmount,
+      rawProviderStatus: JSON.stringify({
+        ...parseProviderMeta(payment.rawProviderStatus),
+        phase: 'mock_confirmed',
+        paymentKey: input.paymentKey,
+      }),
+    });
+    if (!marked.ok || !marked.payment) {
+      return { ok: false, code: marked.reason || 'CONFIRM_FAILED', message: 'Failed to mark mock payment paid' };
+    }
+    return { ok: true, payment: marked.payment, alreadyPaid: false };
+  }
+
+  if (payment.provider !== 'toss_payments') {
+    return { ok: false, code: 'INVALID_PROVIDER', message: `Unsupported provider ${payment.provider}` };
+  }
+
+  const confirmed = await confirmTossPayment({
+    paymentKey: input.paymentKey,
+    orderId: input.orderId,
+    amount: expectedAmount,
+    idempotencyKey: payment.id,
+  });
+
+  if (!confirmed.ok) {
+    await markPaymentStatus({
+      paymentId: payment.id,
+      provider: 'toss_payments',
+      status: InvitationPaymentStatus.FAILED,
+      skipAmountCheck: true,
+      rawProviderStatus: JSON.stringify({
+        ...parseProviderMeta(payment.rawProviderStatus),
+        phase: 'confirm_failed',
+        code: confirmed.code,
+      }),
+    });
+    return { ok: false, code: confirmed.code, message: confirmed.message };
+  }
+
+  const toss = confirmed.payment;
+  if (toss.orderId !== input.orderId) {
+    return { ok: false, code: 'ORDER_ID_MISMATCH', message: 'Toss orderId mismatch' };
+  }
+  if (toss.paymentKey !== input.paymentKey) {
+    return { ok: false, code: 'PAYMENT_KEY_MISMATCH', message: 'Toss paymentKey mismatch' };
+  }
+  if (toss.totalAmount !== expectedAmount) {
+    return { ok: false, code: 'AMOUNT_MISMATCH', message: 'Toss totalAmount mismatch' };
+  }
+  const expectedCurrency = getExpectedProviderCurrency(payment);
+  if ((toss.currency || '').toUpperCase() !== expectedCurrency) {
+    return { ok: false, code: 'CURRENCY_MISMATCH', message: 'Toss currency mismatch' };
+  }
+  if ((toss.status || '').toUpperCase() !== 'DONE') {
+    return { ok: false, code: 'INVALID_STATUS', message: `Toss status is ${toss.status}` };
+  }
+
+  const marked = await markPaymentStatus({
+    paymentId: payment.id,
+    provider: 'toss_payments',
+    providerOrderId: toss.orderId,
+    providerPaymentId: toss.paymentKey,
+    status: InvitationPaymentStatus.PAID,
+    currency: toss.currency,
+    amountCents: toss.totalAmount,
+    rawProviderStatus: JSON.stringify({
+      ...parseProviderMeta(payment.rawProviderStatus),
+      phase: 'confirmed',
+      tossStatus: toss.status,
+      lastTransactionKey: toss.lastTransactionKey || null,
+      approvedAt: toss.approvedAt || null,
+    }),
+  });
+
+  if (!marked.ok || !marked.payment) {
+    return { ok: false, code: marked.reason || 'CONFIRM_FAILED', message: 'Failed to persist PAID' };
+  }
+
+  return { ok: true, payment: marked.payment, alreadyPaid: false };
+}
+
+export async function reconcileTossPaymentByKey(paymentKey: string): Promise<{
+  ok: boolean;
+  reason?: string;
+  payment?: InvitationPayment;
+}> {
+  const queried = await getTossPaymentByKey(paymentKey);
+  if (!queried.ok) {
+    return { ok: false, reason: queried.code };
+  }
+
+  const toss = queried.payment;
+  const mapped = mapTossPaymentStatus(toss.status);
+  if (!mapped || mapped === 'PENDING') {
+    return { ok: true };
+  }
+
+  return markPaymentStatus({
+    provider: 'toss_payments',
+    providerOrderId: toss.orderId,
+    providerPaymentId: toss.paymentKey,
+    status: InvitationPaymentStatus[mapped],
+    currency: toss.currency,
+    amountCents: toss.totalAmount,
+    rawProviderStatus: JSON.stringify({
+      phase: 'webhook_reconcile',
+      tossStatus: toss.status,
+      lastTransactionKey: toss.lastTransactionKey || null,
+    }),
+    skipAmountCheck: mapped !== 'PAID',
+  });
 }
 
 export async function recordWebhookEvent(input: {

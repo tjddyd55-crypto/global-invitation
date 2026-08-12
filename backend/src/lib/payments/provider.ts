@@ -1,27 +1,5 @@
-import crypto from 'crypto';
-import { getInvitationPricingSnapshot } from '../pricing/invitationPricing';
-
-export type PaymentProviderName = 'mock' | 'stripe';
-
-export type CheckoutSessionResult = {
-  providerCheckoutId: string;
-  checkoutUrl: string;
-  clientToken?: string;
-};
-
-export type ProviderWebhookResult =
-  | { kind: 'ignored' }
-  | {
-      kind: 'status';
-      providerEventId: string;
-      eventType: string;
-      providerCheckoutId?: string | null;
-      providerPaymentId?: string | null;
-      status: 'PAID' | 'FAILED' | 'CANCELED' | 'REFUNDED';
-      currency?: string | null;
-      amountCents?: number | null;
-      rawProviderStatus?: string | null;
-    };
+import { INVITATION_PRICING } from '../pricing/invitationPricing';
+import type { PaymentProviderName, TossChargeAmount } from './types';
 
 function resolveNodeEnv(): string {
   return (process.env.NODE_ENV || 'development').toLowerCase();
@@ -38,20 +16,20 @@ export function resolvePaymentProvider(): PaymentProviderName {
     return 'mock';
   }
 
-  if (raw === 'stripe') {
-    return 'stripe';
+  if (raw === 'toss' || raw === 'toss_payments' || raw === 'tosspayments') {
+    return 'toss_payments';
   }
 
-  // development default: mock when Stripe keys missing
-  if (nodeEnv !== 'production' && !process.env.STRIPE_SECRET_KEY?.trim()) {
+  if (raw === 'stripe') {
+    throw new Error('PAYMENT_PROVIDER=stripe is disabled; use toss_payments or mock');
+  }
+
+  // development default without explicit provider: mock
+  if (nodeEnv !== 'production') {
     return 'mock';
   }
 
-  if (process.env.STRIPE_SECRET_KEY?.trim()) {
-    return 'stripe';
-  }
-
-  throw new Error('PAYMENT_PROVIDER is not configured');
+  throw new Error('PAYMENT_PROVIDER is not configured (expected toss_payments)');
 }
 
 export function getFrontendBaseUrl(): string {
@@ -62,182 +40,130 @@ export function getFrontendBaseUrl(): string {
   ).replace(/\/$/, '');
 }
 
-export function getBackendBaseUrl(): string {
-  return (
-    process.env.BACKEND_PUBLIC_URL ||
-    process.env.BACKEND_URL ||
-    `http://localhost:${process.env.PORT || 3001}`
-  ).replace(/\/$/, '');
+export function getTossSecretKey(): string {
+  const secret = process.env.TOSS_PAYMENTS_SECRET_KEY?.trim() || '';
+  if (!secret) {
+    throw new Error('TOSS_PAYMENTS_SECRET_KEY is required');
+  }
+  return secret;
 }
 
-export async function createProviderCheckout(input: {
-  provider: PaymentProviderName;
-  invitationId: string;
-  paymentAttemptId: string;
-  successUrl: string;
-  cancelUrl: string;
-}): Promise<CheckoutSessionResult> {
-  const snapshot = getInvitationPricingSnapshot();
+export function getTossClientKey(): string {
+  return (
+    process.env.TOSS_PAYMENTS_CLIENT_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY?.trim() ||
+    ''
+  );
+}
 
-  if (input.provider === 'mock') {
-    const providerCheckoutId = `mock_cs_${input.paymentAttemptId}`;
-    const checkoutUrl =
-      `${getBackendBaseUrl()}/api/payments/mock/complete` +
-      `?checkoutId=${encodeURIComponent(providerCheckoutId)}` +
-      `&redirect=${encodeURIComponent(input.successUrl)}`;
-    return { providerCheckoutId, checkoutUrl };
+/**
+ * test_* / live_* key pair guard.
+ * Rejects mixed environments and production mock/test misuse.
+ */
+export function assertTossKeySafety(clientKey: string, secretKey: string): void {
+  const nodeEnv = resolveNodeEnv();
+  const clientTest = clientKey.startsWith('test_');
+  const clientLive = clientKey.startsWith('live_');
+  const secretTest = secretKey.startsWith('test_');
+  const secretLive = secretKey.startsWith('live_');
+
+  if ((clientTest && secretLive) || (clientLive && secretTest)) {
+    throw new Error('TOSS_KEY_MISMATCH: client/secret test/live keys must match');
   }
 
-  const secret = process.env.STRIPE_SECRET_KEY?.trim();
-  if (!secret) {
-    throw new Error('STRIPE_SECRET_KEY is required for stripe provider');
+  if (nodeEnv === 'production') {
+    if (clientTest || secretTest) {
+      throw new Error('TOSS_TEST_KEY_FORBIDDEN_IN_PRODUCTION');
+    }
+  } else if (clientLive || secretLive) {
+    throw new Error('TOSS_LIVE_KEY_FORBIDDEN_IN_NON_PRODUCTION');
+  }
+}
+
+/**
+ * Official Toss docs: 일반결제(CARD) supports KRW only. PayPal FOREIGN_EASY_PAY supports USD only.
+ * Product SSOT remains USD. We never invent FX conversion.
+ *
+ * Settlement options:
+ * - mock: use domain USD cents as numeric amount (dev only)
+ * - toss + TOSS_PAYMENTS_SETTLEMENT_CURRENCY=KRW + TOSS_PAYMENTS_SETTLEMENT_AMOUNT=<won>
+ *   → explicit KRW charge decided outside FX code
+ * - otherwise UNSUPPORTED_CURRENCY
+ */
+export function resolveTossChargeAmount(provider: PaymentProviderName):
+  | { ok: true; amount: TossChargeAmount }
+  | { ok: false; code: 'UNSUPPORTED_CURRENCY'; message: string } {
+  if (provider === 'mock') {
+    return {
+      ok: true,
+      amount: {
+        currency: 'USD',
+        value: INVITATION_PRICING.salePriceCents,
+      },
+    };
   }
 
-  const params = new URLSearchParams();
-  params.set('mode', 'payment');
-  params.set('success_url', input.successUrl);
-  params.set('cancel_url', input.cancelUrl);
-  params.set('client_reference_id', input.paymentAttemptId);
-  params.set('metadata[invitationId]', input.invitationId);
-  params.set('metadata[paymentAttemptId]', input.paymentAttemptId);
-  params.set('line_items[0][quantity]', '1');
-  params.set('line_items[0][price_data][currency]', snapshot.currency.toLowerCase());
-  params.set('line_items[0][price_data][unit_amount]', String(snapshot.chargedAmountCents));
-  params.set('line_items[0][price_data][product_data][name]', 'Invitation publish');
-  params.set('idempotency_key', `${input.invitationId}:${input.paymentAttemptId}`);
+  const settlementCurrency = (process.env.TOSS_PAYMENTS_SETTLEMENT_CURRENCY || '').trim().toUpperCase();
+  const settlementAmountRaw = (process.env.TOSS_PAYMENTS_SETTLEMENT_AMOUNT || '').trim();
 
-  const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${secret}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Idempotency-Key': `${input.invitationId}:${input.paymentAttemptId}`,
-    },
-    body: params.toString(),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    console.error('[payments] stripe checkout create failed', {
-      status: response.status,
-      invitationId: input.invitationId,
-      paymentAttemptId: input.paymentAttemptId,
-    });
-    throw new Error(`STRIPE_CHECKOUT_FAILED:${response.status}:${text.slice(0, 200)}`);
+  if (settlementCurrency === 'KRW' && settlementAmountRaw) {
+    const value = Number(settlementAmountRaw);
+    if (!Number.isInteger(value) || value <= 0) {
+      return {
+        ok: false,
+        code: 'UNSUPPORTED_CURRENCY',
+        message: 'TOSS_PAYMENTS_SETTLEMENT_AMOUNT must be a positive integer (KRW)',
+      };
+    }
+    return { ok: true, amount: { currency: 'KRW', value } };
   }
 
-  const data = (await response.json()) as { id?: string; url?: string };
-  if (!data.id || !data.url) {
-    throw new Error('STRIPE_CHECKOUT_INVALID_RESPONSE');
+  if (INVITATION_PRICING.currency === 'USD') {
+    return {
+      ok: false,
+      code: 'UNSUPPORTED_CURRENCY',
+      message:
+        'Toss 일반결제(CARD)는 KRW만 지원합니다. 제품 가격은 USD이며 임의 환율 변환을 하지 않습니다. ' +
+        'KRW 정액 결제를 쓰려면 TOSS_PAYMENTS_SETTLEMENT_CURRENCY=KRW 와 TOSS_PAYMENTS_SETTLEMENT_AMOUNT를 명시적으로 설정하세요. ' +
+        'USD 직접 결제는 해외 간편결제(PayPal 등) MID 계약이 필요합니다.',
+    };
   }
 
   return {
-    providerCheckoutId: data.id,
-    checkoutUrl: data.url,
+    ok: false,
+    code: 'UNSUPPORTED_CURRENCY',
+    message: `Unsupported product currency for Toss: ${INVITATION_PRICING.currency}`,
   };
 }
 
-export function verifyStripeWebhookSignature(rawBody: Buffer, signatureHeader: string | undefined): boolean {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim() || process.env.PAYMENT_WEBHOOK_SECRET?.trim();
-  if (!secret || !signatureHeader) return false;
-
-  // Stripe signature: t=timestamp,v1=signature
-  const parts = Object.fromEntries(
-    signatureHeader.split(',').map((piece) => {
-      const [k, v] = piece.split('=');
-      return [k, v];
-    })
-  ) as Record<string, string>;
-
-  const timestamp = parts.t;
-  const expected = parts.v1;
-  if (!timestamp || !expected) return false;
-
-  const signedPayload = `${timestamp}.${rawBody.toString('utf8')}`;
-  const digest = crypto.createHmac('sha256', secret).update(signedPayload, 'utf8').digest('hex');
-  try {
-    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(expected));
-  } catch {
-    return false;
-  }
+export function buildOrderId(paymentAttemptId: string): string {
+  // Toss: 6–64 chars, [A-Za-z0-9-_=]
+  const compact = paymentAttemptId.replace(/-/g, '');
+  return `gi_${compact}`.slice(0, 64);
 }
 
-export function parseStripeWebhookEvent(rawBody: Buffer): ProviderWebhookResult {
-  const payload = JSON.parse(rawBody.toString('utf8')) as {
-    id?: string;
-    type?: string;
-    data?: { object?: Record<string, unknown> };
-  };
+export function getPaymentOrderName(): string {
+  return '초대장 발행';
+}
 
-  const eventId = payload.id;
-  const eventType = payload.type || 'unknown';
-  if (!eventId) {
-    return { kind: 'ignored' };
+export function mapTossPaymentStatus(
+  status: string | null | undefined
+): 'PENDING' | 'PAID' | 'FAILED' | 'CANCELED' | 'REFUNDED' | null {
+  switch ((status || '').toUpperCase()) {
+    case 'DONE':
+      return 'PAID';
+    case 'CANCELED':
+      return 'CANCELED';
+    case 'PARTIAL_CANCELED':
+      return 'REFUNDED';
+    case 'ABORTED':
+    case 'EXPIRED':
+      return 'FAILED';
+    case 'READY':
+    case 'IN_PROGRESS':
+    case 'WAITING_FOR_DEPOSIT':
+      return 'PENDING';
+    default:
+      return null;
   }
-
-  const obj = payload.data?.object || {};
-  const metadata = (obj.metadata || {}) as Record<string, string>;
-  const providerCheckoutId =
-    typeof obj.id === 'string' && eventType.startsWith('checkout.session')
-      ? obj.id
-      : typeof obj.checkout_session === 'string'
-        ? obj.checkout_session
-        : null;
-
-  if (eventType === 'checkout.session.completed' || eventType === 'checkout.session.async_payment_succeeded') {
-    const amountTotal = typeof obj.amount_total === 'number' ? obj.amount_total : null;
-    const currency = typeof obj.currency === 'string' ? obj.currency.toUpperCase() : null;
-    const paymentIntent =
-      typeof obj.payment_intent === 'string'
-        ? obj.payment_intent
-        : metadata.paymentAttemptId
-          ? `pi_${metadata.paymentAttemptId}`
-          : null;
-    return {
-      kind: 'status',
-      providerEventId: eventId,
-      eventType,
-      providerCheckoutId,
-      providerPaymentId: paymentIntent,
-      status: 'PAID',
-      currency,
-      amountCents: amountTotal,
-      rawProviderStatus: eventType,
-    };
-  }
-
-  if (eventType === 'checkout.session.expired') {
-    return {
-      kind: 'status',
-      providerEventId: eventId,
-      eventType,
-      providerCheckoutId,
-      status: 'CANCELED',
-      rawProviderStatus: eventType,
-    };
-  }
-
-  if (eventType === 'checkout.session.async_payment_failed') {
-    return {
-      kind: 'status',
-      providerEventId: eventId,
-      eventType,
-      providerCheckoutId,
-      status: 'FAILED',
-      rawProviderStatus: eventType,
-    };
-  }
-
-  if (eventType === 'charge.refunded') {
-    return {
-      kind: 'status',
-      providerEventId: eventId,
-      eventType,
-      providerPaymentId: typeof obj.payment_intent === 'string' ? obj.payment_intent : null,
-      status: 'REFUNDED',
-      rawProviderStatus: eventType,
-    };
-  }
-
-  return { kind: 'ignored' };
 }

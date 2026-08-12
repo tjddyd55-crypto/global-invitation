@@ -8,17 +8,15 @@ import {
   resolveGuestTokenFromRequest,
 } from '../lib/invitationAccess';
 import {
-  createCheckoutAttempt,
+  confirmPaymentAttempt,
   getPaymentSummaryForInvitation,
   hasPaidEntitlement,
   markPaymentStatus,
+  preparePaymentAttempt,
+  reconcileTossPaymentByKey,
   recordWebhookEvent,
 } from '../lib/payments/service';
-import {
-  parseStripeWebhookEvent,
-  resolvePaymentProvider,
-  verifyStripeWebhookSignature,
-} from '../lib/payments/provider';
+import { resolvePaymentProvider } from '../lib/payments/provider';
 import { getInvitationPricingSnapshot } from '../lib/pricing/invitationPricing';
 
 const router = Router();
@@ -70,7 +68,7 @@ async function assertEditableInvitation(req: import('express').Request, invitati
   return { invitation, user };
 }
 
-// GET /api/invitations/:id/payment — owner summary
+// GET /api/invitations/:id/payment
 router.get('/invitations/:id/payment', async (req, res) => {
   try {
     const identifier = normalizeText(req.params.id);
@@ -94,6 +92,7 @@ router.get('/invitations/:id/payment', async (req, res) => {
       status: invitation.status,
       shareSlug: invitation.shareSlug,
       isPublished: invitation.status === 'PUBLISHED',
+      provider: resolvePaymentProvider(),
       pricing: {
         currency: pricing.currency,
         listPriceCents: pricing.listPriceCents,
@@ -109,8 +108,8 @@ router.get('/invitations/:id/payment', async (req, res) => {
   }
 });
 
-// POST /api/invitations/:id/payment/checkout
-router.post('/invitations/:id/payment/checkout', async (req, res) => {
+// POST /api/invitations/:id/payment/prepare
+router.post('/invitations/:id/payment/prepare', async (req, res) => {
   try {
     const identifier = normalizeText(req.params.id);
     if (!identifier) {
@@ -123,13 +122,19 @@ router.post('/invitations/:id/payment/checkout', async (req, res) => {
     }
 
     const invitation = access.invitation!;
-    const result = await createCheckoutAttempt({
+    const result = await preparePaymentAttempt({
       invitationId: invitation.id,
       userId: access.user?.id || invitation.userId,
     });
 
     if (!result.ok) {
-      return res.status(502).json({ error: result.code });
+      const status =
+        result.code === 'UNSUPPORTED_CURRENCY'
+          ? 422
+          : result.code === 'MISSING_TOSS_KEYS'
+            ? 503
+            : 502;
+      return res.status(status).json({ error: result.code, message: result.message });
     }
 
     if (result.alreadyPaid) {
@@ -141,13 +146,65 @@ router.post('/invitations/:id/payment/checkout', async (req, res) => {
 
     return res.status(200).json({
       paymentId: result.paymentId,
-      checkoutUrl: result.checkoutUrl,
+      orderId: result.orderId,
       provider: result.provider,
+      orderName: result.orderName,
+      amount: result.amount,
+      domainCurrency: result.domainCurrency,
+      domainChargedAmountCents: result.domainChargedAmountCents,
+      successUrl: result.successUrl,
+      failUrl: result.failUrl,
+      clientKey: result.clientKey,
       pricing: getInvitationPricingSnapshot(),
     });
   } catch (error) {
-    console.error('[payments] checkout failed', error);
-    return res.status(500).json({ error: 'CHECKOUT_FAILED' });
+    console.error('[payments] prepare failed', error);
+    return res.status(500).json({ error: 'PREPARE_FAILED' });
+  }
+});
+
+// POST /api/invitations/:id/payment/prepare is the canonical start endpoint.
+
+// POST /api/invitations/:id/payment/confirm
+router.post('/invitations/:id/payment/confirm', async (req, res) => {
+  try {
+    const identifier = normalizeText(req.params.id);
+    const paymentKey = normalizeText(req.body?.paymentKey);
+    const orderId = normalizeText(req.body?.orderId);
+    const amount = Number(req.body?.amount);
+
+    if (!identifier || !paymentKey || !orderId || !Number.isFinite(amount)) {
+      return res.status(400).json({ error: 'INVALID_CONFIRM_PAYLOAD' });
+    }
+
+    const access = await assertEditableInvitation(req, identifier);
+    if ('error' in access && access.error) {
+      return res.status(access.errorStatus).json({ error: access.error });
+    }
+
+    const invitation = access.invitation!;
+    const result = await confirmPaymentAttempt({
+      invitationId: invitation.id,
+      paymentKey,
+      orderId,
+      amount,
+    });
+
+    if (!result.ok) {
+      return res.status(400).json({ error: result.code, message: result.message });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      alreadyPaid: result.alreadyPaid,
+      paymentId: result.payment.id,
+      status: result.payment.status,
+      paidAt: result.payment.paidAt?.toISOString() ?? null,
+      isPaid: true,
+    });
+  } catch (error) {
+    console.error('[payments] confirm failed', error);
+    return res.status(500).json({ error: 'CONFIRM_FAILED' });
   }
 });
 
@@ -156,6 +213,7 @@ router.get('/invitations/:id/payment/status', async (req, res) => {
   try {
     const identifier = normalizeText(req.params.id);
     const paymentId = normalizeText(req.query.paymentId);
+    const orderId = normalizeText(req.query.orderId);
 
     const access = await assertEditableInvitation(req, identifier);
     if ('error' in access && access.error) {
@@ -170,6 +228,10 @@ router.get('/invitations/:id/payment/status', async (req, res) => {
       attempt = await prisma.invitationPayment.findFirst({
         where: { id: paymentId, invitationId: invitation.id },
       });
+    } else if (orderId) {
+      attempt = await prisma.invitationPayment.findFirst({
+        where: { providerOrderId: orderId, invitationId: invitation.id },
+      });
     } else {
       attempt = await prisma.invitationPayment.findFirst({
         where: { invitationId: invitation.id },
@@ -182,6 +244,7 @@ router.get('/invitations/:id/payment/status', async (req, res) => {
       isPaid: paid,
       status: attempt?.status ?? (paid ? 'PAID' : null),
       paymentId: attempt?.id ?? null,
+      orderId: attempt?.providerOrderId ?? null,
       paidAt: attempt?.paidAt?.toISOString() ?? null,
       chargedAmount: attempt?.chargedAmount ?? null,
       currency: attempt?.currency ?? null,
@@ -192,175 +255,83 @@ router.get('/invitations/:id/payment/status', async (req, res) => {
   }
 });
 
-// GET /api/payments/mock/complete — development mock provider only
-router.get('/payments/mock/complete', async (req, res) => {
-  try {
-    const provider = resolvePaymentProvider();
-    if (provider !== 'mock') {
-      return res.status(404).json({ error: 'NOT_FOUND' });
-    }
-
-    const checkoutId = normalizeText(req.query.checkoutId);
-    const redirect = normalizeText(req.query.redirect);
-    if (!checkoutId) {
-      return res.status(400).json({ error: 'CHECKOUT_ID_REQUIRED' });
-    }
-
-    const result = await markPaymentStatus({
-      provider: 'mock',
-      providerCheckoutId: checkoutId,
-      providerPaymentId: `mock_pi_${checkoutId}`,
-      status: InvitationPaymentStatus.PAID,
-      currency: 'USD',
-      amountCents: getInvitationPricingSnapshot().chargedAmountCents,
-      rawProviderStatus: 'mock_complete',
-    });
-
-    if (!result.ok) {
-      return res.status(400).json({ error: result.reason || 'MOCK_COMPLETE_FAILED' });
-    }
-
-    if (redirect) {
-      return res.redirect(302, redirect);
-    }
-    return res.status(200).json({ ok: true, paymentId: result.payment?.id });
-  } catch (error) {
-    console.error('[payments] mock complete failed', error);
-    return res.status(500).json({ error: 'MOCK_COMPLETE_FAILED' });
-  }
-});
-
-// POST /api/payments/mock/cancel — mark attempt canceled (dev)
-router.post('/payments/mock/cancel', async (req, res) => {
-  try {
-    if (resolvePaymentProvider() !== 'mock') {
-      return res.status(404).json({ error: 'NOT_FOUND' });
-    }
-    const paymentId = normalizeText(req.body?.paymentId);
-    if (!paymentId) {
-      return res.status(400).json({ error: 'PAYMENT_ID_REQUIRED' });
-    }
-    const result = await markPaymentStatus({
-      paymentId,
-      provider: 'mock',
-      status: InvitationPaymentStatus.CANCELED,
-      rawProviderStatus: 'mock_canceled',
-      skipAmountCheck: true,
-    });
-    if (!result.ok) {
-      return res.status(400).json({ error: result.reason });
-    }
-    return res.status(200).json({ ok: true });
-  } catch (error) {
-    console.error('[payments] mock cancel failed', error);
-    return res.status(500).json({ error: 'MOCK_CANCEL_FAILED' });
-  }
-});
-
-// POST /api/payments/webhook — Stripe (raw body attached by index)
+/**
+ * POST /api/payments/webhook
+ * Toss general payment webhooks do not use Stripe-style HMAC.
+ * Verify by re-querying Toss Payment API with paymentKey.
+ */
 router.post('/payments/webhook', async (req, res) => {
   try {
-    const provider = (process.env.PAYMENT_PROVIDER || 'stripe').toLowerCase() === 'mock' ? 'mock' : 'stripe';
+    const eventType = normalizeText(req.body?.eventType);
+    const data = (req.body?.data || {}) as Record<string, unknown>;
+    const paymentKey = normalizeText(data.paymentKey);
+    const orderId = normalizeText(data.orderId);
+    const status = normalizeText(data.status);
+    const createdAt = normalizeText(req.body?.createdAt) || new Date().toISOString();
 
-    if (provider === 'mock') {
-      // Mock webhooks use signed shared secret body for tests
-      const eventId = normalizeText(req.body?.providerEventId);
-      const paymentId = normalizeText(req.body?.paymentId);
-      const statusRaw = normalizeText(req.body?.status).toUpperCase();
-      const secret = normalizeText(req.headers['x-mock-webhook-secret'] as string);
-      const expected = process.env.PAYMENT_WEBHOOK_SECRET || 'dev-mock-webhook-secret';
-      if (secret !== expected) {
-        return res.status(401).json({ error: 'INVALID_SIGNATURE' });
-      }
-      if (!eventId || !paymentId || !statusRaw) {
-        return res.status(400).json({ error: 'INVALID_PAYLOAD' });
-      }
-
-      const dedupe = await recordWebhookEvent({
-        provider: 'mock',
-        providerEventId: eventId,
-        eventType: statusRaw,
-      });
-      if (dedupe === 'duplicate') {
-        return res.status(200).json({ ok: true, duplicate: true });
-      }
-
-      const status =
-        statusRaw === 'PAID' ||
-        statusRaw === 'FAILED' ||
-        statusRaw === 'CANCELED' ||
-        statusRaw === 'REFUNDED'
-          ? (statusRaw as InvitationPaymentStatus)
-          : null;
-      if (!status) {
-        return res.status(400).json({ error: 'INVALID_STATUS' });
-      }
-
-      const amountCents =
-        typeof req.body?.amountCents === 'number' ? req.body.amountCents : undefined;
-      const currency = typeof req.body?.currency === 'string' ? req.body.currency : undefined;
-
-      const result = await markPaymentStatus({
-        paymentId,
-        provider: 'mock',
-        status,
-        amountCents,
-        currency,
-        rawProviderStatus: `mock_webhook_${statusRaw}`,
-      });
-
-      if (!result.ok) {
-        return res.status(400).json({ error: result.reason });
-      }
-      return res.status(200).json({ ok: true });
+    if (eventType && eventType !== 'PAYMENT_STATUS_CHANGED') {
+      return res.status(200).json({ ok: true, ignored: true, eventType });
     }
 
-    const rawBody = (req as typeof req & { rawBody?: Buffer }).rawBody;
-    if (!rawBody) {
-      return res.status(400).json({ error: 'RAW_BODY_REQUIRED' });
+    if (!paymentKey) {
+      return res.status(400).json({ error: 'PAYMENT_KEY_REQUIRED' });
     }
 
-    const signature = req.headers['stripe-signature'] as string | undefined;
-    if (!verifyStripeWebhookSignature(rawBody, signature)) {
-      return res.status(401).json({ error: 'INVALID_SIGNATURE' });
-    }
-
-    const parsed = parseStripeWebhookEvent(rawBody);
-    if (parsed.kind === 'ignored') {
-      return res.status(200).json({ ok: true, ignored: true });
-    }
-
+    const providerEventId = `toss:${paymentKey}:${status || 'unknown'}:${createdAt}`;
     const dedupe = await recordWebhookEvent({
-      provider: 'stripe',
-      providerEventId: parsed.providerEventId,
-      eventType: parsed.eventType,
+      provider: 'toss_payments',
+      providerEventId,
+      eventType: eventType || 'PAYMENT_STATUS_CHANGED',
     });
     if (dedupe === 'duplicate') {
       return res.status(200).json({ ok: true, duplicate: true });
     }
 
-    const result = await markPaymentStatus({
-      provider: 'stripe',
-      providerCheckoutId: parsed.providerCheckoutId,
-      providerPaymentId: parsed.providerPaymentId,
-      status: InvitationPaymentStatus[parsed.status],
-      currency: parsed.currency,
-      amountCents: parsed.amountCents ?? undefined,
-      rawProviderStatus: parsed.rawProviderStatus,
-    });
-
-    if (!result.ok) {
-      console.warn('[payments] webhook apply failed', {
-        eventId: parsed.providerEventId,
-        reason: result.reason,
+    // Development mock webhook path (explicit header) for tests without Toss network
+    const mockSecret = normalizeText(req.headers['x-mock-webhook-secret'] as string);
+    if (mockSecret && resolvePaymentProvider() === 'mock') {
+      const expected = process.env.PAYMENT_WEBHOOK_SECRET || 'dev-mock-webhook-secret';
+      if (mockSecret !== expected) {
+        return res.status(401).json({ error: 'INVALID_SIGNATURE' });
+      }
+      const mapped =
+        status.toUpperCase() === 'DONE' || status.toUpperCase() === 'PAID'
+          ? InvitationPaymentStatus.PAID
+          : status.toUpperCase() === 'CANCELED'
+            ? InvitationPaymentStatus.CANCELED
+            : status.toUpperCase() === 'ABORTED' || status.toUpperCase() === 'FAILED'
+              ? InvitationPaymentStatus.FAILED
+              : null;
+      if (!mapped) {
+        return res.status(200).json({ ok: true, ignored: true });
+      }
+      const marked = await markPaymentStatus({
+        provider: 'mock',
+        providerOrderId: orderId || undefined,
+        providerPaymentId: paymentKey,
+        status: mapped,
+        skipAmountCheck: mapped !== InvitationPaymentStatus.PAID,
+        amountCents: typeof data.totalAmount === 'number' ? data.totalAmount : undefined,
+        currency: typeof data.currency === 'string' ? data.currency : undefined,
+        rawProviderStatus: `mock_webhook_${status}`,
       });
-      return res.status(400).json({ error: result.reason });
+      return res.status(marked.ok ? 200 : 400).json({ ok: marked.ok, reason: marked.reason });
+    }
+
+    const reconciled = await reconcileTossPaymentByKey(paymentKey);
+    if (!reconciled.ok) {
+      console.warn('[payments] webhook reconcile failed', {
+        paymentKey,
+        orderId,
+        reason: reconciled.reason,
+      });
+      return res.status(400).json({ error: reconciled.reason || 'RECONCILE_FAILED' });
     }
 
     console.info('[payments] webhook applied', {
-      eventId: parsed.providerEventId,
-      paymentId: result.payment?.id,
-      status: parsed.status,
+      eventType: eventType || 'PAYMENT_STATUS_CHANGED',
+      paymentId: reconciled.payment?.id,
+      status: reconciled.payment?.status,
     });
 
     return res.status(200).json({ ok: true });
