@@ -8,6 +8,9 @@ import {
   templateHeroAsset,
   templateOrganizationLogoAsset,
 } from './templateSampleAssets';
+import { ORGANIZATION_SAMPLE_MUSIC } from './organizationSharedMusicSample';
+import { createWeddingEditorState } from '@/src/editors/wedding/state/weddingEditor.initial';
+import { resolvePlayableInvitationMusic } from '@/src/invitation/invitationMusic';
 
 test('ORGANIZATION sample logo resolves to shared template key', () => {
   assert.equal(
@@ -58,4 +61,25 @@ test('Wedding preview fixture still resolves without organization logo', () => {
   assert.ok(fixture.heroImage);
   assert.ok((fixture.galleryImages?.length ?? 0) >= 9);
   assert.equal(fixture.organization?.logo, undefined);
+});
+
+test('ORGANIZATION preview fixture includes JCI sample music key (not draft default)', () => {
+  const fixture = getVisualTemplatePreviewFixture('ORGANIZATION_01_OFFICIAL');
+  assert.equal(fixture.music?.enabled, true);
+  assert.equal(fixture.music?.title, ORGANIZATION_SAMPLE_MUSIC.title);
+  assert.equal(fixture.music?.fileUrl, ORGANIZATION_SAMPLE_MUSIC.objectKey);
+  assert.ok(ORGANIZATION_SAMPLE_MUSIC.objectKey.startsWith('invitation/shared/music/'));
+  assert.equal(
+    isSharedInvitationAssetUrlOrKey('', ORGANIZATION_SAMPLE_MUSIC.objectKey),
+    true
+  );
+
+  const playable = resolvePlayableInvitationMusic(fixture, () => undefined);
+  assert.ok(playable);
+  assert.ok(playable!.src.includes(ORGANIZATION_SAMPLE_MUSIC.objectKey));
+
+  const draft = createWeddingEditorState(null, { conceptType: 'ORGANIZATION' });
+  assert.equal(draft.extras.musicEnabled, false);
+  assert.equal(draft.extras.musicTrackId, undefined);
+  assert.equal(draft.extras.musicFileUrl, undefined);
 });

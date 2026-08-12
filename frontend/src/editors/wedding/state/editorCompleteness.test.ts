@@ -62,3 +62,20 @@ test('music ON with upload url is complete for music', () => {
   );
   assert.equal(complete.completed, incomplete.completed + 1);
 });
+
+test('music ON with library trackId is complete for music', () => {
+  const state = createWeddingEditorState(null, { conceptType: 'ORGANIZATION' });
+  const incomplete = computeEditorCompleteness({
+    ...state,
+    extras: { ...state.extras, musicEnabled: true },
+  });
+  const complete = computeEditorCompleteness({
+    ...state,
+    extras: {
+      ...state.extras,
+      musicEnabled: true,
+      musicTrackId: '7e718468-fe68-4903-8cda-3a7ab613483b',
+    },
+  });
+  assert.equal(complete.completed, incomplete.completed + 1);
+});

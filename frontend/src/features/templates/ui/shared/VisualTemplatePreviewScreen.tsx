@@ -2,7 +2,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FullInvitationRenderer from '@/src/templates/full/FullInvitationRenderer';
 import { getVisualTemplatePreviewFixture } from '@/src/templates/visualTemplate/previewFixtures';
@@ -14,6 +14,9 @@ import {
   VISUAL_TEMPLATE_RESUME_PATH,
 } from '@/src/features/templates/model/pendingVisualTemplate';
 import { fetchCurrentUser } from '@/src/shared/auth';
+import { getMusicByKey } from '@/src/constants/music';
+import { resolvePlayableInvitationMusic } from '@/src/invitation/invitationMusic';
+import InvitationMusicPlayer from '@/src/features/invitation/ui/InvitationMusicPlayer';
 import styles from './VisualTemplatePreviewScreen.module.css';
 
 type Props = {
@@ -26,6 +29,15 @@ export default function VisualTemplatePreviewScreen({ visualTemplateId }: Props)
   const { start, creatingConcept } = useCreateInvitation();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+
+  const playableMusic = useMemo(
+    () =>
+      resolvePlayableInvitationMusic(fixture, (key) => {
+        const track = getMusicByKey(key);
+        return track ? { src: track.src, title: track.title } : undefined;
+      }),
+    [fixture]
+  );
 
   const handleCreate = useCallback(async () => {
     setBusy(true);
@@ -70,6 +82,8 @@ export default function VisualTemplatePreviewScreen({ visualTemplateId }: Props)
           showGuestbook={false}
         />
       </div>
+
+      {playableMusic ? <InvitationMusicPlayer music={playableMusic} /> : null}
 
       <div className={styles.bottomCta}>
         <button

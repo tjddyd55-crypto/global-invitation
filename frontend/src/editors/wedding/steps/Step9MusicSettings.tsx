@@ -30,6 +30,7 @@ function resolveSourceType(value: WeddingEditorExtras): WeddingEditorMusicSource
 
 function hasValidMusicSource(value: WeddingEditorExtras): boolean {
   if ((value.musicFileUrl || '').trim()) return true;
+  if ((value.musicTrackId || '').trim()) return true;
   const key = (value.musicKey || '').trim();
   return Boolean(key && getMusicByKey(key));
 }

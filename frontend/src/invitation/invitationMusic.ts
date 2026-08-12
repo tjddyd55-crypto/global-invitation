@@ -2,6 +2,7 @@
  * 초대장 배경 음악 SSOT.
  * 기본 OFF. enabled=true 이고 유효한 소스가 있을 때만 플레이어 표시.
  */
+import { cdnImageSrc } from '@/src/lib/image';
 
 export type InvitationMusicSettings = {
   enabled: boolean;
@@ -85,19 +86,32 @@ export function resolvePlayableInvitationMusic(
   }
 
   if (musicFromData.fileUrl) {
+    const src = cdnImageSrc(musicFromData.fileUrl) || musicFromData.fileUrl;
     return {
-      src: musicFromData.fileUrl,
+      src,
       title: musicFromData.title || '배경 음악',
       loop: Boolean(musicFromData.loop),
       startAtSeconds: musicFromData.startAtSeconds ?? 0,
     };
   }
 
+  if (musicFromData.fileKey) {
+    const src = cdnImageSrc(musicFromData.fileKey);
+    if (src) {
+      return {
+        src,
+        title: musicFromData.title || '배경 음악',
+        loop: Boolean(musicFromData.loop),
+        startAtSeconds: musicFromData.startAtSeconds ?? 0,
+      };
+    }
+  }
+
   if (musicFromData.musicKey) {
     const catalog = resolveCatalogSrc(musicFromData.musicKey);
     if (catalog) {
       return {
-        src: catalog.src,
+        src: cdnImageSrc(catalog.src) || catalog.src,
         title: musicFromData.title || catalog.title,
         loop: Boolean(musicFromData.loop),
         startAtSeconds: musicFromData.startAtSeconds ?? 0,

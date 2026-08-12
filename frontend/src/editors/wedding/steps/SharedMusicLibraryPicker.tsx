@@ -57,7 +57,19 @@ export default function SharedMusicLibraryPicker({
       setError(null);
       void fetchMusicLibrary({ concept: musicCategoryForConcept(conceptType), search })
         .then((nextTracks) => {
-          if (isCurrent) setTracks(nextTracks);
+          if (!isCurrent) return;
+          // ORGANIZATION: JCI 추천 트랙을 상단으로 (API sortOrder 유지 내에서 보조 정렬).
+          if (conceptType === 'ORGANIZATION') {
+            setTracks(
+              [...nextTracks].sort((a, b) => {
+                const aBoost = /jci/i.test(a.title) || /jci/i.test(a.artistName || '') ? 0 : 1;
+                const bBoost = /jci/i.test(b.title) || /jci/i.test(b.artistName || '') ? 0 : 1;
+                return aBoost - bBoost;
+              })
+            );
+            return;
+          }
+          setTracks(nextTracks);
         })
         .catch((loadError) => {
           if (isCurrent) {

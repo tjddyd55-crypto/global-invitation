@@ -17,6 +17,7 @@ import {
   WEDDING_BRIDE_PROFILE,
   WEDDING_GROOM_PROFILE,
 } from './templateSampleAssets';
+import { ORGANIZATION_SAMPLE_MUSIC } from './organizationSharedMusicSample';
 import { getPreviewFixtureGalleryMode } from '@/src/templates/visualGallery/resolveVisualGalleryPresentation';
 import { DEFAULT_BRAND_ACCENT_COLOR } from '@/src/invitation/conceptTypes';
 
@@ -361,7 +362,17 @@ function organizationFixture(visualTemplateId: VisualTemplateId): WeddingInvitat
     accountEnabled: true,
     accountsTitle: event.accountsTitle,
     organization: event.organization,
-    music: { enabled: true, sourceType: 'SHARED', loop: true },
+    // Preview 전용 샘플 BGM — create draft 경로(useCreateInvitation)는 fixture 를 저장하지 않음.
+    music: {
+      enabled: true,
+      sourceType: 'SHARED',
+      loop: true,
+      trackId: ORGANIZATION_SAMPLE_MUSIC.trackId,
+      musicKey: ORGANIZATION_SAMPLE_MUSIC.trackId,
+      // object key — resolvePlayableInvitationMusic 이 CDN 으로 정규화
+      fileUrl: ORGANIZATION_SAMPLE_MUSIC.objectKey,
+      title: ORGANIZATION_SAMPLE_MUSIC.title,
+    },
     transportInfo: event.transportInfo,
     parkingInfo: event.parkingInfo,
   };

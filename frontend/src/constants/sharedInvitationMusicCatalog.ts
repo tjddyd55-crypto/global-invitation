@@ -1,6 +1,13 @@
 /**
  * Shared invitation music catalog — files live under invitation/shared/music/...
- * License fields are required before registering a new track.
+ *
+ * Runtime Editor/Public shared tracks are served from Backend
+ * `InvitationMusicTrack` via `/api/music-library` (admin publish).
+ * This static list remains for legacy musicKey fallbacks only.
+ *
+ * Organization (JCI) shared BGM is registered in DB as GENERAL category
+ * (ORGANIZATION concept maps to GENERAL — see musicCategoryForConcept).
+ * Do not invent parallel SSOT here for new operator tracks.
  */
 export type SharedInvitationMusic = {
   key: string;

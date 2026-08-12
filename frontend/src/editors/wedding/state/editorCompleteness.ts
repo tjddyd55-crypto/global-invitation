@@ -112,8 +112,9 @@ export function computeEditorCompleteness(state: WeddingEditorState): {
         }
         total += 1;
         const hasUpload = Boolean((state.extras.musicFileUrl || '').trim());
+        const hasSharedTrack = Boolean((state.extras.musicTrackId || '').trim());
         const hasShared = Boolean(getMusicByKey(state.extras.musicKey));
-        if (hasUpload || hasShared) completed += 1;
+        if (hasUpload || hasSharedTrack || hasShared) completed += 1;
         break;
       }
       default:
