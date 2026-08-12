@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getMusicByKey } from '@/src/constants/music';
 import {
   logAudioPlaybackFailure,
@@ -12,7 +12,12 @@ import {
   claimInvitationMusicPlayback,
   releaseInvitationMusicPlayback,
 } from '@/src/invitation/musicPlaybackController';
-import { fetchMusicLibrary, type PublicMusicTrack } from '@/src/shared/api';
+import {
+  fetchMusicLibrary,
+  MusicLibraryApiError,
+  mapMusicLibraryErrorMessage,
+  type PublicMusicTrack,
+} from '@/src/shared/api';
 import { musicCategoryForConcept, type InvitationConceptType } from '@/src/invitation/conceptTypes';
 import styles from '../weddingEditor.module.css';
 
@@ -23,6 +28,14 @@ type SharedMusicLibraryPickerProps = {
   onSelect: (track: PublicMusicTrack) => void;
   onError: (message: string) => void;
 };
+
+function sortOrganizationTracks(tracks: PublicMusicTrack[]): PublicMusicTrack[] {
+  return [...tracks].sort((a, b) => {
+    const aBoost = /jci/i.test(a.title) || /jci/i.test(a.artistName || '') ? 0 : 1;
+    const bBoost = /jci/i.test(b.title) || /jci/i.test(b.artistName || '') ? 0 : 1;
+    return aBoost - bBoost;
+  });
+}
 
 export default function SharedMusicLibraryPicker({
   conceptType,
@@ -35,6 +48,7 @@ export default function SharedMusicLibraryPicker({
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
   const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
@@ -58,23 +72,25 @@ export default function SharedMusicLibraryPicker({
       void fetchMusicLibrary({ concept: musicCategoryForConcept(conceptType), search })
         .then((nextTracks) => {
           if (!isCurrent) return;
-          // ORGANIZATION: JCI 추천 트랙을 상단으로 (API sortOrder 유지 내에서 보조 정렬).
+          // Library load failure must never clear selectedTrackId — only replace list on success.
           if (conceptType === 'ORGANIZATION') {
-            setTracks(
-              [...nextTracks].sort((a, b) => {
-                const aBoost = /jci/i.test(a.title) || /jci/i.test(a.artistName || '') ? 0 : 1;
-                const bBoost = /jci/i.test(b.title) || /jci/i.test(b.artistName || '') ? 0 : 1;
-                return aBoost - bBoost;
-              })
-            );
+            setTracks(sortOrganizationTracks(nextTracks));
             return;
           }
           setTracks(nextTracks);
         })
         .catch((loadError) => {
-          if (isCurrent) {
-            setError(loadError instanceof Error ? loadError.message : '제공 음악을 불러오지 못했습니다.');
+          if (!isCurrent) return;
+          if (loadError instanceof MusicLibraryApiError) {
+            setError(loadError.message);
+            return;
           }
+          setError(
+            mapMusicLibraryErrorMessage({
+              fallback: loadError instanceof Error ? loadError.message : null,
+            })
+          );
+          // Keep previous tracks if any; do not wipe invitation selection via onSelect.
         })
         .finally(() => {
           if (isCurrent) setIsLoading(false);
@@ -84,7 +100,11 @@ export default function SharedMusicLibraryPicker({
       isCurrent = false;
       window.clearTimeout(timer);
     };
-  }, [conceptType, search]);
+  }, [conceptType, search, reloadToken]);
+
+  const handleRetry = useCallback(() => {
+    setReloadToken((value) => value + 1);
+  }, []);
 
   const togglePreview = async (track: PublicMusicTrack) => {
     if (previewTrackId === track.id) {
@@ -132,20 +152,47 @@ export default function SharedMusicLibraryPicker({
     <div className={styles.musicLibrary}>
       <label className={styles.field}>
         <span className={styles.fieldLabel}>제공 음악 검색</span>
-        <input type="search" value={search} placeholder="제목 또는 아티스트" onChange={(event) => setSearch(event.target.value)} />
+        <input
+          type="search"
+          value={search}
+          placeholder="제목 또는 아티스트"
+          onChange={(event) => setSearch(event.target.value)}
+        />
       </label>
       {isLoading ? <p className={styles.helperText}>제공 음악을 불러오는 중…</p> : null}
-      {error ? <p className={styles.errorText}>{error}</p> : null}
+      {error ? (
+        <div className={styles.musicLibraryError} data-testid="music-library-error">
+          <p className={styles.errorText}>{error}</p>
+          <button type="button" className={styles.buttonSubtle} onClick={handleRetry}>
+            다시 불러오기
+          </button>
+        </div>
+      ) : null}
       {!isLoading && !error && tracks.length === 0 ? (
-        <p className={styles.helperText}>등록된 제공 음악이 없습니다. 관리자가 음원을 등록하면 여기에 표시됩니다.</p>
+        <p className={styles.helperText}>
+          등록된 제공 음악이 없습니다. 관리자가 음원을 등록하면 여기에 표시됩니다.
+        </p>
       ) : null}
       <div className={styles.musicLibraryList}>
         {tracks.map((track) => (
-          <div key={track.id} className={`${styles.musicLibraryItem} ${selectedTrackId === track.id ? styles.musicLibraryItemSelected : ''}`}>
-            <div><strong>{track.title}</strong><span>{track.artistName || track.category}</span>{track.attributionRequired && track.attributionText ? <small>{track.attributionText}</small> : null}</div>
+          <div
+            key={track.id}
+            className={`${styles.musicLibraryItem} ${selectedTrackId === track.id ? styles.musicLibraryItemSelected : ''}`}
+          >
+            <div>
+              <strong>{track.title}</strong>
+              <span>{track.artistName || track.category}</span>
+              {track.attributionRequired && track.attributionText ? (
+                <small>{track.attributionText}</small>
+              ) : null}
+            </div>
             <div className={styles.musicLibraryActions}>
-              <button type="button" onClick={() => void togglePreview(track)}>{previewTrackId === track.id ? '정지' : '미리 듣기'}</button>
-              <button type="button" onClick={() => onSelect(track)}>{selectedTrackId === track.id ? '선택됨' : '선택'}</button>
+              <button type="button" onClick={() => void togglePreview(track)}>
+                {previewTrackId === track.id ? '정지' : '미리 듣기'}
+              </button>
+              <button type="button" onClick={() => onSelect(track)}>
+                {selectedTrackId === track.id ? '선택됨' : '선택'}
+              </button>
             </div>
           </div>
         ))}

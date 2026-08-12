@@ -133,4 +133,107 @@ test.describe('ORGANIZATION concept flow', () => {
         (!music.fileUrl && !music.trackId && !music.musicKey)
     ).toBeTruthy();
   });
+
+  test('organization editor shows logo guidance and authenticated music library', async ({
+    browser,
+  }) => {
+    test.setTimeout(300_000);
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    const email = `org-music-logo-${Date.now()}@example.com`;
+
+    const login = await page.request.post(`${BE}/api/test-login`, { data: { email } });
+    expect(login.ok()).toBeTruthy();
+    const loginBody = await login.json();
+    const cookies = await page.context().cookies(BE);
+    const auth = cookies.find((c) => c.name === 'auth_session_token');
+    expect(auth).toBeTruthy();
+
+    await page.context().clearCookies();
+    await page.context().addCookies([
+      {
+        name: auth!.name,
+        value: auth!.value,
+        domain: auth!.domain,
+        path: auth!.path || '/',
+        expires: auth!.expires,
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+      },
+    ]);
+
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.evaluate(
+      ({ token, userId, userEmail }) => {
+        window.localStorage.setItem(
+          'auth_session_v1',
+          JSON.stringify({
+            token,
+            user: { id: userId, email: userEmail, role: 'USER' },
+          })
+        );
+      },
+      { token: auth!.value, userId: loginBody.userId as string, userEmail: email }
+    );
+
+    const created = await page.evaluate(async ({ api }) => {
+      const res = await fetch(`${api}/api/invitations`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${window.localStorage.getItem('auth_session_v1') ? JSON.parse(window.localStorage.getItem('auth_session_v1')!).token : ''}`,
+        },
+        body: JSON.stringify({
+          templateKey: 'invitation_full',
+          conceptType: 'ORGANIZATION',
+          visualTemplateId: 'ORGANIZATION_01_OFFICIAL',
+        }),
+      });
+      const body = await res.json();
+      const invitation = body?.invitation || body;
+      return { ok: res.ok, id: invitation?.id as string };
+    }, { api: BE });
+    expect(created.ok).toBeTruthy();
+    expect(created.id).toBeTruthy();
+
+    await page.goto(`/editor/${created.id}?concept=ORGANIZATION`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+
+    const branding = page.getByTestId('step-organization-branding');
+    await expect(branding).toBeVisible({ timeout: 60_000 });
+    const guidance = page.getByTestId('organization-logo-upload-guidance');
+    await expect(guidance).toBeVisible();
+    await expect(guidance).toContainText('1200px');
+    await expect(guidance).toContainText('PNG');
+    await expect(guidance).toContainText('JPG');
+    await expect(guidance).toContainText('WebP');
+    await expect(guidance).toContainText('10MB');
+    await expect(guidance).not.toContainText('정사각');
+
+    const overflow = await page.evaluate(() => {
+      const root = document.documentElement;
+      return root.scrollWidth > root.clientWidth + 1;
+    });
+    expect(overflow).toBeFalsy();
+
+    // Music step — ORGANIZATION stepper index may differ; open by label.
+    const musicStepNav = page.getByRole('button', { name: /음악 설정/ }).first();
+    if (await musicStepNav.isVisible().catch(() => false)) {
+      await musicStepNav.click();
+    } else {
+      await page.getByTestId(/stepper-item-/).filter({ hasText: '음악 설정' }).click();
+    }
+
+    await expect(page.getByTestId('editor-music-step')).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId('editor-music-enabled-toggle').click();
+    await expect(page.getByText('AUTH_REQUIRED')).toHaveCount(0);
+    await expect(page.getByText('JCI Creed Song', { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('JCI Creed Song 2', { exact: true })).toBeVisible();
+
+    await context.close();
+  });
 });
