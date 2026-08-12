@@ -8,6 +8,7 @@ export type InvitationPaymentSummaryResponse = {
   status: string;
   shareSlug: string | null;
   isPublished: boolean;
+  provider?: string;
   pricing: {
     currency: string;
     listPriceCents: number;
@@ -20,7 +21,21 @@ export type InvitationPaymentSummaryResponse = {
     paidAt: string | null;
     latestStatus: string | null;
     latestPaymentId: string | null;
+    provider?: string | null;
   };
+};
+
+export type PreparePaymentResponse = {
+  paymentId: string;
+  orderId: string;
+  provider: 'mock' | 'toss_payments';
+  orderName: string;
+  amount: { value: number; currency: string };
+  domainCurrency: string;
+  domainChargedAmountCents: number;
+  successUrl: string;
+  failUrl: string;
+  clientKey: string | null;
 };
 
 export type PaymentStatusResponse = {
@@ -28,6 +43,7 @@ export type PaymentStatusResponse = {
   isPaid: boolean;
   status: string | null;
   paymentId: string | null;
+  orderId?: string | null;
   paidAt: string | null;
   chargedAmount: number | null;
   currency: string | null;
@@ -58,13 +74,9 @@ export async function fetchInvitationPaymentSummary(
   return response.json();
 }
 
-export async function createInvitationCheckout(invitationId: string): Promise<{
-  paymentId: string;
-  checkoutUrl: string;
-  provider: string;
-}> {
+export async function prepareInvitationPayment(invitationId: string): Promise<PreparePaymentResponse> {
   const response = await fetch(
-    buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}/payment/checkout`),
+    buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}/payment/prepare`),
     buildRequestInit({
       method: 'POST',
       headers: {
@@ -75,20 +87,45 @@ export async function createInvitationCheckout(invitationId: string): Promise<{
     })
   );
   if (response.status === 409) {
-    const data = (await response.json()) as { error?: string };
-    throw new Error(data.error || 'ALREADY_PAID');
+    throw new Error('ALREADY_PAID');
   }
   if (!response.ok) {
-    throw new Error('CHECKOUT_FAILED');
+    const data = (await response.json().catch(() => ({}))) as { error?: string; message?: string };
+    throw new Error(data.error || 'PREPARE_FAILED');
+  }
+  return response.json();
+}
+
+export async function confirmInvitationPayment(
+  invitationId: string,
+  payload: { paymentKey: string; orderId: string; amount: number }
+): Promise<{ ok: boolean; alreadyPaid: boolean; paymentId: string; isPaid: boolean }> {
+  const response = await fetch(
+    buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}/payment/confirm`),
+    buildRequestInit({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...buildAuthHeaders(),
+      },
+      body: JSON.stringify(payload),
+    })
+  );
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error || 'CONFIRM_FAILED');
   }
   return response.json();
 }
 
 export async function fetchInvitationPaymentStatus(
   invitationId: string,
-  paymentId?: string | null
+  opts?: { paymentId?: string | null; orderId?: string | null }
 ): Promise<PaymentStatusResponse> {
-  const qs = paymentId ? `?paymentId=${encodeURIComponent(paymentId)}` : '';
+  const params = new URLSearchParams();
+  if (opts?.paymentId) params.set('paymentId', opts.paymentId);
+  if (opts?.orderId) params.set('orderId', opts.orderId);
+  const qs = params.toString() ? `?${params.toString()}` : '';
   const response = await fetch(
     buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}/payment/status${qs}`),
     buildRequestInit({

@@ -7,11 +7,15 @@ import { useSearchParams } from 'next/navigation';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
 import { publishInvitationById } from '@/src/lib/api';
 import {
-  createInvitationCheckout,
   fetchInvitationPaymentStatus,
   fetchInvitationPaymentSummary,
+  prepareInvitationPayment,
   type InvitationPaymentSummaryResponse,
 } from '@/src/shared/payments/invitationPaymentApi';
+import {
+  redirectMockPaymentSuccess,
+  requestTossPaymentWindow,
+} from '@/src/shared/payments/tossPaymentClient';
 import {
   formatUsdFromCents,
   INVITATION_PRICING,
@@ -108,7 +112,7 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
       pollRef.current += 1;
       try {
         const paymentId = searchParams.get('paymentId');
-        const status = await fetchInvitationPaymentStatus(invitationId, paymentId);
+        const status = await fetchInvitationPaymentStatus(invitationId, { paymentId });
         if (status.isPaid || status.status === 'PAID') {
           await publishAfterPaid();
           return;
@@ -144,15 +148,22 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
     if (busy || startedCheckout.current) return;
     startedCheckout.current = true;
     setBusy(true);
-    setPhase('processing');
     try {
-      const result = await createInvitationCheckout(invitationId);
-      window.location.assign(result.checkoutUrl);
+      const prepared = await prepareInvitationPayment(invitationId);
+      if (prepared.provider === 'mock') {
+        redirectMockPaymentSuccess(prepared);
+        return;
+      }
+      await requestTossPaymentWindow(prepared);
     } catch (error) {
       startedCheckout.current = false;
       setBusy(false);
       if (error instanceof Error && error.message === 'ALREADY_PAID') {
         setPhase('already_paid');
+        return;
+      }
+      if (error instanceof Error && error.message === 'UNSUPPORTED_CURRENCY') {
+        setPhase('failed');
         return;
       }
       setPhase('failed');
@@ -227,6 +238,9 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
                 <li>결제 후에도 자유롭게 수정할 수 있습니다.</li>
                 <li>같은 초대장은 추가 결제가 없습니다.</li>
               </ul>
+              <p className={styles.muted} style={{ marginTop: 12, marginBottom: 0, fontSize: '0.8125rem' }}>
+                안전한 결제는 토스페이먼츠를 통해 처리됩니다.
+              </p>
             </section>
 
             <div className={styles.stickyBar}>
