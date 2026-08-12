@@ -84,6 +84,21 @@ test('non-canonical and foreign prefixes excluded', () => {
   assert.equal(isEligibleTempInvitationUserAssetKey('invitation/development/temp/user/upload/a.webp'), false);
 });
 
+test('shared general music keys are protected from cleanup/delete', () => {
+  assert.equal(
+    isProtectedInvitationSharedAsset(
+      'invitation/shared/music/general/7915ed06-84da-4a1d-aee9-3bae103fccf7.mp3'
+    ),
+    true
+  );
+  assert.equal(
+    isProtectedInvitationSharedAsset(
+      'invitation/shared/music/general/8f92cd5b-c174-4386-aa8d-f507e667ba71.mp3'
+    ),
+    true
+  );
+});
+
 test('shared asset assert blocks delete without scan', async () => {
   const { assertInvitationUserMediaSafeToDelete } = await import('./assertSafeToDelete');
   await assert.rejects(
