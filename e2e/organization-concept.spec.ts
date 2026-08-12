@@ -312,6 +312,55 @@ test.describe('ORGANIZATION concept flow', () => {
     await expect(page.getByTestId('organization-brand-logo').first()).toBeVisible();
   });
 
+  test('JCI preview actions use brand colors; Official RSVP stays purple', async ({ page }) => {
+    await page.goto('/templates/ORGANIZATION_02_JCI/preview', {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+    const doc = page.getByTestId('public-invitation-document');
+    await expect(doc).toBeVisible({ timeout: 60_000 });
+
+    const rsvp = page.getByTestId('invitation-rsvp-cta');
+    await expect(rsvp).toBeVisible();
+    await expect
+      .poll(async () => rsvp.evaluate((el) => getComputedStyle(el).backgroundColor), {
+        timeout: 15_000,
+      })
+      .toBe('rgb(0, 151, 215)');
+
+    const copy = page.getByTestId('account-copy').first();
+    await expect(copy).toBeVisible();
+    const copyBorder = await copy.evaluate((el) => getComputedStyle(el).borderTopColor);
+    expect(copyBorder).toBe('rgb(0, 151, 215)');
+
+    const mapLink = page.locator('[data-testid="google-maps-external-links"] a').first();
+    await expect(mapLink).toBeVisible();
+    const mapColor = await mapLink.evaluate((el) => getComputedStyle(el).color);
+    expect(mapColor).not.toMatch(/79,\s*70,\s*229|91,\s*79,\s*214/);
+
+    const footer = page.getByTestId('organization-jci-footer');
+    await expect(footer).toBeVisible();
+    await expect
+      .poll(async () => footer.evaluate((el) => getComputedStyle(el).backgroundColor))
+      .toBe('rgb(19, 15, 45)');
+
+    const music = page.getByTestId('invitation-music-player');
+    if (await music.isVisible()) {
+      const musicBg = await music.evaluate((el) => getComputedStyle(el).backgroundColor);
+      expect(musicBg).not.toMatch(/79,\s*70,\s*229|91,\s*79,\s*214/);
+    }
+
+    await page.goto('/templates/ORGANIZATION_01_OFFICIAL/preview', {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+    const officialCta = page.getByTestId('invitation-rsvp-cta');
+    await expect(officialCta).toBeVisible({ timeout: 60_000 });
+    await expect
+      .poll(async () => officialCta.evaluate((el) => getComputedStyle(el).backgroundColor))
+      .toBe('rgb(79, 70, 229)');
+  });
+
   test('JCI create API applies preset assets without sample names', async ({ request }) => {
     const login = await request.post(`${BE}/api/test-login`, {
       data: { email: `org-jci-create-${Date.now()}@example.com` },

@@ -1,0 +1,24 @@
+/**
+ * JCI invitation sibling chrome (music FAB, public aside RSVP).
+ * Scoped with :has so Editor SaaS controls and other templates stay unchanged.
+ * Tokens match organizationJciTheme.ts. Generic SaaS primary is out of scope.
+ */
+html:has([data-visual-template='ORGANIZATION_02_JCI']) {
+  --invite-music-fab-bg: #130f2d;
+  --invite-music-fab-color: #ffffff;
+  --invite-music-fab-playing: #0097d7;
+}
+
+html:has([data-visual-template='ORGANIZATION_02_JCI'])
+  [data-testid='invitation-music-player']:hover:not([data-music-status='error']) {
+  background: #1f4789;
+}
+
+html:has([data-visual-template='ORGANIZATION_02_JCI']) [data-testid='desktop-aside-rsvp-cta'] {
+  background: #0097d7;
+  color: #ffffff;
+}
+
+html:has([data-visual-template='ORGANIZATION_02_JCI']) [data-testid='desktop-aside-rsvp-cta']:hover {
+  background: #1f4789;
+}

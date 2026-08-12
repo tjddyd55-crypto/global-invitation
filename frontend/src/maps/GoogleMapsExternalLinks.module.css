@@ -14,9 +14,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  border: 1px solid #ddd;
-  background: #fff;
-  color: #374151;
+  border: 1px solid var(--invite-map-border, #ddd);
+  background: var(--invite-map-bg, #fff);
+  color: var(--invite-map-color, #374151);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;

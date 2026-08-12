@@ -76,3 +76,16 @@ Logo / Song 2 / upload / none — save + reload 유지. Template이 덮어쓰지
 - Shared logo/music R2 삭제 금지
 - Prod music DB trackId 확인 후 publish
 - FE SaaS UI (`#4F46E5`) ≠ invitation JCI theme
+
+## Invitation chrome (JCI only)
+
+Shared RSVP/account/map/music CSS는 `var(--invite-*, fallback)` 를 읽는다.
+`ORGANIZATION_02_JCI` `.page` 가 `--invite-*` 를 `--jci-*` 로 연결한다.
+
+- RSVP CTA: Blue `#0097D7` / hover Navy `#1F4789`
+- Account copy: Blue outline
+- Map links: subtle Blue border
+- Footer: Black `#130F2D`
+- Music FAB playing: Blue (idle Black)
+
+Official fallback은 기존 `#4f46e5` 유지.

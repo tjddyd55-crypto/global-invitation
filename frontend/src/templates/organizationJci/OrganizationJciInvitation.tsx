@@ -25,6 +25,7 @@ import {
 } from '@/src/templates/shared/templateInvitationModel';
 import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
 import { ORGANIZATION_JCI_THEME } from './organizationJciTheme';
+import './organizationJciChrome.css';
 import styles from './OrganizationJciInvitation.module.css';
 
 type Fact = { label: string; value: string };
@@ -244,7 +245,7 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
       <section data-section-id="music" data-preview-section="music" className={styles.anchor} aria-hidden />
       <section data-section-id="share" data-preview-section="share" className={styles.anchor} aria-hidden />
 
-      <footer className={styles.footer}>
+      <footer className={styles.footer} data-testid="organization-jci-footer">
         <span className={styles.footerRipple} aria-hidden />
         {organization.logo ? (
           <OrganizationBrandLogo

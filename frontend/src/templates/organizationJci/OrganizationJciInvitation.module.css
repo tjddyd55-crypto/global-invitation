@@ -15,6 +15,28 @@
   --surface: #f3f9fc;
   --pale: #e8f5fb;
 
+  /* Shared invitation chrome tokens — Official keeps hardcoded fallbacks */
+  --invite-cta-bg: var(--jci-blue);
+  --invite-cta-color: var(--jci-white);
+  --invite-cta-hover: var(--jci-navy);
+  --invite-rsvp-title: var(--jci-black);
+  --invite-rsvp-desc: rgba(19, 15, 45, 0.68);
+  --invite-rsvp-preview-border: rgba(0, 151, 215, 0.35);
+  --invite-rsvp-preview-bg: var(--pale);
+  --invite-rsvp-preview-hint: var(--jci-navy);
+  --invite-account-bg: var(--jci-white);
+  --invite-account-border: rgba(0, 151, 215, 0.22);
+  --invite-account-title: var(--jci-black);
+  --invite-account-value: var(--jci-black);
+  --invite-account-meta: var(--jci-navy);
+  --invite-account-dot: var(--jci-blue);
+  --invite-copy-bg: var(--jci-white);
+  --invite-copy-border: var(--jci-blue);
+  --invite-copy-color: var(--jci-blue);
+  --invite-map-bg: var(--jci-white);
+  --invite-map-border: rgba(0, 151, 215, 0.35);
+  --invite-map-color: var(--jci-black);
+
   max-width: 430px;
   margin: 0 auto;
   background: var(--jci-white);
@@ -318,13 +340,91 @@
   padding-bottom: 8px;
 }
 
-/* Invitation chrome — JCI CTAs (SaaS editor UI stays indigo) */
-.accounts :global(button),
-.rsvp :global(button[data-testid='invitation-rsvp-cta']),
-.location :global(a),
-.location :global(button) {
-  --invite-cta-bg: var(--jci-blue);
-  --invite-cta-color: var(--jci-white);
+.rsvp :global(h2) {
+  color: var(--jci-black);
+}
+
+.rsvp :global(h2)::after {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 2px;
+  margin: 10px auto 0;
+  background: var(--jci-blue);
+}
+
+.rsvp :global([data-testid='invitation-rsvp-cta']:hover),
+.rsvp :global([data-testid='rsvp-submit']:hover:not(:disabled)) {
+  background: var(--jci-navy);
+}
+
+.rsvp :global([data-testid='invitation-rsvp-cta']:focus-visible),
+.rsvp :global([data-testid='rsvp-submit']:focus-visible) {
+  outline: 2px solid var(--jci-blue);
+  outline-offset: 2px;
+}
+
+.rsvp :global([data-testid='invitation-rsvp-cta']:disabled),
+.rsvp :global([data-testid='rsvp-submit']:disabled) {
+  background: var(--jci-blue);
+  color: var(--jci-white);
+  opacity: 0.55;
+}
+
+.accounts :global([data-testid='account-copy']:hover) {
+  background: rgba(0, 151, 215, 0.08);
+  border-color: var(--jci-blue);
+  color: var(--jci-blue);
+}
+
+.accounts :global([data-testid='account-copy']:active) {
+  background: var(--jci-blue);
+  color: var(--jci-white);
+}
+
+.accounts :global([data-testid='account-summary']) {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.accounts :global([data-testid='account-summary'] span) {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  max-width: 100%;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.location :global(h2),
+.location :global(strong) {
+  color: var(--jci-navy);
+}
+
+.location :global([data-testid='map-provider-nav-links'] a),
+.location :global([data-testid='google-maps-external-links'] a) {
+  flex: 1 1 calc(50% - 8px);
+  min-width: 140px;
+}
+
+.location :global([data-testid='google-maps-external-links']) {
+  flex-wrap: wrap;
+}
+
+.location :global([data-testid='map-provider-nav-links'] a:hover),
+.location :global([data-testid='google-maps-external-links'] a:hover) {
+  border-color: var(--jci-blue);
+  color: var(--jci-blue);
+  background: rgba(0, 151, 215, 0.06);
+}
+
+.location :global([data-testid='map-provider-nav-links'] a:visited),
+.location :global([data-testid='google-maps-external-links'] a:visited) {
+  color: var(--jci-black);
+}
+
+.page :global(a:visited) {
+  color: inherit;
 }
 
 .accountsEmpty {
@@ -404,7 +504,7 @@
   font-weight: 500;
   letter-spacing: 0.03em;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.78);
   word-break: keep-all;
   overflow-wrap: break-word;
 }

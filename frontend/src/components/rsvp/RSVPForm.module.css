@@ -88,8 +88,8 @@
   padding: 0 16px;
   border: none;
   border-radius: 12px;
-  background: #4f46e5;
-  color: #fff;
+  background: var(--invite-cta-bg, #4f46e5);
+  color: var(--invite-cta-color, #fff);
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;

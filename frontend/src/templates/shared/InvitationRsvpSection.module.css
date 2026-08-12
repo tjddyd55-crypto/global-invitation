@@ -11,14 +11,14 @@
   font-size: 18px;
   font-weight: 700;
   line-height: 24px;
-  color: #18181b;
+  color: var(--invite-rsvp-title, #18181b);
 }
 
 .description {
   margin: 0 0 20px;
   font-size: 14px;
   line-height: 22px;
-  color: #52525b;
+  color: var(--invite-rsvp-desc, #52525b);
 }
 
 .cta {
@@ -28,8 +28,8 @@
   padding: 12px 16px;
   border: none;
   border-radius: 12px;
-  background: #4f46e5;
-  color: #fff;
+  background: var(--invite-cta-bg, #4f46e5);
+  color: var(--invite-cta-color, #fff);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.35;
@@ -63,8 +63,8 @@
   margin-top: 4px;
   padding: 16px;
   border-radius: 12px;
-  border: 1px dashed #c4b5fd;
-  background: #f5f3ff;
+  border: 1px dashed var(--invite-rsvp-preview-border, #c4b5fd);
+  background: var(--invite-rsvp-preview-bg, #f5f3ff);
   text-align: center;
 }
 
@@ -72,7 +72,7 @@
   margin: 0 0 12px;
   font-size: 13px;
   line-height: 1.5;
-  color: #5b21b6;
+  color: var(--invite-rsvp-preview-hint, #5b21b6);
 }
 
 .previewLabel {
@@ -89,8 +89,8 @@
   min-height: 44px;
   padding: 10px 16px;
   border-radius: 12px;
-  background: #4f46e5;
-  color: #fff;
+  background: var(--invite-cta-bg, #4f46e5);
+  color: var(--invite-cta-color, #fff);
   font-size: 14px;
   font-weight: 700;
   word-break: keep-all;
