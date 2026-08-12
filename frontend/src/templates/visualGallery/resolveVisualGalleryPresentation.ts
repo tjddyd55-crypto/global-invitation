@@ -35,6 +35,7 @@ const PRESENTATION_BY_ID: Record<VisualTemplateId, VisualGalleryPresentation> = 
   GENERAL_06_CULTURE: 'culture',
   /** Official gallery reuses clean layout presentation */
   ORGANIZATION_01_OFFICIAL: 'official',
+  ORGANIZATION_02_JCI: 'official',
 };
 
 /** Template Preview fixture — representative mode only (customers may pick either). */

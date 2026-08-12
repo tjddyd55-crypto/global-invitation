@@ -19,10 +19,11 @@ function photoKeys(folder: string): string[] {
 
 /**
  * ORGANIZATION hero/thumb — 전용 사진 pack 발행 전 GENERAL_01_CLASSIC 재사용.
- * logo 는 ORGANIZATION_01_OFFICIAL 전용 key (alias 없음).
+ * JCI logo 는 Official shared key 재사용 (R2 중복 업로드 금지).
  */
 const ORGANIZATION_ASSET_ALIAS: Partial<Record<VisualTemplateId, VisualTemplateId>> = {
   ORGANIZATION_01_OFFICIAL: 'GENERAL_01_CLASSIC',
+  ORGANIZATION_02_JCI: 'GENERAL_01_CLASSIC',
 };
 
 /** Hero 대표 이미지 (템플릿별) */
@@ -43,7 +44,10 @@ export function templateThumbnailAsset(id: VisualTemplateId): string {
  */
 export function templateOrganizationLogoAsset(id: VisualTemplateId): string | undefined {
   if (VISUAL_TEMPLATE_CONCEPT[id] !== 'ORGANIZATION') return undefined;
-  return `${TEMPLATE_ASSET_PREFIX}/${id}/logo.webp`;
+  // Shared JCI/Official logo SSOT — do not invent ORGANIZATION_02_JCI/logo.webp
+  const logoFolder =
+    id === 'ORGANIZATION_02_JCI' ? 'ORGANIZATION_01_OFFICIAL' : id;
+  return `${TEMPLATE_ASSET_PREFIX}/${logoFolder}/logo.webp`;
 }
 
 export const WEDDING_SAMPLE_PHOTOS = photoKeys('shared-wedding');

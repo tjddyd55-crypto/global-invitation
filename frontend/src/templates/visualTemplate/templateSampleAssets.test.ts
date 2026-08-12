@@ -12,16 +12,12 @@ import { ORGANIZATION_SAMPLE_MUSIC } from './organizationSharedMusicSample';
 import { createWeddingEditorState } from '@/src/editors/wedding/state/weddingEditor.initial';
 import { resolvePlayableInvitationMusic } from '@/src/invitation/invitationMusic';
 
-test('ORGANIZATION sample logo resolves to shared template key', () => {
+test('JCI template logo reuses Official shared key (no duplicate R2 path)', () => {
+  assert.equal(templateOrganizationLogoAsset('ORGANIZATION_02_JCI'), ORGANIZATION_SAMPLE_LOGO);
   assert.equal(
-    ORGANIZATION_SAMPLE_LOGO,
-    'invitation/shared/images/templates/ORGANIZATION_01_OFFICIAL/logo.webp'
-  );
-  assert.equal(
-    templateOrganizationLogoAsset('ORGANIZATION_01_OFFICIAL'),
+    getVisualTemplatePreviewFixture('ORGANIZATION_02_JCI').organization?.logo,
     ORGANIZATION_SAMPLE_LOGO
   );
-  assert.equal(templateOrganizationLogoAsset('WEDDING_05_GARDEN'), undefined);
 });
 
 test('ORGANIZATION preview fixture includes logo and keeps gallery photos', () => {

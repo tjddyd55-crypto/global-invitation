@@ -3,6 +3,9 @@
 import { useCallback, useState, type ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import { createInvitation } from '@/src/lib/api';
+import { buildOrganizationCreateData } from '@/src/invitation/buildOrganizationCreateData';
+import type { VisualTemplateId } from '@/src/templates/visualTemplate/ids';
+import { isVisualTemplateId } from '@/src/templates/visualTemplate/ids';
 import { fetchCurrentUser } from '@/src/shared/auth';
 import {
   BookOpenIcon,
@@ -159,10 +162,16 @@ export function useCreateInvitation(): UseCreateInvitationResult {
           ? sanitizeVisualTemplateIdForSave(visualTemplateId, concept)
           : undefined;
 
+        const organizationData =
+          concept === 'ORGANIZATION' && sanitized && isVisualTemplateId(sanitized)
+            ? buildOrganizationCreateData(sanitized as VisualTemplateId)
+            : undefined;
+
         const created = await createInvitation({
           templateKey: 'invitation_full',
           conceptType: concept,
           ...(sanitized ? { visualTemplateId: sanitized } : {}),
+          ...(organizationData ? { data: organizationData } : {}),
         });
         clearPendingVisualTemplate();
         router.push(`/editor/${created.id}?concept=${concept}`);

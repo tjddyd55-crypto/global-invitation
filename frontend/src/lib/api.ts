@@ -50,6 +50,8 @@ export type CreateInvitationInput = {
   conceptType?: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
   /** dataJson.visualTemplateId SSOT — engine key stays invitation_full */
   visualTemplateId?: string;
+  /** Optional initial dataJson merge (Organization create defaults). */
+  data?: Record<string, unknown>;
 };
 
 /** 인증된 사용자만 신규 초대장을 생성한다. guestToken 기반 생성은 사용하지 않는다. */
@@ -74,6 +76,7 @@ export async function createInvitation(
           templateKey: input.templateKey || 'invitation_full',
           conceptType: input.conceptType,
           ...(input.visualTemplateId ? { visualTemplateId: input.visualTemplateId } : {}),
+          ...(input.data ? { data: input.data } : {}),
         }),
       })
     );

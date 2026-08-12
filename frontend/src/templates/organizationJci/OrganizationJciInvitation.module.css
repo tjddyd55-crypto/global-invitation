@@ -1,0 +1,443 @@
+/* ORGANIZATION 02 — JCI (Brand Guidelines tokens) */
+.page {
+  --jci-blue: #0097d7;
+  --jci-black: #130f2d;
+  --jci-white: #ffffff;
+  --jci-navy: #1f4789;
+  --jci-teal: #57bcbc;
+  --jci-yellow: #efc40f;
+  --brand-accent: var(--jci-blue);
+  --ink: var(--jci-black);
+  --soft: #2a2740;
+  --muted: #5c5870;
+  --line: #d6e8f2;
+  --gutter: 24px;
+  --surface: #f3f9fc;
+  --pale: #e8f5fb;
+
+  max-width: 430px;
+  margin: 0 auto;
+  background: var(--jci-white);
+  color: var(--ink);
+  font-family:
+    var(--font-gi-jakarta),
+    var(--font-gi-noto),
+    'Apple SD Gothic Neo',
+    'Malgun Gothic',
+    system-ui,
+    sans-serif;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.brandHeader {
+  position: relative;
+  padding: 24px var(--gutter) 18px;
+  background: linear-gradient(180deg, var(--pale) 0%, var(--jci-white) 88%);
+  border-bottom: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.ripple {
+  position: absolute;
+  top: -48px;
+  right: -40px;
+  width: 160px;
+  height: 160px;
+  pointer-events: none;
+  opacity: 0.22;
+  background: radial-gradient(
+    circle,
+    transparent 28%,
+    var(--jci-blue) 29%,
+    transparent 30%,
+    transparent 42%,
+    var(--jci-teal) 43%,
+    transparent 44%,
+    transparent 56%,
+    var(--jci-navy) 57%,
+    transparent 58%
+  );
+}
+
+.brandRow {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.brandLogo {
+  flex: 0 0 auto;
+  /* compact brand identifier — not hero */
+  max-width: min(132px, 34vw) !important;
+  max-height: 48px !important;
+}
+
+.brandLogo :global(img),
+.brandLogo :global(.logo) {
+  max-height: 40px !important;
+}
+
+.brandText {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.orgName {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--jci-blue);
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+}
+
+.orgEnglish {
+  margin: 6px 0 0;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--jci-navy);
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-height: 1.45;
+  text-transform: none;
+}
+
+.heroPhoto {
+  margin: 0;
+  background: var(--surface);
+  overflow: hidden;
+  position: relative;
+}
+
+.heroPhoto::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(19, 15, 45, 0.28) 100%);
+  pointer-events: none;
+}
+
+.heroImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  object-position: center;
+}
+
+.heroPlaceholder {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.titleBlock {
+  padding: 32px var(--gutter) 20px;
+  position: relative;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--jci-navy);
+}
+
+.title {
+  margin: 0 0 12px;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--jci-black);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--muted);
+  word-break: keep-all;
+}
+
+.rule {
+  display: block;
+  width: 36px;
+  height: 3px;
+  margin-top: 18px;
+  background: var(--jci-blue);
+  position: relative;
+}
+
+.rule::after {
+  content: '';
+  position: absolute;
+  left: 40px;
+  top: 0;
+  width: 6px;
+  height: 3px;
+  background: var(--jci-yellow);
+}
+
+.sectionTitle {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--jci-navy);
+}
+
+.placeholder {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.facts {
+  padding: 0 var(--gutter) 28px;
+}
+
+.factGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--jci-white);
+}
+
+.factCell {
+  padding: 18px 10px;
+  border-right: 1px solid var(--line);
+}
+
+.factCell:last-child {
+  border-right: 0;
+}
+
+.factLabel {
+  margin: 0 0 8px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--jci-blue);
+}
+
+.factValue {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--jci-black);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.copy {
+  padding: 28px var(--gutter) 40px;
+  background: var(--surface);
+  position: relative;
+}
+
+.copyRipple {
+  position: absolute;
+  left: -60px;
+  bottom: -40px;
+  width: 140px;
+  height: 140px;
+  pointer-events: none;
+  opacity: 0.14;
+  background: radial-gradient(
+    circle,
+    transparent 34%,
+    var(--jci-teal) 35%,
+    transparent 36%,
+    transparent 50%,
+    var(--jci-blue) 51%,
+    transparent 52%
+  );
+}
+
+.copyInner {
+  position: relative;
+  z-index: 1;
+}
+
+.copyLine {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.95;
+  color: var(--soft);
+  word-break: keep-all;
+}
+
+.schedule {
+  padding: 32px var(--gutter) 40px;
+}
+
+.scheduleDate {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  color: var(--muted);
+  word-break: keep-all;
+}
+
+.dateGrid {
+  color: var(--ink);
+}
+
+.scheduleList {
+  margin: 18px 0 0;
+  padding-left: 16px;
+  font-size: 13px;
+  line-height: 1.95;
+  color: var(--soft);
+}
+
+.gallery {
+  padding: 0 var(--gutter) 40px;
+}
+
+.location,
+.accounts,
+.rsvp {
+  padding-bottom: 8px;
+}
+
+/* Invitation chrome — JCI CTAs (SaaS editor UI stays indigo) */
+.accounts :global(button),
+.rsvp :global(button[data-testid='invitation-rsvp-cta']),
+.location :global(a),
+.location :global(button) {
+  --invite-cta-bg: var(--jci-blue);
+  --invite-cta-color: var(--jci-white);
+}
+
+.accountsEmpty {
+  padding: 24px var(--gutter);
+  text-align: center;
+}
+
+.anchor {
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+
+.footer {
+  position: relative;
+  padding: 32px var(--gutter) 48px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  background: var(--jci-black);
+  color: var(--jci-white);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.footerRipple {
+  position: absolute;
+  right: -30px;
+  bottom: -30px;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+  opacity: 0.2;
+  background: radial-gradient(
+    circle,
+    transparent 30%,
+    var(--jci-blue) 31%,
+    transparent 32%,
+    transparent 48%,
+    var(--jci-teal) 49%,
+    transparent 50%
+  );
+}
+
+.footerLogo {
+  position: relative;
+  z-index: 1;
+  margin: 0 auto 4px;
+  max-width: min(100px, 32vw) !important;
+  max-height: 32px !important;
+}
+
+.footerMark {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--jci-white);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.footerEnglish {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  max-width: 100%;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.footerTitle {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--jci-teal);
+  word-break: keep-all;
+}
+
+@media (max-width: 374px) {
+  .page {
+    --gutter: 18px;
+  }
+  .title {
+    font-size: 22px;
+  }
+  .factValue {
+    font-size: 11.5px;
+  }
+  .brandLogo {
+    max-width: min(112px, 32vw) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ripple,
+  .copyRipple,
+  .footerRipple {
+    opacity: 0.12;
+  }
+}

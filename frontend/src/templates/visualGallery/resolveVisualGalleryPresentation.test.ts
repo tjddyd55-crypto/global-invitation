@@ -31,6 +31,7 @@ const NEW_TEMPLATES = [
   ['GENERAL_05_FESTIVE', 'festive'],
   ['GENERAL_06_CULTURE', 'culture'],
   ['ORGANIZATION_01_OFFICIAL', 'official'],
+  ['ORGANIZATION_02_JCI', 'official'],
 ] as const;
 
 for (const [id, presentation] of NEW_TEMPLATES) {

@@ -1,9 +1,17 @@
-import { DM_Serif_Display, Gowun_Batang, Noto_Sans_KR } from 'next/font/google';
+import { Plus_Jakarta_Sans, DM_Serif_Display, Gowun_Batang, Noto_Sans_KR } from 'next/font/google';
 
 /**
  * Visual template fonts — next/font (no raw Google CSS @import in templates).
  * Apply `visualTemplateFonts.className` on invitation root wrappers.
  */
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-gi-jakarta',
+  display: 'swap',
+  fallback: ['Apple SD Gothic Neo', 'Malgun Gothic', 'sans-serif'],
+});
+
 const dmSerif = DM_Serif_Display({
   subsets: ['latin'],
   weight: '400',
@@ -30,8 +38,6 @@ const notoSansKr = Noto_Sans_KR({
 });
 
 export const visualTemplateFonts = {
-  className: `${dmSerif.variable} ${gowunBatang.variable} ${notoSansKr.variable}`,
-  style: {
-    // Consumers set font-family via CSS vars in template modules
-  } as const,
+  className: `${plusJakarta.variable} ${dmSerif.variable} ${gowunBatang.variable} ${notoSansKr.variable}`,
+  style: {} as const,
 };

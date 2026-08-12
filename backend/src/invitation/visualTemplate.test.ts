@@ -9,9 +9,10 @@ import {
   VISUAL_TEMPLATE_IDS,
 } from './visualTemplate';
 
-test('backend allowlist has 9 ids including ORGANIZATION_01_OFFICIAL', () => {
-  assert.equal(VISUAL_TEMPLATE_IDS.length, 9);
+test('backend allowlist has 10 ids including Official and JCI', () => {
+  assert.equal(VISUAL_TEMPLATE_IDS.length, 10);
   assert.ok(VISUAL_TEMPLATE_IDS.includes('ORGANIZATION_01_OFFICIAL'));
+  assert.ok(VISUAL_TEMPLATE_IDS.includes('ORGANIZATION_02_JCI'));
 });
 
 test('sanitize drops concept mismatch', () => {
@@ -20,6 +21,10 @@ test('sanitize drops concept mismatch', () => {
   assert.equal(
     sanitizeVisualTemplateIdForSave('ORGANIZATION_01_OFFICIAL', 'ORGANIZATION'),
     'ORGANIZATION_01_OFFICIAL'
+  );
+  assert.equal(
+    sanitizeVisualTemplateIdForSave('ORGANIZATION_02_JCI', 'ORGANIZATION'),
+    'ORGANIZATION_02_JCI'
   );
   assert.equal(sanitizeVisualTemplateIdForSave('ORGANIZATION_01_OFFICIAL', 'GENERAL'), undefined);
 });

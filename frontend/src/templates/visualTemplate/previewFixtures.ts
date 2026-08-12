@@ -40,9 +40,10 @@ const GENERAL_SIBLINGS: Record<string, VisualTemplateId[]> = {
   GENERAL_06_CULTURE: ['GENERAL_04_CLEAN', 'GENERAL_01_CLASSIC'],
 };
 
-/** ORGANIZATION 단일 템플릿 — sibling hero 없음 (GENERAL photo pack 재사용) */
+/** ORGANIZATION — sibling hero 없음 (GENERAL photo pack 재사용) */
 const ORGANIZATION_SIBLINGS: Record<string, VisualTemplateId[]> = {
   ORGANIZATION_01_OFFICIAL: [],
+  ORGANIZATION_02_JCI: [],
 };
 
 /** 웨딩은 템플릿마다 같은 예식을 다른 분위기로 보여준다 — 비교가 쉬워진다. */
@@ -324,6 +325,8 @@ function organizationFixture(visualTemplateId: VisualTemplateId): WeddingInvitat
     visualTemplateId,
     ORGANIZATION_SIBLINGS[visualTemplateId] ?? []
   );
+  const isJciTemplate = visualTemplateId === 'ORGANIZATION_02_JCI';
+  const accentColor = isJciTemplate ? '#0097D7' : DEFAULT_BRAND_ACCENT_COLOR;
 
   return {
     templateType: 'FULL',
@@ -361,7 +364,12 @@ function organizationFixture(visualTemplateId: VisualTemplateId): WeddingInvitat
     accounts: event.accounts,
     accountEnabled: true,
     accountsTitle: event.accountsTitle,
-    organization: event.organization,
+    organization: {
+      ...event.organization,
+      accentColor,
+      // Preview fixture only — never copied into create draft
+      presetId: isJciTemplate ? 'JCI' : 'CUSTOM',
+    },
     // Preview 전용 샘플 BGM — create draft 경로(useCreateInvitation)는 fixture 를 저장하지 않음.
     music: {
       enabled: true,

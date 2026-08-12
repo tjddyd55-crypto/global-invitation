@@ -13,6 +13,7 @@ export const VISUAL_TEMPLATE_IDS = [
   'GENERAL_05_FESTIVE',
   'GENERAL_06_CULTURE',
   'ORGANIZATION_01_OFFICIAL',
+  'ORGANIZATION_02_JCI',
 ] as const;
 
 export type VisualTemplateId = (typeof VISUAL_TEMPLATE_IDS)[number];
@@ -35,6 +36,7 @@ export const VISUAL_TEMPLATE_CONCEPT: Record<VisualTemplateId, VisualTemplateCon
   GENERAL_05_FESTIVE: 'GENERAL',
   GENERAL_06_CULTURE: 'GENERAL',
   ORGANIZATION_01_OFFICIAL: 'ORGANIZATION',
+  ORGANIZATION_02_JCI: 'ORGANIZATION',
 };
 
 export function isVisualTemplateId(value: unknown): value is VisualTemplateId {

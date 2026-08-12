@@ -135,6 +135,17 @@ const DEFINITIONS: Record<VisualTemplateId, VisualTemplateDefinition> = {
     isActive: true,
     version: 1,
   },
+  ORGANIZATION_02_JCI: {
+    id: 'ORGANIZATION_02_JCI',
+    conceptType: 'ORGANIZATION',
+    name: 'JCI',
+    description: 'JCI 행사와 공식 초청에 맞춘 브랜드 템플릿',
+    styleTags: ['JCI', '공식행사', '기관초청'],
+    thumbnailAsset: templateThumbnailAsset('ORGANIZATION_02_JCI'),
+    sortOrder: 20,
+    isActive: true,
+    version: 1,
+  },
 };
 
 export function getVisualTemplateDefinition(id: VisualTemplateId): VisualTemplateDefinition {
