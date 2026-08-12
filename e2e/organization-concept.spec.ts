@@ -79,6 +79,30 @@ test.describe('ORGANIZATION concept flow', () => {
     await expect(page.getByText('김민준').first()).toBeVisible();
   });
 
+  test('organization preview exposes JCI sample music control without autoplay', async ({
+    page,
+  }) => {
+    const musicStatuses: number[] = [];
+    page.on('response', (response) => {
+      if (response.url().includes('/invitation/shared/music/general/7915ed06-84da-4a1d-aee9-3bae103fccf7.mp3')) {
+        musicStatuses.push(response.status());
+      }
+    });
+
+    await page.goto('/templates/ORGANIZATION_01_OFFICIAL/preview', {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+    const player = page.getByTestId('invitation-music-player');
+    await expect(player).toBeVisible({ timeout: 60_000 });
+    await expect(player).toHaveAttribute('data-music-status', 'idle');
+    await player.click();
+    await expect
+      .poll(async () => player.getAttribute('data-music-status'), { timeout: 30_000 })
+      .toMatch(/playing|loading|paused|error/);
+    expect(musicStatuses.some((status) => status === 200 || status === 206)).toBeTruthy();
+  });
+
   test('create API accepts ORGANIZATION concept without sample logo persistence', async ({
     request,
   }) => {
@@ -101,5 +125,11 @@ test.describe('ORGANIZATION concept flow', () => {
     const dataJson = invitation?.dataJson || invitation?.data || {};
     const logo = dataJson?.organization?.logo;
     expect(logo == null || logo === '').toBeTruthy();
+    const music = dataJson?.music;
+    expect(
+      !music ||
+        music.enabled !== true ||
+        (!music.fileUrl && !music.trackId && !music.musicKey)
+    ).toBeTruthy();
   });
 });
