@@ -85,10 +85,9 @@ test.describe('marketing header and home categories', () => {
     await expect(
       page.getByTestId('home-example-general').getByTestId('public-invitation-document')
     ).toHaveAttribute('data-visual-template', 'GENERAL_05_FESTIVE');
-    await expect(page.getByTestId('home-example-general').locator('a')).toHaveAttribute(
-      'href',
-      '/templates/GENERAL_05_FESTIVE/preview'
-    );
+    await expect(
+      page.getByTestId('home-example-general').getByRole('link', { name: '일반 행사 완성 예시 보기' })
+    ).toHaveAttribute('href', '/templates/GENERAL_05_FESTIVE/preview');
     await expect(page.locator('a[href="/templates/GENERAL_06_CULTURE/preview"]')).toHaveCount(0);
     await expect(
       page.getByTestId('home-example-organization').getByTestId('public-invitation-document')
