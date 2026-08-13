@@ -39,8 +39,15 @@ async function createPublishedInvitation(
 }
 
 async function cleanupInvitation(page: Page, id: string) {
-  const res = await page.request.delete(`${API}/api/test/published-invitation/${id}`);
-  expect([200, 204, 404]).toContain(res.status());
+  const factory = await page.request.delete(`${API}/api/test/published-invitation/${id}`);
+  if ([200, 204, 404].includes(factory.status())) return;
+  // Drafts created via /api/invitations are not factory rows (403). Use owner delete.
+  if (factory.status() === 403) {
+    const owner = await page.request.delete(`${API}/api/invitations/${id}`);
+    expect([200, 204, 404], await owner.text()).toContain(owner.status());
+    return;
+  }
+  expect([200, 204, 404], await factory.text()).toContain(factory.status());
 }
 
 test.describe('Locale Phase 3', () => {
