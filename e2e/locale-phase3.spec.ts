@@ -228,6 +228,80 @@ test.describe('Locale Phase 3', () => {
     }
   });
 
+  test('Published FUNERAL KO stays Korean with EN browser', async ({ browser }) => {
+    const context = await browser.newContext({
+      locale: 'en-US',
+      viewport: { width: 390, height: 844 },
+    });
+    const page = await context.newPage();
+    await loginInBrowser(page, `e2e-funeral-ko-${Date.now()}@example.com`);
+    await page.context().addCookies([
+      { name: 'gi_locale', value: 'en-US', domain: new URL(FE).hostname, path: '/' },
+    ]);
+    const created = await createPublishedInvitation(page, 'ko-KR', undefined, 'FUNERAL');
+    try {
+      await page.goto(`${FE}/i/${created.shareSlug}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+      const doc = page.getByTestId('public-invitation-document');
+      await expect(doc).toBeVisible({ timeout: 60_000 });
+      await expect(doc).toContainText('장례 일정');
+      await expect(doc).toContainText(/빈소|발인|상주/);
+      await expect(doc).not.toContainText('Condolences');
+      await expect(doc).not.toContainText('Funeral Schedule');
+    } finally {
+      await cleanupInvitation(page, created.id);
+      await context.close();
+    }
+  });
+
+  test('Published FUNERAL EN stays English with KO browser', async ({ browser }) => {
+    const context = await browser.newContext({
+      locale: 'ko-KR',
+      viewport: { width: 390, height: 844 },
+    });
+    const page = await context.newPage();
+    await loginInBrowser(page, `e2e-funeral-en-${Date.now()}@example.com`);
+    await page.context().addCookies([
+      { name: 'gi_locale', value: 'ko-KR', domain: new URL(FE).hostname, path: '/' },
+    ]);
+    const created = await createPublishedInvitation(page, 'en-US', undefined, 'FUNERAL');
+    try {
+      await page.goto(`${FE}/i/${created.shareSlug}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+      const doc = page.getByTestId('public-invitation-document');
+      await expect(doc).toBeVisible({ timeout: 60_000 });
+      await expect(doc).toContainText(/Condolences|Funeral Schedule|Chief mourner|Wake/i);
+      await expect(doc).not.toContainText('장례 일정');
+      await expect(doc).not.toContainText('별세하셨음을');
+    } finally {
+      await cleanupInvitation(page, created.id);
+      await context.close();
+    }
+  });
+
+  test('EN funeral editor uses invitation locale, not service locale', async ({ browser }) => {
+    const context = await browser.newContext({ locale: 'ko-KR', viewport: { width: 1280, height: 800 } });
+    const page = await context.newPage();
+    await loginInBrowser(page, `e2e-funeral-editor-${Date.now()}@example.com`);
+    await page.context().addCookies([
+      { name: 'gi_locale', value: 'ko-KR', domain: new URL(FE).hostname, path: '/' },
+    ]);
+    const create = await page.request.post(`${API}/api/invitations`, {
+      data: { templateKey: 'invitation_full', conceptType: 'FUNERAL', locale: 'en-US' },
+    });
+    expect(create.ok(), await create.text()).toBeTruthy();
+    const created = (await create.json()) as { id: string };
+    try {
+      await page.goto(`${FE}/editor/${created.id}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+      const root = page.getByTestId('funeral-editor-root');
+      await expect(root).toBeVisible({ timeout: 60_000 });
+      await expect(root).toContainText(/Memorial Editor|Basic Info|Date of Passing|Name of Honoree/i);
+      await expect(root).not.toContainText('부고장 에디터');
+      await expect(root).not.toContainText('별세일');
+    } finally {
+      await cleanupInvitation(page, created.id);
+      await context.close();
+    }
+  });
+
   test('Festive preview EN system headings', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(FE, { waitUntil: 'domcontentloaded', timeout: 90_000 });
@@ -254,6 +328,22 @@ test.describe('Locale Phase 3', () => {
     await expect(page.getByTestId('public-invitation-document')).not.toContainText('참석 여부 알리기');
   });
 
+  test('General Classic/Clean/Culture EN preview headings', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(FE, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.getByTestId('locale-selector').first().selectOption('en-US');
+    for (const templateId of ['GENERAL_01_CLASSIC', 'GENERAL_04_CLEAN', 'GENERAL_06_CULTURE']) {
+      await page.goto(`${FE}/templates/${templateId}/preview`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 90_000,
+      });
+      const doc = page.getByTestId('public-invitation-document');
+      await expect(doc).toBeVisible({ timeout: 60_000 });
+      await expect(doc).not.toContainText('행사 소개를 입력해 주세요');
+      await expect(doc).not.toContainText('참석 여부 알리기');
+    }
+  });
+
   test('Classic preview KO system headings', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(FE, { waitUntil: 'domcontentloaded', timeout: 90_000 });
@@ -263,6 +353,20 @@ test.describe('Locale Phase 3', () => {
       timeout: 90_000,
     });
     await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 60_000 });
+  });
+
+  test('Home 4 examples EN use English chrome and fixtures', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(FE, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.getByTestId('locale-selector').first().selectOption('en-US');
+    const examples = page.getByTestId('home-invitation-examples');
+    await expect(examples).toBeVisible({ timeout: 60_000 });
+    await examples.scrollIntoViewIfNeeded();
+    await expect(examples).toContainText(/Wedding|Memorial|General Event|Organization/i);
+    await expect(examples).not.toContainText('결혼식');
+    await expect(examples).not.toContainText('부고');
+    await expect(page.getByTestId('home-example-funeral')).toContainText(/Condolences|In memory|Memorial/i);
+    await expect(page.getByTestId('home-example-funeral')).not.toContainText('삼가 고인의 명복을 빕니다');
   });
 
   test('1280 English marketing home does not overflow', async ({ page }) => {
@@ -426,6 +530,21 @@ test.describe('Locale Phase 3', () => {
       await cleanupInvitation(koPage, koCreated.id);
       await koContext.close();
     }
+  });
+
+  test('360 English public garden does not overflow horizontally', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.goto(FE, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.getByTestId('locale-selector').first().selectOption('en-US');
+    await page.goto(`${FE}/templates/WEDDING_05_GARDEN/preview`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+    await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 60_000 });
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+    );
+    expect(overflow).toBeFalsy();
   });
 
   test('390 English public garden does not overflow horizontally', async ({ page }) => {
