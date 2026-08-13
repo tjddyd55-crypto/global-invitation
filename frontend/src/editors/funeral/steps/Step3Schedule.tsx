@@ -1,5 +1,7 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../funeralEditor.module.css';
 import type { FuneralInvitation } from '@/src/templates/funeralClassic/data';
 
@@ -9,15 +11,17 @@ type Step3ScheduleProps = {
 };
 
 export default function Step3Schedule({ schedule, onChange }: Step3ScheduleProps) {
+  const { t } = useInvitationT();
+
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>장례 일정</h2>
+        <h2>{t('editor.section.schedule')}</h2>
         <p>빈소/발인/장지를 입력합니다.</p>
       </div>
       <div className={styles.fieldGrid}>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>빈소 시작 (선택)</span>
+          <span className={styles.fieldLabel}>{t('invitation.funeral.wake')}</span>
           <input
             type="datetime-local"
             value={schedule.wakeStart ?? ''}
@@ -25,7 +29,7 @@ export default function Step3Schedule({ schedule, onChange }: Step3ScheduleProps
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>발인 일시</span>
+          <span className={styles.fieldLabel}>{t('editor.field.funeralDate')}</span>
           <input
             type="datetime-local"
             value={schedule.funeralDate}

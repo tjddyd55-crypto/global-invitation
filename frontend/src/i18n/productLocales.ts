@@ -107,6 +107,11 @@ export function htmlLangFromLocale(locale: ProductLocaleId): 'ko' | 'en' {
   return LOCALE_PRODUCTS[locale].htmlLang;
 }
 
+/** RSVP/contact placeholder only — no KR-only validation. */
+export function phonePlaceholder(locale: ProductLocaleId): string {
+  return locale === 'en-US' ? '+1 555 123 4567' : '010-1234-5678';
+}
+
 function readCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
   const pairs = document.cookie.split(';');

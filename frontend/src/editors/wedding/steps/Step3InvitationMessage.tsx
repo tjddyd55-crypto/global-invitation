@@ -1,5 +1,6 @@
 'use client';
 
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorInvitationMessage, WeddingEditorSetup } from '../state/weddingEditor.types';
 
@@ -10,25 +11,26 @@ type Step3InvitationMessageProps = {
 };
 
 export default function Step3InvitationMessage({ value, conceptType, onChange }: Step3InvitationMessageProps) {
-  const labels =
-    conceptType === 'GENERAL' || conceptType === 'ORGANIZATION'
-      ? {
-          title: '행사 소개',
-          description: '행사 소개 문구를 입력합니다.',
-          quote: '강조 문구 (선택)',
-          body: '행사 소개',
-          placeholder:
-            conceptType === 'ORGANIZATION'
-              ? '뜻깊은 자리에 함께해 주시기 바랍니다.'
-              : '행사에 초대드립니다.',
-        }
-      : {
-          title: '인사말',
-          description: '인사말 문구를 입력합니다.',
-          quote: '인용 문구 (선택)',
-          body: '인사말',
-          placeholder: '소중한 분들을 모시고\n예식을 올리게 되었습니다.',
-        };
+  const { t } = useInvitationT();
+  const isEventLike = conceptType === 'GENERAL' || conceptType === 'ORGANIZATION';
+  const labels = isEventLike
+    ? {
+        title: t('editor.message.headingEvent'),
+        description: t('editor.message.descEvent'),
+        quote: t('editor.message.quoteEvent'),
+        body: t('editor.message.bodyEvent'),
+        placeholder:
+          conceptType === 'ORGANIZATION'
+            ? t('editor.default.organizationMessage')
+            : t('editor.default.generalMessage'),
+      }
+    : {
+        title: t('editor.message.heading'),
+        description: t('editor.message.desc'),
+        quote: t('editor.message.quote'),
+        body: t('editor.message.body'),
+        placeholder: t('editor.default.weddingMessage'),
+      };
 
   return (
     <section className={styles.stepSection}>
@@ -42,7 +44,7 @@ export default function Step3InvitationMessage({ value, conceptType, onChange }:
           type="text"
           value={value.quote ?? ''}
           onChange={(event) => onChange({ quote: event.target.value })}
-          placeholder="예: 예쁜 예감이 들었다..."
+          placeholder={t('editor.message.quotePlaceholder')}
         />
       </label>
       <label className={styles.field}>
@@ -54,7 +56,7 @@ export default function Step3InvitationMessage({ value, conceptType, onChange }:
           placeholder={labels.placeholder}
         />
       </label>
-      <div className={styles.noticeBox}>줄바꿈 단위로 문단이 분리되어 미리보기에 반영됩니다.</div>
+      <div className={styles.noticeBox}>{t('editor.message.notice')}</div>
     </section>
   );
 }

@@ -1,5 +1,8 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
+import { phonePlaceholder } from '@/src/i18n/productLocales';
 import styles from '../funeralEditor.module.css';
 import ImageUploader from '../components/ImageUploader';
 import type { FuneralInvitation } from '@/src/templates/funeralClassic/data';
@@ -12,19 +15,21 @@ type Step4HallProps = {
 };
 
 export default function Step4Hall({ funeralHall, contact, onHallChange, onContactChange }: Step4HallProps) {
+  const { t, locale } = useInvitationT();
+
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>위치 안내</h2>
+        <h2>{t('editor.section.location')}</h2>
         <p>위치와 연락처 정보를 입력합니다.</p>
       </div>
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>장례식장 이름</span>
+        <span className={styles.fieldLabel}>{t('editor.field.wakeLocation')}</span>
         <input
           type="text"
           value={funeralHall.name}
           onChange={(event) => onHallChange({ ...funeralHall, name: event.target.value })}
-          placeholder="예: 서울아산병원장례식장 특실"
+          placeholder={t('editor.placeholder.wake')}
           required
         />
       </label>
@@ -38,29 +43,29 @@ export default function Step4Hall({ funeralHall, contact, onHallChange, onContac
         />
       </label>
       <ImageUploader
-        label="지도 이미지 (선택)"
-        description="지도 이미지가 없으면 지도 영역이 숨겨집니다."
+        label={t('editor.section.location')}
+        description={t('invitation.placeholder.location')}
         value={funeralHall.mapImage}
         onChange={(mapImage) => onHallChange({ ...funeralHall, mapImage })}
         onClear={() => onHallChange({ ...funeralHall, mapImage: '' })}
       />
       <div className={styles.fieldGrid}>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>연락처 이름 (선택)</span>
+          <span className={styles.fieldLabel}>{t('editor.field.chiefContact')}</span>
           <input
             type="text"
             value={contact?.name ?? ''}
             onChange={(event) => onContactChange({ ...(contact ?? { name: '', phone: '' }), name: event.target.value })}
-            placeholder="예: 상주 대표"
+            placeholder={t('editor.placeholder.funeralContact')}
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>연락처 번호 (선택)</span>
+          <span className={styles.fieldLabel}>{t('editor.couple.phoneOptional')}</span>
           <input
             type="text"
             value={contact?.phone ?? ''}
             onChange={(event) => onContactChange({ ...(contact ?? { name: '', phone: '' }), phone: event.target.value })}
-            placeholder="예: 02-3010-2000"
+            placeholder={phonePlaceholder(locale)}
           />
         </label>
       </div>

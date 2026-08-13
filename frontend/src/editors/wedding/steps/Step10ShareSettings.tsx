@@ -1,6 +1,8 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
 import ImageUploader from '../components/ImageUploader';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorShare } from '../state/weddingEditor.types';
 import InvitationShareCardPreview from '@/src/components/share/InvitationShareCardPreview';
@@ -30,6 +32,7 @@ export default function Step10ShareSettings({
   sharePreviewModel,
   persistingShareImage,
 }: Step10ShareSettingsProps) {
+  const { t } = useInvitationT();
   const hero = (heroImage || '').trim();
   const hasHero = Boolean(hero);
   const [clearError, setClearError] = useState<string | null>(null);
@@ -74,11 +77,9 @@ export default function Step10ShareSettings({
     });
 
     if (status === 'persist_failed') {
-      setClearError('변경사항을 저장하지 못했습니다. 다시 시도해 주세요.');
+      setClearError(t('editor.upload.saveFailed'));
     } else if (status === 'delete_failed') {
-      setCleanupWarning(
-        '이미지는 제거되었습니다. 저장소 파일 정리는 나중에 다시 시도될 수 있습니다.'
-      );
+      setCleanupWarning(t('editor.upload.cleanupLater'));
     }
 
     if (!options?.fromUploader) setClearingExtra(false);
@@ -88,7 +89,7 @@ export default function Step10ShareSettings({
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>공유 설정</h2>
+        <h2>{t('editor.section.sharing')}</h2>
         <p>카카오톡과 메신저에 초대장 링크를 공유할 때 보이는 미리보기 카드입니다.</p>
       </div>
       <div className={styles.ogEditor}>
@@ -101,7 +102,7 @@ export default function Step10ShareSettings({
             type="text"
             value={value.ogTitle}
             onChange={(event) => onChange({ ogTitle: event.target.value })}
-            placeholder="예: 유동규 ♥ 이소영 결혼합니다"
+            placeholder={t('editor.share.titlePlaceholder')}
             data-testid="og-title-input"
             maxLength={80}
           />
@@ -113,14 +114,14 @@ export default function Step10ShareSettings({
             rows={3}
             value={value.ogDescription}
             onChange={(event) => onChange({ ogDescription: event.target.value })}
-            placeholder="예: 소중한 날에 함께해 주세요"
+            placeholder={t('editor.share.descPlaceholder')}
             data-testid="og-description-input"
             maxLength={160}
           />
         </label>
         <ImageUploader
-          label="공유 미리보기 이미지"
-          description="직접 선택한 이미지가 공유 카드에 표시됩니다. 이미지를 선택하지 않으면 미리보기에는 표시되지 않으며, 실제 메신저 공유 시에는 기본 이미지가 사용될 수 있습니다."
+          label={t('editor.share.previewImage')}
+          description={t('editor.share.previewImageDesc')}
           value={value.ogImageMode === 'NONE' ? '' : value.ogImage}
           onChange={(next) => {
             void applySharePatch({
@@ -164,7 +165,7 @@ export default function Step10ShareSettings({
             disabled={persistingShareImage || clearingExtra}
             data-testid="og-clear-image"
           >
-            {clearingExtra ? '제거 중...' : '이미지 제거'}
+            {clearingExtra ? t('editor.upload.removing') : t('editor.share.removeImage')}
           </button>
         </div>
         {!hasHero ? (

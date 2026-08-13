@@ -1,5 +1,8 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
+import { phonePlaceholder } from '@/src/i18n/productLocales';
 import ImageUploader from '../components/ImageUploader';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorPerson } from '../state/weddingEditor.types';
@@ -21,27 +24,29 @@ export default function Step4CoupleInfo({
   onPersistGroomClear,
   onPersistBrideClear,
 }: Step4CoupleInfoProps) {
+  const { t, locale } = useInvitationT();
+
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>신랑 · 신부</h2>
-        <p>항상 2컬럼 대칭 구조로 유지됩니다.</p>
+        <h2>{t('editor.couple.heading')}</h2>
+        <p>{t('editor.couple.desc')}</p>
       </div>
       <div className={styles.coupleEditorGrid}>
         <div className={styles.coupleEditorColumn}>
-          <h3 className={styles.subSectionTitle}>신랑</h3>
+          <h3 className={styles.subSectionTitle}>{t('editor.couple.groom')}</h3>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>이름</span>
+            <span className={styles.fieldLabel}>{t('editor.couple.name')}</span>
             <input
               type="text"
               value={groom.name}
               onChange={(event) => onGroomChange({ name: event.target.value })}
-              placeholder="신랑 이름"
+              placeholder={t('editor.couple.groomNamePlaceholder')}
               required
             />
           </label>
           <ImageUploader
-            label="사진 (선택)"
+            label={t('editor.couple.photoOptional')}
             value={groom.photo}
             uploadAssetType="groom"
             thumbnailRole="couple"
@@ -52,38 +57,38 @@ export default function Step4CoupleInfo({
             inputTestId="groom-upload-input"
           />
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>연락처 (선택)</span>
+            <span className={styles.fieldLabel}>{t('editor.couple.phoneOptional')}</span>
             <input
               type="text"
               value={groom.phone ?? ''}
               onChange={(event) => onGroomChange({ phone: event.target.value })}
-              placeholder="010-0000-0000"
+              placeholder={phonePlaceholder(locale)}
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>부모 안내 문구 (선택)</span>
+            <span className={styles.fieldLabel}>{t('editor.couple.parentsOptional')}</span>
             <input
               type="text"
               value={groom.parentsText ?? ''}
               onChange={(event) => onGroomChange({ parentsText: event.target.value })}
-              placeholder="예: 김영수 · 박미정 의 아들"
+              placeholder={t('editor.couple.groomParentsPlaceholder')}
             />
           </label>
         </div>
         <div className={styles.coupleEditorColumn}>
-          <h3 className={styles.subSectionTitle}>신부</h3>
+          <h3 className={styles.subSectionTitle}>{t('editor.couple.bride')}</h3>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>이름</span>
+            <span className={styles.fieldLabel}>{t('editor.couple.name')}</span>
             <input
               type="text"
               value={bride.name}
               onChange={(event) => onBrideChange({ name: event.target.value })}
-              placeholder="신부 이름"
+              placeholder={t('editor.couple.brideNamePlaceholder')}
               required
             />
           </label>
           <ImageUploader
-            label="사진 (선택)"
+            label={t('editor.couple.photoOptional')}
             value={bride.photo}
             uploadAssetType="bride"
             thumbnailRole="couple"
@@ -94,21 +99,21 @@ export default function Step4CoupleInfo({
             inputTestId="bride-upload-input"
           />
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>연락처 (선택)</span>
+            <span className={styles.fieldLabel}>{t('editor.couple.phoneOptional')}</span>
             <input
               type="text"
               value={bride.phone ?? ''}
               onChange={(event) => onBrideChange({ phone: event.target.value })}
-              placeholder="010-0000-0000"
+              placeholder={phonePlaceholder(locale)}
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>부모 안내 문구 (선택)</span>
+            <span className={styles.fieldLabel}>{t('editor.couple.parentsOptional')}</span>
             <input
               type="text"
               value={bride.parentsText ?? ''}
               onChange={(event) => onBrideChange({ parentsText: event.target.value })}
-              placeholder="예: 김영수 · 박미정 의 딸"
+              placeholder={t('editor.couple.brideParentsPlaceholder')}
             />
           </label>
         </div>

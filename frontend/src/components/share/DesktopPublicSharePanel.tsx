@@ -6,6 +6,7 @@
 
 import { useMemo, useState } from 'react';
 import { KAKAO_SHARE_FALLBACK_NOTICE, shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from './DesktopPublicSharePanel.module.css';
 
 export type DesktopPublicSharePanelProps = {
@@ -15,26 +16,28 @@ export type DesktopPublicSharePanelProps = {
   imageUrl?: string;
 };
 
-const SHARE_APPS = [
-  { id: 'whatsapp', label: 'WhatsApp', initial: 'W', color: '#25D366', textColor: '#fff' },
-  { id: 'messenger', label: 'Messenger', initial: 'M', color: '#0084FF', textColor: '#fff' },
-  { id: 'line', label: 'LINE', initial: 'L', color: '#06C755', textColor: '#fff' },
-  { id: 'telegram', label: 'Telegram', initial: 'T', color: '#2AABEE', textColor: '#fff' },
-  { id: 'email', label: 'Email', initial: 'E', color: '#6B7280', textColor: '#fff' },
-  { id: 'native', label: '기기 공유', initial: '↑', color: '#4F46E5', textColor: '#fff' },
-  { id: 'kakao', label: '카카오톡', initial: 'K', color: '#FEE500', textColor: '#1F2937' },
-] as const;
-
 export default function DesktopPublicSharePanel({
   shareUrl,
-  title = '초대장',
-  text = '초대장을 확인해 주세요.',
+  title,
+  text,
   imageUrl,
 }: DesktopPublicSharePanelProps) {
+  const { t } = useInvitationT();
+  const resolvedTitle = title?.trim() || t('invitation.share.fallbackTitle');
+  const resolvedText = text?.trim() || t('invitation.share.fallback');
+  const shareApps = [
+    { id: 'whatsapp', label: 'WhatsApp', initial: 'W', color: '#25D366', textColor: '#fff' },
+    { id: 'messenger', label: 'Messenger', initial: 'M', color: '#0084FF', textColor: '#fff' },
+    { id: 'line', label: 'LINE', initial: 'L', color: '#06C755', textColor: '#fff' },
+    { id: 'telegram', label: 'Telegram', initial: 'T', color: '#2AABEE', textColor: '#fff' },
+    { id: 'email', label: 'Email', initial: 'E', color: '#6B7280', textColor: '#fff' },
+    { id: 'native', label: t('invitation.share.device'), initial: '↑', color: '#4F46E5', textColor: '#fff' },
+    { id: 'kakao', label: t('invitation.share.kakao'), initial: 'K', color: '#FEE500', textColor: '#1F2937' },
+  ] as const;
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const encodedUrl = encodeURIComponent(shareUrl);
-  const encodedText = encodeURIComponent(`${text}\n${shareUrl}`);
+  const encodedText = encodeURIComponent(`${resolvedText}\n${shareUrl}`);
 
   const hrefById = useMemo(
     () =>
@@ -42,10 +45,10 @@ export default function DesktopPublicSharePanel({
         whatsapp: `https://wa.me/?text=${encodedText}`,
         messenger: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
         line: `https://social-plugins.line.me/lineit/share?url=${encodedUrl}`,
-        telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodeURIComponent(text)}`,
-        email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodedText}`,
+        telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodeURIComponent(resolvedText)}`,
+        email: `mailto:?subject=${encodeURIComponent(resolvedTitle)}&body=${encodedText}`,
       }) as Record<string, string>,
-    [encodedText, encodedUrl, text, title]
+    [encodedText, encodedUrl, resolvedText, resolvedTitle]
   );
 
   const handleCopy = async () => {
@@ -61,7 +64,7 @@ export default function DesktopPublicSharePanel({
   const handleNative = async () => {
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
-        await navigator.share({ title, text, url: shareUrl });
+        await navigator.share({ title: resolvedTitle, text: resolvedText, url: shareUrl });
         return;
       } catch {
         // fall through
@@ -73,8 +76,8 @@ export default function DesktopPublicSharePanel({
   const handleKakao = async () => {
     try {
       const result = await shareViaKakaoTalk({
-        title,
-        description: text,
+        title: resolvedTitle,
+        description: resolvedText,
         imageUrl,
         canonicalUrl: shareUrl,
       });
@@ -89,13 +92,13 @@ export default function DesktopPublicSharePanel({
         setNotice(null);
         return;
       }
-      setNotice('카카오톡 공유 URL이 올바르지 않습니다. 공개 링크를 확인해 주세요.');
+      setNotice(t('invitation.share.kakaoInvalid'));
     }
   };
 
   return (
     <div className={styles.panel} data-testid="desktop-public-share-panel">
-      <p className={styles.heading}>공유하기</p>
+      <p className={styles.heading}>{t('invitation.share.native')}</p>
       <div className={styles.urlBox}>
         <span className={styles.urlText}>{shareUrl}</span>
       </div>
@@ -104,11 +107,11 @@ export default function DesktopPublicSharePanel({
         className={copied ? `${styles.copyButton} ${styles.copyDone}` : styles.copyButton}
         onClick={() => void handleCopy()}
       >
-        {copied ? '복사됨!' : '링크 복사'}
+        {copied ? t('invitation.share.copied') : t('invitation.share.copyLink')}
       </button>
       {notice ? <p className={styles.urlText}>{notice}</p> : null}
       <div className={styles.appGrid}>
-        {SHARE_APPS.map((app) => {
+        {shareApps.map((app) => {
           if (app.id === 'native') {
             return (
               <button key={app.id} type="button" className={styles.appItem} onClick={() => void handleNative()}>

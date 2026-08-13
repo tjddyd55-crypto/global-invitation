@@ -1,5 +1,6 @@
 'use client';
 
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import ImageUploader from '../components/ImageUploader';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorHero } from '../state/weddingEditor.types';
@@ -14,6 +15,9 @@ type Step2HeroImageProps = {
  * Figma Make Hero upload step — callout + dashed upload (4:3 / 10MB).
  */
 export default function Step2HeroImage({ value, onChange, onPersistClear }: Step2HeroImageProps) {
+  const { t } = useInvitationT();
+  const [calloutLead, calloutRest] = t('editor.hero.calloutBody').split('\n');
+
   return (
     <section className={`${styles.stepSection} ${styles.stepSectionNoTitle}`}>
       <div className={styles.heroCallout}>
@@ -21,18 +25,22 @@ export default function Step2HeroImage({ value, onChange, onPersistClear }: Step
           🖼
         </span>
         <div>
-          <p className={styles.heroCalloutTitle}>Hero 대표 이미지</p>
+          <p className={styles.heroCalloutTitle}>{t('editor.hero.calloutTitle')}</p>
           <p className={styles.heroCalloutBody}>
-            초대장 최상단에 크게 표시되는 첫인상 사진입니다.
-            <br />
-            신랑·신부 사진 및 갤러리 사진과 별도로 관리됩니다.
+            {calloutLead}
+            {calloutRest ? (
+              <>
+                <br />
+                {calloutRest}
+              </>
+            ) : null}
           </p>
         </div>
       </div>
 
       <ImageUploader
-        label="이미지 선택"
-        description="JPG, PNG, WEBP · 권장 비율 4:3 · 최대 10MB"
+        label={t('editor.upload.select')}
+        description={t('editor.hero.desc')}
         value={value.heroImage}
         onChange={(heroImage) => onChange({ heroImage })}
         onClear={() => onChange({ heroImage: '' })}
@@ -46,12 +54,12 @@ export default function Step2HeroImage({ value, onChange, onPersistClear }: Step
       />
 
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>오버레이 문구 (선택)</span>
+        <span className={styles.fieldLabel}>{t('editor.hero.overlay')}</span>
         <input
           type="text"
           value={value.overlayText ?? ''}
           onChange={(event) => onChange({ overlayText: event.target.value })}
-          placeholder="예: Welcome to our wedding"
+          placeholder={t('editor.hero.overlayPlaceholder')}
         />
       </label>
     </section>

@@ -2,6 +2,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import ToggleRow from '../components/ToggleRow';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorExtras } from '../state/weddingEditor.types';
 import {
@@ -18,28 +19,29 @@ type Step8ExtrasProps = {
  * 참석 여부 · 댓글 설정 (음악은 Step9MusicSettings).
  */
 export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
+  const { t } = useInvitationT();
   const buttonLabelPreview = clampRsvpButtonLabel(
     value.rsvpButtonText ?? '',
-    '참석 여부 알리기'
+    t('rsvp.button.wedding')
   );
 
   return (
     <section className={styles.stepSection} data-testid="editor-rsvp-step">
       <div className={styles.sectionHeader}>
-        <h2>참석 여부 · 메시지</h2>
-        <p>참석 여부와 공개 댓글(축하/추모 메시지) 노출을 설정합니다.</p>
+        <h2>{t('editor.rsvp.heading')}</h2>
+        <p>{t('editor.rsvp.desc')}</p>
       </div>
       <div className={styles.toggleGroup}>
         <ToggleRow
-          label="참석 여부"
-          description="ON이면 공개 초대장과 미리보기에 참석 여부 섹션이 표시됩니다."
+          label={t('editor.rsvp.toggle')}
+          description={t('editor.rsvp.toggleDesc')}
           checked={value.rsvpEnabled}
           testId="editor-rsvp-toggle"
           onChange={(checked) => onChange({ rsvpEnabled: checked })}
         />
         <ToggleRow
-          label="댓글·메시지 받기"
-          description="OFF 시 공개 초대장의 댓글 섹션을 숨깁니다. (RSVP 메시지와 별개)"
+          label={t('editor.rsvp.commentsToggle')}
+          description={t('editor.rsvp.commentsToggleDesc')}
           checked={value.guestbookEnabled}
           testId="editor-comments-toggle"
           onChange={(checked) => onChange({ guestbookEnabled: checked })}
@@ -55,7 +57,7 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
               maxLength={RSVP_BUTTON_LABEL_MAX_LENGTH}
               data-testid="editor-rsvp-button-label"
               onChange={(event) => onChange({ rsvpButtonText: event.target.value })}
-              placeholder="예: 참석 여부 알리기"
+              placeholder={t('editor.rsvp.buttonPlaceholder')}
             />
           </label>
           <p className={styles.helperText}>

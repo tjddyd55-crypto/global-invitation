@@ -59,3 +59,10 @@ test('funeral home example keeps classic demo without map', () => {
   assert.ok(data.deceasedName);
   assert.equal(data.funeralHall.address, undefined);
 });
+
+test('funeral home example English fixture uses English sample names', () => {
+  const data = getHomeInvitationExampleData('funeral', 'en-US');
+  assert.ok(isFuneralInvitationData(data));
+  assert.equal(data.deceasedName, 'Michael Anderson');
+  assert.equal(data.funeralHall.name, 'Serenity Memorial Hall');
+});

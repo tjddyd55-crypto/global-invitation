@@ -37,7 +37,38 @@ export function isFuneralClassicTemplate(templateKey?: string | null): boolean {
   return templateKey === 'funeral_classic' || templateKey === 'invitation_full';
 }
 
-export function getFuneralClassicDemoData(): FuneralInvitation {
+export function getFuneralClassicDemoData(locale?: string | null): FuneralInvitation {
+  const isEn = (locale || '').toLowerCase().startsWith('en');
+  if (isEn) {
+    return {
+      templateType: 'FULL',
+      conceptType: 'FUNERAL',
+      templateKey: 'invitation_full',
+      deceasedName: 'Michael Anderson',
+      birthDate: '1952-04-11',
+      deathDate: '2035-05-02',
+      chiefMourner: 'Sarah Anderson',
+      familyMembers: ['Son James · Daniel', 'Daughter Emily · Grace', 'Grandchildren Noah · Olivia'],
+      message:
+        'With grateful hearts we invite you to a memorial gathering in loving memory.\n' +
+        'Your presence and kind thoughts mean more than words.',
+      funeralHall: {
+        name: 'Serenity Memorial Hall',
+        address: '120 Lakeshore Drive, Chicago, IL',
+        mapImage: '/images/wedding/classic/map.jpg',
+      },
+      schedule: {
+        wakeStart: '2035-05-02T09:00:00',
+        funeralDate: '2035-05-04T09:00:00',
+        burial: 'Lakeside Memorial Garden',
+      },
+      contact: {
+        name: 'Family contact',
+        phone: '+1 312-555-0148',
+      },
+      heroImage: undefined,
+    };
+  }
   return {
     templateType: 'FULL',
     conceptType: 'FUNERAL',

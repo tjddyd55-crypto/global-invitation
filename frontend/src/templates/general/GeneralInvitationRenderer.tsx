@@ -18,6 +18,7 @@ import {
 import { getInvitationRsvpSettings } from '@/src/invitation/rsvpSettings';
 import { getInvitationScheduleCalendarModel } from '@/src/invitation/scheduleCalendar';
 import { getInvitationScheduleDisplay } from '@/src/invitation/scheduleDisplay';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from './GeneralInvitationRenderer.module.css';
 
 type GeneralInvitationRendererProps = {
@@ -71,18 +72,22 @@ export default function GeneralInvitationRenderer({
   showComments,
   onShare,
 }: GeneralInvitationRendererProps) {
-  const title = (data.heroTitle || data.title || '').trim() || '행사에 초대합니다';
+  const { t, locale } = useInvitationT();
+  const title = (data.heroTitle || data.title || '').trim() || t('invitation.defaults.inviteTitle');
   // 사용자 부제만 사용. heroSubtitle(mapper의 포맷 날짜)과 혼용하면 날짜가 두 번 보인다.
   const subtitle = (data.subtitle || '').trim();
   const introQuote = (data.introQuote || '').trim();
   const introBody = (data.content || '').trim();
   const hasIntro = Boolean(introQuote || introBody);
   const heroImage = (data.heroImage || '').trim();
-  const scheduleDisplay = getInvitationScheduleDisplay({
-    weddingDate: data.weddingDate instanceof Date || typeof data.weddingDate === 'string' ? data.weddingDate : null,
-    eventDate: data.eventDate,
-    weddingDateTime: data.weddingDateTime,
-  });
+  const scheduleDisplay = getInvitationScheduleDisplay(
+    {
+      weddingDate: data.weddingDate instanceof Date || typeof data.weddingDate === 'string' ? data.weddingDate : null,
+      eventDate: data.eventDate,
+      weddingDateTime: data.weddingDateTime,
+    },
+    locale
+  );
   const storedWhen = (data.weddingDateTime || '').trim();
   const eventWhen =
     scheduleDisplay?.full ||
@@ -94,7 +99,7 @@ export default function GeneralInvitationRenderer({
     eventDate: data.eventDate,
     weddingDateTime: data.weddingDateTime,
   });
-  const gallerySettings = getInvitationGallerySettings(data, { alt: '행사 갤러리' });
+  const gallerySettings = getInvitationGallerySettings(data, { alt: t('invitation.gallery.alt') });
   const galleryItems = gallerySettings.images;
   const commentsOn = showComments ?? resolveCommentsEnabled(data);
   const rsvpSettings = getInvitationRsvpSettings(data, 'GENERAL');
@@ -134,7 +139,7 @@ export default function GeneralInvitationRenderer({
         ) : previewMode ? (
           <div className={styles.heroMedia} data-testid="hero-empty-placeholder">
             <div className={styles.heroScrim} aria-hidden />
-            <p className={styles.heroEmptyHint}>대표 이미지를 추가해 주세요</p>
+            <p className={styles.heroEmptyHint}>{t('invitation.placeholder.hero')}</p>
           </div>
         ) : null}
         <div
@@ -159,7 +164,7 @@ export default function GeneralInvitationRenderer({
             data-section-id="greeting"
             data-preview-section="greeting"
           >
-            <h2 className={styles.sectionTitle}>행사 소개</h2>
+            <h2 className={styles.sectionTitle}>{t('invitation.section.eventIntro')}</h2>
             {introQuote ? <p className={styles.introQuote}>{introQuote}</p> : null}
             {introBody ? (
               <div className={styles.body}>
@@ -171,7 +176,7 @@ export default function GeneralInvitationRenderer({
           </section>
         ) : (
           <PreviewPlaceholder sectionId="greeting" testId="general-introduction-placeholder">
-            행사 소개를 입력해 주세요.
+            {t('invitation.placeholder.greeting')}
           </PreviewPlaceholder>
         )
       ) : null}
@@ -179,7 +184,7 @@ export default function GeneralInvitationRenderer({
       {showScheduleBlock && scheduleCalendar ? (
         <InvitationScheduleCalendar
           model={scheduleCalendar}
-          title="행사 일정"
+          title={t('invitation.section.eventSchedule')}
           datetimeLabel={eventWhen || undefined}
           venueLabel={(data.venueName || data.locationText || '').trim() || undefined}
           detailLabel={venueDetail || undefined}
@@ -189,7 +194,7 @@ export default function GeneralInvitationRenderer({
       ) : null}
       {showScheduleBlock && !scheduleCalendar ? (
         <PreviewPlaceholder sectionId="schedule" testId="general-schedule-placeholder">
-          행사 일정을 입력해 주세요.
+          {t('invitation.placeholder.eventSchedule')}
         </PreviewPlaceholder>
       ) : null}
 
@@ -199,12 +204,12 @@ export default function GeneralInvitationRenderer({
           displayMode={gallerySettings.displayMode}
           sectionLabel="Gallery"
           tone="general"
-          hintText="밀어서 더 많은 이미지 보기"
+          hintText={t('invitation.gallery.swipeHint')}
           lockBodyScroll={!previewMode}
         />
       ) : showGalleryEmptyPlaceholder ? (
         <PreviewPlaceholder sectionId="gallery" testId="gallery-empty-placeholder">
-          갤러리 이미지를 추가해 주세요
+          {t('invitation.placeholder.gallery')}
         </PreviewPlaceholder>
       ) : null}
 
@@ -217,7 +222,7 @@ export default function GeneralInvitationRenderer({
             data-preview-section="location"
           >
             <LocationMapSection
-              sectionTitle="오시는 길"
+              sectionTitle={t('invitation.map.directionsTitle')}
               title={(data.venueName || data.locationText || '').trim()}
               address={(data.formattedAddress || data.address || '').trim()}
               detailAddress={(data.detailAddress || data.venueDetail || '').trim() || undefined}
@@ -234,7 +239,7 @@ export default function GeneralInvitationRenderer({
           </section>
         ) : (
           <PreviewPlaceholder sectionId="location" testId="general-location-placeholder">
-            위치 정보를 입력해 주세요.
+            {t('invitation.placeholder.location')}
           </PreviewPlaceholder>
         )
       ) : null}
@@ -249,8 +254,8 @@ export default function GeneralInvitationRenderer({
         ) : previewMode ? (
           <PreviewPlaceholder sectionId="accounts" testId="invitation-accounts-placeholder">
             {accountEnabled
-              ? '계좌 정보를 1개 이상 추가해 주세요.'
-              : '참가비·계좌 정보가 사용되지 않습니다.'}
+              ? t('invitation.placeholder.accountsMore')
+              : t('invitation.placeholder.accountsOff')}
           </PreviewPlaceholder>
         ) : null
       ) : null}
@@ -265,7 +270,7 @@ export default function GeneralInvitationRenderer({
           />
         ) : previewMode ? (
           <PreviewPlaceholder sectionId="rsvp" testId="general-rsvp-placeholder">
-            참석 여부 기능이 사용되지 않습니다.
+            {t('invitation.placeholder.rsvpOff')}
           </PreviewPlaceholder>
         ) : null
       ) : null}
@@ -291,12 +296,12 @@ export default function GeneralInvitationRenderer({
               style={{ textAlign: 'center', opacity: 0.75 }}
             >
               <p style={{ margin: 0, fontSize: 13 }}>
-                {(data.music?.title || data.music?.musicKey || '배경 음악').toString()}
+                {(data.music?.title || data.music?.musicKey || t('invitation.music.untitled')).toString()}
               </p>
             </section>
           ) : (
             <PreviewPlaceholder sectionId="music" testId="general-music-placeholder">
-              배경 음악이 사용되지 않습니다.
+              {t('invitation.placeholder.musicOff')}
             </PreviewPlaceholder>
           )
         ) : (
@@ -317,7 +322,7 @@ export default function GeneralInvitationRenderer({
             data-preview-section="share"
           >
             <button type="button" className={styles.shareBtn} onClick={onShare}>
-              공유하기
+              {t('invitation.share.native')}
             </button>
           </section>
         ) : previewMode ? (
@@ -328,7 +333,7 @@ export default function GeneralInvitationRenderer({
             data-testid="general-share-preview"
             style={{ opacity: 0.75 }}
           >
-            <h2 className={styles.sectionTitle}>공유 설정</h2>
+            <h2 className={styles.sectionTitle}>{t('editor.section.sharing')}</h2>
             <p className={styles.meta}>
               {(data.openGraph?.title || data.share?.ogTitle || title).toString()}
             </p>
@@ -338,7 +343,7 @@ export default function GeneralInvitationRenderer({
               </p>
             ) : (
               <p className={styles.meta} style={{ opacity: 0.7 }}>
-                공유 제목·설명을 설정해 주세요.
+                {t('invitation.placeholder.shareMeta')}
               </p>
             )}
           </section>

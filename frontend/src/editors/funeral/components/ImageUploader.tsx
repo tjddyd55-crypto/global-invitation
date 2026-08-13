@@ -1,7 +1,9 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
 import { useId, useState } from 'react';
 import AppImage from '@/src/components/media/AppImage';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import { deleteMediaFile, uploadMediaImage, type MediaUploadAssetType } from '@/src/lib/mediaApi';
 import styles from '../funeralEditor.module.css';
 
@@ -30,6 +32,7 @@ export default function ImageUploader({
   uploadAssetType = 'gallery',
   priority,
 }: ImageUploaderProps) {
+  const { t } = useInvitationT();
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -53,7 +56,7 @@ export default function ImageUploader({
       });
       onChange(uploaded.url);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.');
+      setError(uploadError instanceof Error ? uploadError.message : t('editor.upload.failed'));
     } finally {
       setUploading(false);
       setProgress(0);
@@ -71,7 +74,7 @@ export default function ImageUploader({
       await deleteMediaFile(value);
       onClear?.();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : '이미지 삭제에 실패했습니다.');
+      setError(deleteError instanceof Error ? deleteError.message : t('editor.upload.deleteFailed'));
     } finally {
       setUploading(false);
     }
@@ -88,22 +91,26 @@ export default function ImageUploader({
       <div className={styles.uploaderBody}>
         {value ? (
           <div className={styles.uploaderPreview}>
-            <AppImage src={value} alt={`${label} preview`} priority={priority} />
+            <AppImage src={value} alt={t('editor.upload.originalAria', { label })} priority={priority} />
           </div>
         ) : (
-          <div className={styles.uploaderPlaceholder}>이미지를 선택하세요.</div>
+          <div className={styles.uploaderPlaceholder}>{t('editor.upload.choosePlaceholder')}</div>
         )}
         <div className={styles.uploaderActions}>
           <label className={styles.buttonGhost} htmlFor={inputId}>
-            {uploading ? '업로드 중...' : '이미지 선택'}
+            {uploading ? t('editor.upload.uploading') : t('editor.upload.select')}
           </label>
           {value && (
             <button type="button" className={styles.buttonSubtle} onClick={() => void handleClear()} disabled={uploading}>
-              제거
+              {t('editor.upload.remove')}
             </button>
           )}
         </div>
-        {uploading && <p className={styles.fieldDescription}>업로드 진행률 {progress}%</p>}
+        {uploading && (
+          <p className={styles.fieldDescription}>
+            {t('editor.upload.uploading')} {progress}%
+          </p>
+        )}
         {error && <p className={styles.fieldDescription}>{error}</p>}
         <input
           id={inputId}

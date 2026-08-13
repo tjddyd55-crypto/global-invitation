@@ -74,7 +74,7 @@ export function getHomeInvitationExampleData(
   id: HomeInvitationExampleId,
   locale?: string | null
 ): InvitationRuntimeData {
-  if (id === 'funeral') return lightenFuneralFixture(getFuneralClassicDemoData());
+  if (id === 'funeral') return lightenFuneralFixture(getFuneralClassicDemoData(locale));
   if (id === 'general') {
     return lightenVisualFixture(getVisualTemplatePreviewFixture(GENERAL_PREVIEW_TEMPLATE_ID, locale));
   }

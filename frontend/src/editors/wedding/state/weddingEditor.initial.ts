@@ -1,6 +1,6 @@
 import { I18N_KEYS, translate, type Language } from '@/src/i18n';
 import { invitationT } from '@/src/i18n/invitationT';
-import { languageFromLocale, resolveInvitationLocale } from '@/src/i18n/productLocales';
+import { languageFromLocale, localeFromLanguage, resolveInvitationLocale } from '@/src/i18n/productLocales';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/lib/api';
 import { buildWeddingClassicHeroTitle } from '@/src/templates/weddingClassic/data';
@@ -34,10 +34,15 @@ const PREVIEW_SAMPLE_GALLERY_IMAGES = Array.from({ length: 12 }, (_, index) => {
 const DEFAULT_EVENT_DATE_TIME = '2025-04-13T17:20';
 const DEFAULT_VENUE_NAME = '더링크호텔 서울';
 const DEFAULT_VENUE_DETAIL = '3층 베일리홀';
+const DEFAULT_VENUE_NAME_EN = 'The Langham Chicago';
+const DEFAULT_VENUE_DETAIL_EN = 'Grand Ballroom';
 const DEFAULT_INTRO_QUOTE = '예쁜 예감이 들었다. 우리는 언제나 손을 잡고 있게 될 것이다.';
+const DEFAULT_INTRO_QUOTE_EN = 'A beautiful feeling — we will always walk hand in hand.';
 
 const DEFAULT_TRANSPORT = ['신도림역 1번 출구 앞'];
 const DEFAULT_PARKING = ['웨딩고객 주차 1시간 30분 무료'];
+const DEFAULT_TRANSPORT_EN = ['Red Line to Grand · 5-minute walk'];
+const DEFAULT_PARKING_EN = ['Valet available at the hotel entrance'];
 
 const DEFAULT_ACCOUNTS: Omit<WeddingEditorAccount, 'id'>[] = [
   { role: '신랑', bank: '신한은행', number: '110464926697', holder: '유동규' },
@@ -217,8 +222,8 @@ export function createWeddingEditorState(
 ): WeddingEditorState {
   const { groomName, brideName } = parseCoupleNames(invitation?.title ?? undefined);
   const eventDateTime = toDateTimeLocal(invitation?.eventDate ?? null);
-  const venueName = invitation?.locationText || DEFAULT_VENUE_NAME;
   const language = normalizeLanguage(invitation?.language ?? null);
+  const venueName = invitation?.locationText || (language === 'en' ? DEFAULT_VENUE_NAME_EN : DEFAULT_VENUE_NAME);
   const templateKey = normalizeTemplateKey();
   const conceptType =
     options?.conceptType ??
@@ -236,6 +241,7 @@ export function createWeddingEditorState(
   const defaultQuote = getDefaultQuoteByConcept(conceptType);
   const conceptConfig = getConceptPresentationConfig(conceptType);
   const eventLike = isEventLikeConcept(conceptType);
+  const isEn = language === 'en';
 
   return {
     setup: {
@@ -250,14 +256,14 @@ export function createWeddingEditorState(
       subtitle: undefined,
       eventDateTime,
       venueName,
-      venueDetail: invitation?.locationText ? undefined : DEFAULT_VENUE_DETAIL,
+      venueDetail: invitation?.locationText ? undefined : isEn ? DEFAULT_VENUE_DETAIL_EN : DEFAULT_VENUE_DETAIL,
     },
     hero: {
       heroImage: DEFAULT_HERO_IMAGE,
       overlayText: translate(language, I18N_KEYS.weddingClassic.heroOverlayText),
     },
     invitationMessage: {
-      quote: defaultQuote,
+      quote: isEn && !invitation?.message ? DEFAULT_INTRO_QUOTE_EN : defaultQuote,
       body: resolveMessage(invitation?.message ?? null, defaultMessage),
     },
     organization: {
@@ -270,14 +276,14 @@ export function createWeddingEditorState(
     groom: {
       name: groomName,
       photo: DEFAULT_GROOM_IMAGE,
-      phone: '010-1234-5678',
-      parentsText: '유갑성 · 우재한 의 아들',
+      phone: isEn ? '+1 555 123 4567' : '010-1234-5678',
+      parentsText: isEn ? 'Son of David Kim & Susan Lee' : '유갑성 · 우재한 의 아들',
     },
     bride: {
       name: brideName,
       photo: DEFAULT_BRIDE_IMAGE,
-      phone: '010-9876-5432',
-      parentsText: '이상금 · 형명숙 의 딸',
+      phone: isEn ? '+1 555 987 6543' : '010-9876-5432',
+      parentsText: isEn ? 'Daughter of James Park & Grace Choi' : '이상금 · 형명숙 의 딸',
     },
     gallery: {
       // 신규 초대장: 샘플/placeholder를 data에 넣지 않음
@@ -285,7 +291,7 @@ export function createWeddingEditorState(
       displayMode: 'SLIDE',
     },
     location: {
-      address: '서울 구로구 경인로 610',
+      address: isEn ? '330 N Wabash Ave, Chicago, IL' : '서울 구로구 경인로 610',
       venueName: undefined,
       detailAddress: undefined,
       mapProvider: 'GOOGLE',
@@ -294,8 +300,8 @@ export function createWeddingEditorState(
       naverMapUrl: undefined,
       mapLat: undefined,
       mapLng: undefined,
-      transportInfo: [...DEFAULT_TRANSPORT],
-      parkingInfo: [...DEFAULT_PARKING],
+      transportInfo: [...(isEn ? DEFAULT_TRANSPORT_EN : DEFAULT_TRANSPORT)],
+      parkingInfo: [...(isEn ? DEFAULT_PARKING_EN : DEFAULT_PARKING)],
     },
     accounts: eventLike ? [] : buildDefaultAccounts({ groomName, brideName }),
     extras: {
@@ -303,10 +309,10 @@ export function createWeddingEditorState(
       guestbookEnabled: true,
       rsvpButtonText: translate(language, I18N_KEYS.weddingClassic.rsvpButton),
       accountEnabled: conceptConfig.accountDefaultEnabled,
-      accountsTitle:
-        eventLike
-          ? conceptConfig.accountsTitle
-          : translate(language, I18N_KEYS.weddingClassic.accountsTitle),
+      accountsTitle: invitationT(
+        localeFromLanguage(language),
+        eventLike ? 'invitation.accounts.fee' : 'invitation.accounts.gift'
+      ),
       musicEnabled: false,
       musicSourceType: undefined,
       musicTrackId: undefined,

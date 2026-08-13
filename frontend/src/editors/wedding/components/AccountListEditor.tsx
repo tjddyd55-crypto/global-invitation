@@ -1,5 +1,7 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorAccount } from '../state/weddingEditor.types';
 
@@ -32,6 +34,7 @@ export default function AccountListEditor({
   onChange,
   conceptType = 'WEDDING',
 }: AccountListEditorProps) {
+  const { t } = useInvitationT();
   const isGeneral = conceptType === 'GENERAL' || conceptType === 'ORGANIZATION';
 
   const handleAdd = () => {
@@ -40,7 +43,7 @@ export default function AccountListEditor({
       {
         ...EMPTY_ACCOUNT,
         id: buildId(),
-        role: isGeneral ? '참가비' : '',
+        role: isGeneral ? t('editor.accounts.defaultPurpose') : '',
       },
     ]);
   };
@@ -69,19 +72,17 @@ export default function AccountListEditor({
     <div className={styles.accountEditor}>
       <div className={styles.accountHeaderRow}>
         <div>
-          <div className={styles.sectionTitle}>계좌 목록</div>
+          <div className={styles.sectionTitle}>{t('editor.accounts.list')}</div>
           <div className={styles.sectionHint}>
-            {isGeneral
-              ? '참가비·회비·후원금 등 복수 계좌를 추가할 수 있습니다. 계좌번호는 문자열로 저장됩니다.'
-              : '복수 계좌를 추가하고 복사할 수 있습니다.'}
+            {isGeneral ? t('editor.accounts.listHintFee') : t('editor.accounts.listHint')}
           </div>
         </div>
         <button type="button" className={styles.buttonPrimary} onClick={handleAdd}>
-          계좌 추가
+          {t('editor.accounts.add')}
         </button>
       </div>
       {accounts.length === 0 ? (
-        <div className={styles.emptyState}>계좌 정보를 1개 이상 추가해 주세요.</div>
+        <div className={styles.emptyState}>{t('invitation.placeholder.accountsMore')}</div>
       ) : (
         <div className={styles.accountList}>
           {accounts.map((account) => (
@@ -91,18 +92,22 @@ export default function AccountListEditor({
                   항목 복제
                 </button>
                 <button type="button" className={styles.buttonDanger} onClick={() => handleRemove(account.id)}>
-                  삭제
+                  {t('comments.admin.delete')}
                 </button>
               </div>
               <div className={styles.fieldGrid}>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>{isGeneral ? '용도' : '구분'}</span>
+                  <span className={styles.fieldLabel}>
+                    {isGeneral ? t('editor.accounts.purpose') : t('editor.accounts.role')}
+                  </span>
                   <input
                     type="text"
                     value={account.role}
                     list={isGeneral ? `account-role-hints-${account.id}` : undefined}
                     onChange={(event) => handleFieldChange(account.id, 'role', event.target.value)}
-                    placeholder={isGeneral ? '예: 참가비' : '신랑/신부/부모'}
+                    placeholder={
+                      isGeneral ? t('editor.accounts.purposePlaceholder') : t('editor.accounts.rolePlaceholder')
+                    }
                   />
                   {isGeneral ? (
                     <datalist id={`account-role-hints-${account.id}`}>
@@ -113,42 +118,42 @@ export default function AccountListEditor({
                   ) : null}
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>은행/금융기관</span>
+                  <span className={styles.fieldLabel}>{t('invitation.accounts.bank')}</span>
                   <input
                     type="text"
                     value={account.bank}
                     onChange={(event) => handleFieldChange(account.id, 'bank', event.target.value)}
-                    placeholder="예: 국민은행 / Chase / HSBC"
+                    placeholder={t('editor.accounts.bankPlaceholder')}
                   />
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>계좌번호</span>
+                  <span className={styles.fieldLabel}>{t('invitation.accounts.number')}</span>
                   <input
                     type="text"
                     inputMode="text"
                     autoComplete="off"
                     value={account.number}
                     onChange={(event) => handleFieldChange(account.id, 'number', event.target.value)}
-                    placeholder="하이픈·영문 포함 가능"
+                    placeholder={t('editor.accounts.numberPlaceholder')}
                   />
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>예금주/수취인</span>
+                  <span className={styles.fieldLabel}>{t('invitation.accounts.holder')}</span>
                   <input
                     type="text"
                     value={account.holder}
                     onChange={(event) => handleFieldChange(account.id, 'holder', event.target.value)}
-                    placeholder="예: 홍길동"
+                    placeholder={t('editor.accounts.holderPlaceholder')}
                   />
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>입금 안내 (선택)</span>
+                  <span className={styles.fieldLabel}>{t('editor.accounts.paymentNote')}</span>
                   <input
                     type="text"
                     value={account.paymentNote ?? ''}
                     onChange={(event) => handleFieldChange(account.id, 'paymentNote', event.target.value)}
                     placeholder={
-                      isGeneral ? '입금자명은 참석자 이름으로 입력해 주세요.' : '선택 안내 문구'
+                      isGeneral ? t('editor.accounts.paymentNoteFee') : t('editor.accounts.paymentNote')
                     }
                   />
                 </label>

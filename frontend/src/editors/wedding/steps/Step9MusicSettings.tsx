@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ToggleRow from '../components/ToggleRow';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorExtras, WeddingEditorMusicSourceType } from '../state/weddingEditor.types';
 import { getMusicByKey } from '@/src/constants/music';
@@ -39,6 +40,7 @@ function hasValidMusicSource(value: WeddingEditorExtras): boolean {
  * 독립 음악 설정 Step — 기본 OFF, 자동재생 없음, 기본 음악 자동 삽입 금지.
  */
 export default function Step9MusicSettings({ value, conceptType, onChange }: Step9MusicSettingsProps) {
+  const { t } = useInvitationT();
   const musicOn = Boolean(value.musicEnabled);
   const sourceType = resolveSourceType(value);
   const [musicUploading, setMusicUploading] = useState(false);
@@ -126,7 +128,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
       await audio.play();
       setPreviewPlaying(true);
     } catch {
-      setMusicError('미리 듣기를 재생할 수 없습니다.');
+      setMusicError(t('editor.music.previewFailed'));
       setPreviewPlaying(false);
     }
   };
@@ -134,13 +136,13 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
   return (
     <section className={styles.stepSection} data-testid="editor-music-step">
       <div className={styles.sectionHeader}>
-        <h2>배경음악 설정</h2>
+        <h2>{t('editor.section.music')}</h2>
         <p>초대장을 보는 방문자가 직접 재생할 수 있는 배경음악을 설정합니다.</p>
       </div>
 
       <div className={styles.toggleGroup} data-testid="editor-music-settings">
         <ToggleRow
-          label="배경음악 사용"
+          label={t('editor.music.use')}
           description="OFF면 공개 초대장에 음악 플레이어가 표시되지 않습니다. 기본은 사용하지 않습니다."
           checked={musicOn}
           testId="editor-music-enabled-toggle"
@@ -156,7 +158,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
 
       {!musicOn ? (
         <p className={styles.helperText} data-testid="editor-music-disabled-hint">
-          배경 음악을 사용하지 않습니다. 켜면 제공 음악 또는 직접 업로드한 파일을 선택할 수 있습니다.
+          {t('invitation.placeholder.musicOff')}
         </p>
       ) : (
         <div className={styles.musicPanel}>
@@ -231,7 +233,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
                       musicTitle: value.musicTitle || file.name.replace(/\.[^.]+$/, ''),
                     });
                   } catch (err) {
-                    setMusicError(err instanceof Error ? err.message : '음악 업로드에 실패했습니다.');
+                    setMusicError(err instanceof Error ? err.message : t('editor.music.uploadFailed'));
                   } finally {
                     setMusicUploading(false);
                   }
@@ -239,7 +241,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
               />
               {musicUploading ? (
                 <p className={styles.helperText} data-testid="editor-music-uploading">
-                  업로드 중…
+                  {t('editor.upload.uploading')}
                 </p>
               ) : null}
               {value.musicFileUrl ? (
@@ -265,7 +267,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
               value={value.musicTitle ?? ''}
               data-testid="editor-music-title"
               onChange={(event) => onChange({ musicTitle: event.target.value })}
-              placeholder="방문자가 보게 될 제목"
+              placeholder={t('editor.music.titlePlaceholder')}
             />
           </label>
 
@@ -287,8 +289,8 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
           </label>
 
           <ToggleRow
-            label="반복 재생"
-            description="끝까지 들으면 처음부터 다시 재생합니다."
+            label={t('editor.music.loop')}
+            description={t('editor.music.loopDesc')}
             checked={Boolean(value.musicLoop)}
             testId="editor-music-loop"
             onChange={(checked) => onChange({ musicLoop: checked })}
@@ -302,7 +304,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
               disabled={!previewSrc}
               onClick={() => void togglePreview()}
             >
-              {previewPlaying ? '미리 듣기 정지' : '미리 듣기'}
+              {previewPlaying ? t('editor.music.stopPreview') : t('editor.music.preview')}
             </button>
             {value.musicTitle || getMusicByKey(value.musicKey)?.title ? (
               <span className={styles.helperText}>

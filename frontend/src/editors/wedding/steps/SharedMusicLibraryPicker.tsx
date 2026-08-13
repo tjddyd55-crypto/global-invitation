@@ -19,6 +19,7 @@ import {
   type PublicMusicTrack,
 } from '@/src/shared/api';
 import { musicCategoryForConcept, type InvitationConceptType } from '@/src/invitation/conceptTypes';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../weddingEditor.module.css';
 
 type SharedMusicLibraryPickerProps = {
@@ -44,6 +45,7 @@ export default function SharedMusicLibraryPicker({
   onSelect,
   onError,
 }: SharedMusicLibraryPickerProps) {
+  const { t } = useInvitationT();
   const [tracks, setTracks] = useState<PublicMusicTrack[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -155,7 +157,7 @@ export default function SharedMusicLibraryPicker({
         <input
           type="search"
           value={search}
-          placeholder="제목 또는 아티스트"
+          placeholder={t('editor.music.searchPlaceholder')}
           onChange={(event) => setSearch(event.target.value)}
         />
       </label>
@@ -188,10 +190,10 @@ export default function SharedMusicLibraryPicker({
             </div>
             <div className={styles.musicLibraryActions}>
               <button type="button" onClick={() => void togglePreview(track)}>
-                {previewTrackId === track.id ? '정지' : '미리 듣기'}
+                {previewTrackId === track.id ? t('editor.music.stop') : t('editor.music.preview')}
               </button>
               <button type="button" onClick={() => onSelect(track)}>
-                {selectedTrackId === track.id ? '선택됨' : '선택'}
+                {selectedTrackId === track.id ? t('editor.music.selected') : t('editor.music.select')}
               </button>
             </div>
           </div>

@@ -1,12 +1,16 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../funeralEditor.module.css';
 
 export default function Step8ShareSettings() {
+  const { t } = useInvitationT();
+
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>공유 설정</h2>
+        <h2>{t('editor.section.sharing')}</h2>
         <p>현재 부고장 에디터는 별도 OG 공유 설정을 저장하지 않습니다.</p>
       </div>
       <div className={styles.noticeBox}>

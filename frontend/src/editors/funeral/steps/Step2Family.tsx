@@ -1,5 +1,7 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../funeralEditor.module.css';
 
 type Step2FamilyProps = {
@@ -16,19 +18,21 @@ function toLines(text: string): string[] {
 }
 
 export default function Step2Family({ chiefMourner, familyMembers, onChange }: Step2FamilyProps) {
+  const { t } = useInvitationT();
+
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>고인 정보</h2>
+        <h2>{t('editor.section.deceased')}</h2>
         <p>고인/유가족 관련 정보를 입력합니다.</p>
       </div>
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>고인 대표자</span>
+        <span className={styles.fieldLabel}>{t('editor.field.chiefContact')}</span>
         <input
           type="text"
           value={chiefMourner}
           onChange={(event) => onChange({ chiefMourner: event.target.value })}
-          placeholder="예: 김순덕"
+          placeholder={t('editor.placeholder.funeralContact')}
           required
         />
       </label>

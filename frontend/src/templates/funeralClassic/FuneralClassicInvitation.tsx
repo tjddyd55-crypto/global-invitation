@@ -3,7 +3,7 @@
 import styles from './FuneralClassicInvitation.module.css';
 import type { FuneralInvitationData } from '@/src/invitation/schemas';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
-import { useI18n } from '@/src/contexts/I18nContext';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import { I18N_KEYS } from '@/src/i18n';
 import { formatDate, formatDateTime } from '@/src/lib/i18n/format';
 import { cdnImageSrc } from '@/src/lib/image';
@@ -67,7 +67,7 @@ export default function FuneralClassicInvitation({
   isShared = false,
   onKakaoShare,
 }: FuneralClassicInvitationProps) {
-  const { t, language } = useI18n();
+  const { t, language } = useInvitationT();
   const heroNamePrefix = t(I18N_KEYS.funeral.heroNamePrefix);
   const heroNameSuffix = t(I18N_KEYS.funeral.heroNameSuffix);
   const hasLocation = Boolean(

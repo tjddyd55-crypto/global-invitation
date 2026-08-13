@@ -19,10 +19,8 @@ import {
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
 import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
+import { invitationT } from '@/src/i18n/invitationT';
 import styles from './GeneralCultureInvitation.module.css';
-
-const SHARE_DONE_MESSAGE = '링크가 복사되었습니다';
-const SHARE_FAIL_MESSAGE = '링크를 복사하지 못했습니다';
 
 async function copyCurrentUrl(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
@@ -38,13 +36,14 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '', onShare, onKakaoShare } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
+  const t = (key: string) => invitationT(model.locale, key);
   const [shareNotice, setShareNotice] = useState('');
 
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
   const infoRows = [
-    { label: '일시', value: model.dateText },
-    { label: '장소', value: model.venueName },
-    { label: '안내', value: model.venueDetail },
+    { label: t('invitation.common.date'), value: model.dateText },
+    { label: t('invitation.common.place'), value: model.venueName },
+    { label: t('invitation.common.info'), value: model.venueDetail },
   ].filter((row) => Boolean(row.value));
 
   /** TEMPLATE_PREVIEW 이거나 핸들러가 없으면 URL 복사 데모로 대체한다 */
@@ -53,7 +52,9 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
       handler();
       return;
     }
-    void copyCurrentUrl().then((ok) => setShareNotice(ok ? SHARE_DONE_MESSAGE : SHARE_FAIL_MESSAGE));
+    void copyCurrentUrl().then((ok) =>
+      setShareNotice(ok ? t('invitation.share.copied') : t('invitation.share.copyFailed'))
+    );
   };
 
   return (
@@ -78,7 +79,7 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
                 src={model.heroImage || null}
                 alt=""
                 loading="eager"
-                fallback={<div className={styles.heroPlaceholder}>대표 이미지를 추가해 주세요</div>}
+                fallback={<div className={styles.heroPlaceholder}>{t('invitation.placeholder.hero')}</div>}
               />
             </InvitationReveal>
           ) : null}
@@ -96,7 +97,7 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
                 </p>
               ))
             ) : model.subtitle ? null : (
-              <p className={styles.placeholder}>소개 문구를 입력해 주세요</p>
+              <p className={styles.placeholder}>{t('invitation.placeholder.intro')}</p>
             )}
           </InvitationReveal>
         </section>
@@ -115,7 +116,7 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
               ))}
             </dl>
           ) : (
-            <p className={styles.placeholder}>행사 정보를 입력해 주세요</p>
+            <p className={styles.placeholder}>{t('invitation.placeholder.eventInfo')}</p>
           )}
         </section>
       ) : null}
@@ -129,7 +130,7 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
             ))}
           </ul>
         ) : (
-          <p className={styles.placeholder}>일정을 입력해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.schedule')}</p>
         )}
         <InvitationReveal variant="fade" delayMs={100}>
           <TemplateDateGrid
@@ -153,7 +154,7 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
         />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.gallery')}</p>
         </section>
       ) : null}
 
@@ -174,9 +175,9 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
             mapImage={data.mapImage}
             tone="light"
             previewMode={flags.previewMode}
-            transportTitle="교통 안내"
+            transportTitle={t('invitation.map.transport')}
             transportInfo={model.transportInfo}
-            parkingTitle="주차 안내"
+            parkingTitle={t('invitation.map.parking')}
             parkingInfo={model.parkingInfo}
           />
         </section>
@@ -199,7 +200,7 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
           data-preview-section="accounts"
         >
           <p className={styles.sectionNumber}>05 — TICKET</p>
-          <p className={styles.placeholder}>계좌 정보를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.accounts')}</p>
         </section>
       ) : null}
 
@@ -213,17 +214,17 @@ export default function GeneralCultureInvitation(props: VisualTemplateProps) {
 
       <section className={styles.share} data-section-id="share" data-preview-section="share">
         <p className={styles.sectionNumber}>06 — SHARE</p>
-        <p className={styles.shareLead}>이 초대장을 함께 나누어 주세요</p>
+        <p className={styles.shareLead}>{t('invitation.share.cultureLead')}</p>
         <div className={styles.shareRow}>
           <button type="button" className={styles.shareButton} onClick={() => runShare(onShare)}>
-            공유하기
+            {t('invitation.share.native')}
           </button>
           <button
             type="button"
             className={`${styles.shareButton} ${styles.shareButtonKakao}`}
             onClick={() => runShare(onKakaoShare)}
           >
-            카카오톡 공유
+            {t('invitation.share.kakaoAction')}
           </button>
         </div>
         {shareNotice ? (

@@ -3,6 +3,7 @@
 
 import LocationPicker, { type LocationPickerValue } from '@/src/maps/LocationPicker';
 import NaverLocationPicker, { type NaverPendingLocation } from '@/src/maps/NaverLocationPicker';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../weddingEditor.module.css';
 import mapStyles from '@/src/maps/LocationPicker.module.css';
 import type { WeddingEditorLocation } from '../state/weddingEditor.types';
@@ -49,6 +50,7 @@ export default function Step6Location({
   onChange,
   onVenueChange,
 }: Step6LocationProps) {
+  const { t } = useInvitationT();
   const provider: InvitationMapProvider = value.mapProvider === 'NAVER' ? 'NAVER' : 'GOOGLE';
 
   const handleProviderChange = (next: InvitationMapProvider) => {
@@ -94,7 +96,7 @@ export default function Step6Location({
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>위치 안내</h2>
+        <h2>{t('editor.section.location')}</h2>
         <p>지도 서비스를 선택한 뒤 장소를 검색·확정합니다.</p>
       </div>
 
@@ -139,21 +141,21 @@ export default function Step6Location({
       )}
 
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>교통 안내 (선택)</span>
+        <span className={styles.fieldLabel}>{t('invitation.map.transport')}</span>
         <textarea
           rows={3}
           value={(value.transportInfo ?? []).join('\n')}
           onChange={(event) => onChange({ transportInfo: toLines(event.target.value) })}
-          placeholder="한 줄에 하나씩 입력"
+          placeholder={t('editor.location.onePerLine')}
         />
       </label>
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>주차 안내 (선택)</span>
+        <span className={styles.fieldLabel}>{t('invitation.map.parking')}</span>
         <textarea
           rows={3}
           value={(value.parkingInfo ?? []).join('\n')}
           onChange={(event) => onChange({ parkingInfo: toLines(event.target.value) })}
-          placeholder="한 줄에 하나씩 입력"
+          placeholder={t('editor.location.onePerLine')}
         />
       </label>
     </section>

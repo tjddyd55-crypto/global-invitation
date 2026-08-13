@@ -21,9 +21,18 @@ import {
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
 import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
+import { invitationT } from '@/src/i18n/invitationT';
 import styles from './WeddingEditorialInvitation.module.css';
 
-function ProfileRow({ person, flip }: { person: TemplatePerson; flip: boolean }) {
+function ProfileRow({
+  person,
+  flip,
+  contactLabel,
+}: {
+  person: TemplatePerson;
+  flip: boolean;
+  contactLabel: string;
+}) {
   return (
     <div className={`${styles.profileRow} ${flip ? styles.profileRowFlip : ''}`.trim()}>
       {/* 이미지/텍스트 순서는 CSS order 로 뒤집는다 (RTL 을 쓰면 전화번호가 뒤집힌다) */}
@@ -41,7 +50,7 @@ function ProfileRow({ person, flip }: { person: TemplatePerson; flip: boolean })
         {person.parentsText ? <p className={styles.profileMeta}>{person.parentsText}</p> : null}
         {person.phone ? (
           <a className={styles.profileContact} href={toTelHref(person.phone)}>
-            연락하기
+            {contactLabel}
           </a>
         ) : null}
       </div>
@@ -53,6 +62,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
+  const t = (key: string) => invitationT(model.locale, key);
   // CSS 변수는 상속되므로 컨테이너에 걸고 이미지가 소비한다.
   const heroRef = useHeroParallax<HTMLDivElement>(0.1, 30);
 
@@ -73,7 +83,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
               src={model.heroImage || null}
               alt=""
               loading="eager"
-              fallback={<div className={styles.heroPlaceholder}>대표 이미지를 추가해 주세요</div>}
+              fallback={<div className={styles.heroPlaceholder}>{t('invitation.placeholder.hero')}</div>}
             />
             <span className={styles.heroFrame} aria-hidden />
           </div>
@@ -86,7 +96,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
 
         <div className={styles.names}>
           <InvitationReveal variant="rise" delayMs={80}>
-            <p className={styles.eyebrow}>WE ARE GETTING MARRIED</p>
+            <p className={styles.eyebrow}>{t('invitation.placeholder.weddingHeadline')}</p>
           </InvitationReveal>
           <InvitationReveal variant="rise" delayMs={180}>
             <h1 className={styles.title}>{model.title}</h1>
@@ -117,7 +127,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
       {model.hasGreeting || flags.showEmptyPlaceholder ? (
         <section className={styles.letter} data-section-id="greeting" data-preview-section="greeting">
           <InvitationReveal variant="rise">
-            <p className={styles.sectionLabel}>INVITATION</p>
+            <p className={styles.sectionLabel}>{t('invitation.section.greeting')}</p>
             {model.hasGreeting ? (
               model.greetingLines.map((line, index) => (
                 <p key={`greeting-${index}`} className={styles.letterLine}>
@@ -125,7 +135,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
                 </p>
               ))
             ) : (
-              <p className={styles.placeholder}>인사말을 입력해 주세요</p>
+              <p className={styles.placeholder}>{t('invitation.placeholder.greeting')}</p>
             )}
           </InvitationReveal>
         </section>
@@ -134,16 +144,16 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
       {model.hasCouple ? (
         <section className={styles.profiles} data-section-id="couple" data-preview-section="couple">
           <InvitationReveal variant="rise">
-            <p className={styles.sectionLabel}>THE COUPLE</p>
+            <p className={styles.sectionLabel}>{t('invitation.section.couple')}</p>
           </InvitationReveal>
           {model.groom ? (
             <InvitationReveal variant="rise" delayMs={80}>
-              <ProfileRow person={model.groom} flip={false} />
+              <ProfileRow person={model.groom} flip={false} contactLabel={t('invitation.action.contact')} />
             </InvitationReveal>
           ) : null}
           {model.bride ? (
             <InvitationReveal variant="rise" delayMs={160}>
-              <ProfileRow person={model.bride} flip />
+              <ProfileRow person={model.bride} flip contactLabel={t('invitation.action.contact')} />
             </InvitationReveal>
           ) : null}
         </section>
@@ -154,13 +164,13 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
           visualTemplateId="WEDDING_04_EDITORIAL"
           items={model.gallery.items}
           displayMode={model.gallery.displayMode}
-          sectionLabel="GALLERY"
+          sectionLabel={t('invitation.section.gallery')}
           labelClassName={styles.sectionLabel}
           lockBodyScroll={flags.isPublic}
         />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.gallery')}</p>
         </section>
       ) : null}
 
@@ -170,7 +180,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
             <span className={styles.scheduleMonth}>{model.dateParts?.month ?? '--'}</span>
             <div className={styles.scheduleMeta}>
               <p className={styles.scheduleYear}>{model.dateParts?.year ?? ''}</p>
-              <p className={styles.scheduleDate}>{model.dateText || '일정을 입력해 주세요'}</p>
+              <p className={styles.scheduleDate}>{model.dateText || t('invitation.placeholder.schedule')}</p>
             </div>
           </div>
         </InvitationReveal>
@@ -197,7 +207,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
       {model.hasLocation || flags.showEmptyPlaceholder ? (
         <section className={styles.location} data-section-id="location" data-preview-section="location">
           <LocationMapSection
-            sectionTitle="LOCATION"
+            sectionTitle={t('invitation.section.location')}
             title={model.venueName}
             address={model.address}
             detailAddress={model.detailAddress || undefined}
@@ -211,9 +221,9 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
             mapImage={data.mapImage}
             tone="light"
             previewMode={flags.previewMode}
-            transportTitle="오시는 길"
+            transportTitle={t('invitation.map.directionsTitle')}
             transportInfo={model.transportInfo}
-            parkingTitle="주차 안내"
+            parkingTitle={t('invitation.map.parking')}
             parkingInfo={model.parkingInfo}
           />
         </section>
@@ -232,7 +242,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
           data-section-id="accounts"
           data-preview-section="accounts"
         >
-          <p className={styles.placeholder}>계좌 정보를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.accounts')}</p>
         </section>
       ) : null}
 

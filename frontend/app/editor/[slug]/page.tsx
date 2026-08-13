@@ -37,6 +37,7 @@ import {
   resolveInvitationConceptType,
 } from '@/src/invitation/schemas';
 import { useI18n } from '@/src/contexts/I18nContext';
+import { resolveInvitationLocale } from '@/src/i18n/productLocales';
 import { logEvent } from '@/src/lib/events';
 import { buildCanonicalUrl } from '@/src/lib/siteUrl';
 import { ensureGuestToken, getStoredSession, setGuestToken, setLastDraftSlug } from '@/src/lib/auth';
@@ -632,6 +633,7 @@ export default function EditorPage() {
     return (
       <FuneralEditor
         initialState={funeralInitialState}
+        locale={invitation ? resolveInvitationLocale(invitation.language) : undefined}
         onSave={handleFuneralSave}
         saveNotice={saveNotice}
         saveError={saveError}
@@ -660,6 +662,7 @@ export default function EditorPage() {
     return (
       <FuneralEditor
         initialState={funeralInitialState}
+        locale={resolveInvitationLocale(invitation.language)}
         onSave={handleFuneralSave}
         onSaveAndExit={handleFuneralSaveAndExit}
         onPublish={handleFuneralPublish}

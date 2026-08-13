@@ -11,7 +11,7 @@
 
 import styles from './WeddingClassicInvitation.module.css';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
-import { useI18n } from '@/src/contexts/I18nContext';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import { I18N_KEYS } from '@/src/i18n';
 import LocationMapSection from '@/src/templates/shared/LocationMapSection';
 import InvitationGallerySection from '@/src/templates/shared/InvitationGallerySection';
@@ -72,7 +72,7 @@ export default function WeddingClassicInvitation({
   showCoupleSection: _showCoupleSectionUnused = true,
   isShared: _isSharedUnused = false,
 }: WeddingClassicInvitationProps) {
-  const { t } = useI18n();
+  const { t, locale } = useInvitationT();
   void _showRsvpUnused;
   void _onShareUnused;
   void _onKakaoShareUnused;
@@ -110,11 +110,14 @@ export default function WeddingClassicInvitation({
   const addressForMap = (r.address || '').trim() || locationText;
   const contentText = normalizeMessageText(r.content);
   const messageLines = contentText.split('\n');
-  const scheduleDisplay = getInvitationScheduleDisplay({
-    weddingDate: r.weddingDate instanceof Date || typeof r.weddingDate === 'string' ? r.weddingDate : null,
-    eventDate: r.eventDate,
-    weddingDateTime: r.weddingDateTime,
-  });
+  const scheduleDisplay = getInvitationScheduleDisplay(
+    {
+      weddingDate: r.weddingDate instanceof Date || typeof r.weddingDate === 'string' ? r.weddingDate : null,
+      eventDate: r.eventDate,
+      weddingDateTime: r.weddingDateTime,
+    },
+    locale
+  );
   const rawSchedule = safeArray(r.schedule);
   const scheduleList =
     toDisplayScheduleLines(rawSchedule).length > 0
@@ -156,8 +159,9 @@ export default function WeddingClassicInvitation({
       : conceptType === 'FUNERAL'
         ? t(I18N_KEYS.weddingClassic.messageSectionFuneral)
         : t(I18N_KEYS.weddingClassic.messageSectionGeneral);
-  const scheduleTitle = conceptType === 'GENERAL' ? '행사 일정' : '일정';
-  const locationTitle = '위치 안내';
+  const scheduleTitle =
+    conceptType === 'GENERAL' ? t('invitation.section.eventSchedule') : t('invitation.section.schedule');
+  const locationTitle = t('invitation.section.location');
 
   const scheduleForHero = scheduleList.filter(Boolean);
   const storedHeroDate =
@@ -228,7 +232,7 @@ export default function WeddingClassicInvitation({
 
       <section
         className={`${styles.heroSection} ${showHeroMedia ? '' : styles.heroSectionNoImage}`}
-        aria-label="대표 이미지"
+        aria-label={t('invitation.a11y.hero')}
         data-testid="public-hero"
         data-section-id="hero"
         data-preview-section="hero"
@@ -285,7 +289,7 @@ export default function WeddingClassicInvitation({
               ))
             ) : (
               <p className={`${styles.messageParagraph} ${styles.textBody}`} style={{ opacity: 0.55 }}>
-                인사말을 입력해 주세요
+                {t('invitation.placeholder.greeting')}
               </p>
             )}
           </div>
@@ -301,7 +305,7 @@ export default function WeddingClassicInvitation({
           data-section-id="couple"
           data-preview-section="couple"
         >
-          {hasCouple ? <p className={styles.scriptLabel}>The Couple</p> : null}
+          {hasCouple ? <p className={styles.scriptLabel}>{t('invitation.section.couple')}</p> : null}
           {hasCouple ? (
             <div className={styles.coupleGrid}>
               {groomDisplay || groomImg || groomPhone ? (
@@ -314,7 +318,7 @@ export default function WeddingClassicInvitation({
                       loading="lazy"
                       fallback={
                         <div className={styles.coupleAvatarFallback} aria-hidden>
-                          {(groomDisplay || '신랑').slice(0, 1)}
+                          {(groomDisplay || t(I18N_KEYS.weddingClassic.groomLabel)).slice(0, 1)}
                         </div>
                       }
                     />
@@ -326,7 +330,7 @@ export default function WeddingClassicInvitation({
                   ) : null}
                   {groomPhone ? (
                     <a className={styles.coupleContactLink} href={`tel:${groomPhone.replace(/\s+/g, '')}`}>
-                      연락하기
+                      {t('invitation.action.contact')}
                     </a>
                   ) : null}
                 </div>
@@ -341,7 +345,7 @@ export default function WeddingClassicInvitation({
                       loading="lazy"
                       fallback={
                         <div className={styles.coupleAvatarFallback} aria-hidden>
-                          {(brideDisplay || '신부').slice(0, 1)}
+                          {(brideDisplay || t(I18N_KEYS.weddingClassic.brideLabel)).slice(0, 1)}
                         </div>
                       }
                     />
@@ -353,7 +357,7 @@ export default function WeddingClassicInvitation({
                   ) : null}
                   {bridePhone ? (
                     <a className={styles.coupleContactLink} href={`tel:${bridePhone.replace(/\s+/g, '')}`}>
-                      연락하기
+                      {t('invitation.action.contact')}
                     </a>
                   ) : null}
                 </div>
@@ -432,7 +436,7 @@ export default function WeddingClassicInvitation({
             </ul>
           ) : previewMode ? (
             <p className={styles.scheduleItemDetail} style={{ opacity: 0.55, textAlign: 'center' }}>
-              일정을 입력해 주세요
+              {t('invitation.placeholder.schedule')}
             </p>
           ) : null}
         </section>
@@ -444,7 +448,7 @@ export default function WeddingClassicInvitation({
           displayMode={gallerySettings.displayMode}
           sectionLabel="Album"
           tone={conceptType === 'FUNERAL' ? 'funeral' : conceptType === 'GENERAL' ? 'general' : 'wedding'}
-          hintText="밀어서 더 많은 이미지 보기"
+          hintText={t('invitation.gallery.swipeHint')}
           lockBodyScroll={!previewMode}
         />
       ) : showGalleryEmptyPlaceholder ? (
@@ -456,7 +460,7 @@ export default function WeddingClassicInvitation({
           style={{ padding: '48px 24px', textAlign: 'center', opacity: 0.7 }}
         >
           <p style={{ margin: 0, fontSize: 13, letterSpacing: '0.04em' }}>
-            갤러리 이미지를 추가해 주세요
+            {t('invitation.placeholder.gallery')}
           </p>
         </section>
       ) : null}
@@ -562,7 +566,7 @@ export default function WeddingClassicInvitation({
               className={styles.guestbookBtnSecondary}
               onClick={() => setGuestbookExpanded((prev) => !prev)}
             >
-              {guestbookExpanded ? '접기' : '전체보기'}
+              {guestbookExpanded ? t('invitation.guestbook.collapse') : t('invitation.guestbook.expand')}
             </button>
           </div>
         </section>

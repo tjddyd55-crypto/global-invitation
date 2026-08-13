@@ -1,7 +1,12 @@
 'use client';
 
-import { createContext, useContext, type ReactNode } from 'react';
-import { DEFAULT_PRODUCT_LOCALE, type ProductLocaleId } from './productLocales';
+import { createContext, useCallback, useContext, type ReactNode } from 'react';
+import { invitationT } from './invitationT';
+import {
+  DEFAULT_PRODUCT_LOCALE,
+  languageFromLocale,
+  type ProductLocaleId,
+} from './productLocales';
 
 const InvitationLocaleContext = createContext<ProductLocaleId>(DEFAULT_PRODUCT_LOCALE);
 
@@ -17,4 +22,14 @@ export function InvitationLocaleProvider({
 
 export function useInvitationLocale(): ProductLocaleId {
   return useContext(InvitationLocaleContext);
+}
+
+/** Invitation.language SSOT — never service useI18n(). */
+export function useInvitationT() {
+  const locale = useInvitationLocale();
+  const t = useCallback(
+    (key: string, vars?: Record<string, string | number>) => invitationT(locale, key, vars),
+    [locale]
+  );
+  return { locale, t, language: languageFromLocale(locale) };
 }

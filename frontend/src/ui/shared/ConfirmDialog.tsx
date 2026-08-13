@@ -1,7 +1,7 @@
 'use client';
-/* eslint-disable i18next/no-literal-string */
 
 import { useEffect, useId, useRef } from 'react';
+import { useI18n } from '@/src/contexts/I18nContext';
 import styles from './ConfirmDialog.module.css';
 
 export type ConfirmDialogVariant = 'primary' | 'danger';
@@ -21,19 +21,23 @@ export type ConfirmDialogProps = {
 
 /**
  * App confirm SSOT. Backdrop click does not dismiss.
+ * Default labels use service locale (My Invitations shell + editor).
  */
 export default function ConfirmDialog({
   open,
   busy = false,
   title,
   description,
-  confirmLabel = '확인',
-  cancelLabel = '취소',
+  confirmLabel,
+  cancelLabel,
   variant = 'primary',
   testId = 'confirm-dialog',
   onCancel,
   onConfirm,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
+  const resolvedConfirm = confirmLabel ?? t('common.confirm');
+  const resolvedCancel = cancelLabel ?? t('common.cancel');
   const titleId = useId();
   const descId = useId();
   const confirmRef = useRef<HTMLButtonElement>(null);
@@ -63,7 +67,7 @@ export default function ConfirmDialog({
         </p>
         <div className={styles.actions}>
           <button type="button" className={styles.cancel} onClick={onCancel} disabled={busy}>
-            {cancelLabel}
+            {resolvedCancel}
           </button>
           <button
             ref={confirmRef}
@@ -73,7 +77,7 @@ export default function ConfirmDialog({
             disabled={busy}
             data-testid={`${testId}-confirm`}
           >
-            {busy ? `${confirmLabel} 중...` : confirmLabel}
+            {busy ? `${resolvedConfirm}…` : resolvedConfirm}
           </button>
         </div>
       </div>

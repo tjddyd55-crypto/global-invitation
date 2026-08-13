@@ -1,7 +1,9 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
 import { useEffect, useId, useMemo, useState } from 'react';
 import AppImage from '@/src/components/media/AppImage';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import {
   sanitizeGalleryItems,
   shouldDeleteRemoteGalleryAsset,
@@ -60,6 +62,7 @@ export default function MultiImageUploader({
   inputTestId,
   onUploadStateChange,
 }: MultiImageUploaderProps) {
+  const { t } = useInvitationT();
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -130,7 +133,7 @@ export default function MultiImageUploader({
 
     if (status === 'persist_failed') {
       setPersistStatus('error');
-      setError('변경사항을 저장하지 못했습니다. 다시 시도해 주세요.');
+      setError(t('editor.upload.saveFailed'));
       return false;
     }
 
@@ -154,14 +157,10 @@ export default function MultiImageUploader({
 
     void deleteMediaFile(url, objectKey || undefined).catch((cleanupError) => {
       if (cleanupError instanceof MediaApiError && cleanupError.errorCode === 'AUTH_REQUIRED') {
-        setCleanupWarning(
-          '초대장은 저장되었습니다. 저장소 정리를 위해 다시 로그인해 주세요.'
-        );
+        setCleanupWarning(t('editor.upload.reloginCleanup'));
         return;
       }
-      setCleanupWarning(
-        '저장 완료. 저장소 파일 정리는 나중에 다시 시도됩니다.'
-      );
+      setCleanupWarning(t('editor.upload.cleanupDeferred'));
     });
   };
 
@@ -219,7 +218,7 @@ export default function MultiImageUploader({
         uploadedCount += 1;
         updateQueueItem(queueItem.id, { status: 'done', progress: 100 });
       } catch (uploadError) {
-        const message = uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.';
+        const message = uploadError instanceof Error ? uploadError.message : t('editor.upload.failed');
         if (!firstError) firstError = message;
         updateQueueItem(queueItem.id, {
           status: 'error',
@@ -317,7 +316,7 @@ export default function MultiImageUploader({
       >
         <div className={styles.uploaderActions}>
           <label className={styles.buttonGhost} htmlFor={inputId}>
-            {uploading ? '업로드 중...' : '이미지 추가'}
+            {uploading ? t('editor.upload.uploading') : t('editor.upload.add')}
           </label>
           <input
             id={inputId}
@@ -355,7 +354,7 @@ export default function MultiImageUploader({
                 <div className={styles.uploadQueueMeta}>
                   <span className={styles.editorGalleryFileName}>{item.fileName}</span>
                   <span>
-                    {item.status === 'error' ? '실패' : `${item.progress}%`}
+                    {item.status === 'error' ? t('editor.upload.failedShort') : `${item.progress}%`}
                   </span>
                 </div>
                 {item.status !== 'error' ? (
@@ -375,7 +374,7 @@ export default function MultiImageUploader({
                       className={styles.editorGalleryActionButton}
                       onClick={() => handleDismissQueueItem(item.id)}
                     >
-                      제거
+                      {t('editor.upload.remove')}
                     </button>
                   </div>
                 ) : null}
@@ -405,7 +404,7 @@ export default function MultiImageUploader({
                     type="button"
                     className={styles.editorGalleryThumbnail}
                     data-testid="gallery-editor-thumbnail"
-                    aria-label={`${fileName} 원본 보기`}
+                    aria-label={t('editor.upload.viewOriginal', { label: fileName })}
                     onClick={() => setPreviewTarget({ url: image.url, name: fileName })}
                   >
                     <AppImage
@@ -431,20 +430,20 @@ export default function MultiImageUploader({
                         className={styles.editorGalleryActionButton}
                         onClick={() => void handleMove(index, index - 1)}
                         disabled={index === 0 || persistStatus === 'saving'}
-                        aria-label="위로 이동"
+                        aria-label={t('editor.gallery.moveUp')}
                         data-testid="gallery-editor-move-up"
                       >
-                        위로
+                        {t('editor.gallery.moveUp')}
                       </button>
                       <button
                         type="button"
                         className={styles.editorGalleryActionButton}
                         onClick={() => void handleMove(index, index + 1)}
                         disabled={index === visibleImages.length - 1 || persistStatus === 'saving'}
-                        aria-label="아래로 이동"
+                        aria-label={t('editor.gallery.moveDown')}
                         data-testid="gallery-editor-move-down"
                       >
-                        아래로
+                        {t('editor.gallery.moveDown')}
                       </button>
                       <button
                         type="button"
@@ -453,7 +452,7 @@ export default function MultiImageUploader({
                         disabled={uploading || persistStatus === 'saving'}
                         data-testid="gallery-editor-delete"
                       >
-                        삭제
+                        {t('comments.admin.delete')}
                       </button>
                     </div>
                   </div>
@@ -469,7 +468,7 @@ export default function MultiImageUploader({
           className={styles.editorGalleryLightbox}
           role="dialog"
           aria-modal="true"
-          aria-label="갤러리 원본 보기"
+          aria-label={t('editor.upload.viewOriginal', { label: t('editor.gallery.heading') })}
           data-testid="gallery-editor-lightbox"
           onClick={() => setPreviewTarget(null)}
         >
@@ -481,9 +480,9 @@ export default function MultiImageUploader({
               type="button"
               className={styles.editorGalleryLightboxClose}
               onClick={() => setPreviewTarget(null)}
-              aria-label="닫기"
+              aria-label={t('editor.gallery.close')}
             >
-              닫기
+              {t('editor.gallery.close')}
             </button>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

@@ -30,6 +30,7 @@ import EditorTemplateSwitcher from './components/EditorTemplateSwitcher';
 import type { VisualTemplateId } from '@/src/templates/visualTemplate/ids';
 import { useEditorShell } from '@/src/editors/shared/useEditorShell';
 import { editorProductLocale, invitationT } from '@/src/i18n/invitationT';
+import { InvitationLocaleProvider } from '@/src/i18n/InvitationLocaleContext';
 
 type WeddingEditorProps = {
   initialState: WeddingEditorState;
@@ -385,6 +386,7 @@ export default function WeddingEditor({
 
   if (shell === null) {
     return (
+      <InvitationLocaleProvider locale={invitationLocale}>
       <div
         className={styles.editorPage}
         data-testid="wedding-editor-root"
@@ -404,10 +406,12 @@ export default function WeddingEditor({
           {t('editor.ready')}
         </div>
       </div>
+      </InvitationLocaleProvider>
     );
   }
 
   return (
+    <InvitationLocaleProvider locale={invitationLocale}>
     <div
       className={`${styles.editorPage} ${shell === 'mobile' ? styles.editorPageMobile : ''}`}
       data-testid="wedding-editor-root"
@@ -637,5 +641,6 @@ export default function WeddingEditor({
         </div>
       )}
     </div>
+    </InvitationLocaleProvider>
   );
 }

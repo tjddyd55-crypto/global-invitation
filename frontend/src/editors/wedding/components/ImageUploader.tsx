@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState } from 'react';
 import AppImage from '@/src/components/media/AppImage';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import { deleteMediaFile, uploadMediaImage, type MediaUploadAssetType } from '@/src/lib/mediaApi';
 import { isSharedInvitationAssetUrlOrKey } from '@/src/invitation/galleryAsset';
 import { persistThenDeleteMedia } from '../lib/persistThenDeleteMedia';
@@ -61,6 +62,7 @@ export default function ImageUploader({
   priority,
   thumbnailRole = 'default',
 }: ImageUploaderProps) {
+  const { t } = useInvitationT();
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -92,7 +94,7 @@ export default function ImageUploader({
       });
       onChange(uploaded.url);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : '이미지 업로드에 실패했습니다.');
+      setError(uploadError instanceof Error ? uploadError.message : t('editor.upload.failed'));
     } finally {
       setUploading(false);
       setProgress(0);
@@ -133,11 +135,9 @@ export default function ImageUploader({
     });
 
     if (status === 'persist_failed') {
-      setError('변경사항을 저장하지 못했습니다. 다시 시도해 주세요.');
+      setError(t('editor.upload.saveFailed'));
     } else if (status === 'delete_failed') {
-      setCleanupWarning(
-        '이미지는 제거되었습니다. 저장소 파일 정리는 나중에 다시 시도될 수 있습니다.'
-      );
+      setCleanupWarning(t('editor.upload.cleanupLater'));
     }
 
     setClearing(false);
@@ -183,13 +183,13 @@ export default function ImageUploader({
                   : undefined
             }
             onClick={() => setLightboxOpen(true)}
-            aria-label={`${label} 원본 보기`}
+            aria-label={t('editor.upload.viewOriginal', { label })}
             disabled={busy}
           >
-            <AppImage src={value} alt={`${label} preview`} priority={priority} />
+            <AppImage src={value} alt={t('editor.upload.originalAria', { label })} priority={priority} />
           </button>
         ) : (
-          <div className={styles.uploaderPlaceholder}>이미지를 선택하세요.</div>
+          <div className={styles.uploaderPlaceholder}>{t('editor.upload.choosePlaceholder')}</div>
         )}
         <div
           className={
@@ -199,7 +199,11 @@ export default function ImageUploader({
           }
         >
           <label className={styles.buttonGhost} htmlFor={inputId} aria-disabled={busy}>
-            {uploading ? '업로드 중...' : clearing ? '제거 중...' : '이미지 선택'}
+            {uploading
+              ? t('editor.upload.uploading')
+              : clearing
+                ? t('editor.upload.removing')
+                : t('editor.upload.select')}
           </label>
           {value && (
             <button
@@ -209,7 +213,7 @@ export default function ImageUploader({
               disabled={busy}
               data-testid={clearTestId || 'image-uploader-clear'}
             >
-              {clearing ? '제거 중...' : '제거'}
+              {clearing ? t('editor.upload.removing') : t('editor.upload.remove')}
             </button>
           )}
         </div>
@@ -220,7 +224,7 @@ export default function ImageUploader({
         )}
         {clearing ? (
           <p className={styles.fieldDescription} data-testid="image-uploader-persist-status">
-            저장 후 이미지를 정리하는 중…
+            {t('editor.upload.persistClearing')}
           </p>
         ) : null}
         {error && (
@@ -248,7 +252,7 @@ export default function ImageUploader({
           className={styles.editorImageLightbox}
           role="dialog"
           aria-modal="true"
-          aria-label={`${label} 원본`}
+          aria-label={t('editor.upload.originalAria', { label })}
           onClick={() => setLightboxOpen(false)}
         >
           <AppImage src={value} alt="" />

@@ -52,7 +52,7 @@ export default function StepOrganizationBranding({
 }: StepOrganizationBrandingProps) {
   const t = (key: string, vars?: Record<string, string | number>) => invitationT(locale, key, vars);
   const accent = normalizeBrandAccentColor(value.accentColor);
-  const logoGuidance = getOrganizationLogoUploadGuidance();
+  const logoGuidance = getOrganizationLogoUploadGuidance(locale);
   const selectedPreset = normalizeOrganizationPresetId(value.presetId);
   const presets = listOrganizationPresets();
   const [pendingJciConfirm, setPendingJciConfirm] = useState(false);
@@ -186,15 +186,15 @@ export default function StepOrganizationBranding({
           aria-labelledby="jci-preset-confirm-title"
           data-testid="organization-preset-jci-confirm"
         >
-          <h3 id="jci-preset-confirm-title">JCI 기본 설정을 적용할까요?</h3>
-          <p>현재 로고와 음악이 JCI 기본 설정으로 변경됩니다.</p>
+          <h3 id="jci-preset-confirm-title">{t('editor.org.jciConfirmTitle')}</h3>
+          <p>{t('editor.org.jciConfirmDesc')}</p>
           <div className={styles.presetConfirmActions}>
             <button
               type="button"
               className={styles.secondaryButton}
               onClick={() => setPendingJciConfirm(false)}
             >
-              취소
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -252,7 +252,7 @@ export default function StepOrganizationBranding({
       </p>
 
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>브랜드 색상</span>
+        <span className={styles.fieldLabel}>{t('editor.org.brandColor')}</span>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <input
             type="color"
@@ -260,7 +260,7 @@ export default function StepOrganizationBranding({
             onChange={(event) =>
               onChange({ accentColor: normalizeBrandAccentColor(event.target.value) })
             }
-            aria-label="브랜드 색상"
+            aria-label={t('editor.org.brandColor')}
             data-testid="organization-accent-color"
           />
           <input

@@ -1,14 +1,11 @@
 /**
  * Invitation public share block — Figma PublicInvitationPage Share hierarchy.
- * Primary: 공유하기 (opens bottom sheet)
- * Secondary: 링크 복사
- * Sheet: WhatsApp / Messenger / LINE / Telegram / Email / SMS / KakaoTalk / 링크 복사
  */
 'use client';
-/* eslint-disable i18next/no-literal-string */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { KAKAO_SHARE_FALLBACK_NOTICE, shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from './InvitationShareBlock.module.css';
 
 export type InvitationShareBlockProps = {
@@ -18,23 +15,31 @@ export type InvitationShareBlockProps = {
   imageUrl?: string;
 };
 
-const SHARE_APPS = [
-  { id: 'whatsapp', label: 'WhatsApp', initial: 'W', color: '#25D366', textColor: '#fff' },
-  { id: 'messenger', label: 'Messenger', initial: 'M', color: '#0084FF', textColor: '#fff' },
-  { id: 'line', label: 'LINE', initial: 'L', color: '#06C755', textColor: '#fff' },
-  { id: 'telegram', label: 'Telegram', initial: 'T', color: '#2AABEE', textColor: '#fff' },
-  { id: 'email', label: 'Email', initial: 'E', color: '#6B7280', textColor: '#fff' },
-  { id: 'sms', label: 'SMS', initial: 'S', color: '#374151', textColor: '#fff' },
-  { id: 'kakao', label: '카카오톡', initial: 'K', color: '#FEE500', textColor: '#1F2937' },
-  { id: 'copy', label: '링크 복사', initial: '⎘', color: '#4F46E5', textColor: '#fff' },
-] as const;
-
 export default function InvitationShareBlock({
   shareUrl,
-  title = '초대장',
-  text = '초대장을 확인해 주세요.',
+  title,
+  text,
   imageUrl,
 }: InvitationShareBlockProps) {
+  const { t } = useInvitationT();
+  const resolvedTitle = title?.trim() || t('invitation.share.fallbackTitle');
+  const resolvedText = text?.trim() || t('invitation.share.fallback');
+  const hintLines = t('invitation.share.hint').split('\n');
+  const shareApps = useMemo(
+    () =>
+      [
+        { id: 'whatsapp', label: 'WhatsApp', initial: 'W', color: '#25D366', textColor: '#fff' },
+        { id: 'messenger', label: 'Messenger', initial: 'M', color: '#0084FF', textColor: '#fff' },
+        { id: 'line', label: 'LINE', initial: 'L', color: '#06C755', textColor: '#fff' },
+        { id: 'telegram', label: 'Telegram', initial: 'T', color: '#2AABEE', textColor: '#fff' },
+        { id: 'email', label: 'Email', initial: 'E', color: '#6B7280', textColor: '#fff' },
+        { id: 'sms', label: 'SMS', initial: 'S', color: '#374151', textColor: '#fff' },
+        { id: 'kakao', label: t('invitation.share.kakao'), initial: 'K', color: '#FEE500', textColor: '#1F2937' },
+        { id: 'copy', label: t('invitation.share.copyLink'), initial: '⎘', color: '#4F46E5', textColor: '#fff' },
+      ] as const,
+    [t]
+  );
+
   const [sheetOpen, setSheetOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -52,7 +57,7 @@ export default function InvitationShareBlock({
   const handleNativeShare = async () => {
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
       try {
-        await navigator.share({ title, text, url: shareUrl });
+        await navigator.share({ title: resolvedTitle, text: resolvedText, url: shareUrl });
         return;
       } catch {
         // fall through to sheet
@@ -63,7 +68,7 @@ export default function InvitationShareBlock({
 
   const handleApp = async (id: string) => {
     const encodedUrl = encodeURIComponent(shareUrl);
-    const encodedText = encodeURIComponent(`${text}\n${shareUrl}`);
+    const encodedText = encodeURIComponent(`${resolvedText}\n${shareUrl}`);
     if (id === 'copy') {
       await handleCopy();
       setSheetOpen(false);
@@ -72,8 +77,8 @@ export default function InvitationShareBlock({
     if (id === 'kakao') {
       try {
         const result = await shareViaKakaoTalk({
-          title,
-          description: text,
+          title: resolvedTitle,
+          description: resolvedText,
           imageUrl,
           canonicalUrl: shareUrl,
         });
@@ -82,7 +87,7 @@ export default function InvitationShareBlock({
         if (error instanceof DOMException && error.name === 'AbortError') {
           setNotice(null);
         } else {
-          setNotice('카카오톡 공유 URL이 올바르지 않습니다. 공개 링크를 확인해 주세요.');
+          setNotice(t('invitation.share.kakaoInvalid'));
         }
       }
       setSheetOpen(false);
@@ -92,8 +97,8 @@ export default function InvitationShareBlock({
       whatsapp: `https://wa.me/?text=${encodedText}`,
       messenger: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
       line: `https://social-plugins.line.me/lineit/share?url=${encodedUrl}`,
-      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodeURIComponent(text)}`,
-      email: `mailto:?subject=${encodeURIComponent(title)}&body=${encodedText}`,
+      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodeURIComponent(resolvedText)}`,
+      email: `mailto:?subject=${encodeURIComponent(resolvedTitle)}&body=${encodedText}`,
       sms: `sms:?&body=${encodedText}`,
     };
     const href = hrefById[id];
@@ -103,18 +108,22 @@ export default function InvitationShareBlock({
 
   return (
     <section className={styles.section} data-testid="invitation-share-block">
-      <p className={styles.scriptLabel}>Share</p>
+      <p className={styles.scriptLabel}>{t('invitation.share.sheetTitle')}</p>
       <p className={styles.hint}>
-        사용 중인 기기의 공유 기능으로
-        <br />
-        원하는 앱에 바로 보낼 수 있습니다.
+        {hintLines[0]}
+        {hintLines[1] ? (
+          <>
+            <br />
+            {hintLines[1]}
+          </>
+        ) : null}
       </p>
       <div className={styles.actions}>
         <button type="button" className={styles.primary} onClick={() => void handleNativeShare()}>
-          공유하기
+          {t('invitation.share.native')}
         </button>
         <button type="button" className={styles.secondary} onClick={() => void handleCopy()}>
-          {linkCopied ? '복사됨!' : '링크 복사'}
+          {linkCopied ? t('invitation.share.copied') : t('invitation.share.copyLink')}
         </button>
       </div>
       {notice ? <p className={styles.hint}>{notice}</p> : null}
@@ -128,18 +137,18 @@ export default function InvitationShareBlock({
           <div
             className={styles.sheet}
             role="dialog"
-            aria-label="공유하기"
+            aria-label={t('invitation.share.sheetAria')}
             onClick={(event) => event.stopPropagation()}
           >
             <div className={styles.sheetHandle} />
             <div className={styles.sheetHeader}>
-              <p className={styles.sheetTitle}>공유하기</p>
+              <p className={styles.sheetTitle}>{t('invitation.share.sheetTitle')}</p>
               <button type="button" className={styles.sheetClose} onClick={() => setSheetOpen(false)}>
                 ×
               </button>
             </div>
             <div className={styles.appGrid}>
-              {SHARE_APPS.map((app) => (
+              {shareApps.map((app) => (
                 <button
                   key={app.id}
                   type="button"

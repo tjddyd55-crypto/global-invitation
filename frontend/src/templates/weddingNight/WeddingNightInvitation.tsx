@@ -19,16 +19,17 @@ import {
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
 import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
+import { invitationT } from '@/src/i18n/invitationT';
 import styles from './WeddingNightInvitation.module.css';
 
-function ContactLine({ person }: { person: TemplatePerson }) {
+function ContactLine({ person, contactLabel }: { person: TemplatePerson; contactLabel: string }) {
   return (
     <div className={styles.contactLine}>
       <span className={styles.contactRole}>{person.role}</span>
       <span className={styles.contactName}>{person.name}</span>
       {person.phone ? (
         <a className={styles.contactLink} href={toTelHref(person.phone)}>
-          연락하기
+          {contactLabel}
         </a>
       ) : null}
     </div>
@@ -39,6 +40,7 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
+  const t = (key: string) => invitationT(model.locale, key);
 
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
 
@@ -57,7 +59,7 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
               src={model.heroImage || null}
               alt=""
               loading="eager"
-              fallback={<div className={styles.heroPlaceholder}>대표 이미지를 추가해 주세요</div>}
+              fallback={<div className={styles.heroPlaceholder}>{t('invitation.placeholder.hero')}</div>}
             />
             <span className={styles.heroScrim} aria-hidden />
           </div>
@@ -93,7 +95,7 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
                 </p>
               ))
             ) : (
-              <p className={styles.placeholder}>인사말을 입력해 주세요</p>
+              <p className={styles.placeholder}>{t('invitation.placeholder.greeting')}</p>
             )}
           </InvitationReveal>
         </section>
@@ -102,9 +104,9 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
       {model.hasCouple ? (
         <section className={styles.couple} data-section-id="couple" data-preview-section="couple">
           <InvitationReveal variant="fade">
-            <p className={styles.sectionLabel}>THE COUPLE</p>
-            {model.groom ? <ContactLine person={model.groom} /> : null}
-            {model.bride ? <ContactLine person={model.bride} /> : null}
+            <p className={styles.sectionLabel}>{t('invitation.section.couple')}</p>
+            {model.groom ? <ContactLine person={model.groom} contactLabel={t('invitation.action.contact')} /> : null}
+            {model.bride ? <ContactLine person={model.bride} contactLabel={t('invitation.action.contact')} /> : null}
           </InvitationReveal>
         </section>
       ) : null}
@@ -120,7 +122,7 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
         />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.film} data-section-id="gallery" data-preview-section="gallery">
-          <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.gallery')}</p>
         </section>
       ) : null}
 
@@ -145,9 +147,9 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
             mapImage={data.mapImage}
             tone="dark"
             previewMode={flags.previewMode}
-            transportTitle="교통 안내"
+            transportTitle={t('invitation.map.transport')}
             transportInfo={model.transportInfo}
-            parkingTitle="주차 안내"
+            parkingTitle={t('invitation.map.parking')}
             parkingInfo={model.parkingInfo}
           />
         </section>
@@ -156,7 +158,7 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
       <section className={styles.calendar} data-section-id="schedule" data-preview-section="schedule">
         <InvitationReveal variant="fade">
           <p className={styles.sectionLabel}>DATE</p>
-          <p className={styles.calendarDate}>{model.dateText || '일정을 입력해 주세요'}</p>
+          <p className={styles.calendarDate}>{model.dateText || t('invitation.placeholder.schedule')}</p>
         </InvitationReveal>
         <InvitationReveal variant="fade" delayMs={120}>
           <TemplateDateGrid
@@ -182,7 +184,7 @@ export default function WeddingNightInvitation(props: VisualTemplateProps) {
           data-section-id="accounts"
           data-preview-section="accounts"
         >
-          <p className={styles.placeholder}>계좌 정보를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.accounts')}</p>
         </section>
       ) : null}
 

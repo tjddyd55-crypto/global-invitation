@@ -1,10 +1,10 @@
 'use client';
-/* eslint-disable i18next/no-literal-string */
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import RequireAuth from '@/src/features/auth/ui/shared/RequireAuth';
 import { buildApiUrl, buildRequestInit } from '@/src/lib/apiBase';
+import { useI18n } from '@/src/contexts/I18nContext';
 
 type OwnerComment = {
   id: string;
@@ -28,6 +28,7 @@ export default function InvitationCommentsManagePage() {
 }
 
 function CommentsManager({ invitationId }: { invitationId: string }) {
+  const { t } = useI18n();
   const [items, setItems] = useState<OwnerComment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,15 +42,15 @@ function CommentsManager({ invitationId }: { invitationId: string }) {
         buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}/comments`),
         buildRequestInit({ credentials: 'include' })
       );
-      if (!res.ok) throw new Error('댓글 목록을 불러오지 못했습니다.');
+      if (!res.ok) throw new Error(t('comments.admin.errorLoad'));
       const data = (await res.json()) as { items?: OwnerComment[] };
       setItems(Array.isArray(data.items) ? data.items : []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '오류가 발생했습니다.');
+      setError(err instanceof Error ? err.message : t('comments.admin.errorLoad'));
     } finally {
       setLoading(false);
     }
-  }, [invitationId]);
+  }, [invitationId, t]);
 
   useEffect(() => {
     void reload();
@@ -65,7 +66,7 @@ function CommentsManager({ invitationId }: { invitationId: string }) {
         body: JSON.stringify(body),
       })
     );
-    if (!res.ok) throw new Error('수정에 실패했습니다.');
+    if (!res.ok) throw new Error(t('comments.admin.errorUpdate'));
     await reload();
   };
 
@@ -74,17 +75,15 @@ function CommentsManager({ invitationId }: { invitationId: string }) {
       buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}/comments/${encodeURIComponent(commentId)}`),
       buildRequestInit({ method: 'DELETE', credentials: 'include' })
     );
-    if (!res.ok && res.status !== 204) throw new Error('삭제에 실패했습니다.');
+    if (!res.ok && res.status !== 204) throw new Error(t('comments.admin.errorDelete'));
     await reload();
   };
 
   return (
-    <main style={{ maxWidth: 720, margin: '0 auto', padding: '2rem 1.25rem 3rem' }}>
-      <h1 style={{ fontSize: 22, marginBottom: 8 }}>댓글·메시지 관리</h1>
-      <p style={{ color: '#666', marginBottom: 24, fontSize: 14 }}>
-        공개 댓글은 RSVP 메시지와 별도입니다. 숨김·고정·삭제를 할 수 있습니다.
-      </p>
-      {loading ? <p>불러오는 중…</p> : null}
+    <main style={{ maxWidth: 720, margin: '0 auto', padding: '2rem 1.25rem 3rem' }} data-testid="comments-admin-screen">
+      <h1 style={{ fontSize: 22, marginBottom: 8 }}>{t('comments.admin.title')}</h1>
+      <p style={{ color: '#666', marginBottom: 24, fontSize: 14 }}>{t('comments.admin.desc')}</p>
+      {loading ? <p>{t('comments.admin.loading')}</p> : null}
       {error ? <p style={{ color: '#b45309' }}>{error}</p> : null}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {items.map((item) => (
@@ -103,22 +102,22 @@ function CommentsManager({ invitationId }: { invitationId: string }) {
             <p style={{ margin: '0 0 10px', whiteSpace: 'pre-wrap' }}>{item.message}</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <button type="button" onClick={() => void patch(item.id, { isVisible: !item.isVisible })}>
-                {item.isVisible ? '숨김' : '다시 표시'}
+                {item.isVisible ? t('comments.admin.hide') : t('comments.admin.show')}
               </button>
               <button type="button" onClick={() => void patch(item.id, { isPinned: !item.isPinned })}>
-                {item.isPinned ? '고정 해제' : '고정'}
+                {item.isPinned ? t('comments.admin.unpin') : t('comments.admin.pin')}
               </button>
               {!item.deletedAt ? (
                 <button type="button" onClick={() => void remove(item.id)}>
-                  삭제
+                  {t('comments.admin.delete')}
                 </button>
               ) : (
-                <span style={{ fontSize: 12 }}>삭제됨</span>
+                <span style={{ fontSize: 12 }}>{t('comments.admin.deleted')}</span>
               )}
             </div>
           </article>
         ))}
-        {!loading && items.length === 0 ? <p>등록된 댓글이 없습니다.</p> : null}
+        {!loading && items.length === 0 ? <p>{t('comments.admin.empty')}</p> : null}
       </div>
     </main>
   );

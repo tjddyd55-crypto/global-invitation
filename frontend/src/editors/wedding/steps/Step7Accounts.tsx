@@ -1,6 +1,8 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
 import AccountListEditor from '../components/AccountListEditor';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../weddingEditor.module.css';
 import type { WeddingEditorAccount } from '../state/weddingEditor.types';
 import { getConceptPresentationConfig } from '@/src/invitation/conceptPresentationConfig';
@@ -24,6 +26,7 @@ export default function Step7Accounts({
   onAccountEnabledChange,
   onAccountsTitleChange,
 }: Step7AccountsProps) {
+  const { t } = useInvitationT();
   const config = getConceptPresentationConfig(conceptType);
   const isOptional = config.accountOptional;
   const showForm = !isOptional || accountEnabled;
@@ -32,12 +35,8 @@ export default function Step7Accounts({
   return (
     <section className={styles.stepSection} data-testid="step-accounts">
       <div className={styles.sectionHeader}>
-        <h2>{isEventLike ? '참가비·계좌 정보' : '계좌 정보'}</h2>
-        <p>
-          {isEventLike
-            ? '참가비, 회비, 등록비 또는 후원금을 받을 계좌를 안내할 수 있습니다.'
-            : '복수 계좌 추가/삭제/복제 기능을 제공합니다.'}
-        </p>
+        <h2>{isEventLike ? t('editor.accounts.headingFee') : t('editor.accounts.heading')}</h2>
+        <p>{isEventLike ? t('editor.accounts.descFee') : t('editor.accounts.desc')}</p>
       </div>
 
       {isOptional ? (
@@ -48,7 +47,7 @@ export default function Step7Accounts({
               checked={accountEnabled}
               onChange={(event) => onAccountEnabledChange(event.target.checked)}
             />
-            <span>참가비·계좌 정보 사용</span>
+            <span>{t('editor.accounts.headingFee')}</span>
           </label>
           <p className={styles.sectionHint}>
             공개하면 초대장 방문자가 계좌 정보를 볼 수 있습니다. OFF해도 입력한 계좌 데이터는 유지됩니다.

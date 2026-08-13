@@ -18,15 +18,16 @@ import {
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
 import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
+import { invitationT } from '@/src/i18n/invitationT';
 import styles from './GeneralCleanInvitation.module.css';
 
 type Fact = { label: string; value: string };
 
-function buildFacts(date: string, venue: string, detail: string): Fact[] {
+function buildFacts(date: string, venue: string, detail: string, t: (key: string) => string): Fact[] {
   return [
-    { label: 'DATE', value: date },
-    { label: 'PLACE', value: venue },
-    { label: 'INFO', value: detail },
+    { label: t('invitation.common.date'), value: date },
+    { label: t('invitation.common.place'), value: venue },
+    { label: t('invitation.common.info'), value: detail },
   ].filter((fact) => Boolean(fact.value));
 }
 
@@ -34,8 +35,9 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
+  const t = (key: string) => invitationT(model.locale, key);
 
-  const facts = buildFacts(model.dateText, model.venueName, model.venueDetail);
+  const facts = buildFacts(model.dateText, model.venueName, model.venueDetail, t);
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
 
   return (
@@ -71,7 +73,7 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
                 ))}
               </dl>
             ) : (
-              <p className={styles.placeholder}>행사 일정과 장소를 입력해 주세요</p>
+              <p className={styles.placeholder}>{t('invitation.placeholder.eventSchedule')}</p>
             )}
           </InvitationReveal>
         </section>
@@ -85,7 +87,7 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
               src={model.heroImage || null}
               alt=""
               loading="eager"
-              fallback={<div className={styles.bannerPlaceholder}>대표 이미지를 추가해 주세요</div>}
+              fallback={<div className={styles.bannerPlaceholder}>{t('invitation.placeholder.hero')}</div>}
             />
           </figure>
         </InvitationReveal>
@@ -94,7 +96,7 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
       {model.hasGreeting || flags.showEmptyPlaceholder ? (
         <section className={styles.copy} data-section-id="greeting" data-preview-section="greeting">
           <InvitationReveal variant="fade">
-            <h2 className={styles.sectionTitle}>안내 말씀</h2>
+            <h2 className={styles.sectionTitle}>{t('invitation.section.notice')}</h2>
             {model.hasGreeting ? (
               model.greetingLines.map((line, index) => (
                 <p key={`greeting-${index}`} className={styles.copyLine}>
@@ -102,7 +104,7 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
                 </p>
               ))
             ) : (
-              <p className={styles.placeholder}>안내 문구를 입력해 주세요</p>
+              <p className={styles.placeholder}>{t('invitation.placeholder.notice')}</p>
             )}
           </InvitationReveal>
         </section>
@@ -110,8 +112,8 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
 
       <section className={styles.schedule} data-section-id="schedule" data-preview-section="schedule">
         <InvitationReveal variant="fade">
-          <h2 className={styles.sectionTitle}>행사 일정</h2>
-          <p className={styles.scheduleDate}>{model.dateText || '일정을 입력해 주세요'}</p>
+          <h2 className={styles.sectionTitle}>{t('invitation.section.eventSchedule')}</h2>
+          <p className={styles.scheduleDate}>{model.dateText || t('invitation.placeholder.schedule')}</p>
         </InvitationReveal>
         <InvitationReveal variant="fade" delayMs={100}>
           <TemplateDateGrid
@@ -136,20 +138,20 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
           visualTemplateId="GENERAL_04_CLEAN"
           items={model.gallery.items}
           displayMode={model.gallery.displayMode}
-          sectionLabel="지난 기록"
+          sectionLabel={t('invitation.gallery.pastRecords')}
           labelClassName={styles.sectionTitle}
           lockBodyScroll={flags.isPublic}
         />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.gallery')}</p>
         </section>
       ) : null}
 
       {model.hasLocation || flags.showEmptyPlaceholder ? (
         <section className={styles.location} data-section-id="location" data-preview-section="location">
           <LocationMapSection
-            sectionTitle="오시는 길"
+            sectionTitle={t('invitation.map.directionsTitle')}
             title={model.venueName}
             address={model.address}
             detailAddress={model.detailAddress || undefined}
@@ -163,9 +165,9 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
             mapImage={data.mapImage}
             tone="light"
             previewMode={flags.previewMode}
-            transportTitle="교통 안내"
+            transportTitle={t('invitation.map.transport')}
             transportInfo={model.transportInfo}
-            parkingTitle="주차 안내"
+            parkingTitle={t('invitation.map.parking')}
             parkingInfo={model.parkingInfo}
           />
         </section>
@@ -184,7 +186,7 @@ export default function GeneralCleanInvitation(props: VisualTemplateProps) {
           data-section-id="accounts"
           data-preview-section="accounts"
         >
-          <p className={styles.placeholder}>계좌 정보를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.accounts')}</p>
         </section>
       ) : null}
 
