@@ -8,6 +8,10 @@ import {
 } from '@/src/invitation/schemas';
 import { normalizeOrganizationBranding } from '@/src/invitation/conceptTypes';
 import { copyRuntimeInvitationLocale } from '@/src/invitation/runtimeLocale';
+import { toSparseFuneralLike } from '@/src/invitation/sparseFuneral';
+import { invitationT } from '@/src/i18n/invitationT';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
+import { resolveInvitationLocale } from '@/src/i18n/productLocales';
 import FuneralClassicInvitation from '@/src/templates/funeralClassic/FuneralClassicInvitation';
 import { buildWeddingClassicData, getSampleWeddingInvitation } from '@/src/templates/weddingClassic/data';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
@@ -33,12 +37,19 @@ function toWeddingFromFuneral(data: FuneralInvitationData): WeddingInvitationDat
   const base = buildWeddingClassicData(getSampleWeddingInvitation());
   const funeralDate = new Date(data.schedule.funeralDate);
   const normalizedDate = Number.isNaN(funeralDate.getTime()) ? base.weddingDate : funeralDate;
+  const locale = resolveInvitationLocale(
+    (data as { language?: string; locale?: string }).language ||
+      (data as { locale?: string }).locale
+  );
+  const memorialTitle = data.deceasedName
+    ? invitationT(locale, 'invitation.funeral.memorialTitle', { name: data.deceasedName })
+    : base.title;
   return copyRuntimeInvitationLocale(
     {
     ...base,
     templateType: 'FULL',
     conceptType: 'FUNERAL',
-    title: data.deceasedName ? `${data.deceasedName} 추모 초대` : base.title,
+    title: memorialTitle,
     content: data.message || base.content,
     eventDate: data.schedule.funeralDate || base.eventDate,
     locationText: data.funeralHall.address || data.funeralHall.name || base.locationText,
@@ -49,7 +60,7 @@ function toWeddingFromFuneral(data: FuneralInvitationData): WeddingInvitationDat
     guestbookEnabled: base.guestbookEnabled ?? true,
     commentsEnabled: true,
     heroImage: data.heroImage || base.heroImage,
-    heroTitle: data.deceasedName ? `${data.deceasedName} 추모 초대` : base.heroTitle,
+    heroTitle: memorialTitle,
     heroSubtitle: data.schedule.funeralDate || base.heroSubtitle,
     venueName: data.funeralHall.name || base.venueName,
     introQuote: data.message || base.introQuote,
@@ -186,43 +197,32 @@ export default function RenderInvitationByConcept(props: RenderInvitationByConce
     isShared,
     visualTemplateIdOverride,
   } = props;
+  const { t } = useInvitationT();
 
   const conceptType = resolveInvitationConceptType(data);
   const weddingLike = resolveWeddingLikePayload(data);
   const commentsEnabled = showGuestbook ?? (weddingLike ? resolveCommentsEnabled(weddingLike) : true);
 
   if (conceptType === 'FUNERAL') {
-    if (isFuneralInvitationData(data)) {
+    const funeralData = isFuneralInvitationData(data)
+      ? data
+      : data && typeof data === 'object' && !Array.isArray(data)
+        ? toSparseFuneralLike(data as Record<string, unknown>)
+        : null;
+    if (funeralData) {
       return (
         <FuneralClassicInvitation
-          data={data}
+          data={funeralData}
           invitationSlug={invitationSlug}
           previewMode={previewMode}
           onShare={onShare}
           onKakaoShare={onKakaoShare}
-        />
-      );
-    }
-    if (weddingLike) {
-      return (
-        <VisualInvitationHost
-          data={{ ...weddingLike, conceptType: 'FUNERAL' }}
-          invitationSlug={invitationSlug}
-          showPlayButton={showPlayButton}
-          previewMode={previewMode}
-          renderMode={renderMode}
-          showRsvp={showRsvp ?? weddingLike.rsvpEnabled}
-          showGuestbook={commentsEnabled}
-          onShare={onShare}
-          onKakaoShare={onKakaoShare}
-          isShared={isShared}
-          visualTemplateIdOverride="WEDDING_01_CLASSIC"
         />
       );
     }
     return (
       <div data-testid="concept-render-error" style={{ padding: 24, textAlign: 'center' }}>
-        초대장을 표시할 수 없습니다.
+        {t('invitation.render.unavailable')}
       </div>
     );
   }
@@ -230,7 +230,7 @@ export default function RenderInvitationByConcept(props: RenderInvitationByConce
   if (!weddingLike) {
     return (
       <div data-testid="concept-render-error" style={{ padding: 24, textAlign: 'center' }}>
-        초대장을 표시할 수 없습니다.
+        {t('invitation.render.unavailable')}
       </div>
     );
   }

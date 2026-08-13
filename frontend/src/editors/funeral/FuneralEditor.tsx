@@ -81,7 +81,7 @@ export default function FuneralEditor({
 
   return (
     <InvitationLocaleProvider locale={locale}>
-      <div className={styles.editorPage}>
+      <div className={styles.editorPage} data-testid="funeral-editor-root">
         <EditorHeader
           title={t('editor.header.titleFuneral')}
           conceptLabel={t('editor.concept.funeral')}

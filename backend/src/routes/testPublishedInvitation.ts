@@ -48,18 +48,37 @@ router.post('/', async (req, res) => {
         ? req.body.conceptType.trim()
         : 'WEDDING';
     const title = `${TITLE_PREFIX} ${parsed.locale} ${Date.now()}`;
-    const locationText = parsed.locale === 'en-US' ? 'The Garden Hall' : '라움 아트센터';
+    const isFuneral = conceptType === 'FUNERAL';
+    const isEn = parsed.locale === 'en-US';
+    const locationText = isEn
+      ? isFuneral
+        ? 'Serenity Memorial Hall'
+        : 'The Garden Hall'
+      : isFuneral
+        ? '서울아산병원 장례식장'
+        : '라움 아트센터';
+    const eventDate = isFuneral ? '2026-10-17T10:00:00' : '2026-10-17T14:00:00';
     const dataJson = stripLegacyDataJsonLocale({
       templateType: 'FULL',
       conceptType,
-      visualTemplateId,
+      ...(isFuneral ? {} : { visualTemplateId }),
       title,
-      eventDate: '2026-10-17T14:00:00',
+      eventDate,
       locationText,
       venueName: locationText,
       rsvpEnabled: true,
       guestbookEnabled: true,
       commentsEnabled: true,
+      ...(isFuneral
+        ? {
+            deceasedName: isEn ? 'Michael Anderson' : '홍길동',
+            deathDate: '2026-10-17',
+            chiefMourner: isEn ? 'Sarah Anderson' : '홍상주',
+            message: isEn ? 'In loving memory.' : '삼가 고인의 명복을 빕니다.',
+            funeralHall: { name: locationText, address: locationText },
+            schedule: { funeralDate: eventDate },
+          }
+        : {}),
     }) as Prisma.InputJsonValue;
 
     const invitation = await prisma.invitation.create({
