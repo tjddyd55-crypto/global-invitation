@@ -24,6 +24,8 @@ const EXPECTED = [
   'GENERAL_05_FESTIVE/thumbnail.webp',
   'GENERAL_06_CULTURE/hero.webp',
   'GENERAL_06_CULTURE/thumbnail.webp',
+  'ORGANIZATION_01_OFFICIAL/logo.webp',
+  'ORGANIZATION_02_JCI/thumbnail.webp',
   'shared-wedding/photo-01.webp',
   'shared-wedding/photo-02.webp',
   'shared-wedding/photo-03.webp',

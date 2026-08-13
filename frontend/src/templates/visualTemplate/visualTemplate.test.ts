@@ -9,7 +9,7 @@ import {
 import { resolveVisualTemplateId, sanitizeVisualTemplateIdForSave } from './resolveVisualTemplateId';
 import { getAllVisualTemplateDefinitions, getVisualTemplateDefinition, listActiveVisualTemplates } from './visualTemplateRegistry';
 import { getVisualTemplatePreviewFixture } from './previewFixtures';
-import { ORGANIZATION_SAMPLE_LOGO } from './templateSampleAssets';
+import { ORGANIZATION_SAMPLE_LOGO, templateThumbnailAsset } from './templateSampleAssets';
 
 test('registry has 10 templates; wedding/general 02/03 placeholders absent', () => {
   assert.equal(VISUAL_TEMPLATE_IDS.length, 10);
@@ -74,6 +74,21 @@ test('Official template unchanged in registry metadata', () => {
   );
   assert.ok(official);
   assert.equal(official?.name, '공식');
+  assert.equal(official?.description, '기관·단체 행사에 맞는 공식적인 브랜드 헤더 레이아웃');
+  assert.equal(
+    official?.thumbnailAsset,
+    templateThumbnailAsset('ORGANIZATION_01_OFFICIAL')
+  );
+});
+
+test('JCI registry thumbnail is JCI-specific; preview id unchanged', () => {
+  const jci = getVisualTemplateDefinition('ORGANIZATION_02_JCI');
+  const official = getVisualTemplateDefinition('ORGANIZATION_01_OFFICIAL');
+  assert.notEqual(jci.thumbnailAsset, official.thumbnailAsset);
+  assert.equal(jci.thumbnailAsset, templateThumbnailAsset('ORGANIZATION_02_JCI'));
+  assert.ok(jci.thumbnailAsset.endsWith('ORGANIZATION_02_JCI/thumbnail.webp'));
+  assert.equal(jci.id, 'ORGANIZATION_02_JCI');
+  assert.equal(jci.name, 'JCI');
 });
 
 test('customer names do not expose internal numbers in registry name field', () => {

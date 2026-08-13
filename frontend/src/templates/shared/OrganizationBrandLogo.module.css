@@ -58,3 +58,30 @@
 .wrapCompact .logo {
   max-height: 32px;
 }
+
+/*
+ * Dark surface holding plate — official color logo on white.
+ * Not a logo recolor. filter/invert/mix-blend 금지.
+ */
+.wrapOnDark {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: none;
+}
+
+.wrapOnDark .logo,
+.wrapOnDark .fallbackText {
+  filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+.wrapCompact.wrapOnDark {
+  max-width: min(168px, 52vw);
+  max-height: 56px;
+  padding: 8px 14px;
+}
+
+.wrapCompact.wrapOnDark .logo {
+  max-height: 40px;
+}

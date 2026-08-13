@@ -38,10 +38,17 @@ JCI Brand Guidelines v1.2 (November 27, 2025).
 
 ### Logo
 
-- Shared key: `invitation/shared/images/templates/ORGANIZATION_01_OFFICIAL/logo.webp`
+- Shared key (light): `invitation/shared/images/templates/ORGANIZATION_01_OFFICIAL/logo.webp`
+- Dark footer: official inverted/white variant if present (`templates/shared/organizationLogoSurfaces.ts`). 없으면 컬러 로고 + 흰 홀딩 플레이트. CSS filter/invert/recolor 금지.
 - 변형·회전·stretch·색상 변조·shadow 금지
-- Placement: header top-left; compact brand identifier
+- Placement: header top-left; compact brand identifier. Footer: brand mark only (not hero).
 - Local org name: DOM text (JCI Blue), wrap allowed
+
+### Catalog thumbnail
+
+- Official: `GENERAL_01_CLASSIC/thumbnail.webp` (generic official event photo)
+- JCI: `invitation/shared/images/templates/ORGANIZATION_02_JCI/thumbnail.webp` (preview header+hero capture)
+- Official/JCI thumbnail alias 공유 금지. Footer logo 와 thumbnail 은 별도 asset.
 
 ### Music
 
@@ -85,7 +92,7 @@ Shared RSVP/account/map/music CSS는 `var(--invite-*, fallback)` 를 읽는다.
 - RSVP CTA: Blue `#0097D7` / hover Navy `#1F4789`
 - Account copy: Blue outline
 - Map links: subtle Blue border
-- Footer: Black `#130F2D`
+- Footer: Black `#130F2D` + white holding plate around official color logo + Teal title + low-opacity Blue/Teal/Navy ripple
 - Music FAB playing: Blue (idle Black)
 
 Official fallback은 기존 `#4f46e5` 유지.

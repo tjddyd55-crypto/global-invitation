@@ -18,23 +18,28 @@ function photoKeys(folder: string): string[] {
 }
 
 /**
- * ORGANIZATION hero/thumb — 전용 사진 pack 발행 전 GENERAL_01_CLASSIC 재사용.
+ * ORGANIZATION hero — 전용 사진 pack 발행 전 GENERAL_01_CLASSIC 재사용.
  * JCI logo 는 Official shared key 재사용 (R2 중복 업로드 금지).
+ * Thumbnail 은 Official 만 alias. JCI 는 전용 thumbnail.webp.
  */
-const ORGANIZATION_ASSET_ALIAS: Partial<Record<VisualTemplateId, VisualTemplateId>> = {
+const ORGANIZATION_HERO_ALIAS: Partial<Record<VisualTemplateId, VisualTemplateId>> = {
   ORGANIZATION_01_OFFICIAL: 'GENERAL_01_CLASSIC',
   ORGANIZATION_02_JCI: 'GENERAL_01_CLASSIC',
 };
 
+const ORGANIZATION_THUMBNAIL_ALIAS: Partial<Record<VisualTemplateId, VisualTemplateId>> = {
+  ORGANIZATION_01_OFFICIAL: 'GENERAL_01_CLASSIC',
+};
+
 /** Hero 대표 이미지 (템플릿별) */
 export function templateHeroAsset(id: VisualTemplateId): string {
-  const resolved = ORGANIZATION_ASSET_ALIAS[id] ?? id;
+  const resolved = ORGANIZATION_HERO_ALIAS[id] ?? id;
   return `${TEMPLATE_ASSET_PREFIX}/${resolved}/hero.webp`;
 }
 
 /** 카탈로그 카드 썸네일 (4:3) */
 export function templateThumbnailAsset(id: VisualTemplateId): string {
-  const resolved = ORGANIZATION_ASSET_ALIAS[id] ?? id;
+  const resolved = ORGANIZATION_THUMBNAIL_ALIAS[id] ?? id;
   return `${TEMPLATE_ASSET_PREFIX}/${resolved}/thumbnail.webp`;
 }
 

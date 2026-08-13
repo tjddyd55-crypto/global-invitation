@@ -7,10 +7,36 @@ import {
   ORGANIZATION_SAMPLE_PHOTOS,
   templateHeroAsset,
   templateOrganizationLogoAsset,
+  templateThumbnailAsset,
 } from './templateSampleAssets';
 import { ORGANIZATION_SAMPLE_MUSIC } from './organizationSharedMusicSample';
 import { createWeddingEditorState } from '@/src/editors/wedding/state/weddingEditor.initial';
 import { resolvePlayableInvitationMusic } from '@/src/invitation/invitationMusic';
+
+test('Official and JCI catalog thumbnails are distinct keys', () => {
+  const officialThumb = templateThumbnailAsset('ORGANIZATION_01_OFFICIAL');
+  const jciThumb = templateThumbnailAsset('ORGANIZATION_02_JCI');
+  assert.notEqual(officialThumb, jciThumb);
+  assert.equal(
+    officialThumb,
+    'invitation/shared/images/templates/GENERAL_01_CLASSIC/thumbnail.webp'
+  );
+  assert.equal(
+    jciThumb,
+    'invitation/shared/images/templates/ORGANIZATION_02_JCI/thumbnail.webp'
+  );
+});
+
+test('Official hero alias unchanged; JCI hero still reuses GENERAL classic', () => {
+  assert.equal(
+    templateHeroAsset('ORGANIZATION_01_OFFICIAL'),
+    'invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp'
+  );
+  assert.equal(
+    templateHeroAsset('ORGANIZATION_02_JCI'),
+    'invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp'
+  );
+});
 
 test('JCI template logo reuses Official shared key (no duplicate R2 path)', () => {
   assert.equal(templateOrganizationLogoAsset('ORGANIZATION_02_JCI'), ORGANIZATION_SAMPLE_LOGO);

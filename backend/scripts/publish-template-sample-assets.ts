@@ -7,6 +7,7 @@
  * 사용법:
  *   railway run -s Backend -e development npx tsx scripts/publish-template-sample-assets.ts --source <dir>
  *   ... --organization-logo <png-or-webp>   (ORGANIZATION_01_OFFICIAL/logo.webp 만)
+ *   ... --jci-thumbnail <png-or-webp>       (ORGANIZATION_02_JCI/thumbnail.webp)
  *   ... --dry-run  (변환만 하고 업로드하지 않음)
  *
  * 변환 결과는 <repo>/artifacts/template-sample-assets 에 남아 재검증할 수 있다.
@@ -27,10 +28,13 @@ type AssetPlan = {
   variant: Variant;
   /** true 이면 sourceFile 을 cwd 기준 path.resolve 한다 (--organization-logo) */
   absoluteSource?: boolean;
+  /** thumbnail cover crop 기준. JCI preview capture 는 상단(logo+hero) 유지. */
+  coverPosition?: 'attention' | 'top';
 };
 
 const TEMPLATE_ASSET_PREFIX = 'invitation/shared/images/templates';
 const ORGANIZATION_LOGO_TARGET = 'ORGANIZATION_01_OFFICIAL/logo';
+const JCI_THUMBNAIL_TARGET = 'ORGANIZATION_02_JCI/thumbnail';
 const LOGO_MAX_EDGE = 1600;
 
 const VARIANT_TRANSFORMS: Record<
@@ -98,34 +102,43 @@ function buildCatalogPlans(): AssetPlan[] {
 function parseArgs(): {
   sourceDir: string | null;
   organizationLogo: string | null;
+  jciThumbnail: string | null;
   dryRun: boolean;
 } {
   const args = process.argv.slice(2);
   const sourceIndex = args.indexOf('--source');
   const logoIndex = args.indexOf('--organization-logo');
+  const jciThumbIndex = args.indexOf('--jci-thumbnail');
   const sourceDir =
     sourceIndex !== -1 && args[sourceIndex + 1] ? path.resolve(args[sourceIndex + 1]) : null;
   const organizationLogo =
     logoIndex !== -1 && args[logoIndex + 1] ? path.resolve(args[logoIndex + 1]) : null;
+  const jciThumbnail =
+    jciThumbIndex !== -1 && args[jciThumbIndex + 1] ? path.resolve(args[jciThumbIndex + 1]) : null;
 
-  if (!sourceDir && !organizationLogo) {
+  if (!sourceDir && !organizationLogo && !jciThumbnail) {
     throw new Error(
-      'USAGE: --source <dir> and/or --organization-logo <file> [--dry-run]'
+      'USAGE: --source <dir> and/or --organization-logo <file> and/or --jci-thumbnail <file> [--dry-run]'
     );
   }
 
   return {
     sourceDir,
     organizationLogo,
+    jciThumbnail,
     dryRun: args.includes('--dry-run'),
   };
 }
 
-async function transformCatalog(sourcePath: string, variant: Exclude<Variant, 'logo'>): Promise<Buffer> {
+async function transformCatalog(
+  sourcePath: string,
+  variant: Exclude<Variant, 'logo'>,
+  coverPosition: 'attention' | 'top' = 'attention'
+): Promise<Buffer> {
   const { width, height, quality } = VARIANT_TRANSFORMS[variant];
   const pipeline = sharp(sourcePath).rotate();
   const resized = height
-    ? pipeline.resize(width, height, { fit: 'cover', position: 'attention' })
+    ? pipeline.resize(width, height, { fit: 'cover', position: coverPosition })
     : pipeline.resize({ width, withoutEnlargement: true });
   return resized.webp({ quality }).toBuffer();
 }
@@ -147,14 +160,19 @@ async function transformLogo(sourcePath: string): Promise<Buffer> {
     .toBuffer();
 }
 
-async function transform(sourcePath: string, variant: Variant): Promise<Buffer> {
+async function transform(
+  sourcePath: string,
+  variant: Variant,
+  coverPosition: 'attention' | 'top' = 'attention'
+): Promise<Buffer> {
   if (variant === 'logo') return transformLogo(sourcePath);
-  return transformCatalog(sourcePath, variant);
+  return transformCatalog(sourcePath, variant, coverPosition);
 }
 
 function buildPlans(args: {
   sourceDir: string | null;
   organizationLogo: string | null;
+  jciThumbnail: string | null;
 }): AssetPlan[] {
   const plans: AssetPlan[] = [];
   if (args.sourceDir) {
@@ -166,6 +184,15 @@ function buildPlans(args: {
       target: ORGANIZATION_LOGO_TARGET,
       variant: 'logo',
       absoluteSource: true,
+    });
+  }
+  if (args.jciThumbnail) {
+    plans.push({
+      sourceFile: args.jciThumbnail,
+      target: JCI_THUMBNAIL_TARGET,
+      variant: 'thumbnail',
+      absoluteSource: true,
+      coverPosition: 'top',
     });
   }
   return plans;
@@ -182,7 +209,7 @@ async function main(): Promise<void> {
     const sourcePath = plan.absoluteSource
       ? plan.sourceFile
       : path.join(args.sourceDir as string, plan.sourceFile);
-    const body = await transform(sourcePath, plan.variant);
+    const body = await transform(sourcePath, plan.variant, plan.coverPosition);
     const objectKey = `${TEMPLATE_ASSET_PREFIX}/${plan.target}.webp`;
 
     const stagePath = path.join(stageDir, `${plan.target}.webp`);

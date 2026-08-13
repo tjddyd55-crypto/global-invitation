@@ -456,29 +456,33 @@
 
 .footerRipple {
   position: absolute;
-  right: -30px;
-  bottom: -30px;
-  width: 120px;
-  height: 120px;
+  right: -36px;
+  bottom: -36px;
+  width: 128px;
+  height: 128px;
   pointer-events: none;
-  opacity: 0.2;
+  opacity: 0.18;
   background: radial-gradient(
     circle,
+    transparent 28%,
+    var(--jci-blue) 29%,
     transparent 30%,
-    var(--jci-blue) 31%,
-    transparent 32%,
-    transparent 48%,
-    var(--jci-teal) 49%,
-    transparent 50%
+    transparent 44%,
+    var(--jci-teal) 45%,
+    transparent 46%,
+    transparent 58%,
+    var(--jci-navy) 59%,
+    transparent 60%
   );
 }
 
 .footerLogo {
   position: relative;
   z-index: 1;
-  margin: 0 auto 4px;
-  max-width: min(100px, 32vw) !important;
-  max-height: 32px !important;
+  margin: 0 auto 12px;
+  max-width: min(176px, 56vw) !important;
+  max-height: 56px !important;
+  filter: none !important;
 }
 
 .footerMark {

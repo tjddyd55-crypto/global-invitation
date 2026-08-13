@@ -297,6 +297,42 @@ test.describe('ORGANIZATION concept flow', () => {
     await expect(page.getByText('JCI', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('JCI 행사와 공식 초청에 맞춘 브랜드 템플릿').first()).toBeVisible();
 
+    const officialCard = page.getByTestId('template-card-ORGANIZATION_01_OFFICIAL');
+    const jciCard = page.getByTestId('template-card-ORGANIZATION_02_JCI');
+    const officialSrc = await officialCard.locator('img').first().getAttribute('src');
+    const jciSrc = await jciCard.locator('img').first().getAttribute('src');
+    expect(officialSrc).toBeTruthy();
+    expect(jciSrc).toBeTruthy();
+    expect(officialSrc).not.toEqual(jciSrc);
+    expect(jciSrc || '').toContain('ORGANIZATION_02_JCI/thumbnail');
+    expect(officialSrc || '').not.toContain('ORGANIZATION_02_JCI/thumbnail');
+
+    const [officialRes, jciRes] = await Promise.all([
+      page.request.get(officialSrc as string),
+      page.request.get(jciSrc as string),
+    ]);
+    expect(officialRes.ok()).toBeTruthy();
+    expect(jciRes.ok()).toBeTruthy();
+
+    await expect(page.getByTestId('template-preview-ORGANIZATION_01_OFFICIAL')).toHaveAttribute(
+      'href',
+      '/templates/ORGANIZATION_01_OFFICIAL/preview'
+    );
+    await expect(page.getByTestId('template-preview-ORGANIZATION_02_JCI')).toHaveAttribute(
+      'href',
+      '/templates/ORGANIZATION_02_JCI/preview'
+    );
+
+    for (const width of [360, 390, 430, 1280]) {
+      await page.setViewportSize({ width, height: width >= 1280 ? 800 : 844 });
+      await expect(officialCard).toBeVisible();
+      await expect(jciCard).toBeVisible();
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+      );
+      expect(overflow, `horizontal overflow at ${width}`).toBeFalsy();
+    }
+
     await context.close();
   });
 
@@ -343,6 +379,21 @@ test.describe('ORGANIZATION concept flow', () => {
     await expect
       .poll(async () => footer.evaluate((el) => getComputedStyle(el).backgroundColor))
       .toBe('rgb(19, 15, 45)');
+
+    const footerLogo = footer.getByTestId('organization-brand-logo');
+    await expect(footerLogo).toBeVisible();
+    await expect(footerLogo).toHaveAttribute('data-on-dark', 'true');
+    const footerImg = footerLogo.locator('img');
+    await expect(footerImg).toBeVisible();
+    await expect
+      .poll(async () => footerImg.evaluate((el: HTMLImageElement) => el.naturalWidth), {
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(0);
+    const footerImgFilter = await footerImg.evaluate((el) => getComputedStyle(el).filter);
+    expect(footerImgFilter === 'none' || footerImgFilter === '').toBeTruthy();
+    const footerLogoBg = await footerLogo.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(footerLogoBg).toBe('rgb(255, 255, 255)');
 
     const music = page.getByTestId('invitation-music-player');
     if (await music.isVisible()) {

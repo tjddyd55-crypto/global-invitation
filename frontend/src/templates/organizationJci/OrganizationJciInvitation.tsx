@@ -24,6 +24,7 @@ import {
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
 import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
+import { resolveOrganizationLogoForSurface } from '@/src/templates/shared/organizationLogoSurfaces';
 import { ORGANIZATION_JCI_THEME } from './organizationJciTheme';
 import './organizationJciChrome.css';
 import styles from './OrganizationJciInvitation.module.css';
@@ -249,12 +250,13 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
         <span className={styles.footerRipple} aria-hidden />
         {organization.logo ? (
           <OrganizationBrandLogo
-            logo={organization.logo}
+            logo={resolveOrganizationLogoForSurface(organization.logo, 'dark')}
             name={orgName}
             englishName={orgEnglish}
             accentColor={ORGANIZATION_JCI_THEME.blue}
             compact
             decorative
+            onDarkSurface
             className={styles.footerLogo}
           />
         ) : null}

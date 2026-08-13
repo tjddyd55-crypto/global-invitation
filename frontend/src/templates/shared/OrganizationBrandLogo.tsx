@@ -16,6 +16,11 @@ type OrganizationBrandLogoProps = {
   compact?: boolean;
   /** decorative duplicate 일 때 alt="" */
   decorative?: boolean;
+  /**
+   * Dark footer 등 — 공식 컬러 로고를 흰 홀딩 플레이트에 올린다.
+   * CSS 로고 재색(filter/invert) 금지. inverted asset 이 있으면 src 를 먼저 교체한다.
+   */
+  onDarkSurface?: boolean;
 };
 
 /**
@@ -30,6 +35,7 @@ export default function OrganizationBrandLogo({
   accentColor,
   compact = false,
   decorative = false,
+  onDarkSurface = false,
 }: OrganizationBrandLogoProps) {
   const trimmedName = (name || '').trim();
   const trimmedEnglish = (englishName || '').trim();
@@ -39,7 +45,12 @@ export default function OrganizationBrandLogo({
 
   return (
     <div
-      className={[styles.wrap, compact ? styles.wrapCompact : '', className]
+      className={[
+        styles.wrap,
+        compact ? styles.wrapCompact : '',
+        onDarkSurface ? styles.wrapOnDark : '',
+        className,
+      ]
         .filter(Boolean)
         .join(' ')}
       style={
@@ -49,6 +60,7 @@ export default function OrganizationBrandLogo({
       }
       data-testid="organization-brand-logo"
       data-compact={compact ? 'true' : undefined}
+      data-on-dark={onDarkSurface ? 'true' : undefined}
     >
       {src ? (
         <ImageWithFallback
