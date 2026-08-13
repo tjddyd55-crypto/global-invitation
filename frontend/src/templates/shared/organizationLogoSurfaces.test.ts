@@ -3,7 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { ORGANIZATION_SAMPLE_LOGO } from '@/src/templates/visualTemplate/templateSampleAssets';
+import {
+  ORGANIZATION_SAMPLE_LOGO,
+  ORGANIZATION_SAMPLE_LOGO_DARK,
+} from '@/src/templates/visualTemplate/templateSampleAssets';
 import {
   hasOfficialDarkLogoVariant,
   ORGANIZATION_DARK_LOGO_BY_LIGHT_KEY,
@@ -19,12 +22,22 @@ test('light surface keeps the official color logo key', () => {
   );
 });
 
-test('dark surface without official variant still returns the color logo (no invented key)', () => {
-  assert.equal(Object.keys(ORGANIZATION_DARK_LOGO_BY_LIGHT_KEY).length, 0);
-  assert.equal(hasOfficialDarkLogoVariant(ORGANIZATION_SAMPLE_LOGO), false);
+test('dark surface uses official inverted logo when mapped', () => {
+  assert.equal(hasOfficialDarkLogoVariant(ORGANIZATION_SAMPLE_LOGO), true);
+  assert.equal(
+    ORGANIZATION_DARK_LOGO_BY_LIGHT_KEY[ORGANIZATION_SAMPLE_LOGO],
+    ORGANIZATION_SAMPLE_LOGO_DARK
+  );
   assert.equal(
     resolveOrganizationLogoForSurface(ORGANIZATION_SAMPLE_LOGO, 'dark'),
-    ORGANIZATION_SAMPLE_LOGO
+    ORGANIZATION_SAMPLE_LOGO_DARK
+  );
+});
+
+test('dark surface without mapping keeps the original key (no invented asset)', () => {
+  assert.equal(
+    resolveOrganizationLogoForSurface('invitation/shared/images/templates/custom/logo.webp', 'dark'),
+    'invitation/shared/images/templates/custom/logo.webp'
   );
 });
 
@@ -34,7 +47,7 @@ test('empty logo stays null on both surfaces', () => {
   assert.equal(hasOfficialDarkLogoVariant(''), false);
 });
 
-test('JCI footer and dark-logo CSS do not recolor via filter or blend', () => {
+test('JCI footer logo has no white plate and no CSS recolor', () => {
   const footerCss = fs.readFileSync(
     path.join(here, '../organizationJci/OrganizationJciInvitation.module.css'),
     'utf8'
@@ -47,5 +60,7 @@ test('JCI footer and dark-logo CSS do not recolor via filter or blend', () => {
     /mix-blend-mode\s*:\s*(multiply|screen|overlay|darken|lighten|difference|exclusion)/i
   );
   assert.match(logoCss, /\.wrapOnDark/);
-  assert.match(logoCss, /filter:\s*none/);
+  assert.match(logoCss, /\.wrapOnDark\s*\{[^}]*background:\s*transparent/);
+  assert.doesNotMatch(logoCss, /\.wrapOnDark\s*\{[^}]*background:\s*#fff/i);
+  assert.match(footerCss, /\.footerLogo[\s\S]*?background:\s*transparent/);
 });

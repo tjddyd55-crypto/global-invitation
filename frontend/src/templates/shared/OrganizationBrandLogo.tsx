@@ -17,8 +17,8 @@ type OrganizationBrandLogoProps = {
   /** decorative duplicate 일 때 alt="" */
   decorative?: boolean;
   /**
-   * Dark footer 등 — 공식 컬러 로고를 흰 홀딩 플레이트에 올린다.
-   * CSS 로고 재색(filter/invert) 금지. inverted asset 이 있으면 src 를 먼저 교체한다.
+   * Dark footer 등 — layout/fallback only.
+   * 흰 홀딩 플레이트 금지. inverted asset 은 src 를 먼저 교체한다.
    */
   onDarkSurface?: boolean;
 };

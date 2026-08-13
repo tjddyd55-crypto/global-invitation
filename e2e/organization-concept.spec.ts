@@ -380,6 +380,11 @@ test.describe('ORGANIZATION concept flow', () => {
       .poll(async () => footer.evaluate((el) => getComputedStyle(el).backgroundColor))
       .toBe('rgb(19, 15, 45)');
 
+    const headerLogo = doc.getByTestId('organization-brand-logo').first();
+    const headerSrc = await headerLogo.locator('img').getAttribute('src');
+    expect(headerSrc || '').toContain('ORGANIZATION_01_OFFICIAL/logo.webp');
+    expect(headerSrc || '').not.toContain('logo-dark.webp');
+
     const footerLogo = footer.getByTestId('organization-brand-logo');
     await expect(footerLogo).toBeVisible();
     await expect(footerLogo).toHaveAttribute('data-on-dark', 'true');
@@ -390,10 +395,12 @@ test.describe('ORGANIZATION concept flow', () => {
         timeout: 30_000,
       })
       .toBeGreaterThan(0);
+    const footerSrc = await footerImg.getAttribute('src');
+    expect(footerSrc || '').toContain('logo-dark.webp');
     const footerImgFilter = await footerImg.evaluate((el) => getComputedStyle(el).filter);
     expect(footerImgFilter === 'none' || footerImgFilter === '').toBeTruthy();
     const footerLogoBg = await footerLogo.evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(footerLogoBg).toBe('rgb(255, 255, 255)');
+    expect(footerLogoBg === 'rgba(0, 0, 0, 0)' || footerLogoBg === 'transparent').toBeTruthy();
 
     const music = page.getByTestId('invitation-music-player');
     if (await music.isVisible()) {

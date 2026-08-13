@@ -78,7 +78,7 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
         <InvitationReveal variant="fade">
           <div className={styles.brandRow}>
             <OrganizationBrandLogo
-              logo={organization.logo}
+              logo={resolveOrganizationLogoForSurface(organization.logo, 'light')}
               name={orgName}
               englishName={orgEnglish}
               accentColor={ORGANIZATION_JCI_THEME.blue}

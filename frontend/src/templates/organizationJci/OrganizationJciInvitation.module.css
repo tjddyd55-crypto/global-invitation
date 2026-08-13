@@ -482,8 +482,13 @@
   position: relative;
   z-index: 1;
   margin: 0 auto 12px;
-  max-width: min(176px, 56vw) !important;
-  max-height: 56px !important;
+  max-width: min(168px, 52vw) !important;
+  max-height: 48px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
   filter: none !important;
 }
 

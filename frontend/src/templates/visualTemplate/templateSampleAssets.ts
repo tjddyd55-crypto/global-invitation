@@ -61,9 +61,13 @@ export const GENERAL_SAMPLE_PHOTOS = photoKeys('shared-general');
 /** Alias for ORGANIZATION fixtures — same R2 keys as GENERAL_SAMPLE_PHOTOS. */
 export const ORGANIZATION_SAMPLE_PHOTOS = GENERAL_SAMPLE_PHOTOS;
 
-/** ORGANIZATION_01_OFFICIAL Preview fixture logo key */
+/** ORGANIZATION_01_OFFICIAL Preview fixture logo key (light / default colour) */
 export const ORGANIZATION_SAMPLE_LOGO =
   templateOrganizationLogoAsset('ORGANIZATION_01_OFFICIAL') as string;
+
+/** Dark-surface inverted/white logo — Footer 등. 저장 SSOT 는 여전히 light key. */
+export const ORGANIZATION_SAMPLE_LOGO_DARK =
+  `${TEMPLATE_ASSET_PREFIX}/ORGANIZATION_01_OFFICIAL/logo-dark.webp`;
 
 export const WEDDING_GROOM_PROFILE = `${TEMPLATE_ASSET_PREFIX}/shared-wedding/groom.webp`;
 export const WEDDING_BRIDE_PROFILE = `${TEMPLATE_ASSET_PREFIX}/shared-wedding/bride.webp`;

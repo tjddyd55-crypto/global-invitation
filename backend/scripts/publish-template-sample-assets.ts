@@ -7,6 +7,7 @@
  * 사용법:
  *   railway run -s Backend -e development npx tsx scripts/publish-template-sample-assets.ts --source <dir>
  *   ... --organization-logo <png-or-webp>   (ORGANIZATION_01_OFFICIAL/logo.webp 만)
+ *   ... --organization-logo-dark <file>     (ORGANIZATION_01_OFFICIAL/logo-dark.webp)
  *   ... --jci-thumbnail <png-or-webp>       (ORGANIZATION_02_JCI/thumbnail.webp)
  *   ... --dry-run  (변환만 하고 업로드하지 않음)
  *
@@ -18,7 +19,8 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { r2Client, resolveR2Config } from '../src/lib/storage/r2Client';
 
-type Variant = 'hero' | 'thumbnail' | 'photo' | 'profile' | 'logo';
+type CatalogVariant = 'hero' | 'thumbnail' | 'photo' | 'profile';
+type Variant = CatalogVariant | 'logo' | 'logoDark';
 
 type AssetPlan = {
   /** --source 기준 상대 경로, 또는 organization logo 절대/상대 경로 */
@@ -34,11 +36,12 @@ type AssetPlan = {
 
 const TEMPLATE_ASSET_PREFIX = 'invitation/shared/images/templates';
 const ORGANIZATION_LOGO_TARGET = 'ORGANIZATION_01_OFFICIAL/logo';
+const ORGANIZATION_LOGO_DARK_TARGET = 'ORGANIZATION_01_OFFICIAL/logo-dark';
 const JCI_THUMBNAIL_TARGET = 'ORGANIZATION_02_JCI/thumbnail';
 const LOGO_MAX_EDGE = 1600;
 
 const VARIANT_TRANSFORMS: Record<
-  Exclude<Variant, 'logo'>,
+  CatalogVariant,
   { width: number; height?: number; quality: number }
 > = {
   hero: { width: 1080, quality: 82 },
@@ -102,29 +105,34 @@ function buildCatalogPlans(): AssetPlan[] {
 function parseArgs(): {
   sourceDir: string | null;
   organizationLogo: string | null;
+  organizationLogoDark: string | null;
   jciThumbnail: string | null;
   dryRun: boolean;
 } {
   const args = process.argv.slice(2);
   const sourceIndex = args.indexOf('--source');
   const logoIndex = args.indexOf('--organization-logo');
+  const logoDarkIndex = args.indexOf('--organization-logo-dark');
   const jciThumbIndex = args.indexOf('--jci-thumbnail');
   const sourceDir =
     sourceIndex !== -1 && args[sourceIndex + 1] ? path.resolve(args[sourceIndex + 1]) : null;
   const organizationLogo =
     logoIndex !== -1 && args[logoIndex + 1] ? path.resolve(args[logoIndex + 1]) : null;
+  const organizationLogoDark =
+    logoDarkIndex !== -1 && args[logoDarkIndex + 1] ? path.resolve(args[logoDarkIndex + 1]) : null;
   const jciThumbnail =
     jciThumbIndex !== -1 && args[jciThumbIndex + 1] ? path.resolve(args[jciThumbIndex + 1]) : null;
 
-  if (!sourceDir && !organizationLogo && !jciThumbnail) {
+  if (!sourceDir && !organizationLogo && !organizationLogoDark && !jciThumbnail) {
     throw new Error(
-      'USAGE: --source <dir> and/or --organization-logo <file> and/or --jci-thumbnail <file> [--dry-run]'
+      'USAGE: --source <dir> and/or --organization-logo <file> and/or --organization-logo-dark <file> and/or --jci-thumbnail <file> [--dry-run]'
     );
   }
 
   return {
     sourceDir,
     organizationLogo,
+    organizationLogoDark,
     jciThumbnail,
     dryRun: args.includes('--dry-run'),
   };
@@ -132,7 +140,7 @@ function parseArgs(): {
 
 async function transformCatalog(
   sourcePath: string,
-  variant: Exclude<Variant, 'logo'>,
+  variant: CatalogVariant,
   coverPosition: 'attention' | 'top' = 'attention'
 ): Promise<Buffer> {
   const { width, height, quality } = VARIANT_TRANSFORMS[variant];
@@ -160,18 +168,60 @@ async function transformLogo(sourcePath: string): Promise<Buffer> {
     .toBuffer();
 }
 
+/**
+ * Dark-surface inverted logo.
+ * Trim white canvas → chroma-key JCI Black #130F2D to alpha → inside-fit WebP.
+ * Does not recolor glyph/shield pixels.
+ */
+async function transformLogoDark(sourcePath: string): Promise<Buffer> {
+  const JCI_BLACK = { r: 19, g: 15, b: 45 };
+  const DARK_THRESHOLD = 72;
+
+  const trimmed = await sharp(sourcePath).rotate().ensureAlpha().trim({ threshold: 24 }).toBuffer();
+  const { data, info } = await sharp(trimmed).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const pixels = Buffer.from(data);
+  const channels = info.channels;
+
+  for (let index = 0; index < pixels.length; index += channels) {
+    const dist =
+      Math.abs(pixels[index] - JCI_BLACK.r) +
+      Math.abs(pixels[index + 1] - JCI_BLACK.g) +
+      Math.abs(pixels[index + 2] - JCI_BLACK.b);
+    if (dist <= DARK_THRESHOLD) pixels[index + 3] = 0;
+  }
+
+  const keyedPng = await sharp(pixels, {
+    raw: { width: info.width, height: info.height, channels },
+  })
+    .png()
+    .toBuffer();
+
+  return sharp(keyedPng)
+    .trim()
+    .resize({
+      width: LOGO_MAX_EDGE,
+      height: LOGO_MAX_EDGE,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 92, alphaQuality: 100, effort: 4 })
+    .toBuffer();
+}
+
 async function transform(
   sourcePath: string,
   variant: Variant,
   coverPosition: 'attention' | 'top' = 'attention'
 ): Promise<Buffer> {
   if (variant === 'logo') return transformLogo(sourcePath);
+  if (variant === 'logoDark') return transformLogoDark(sourcePath);
   return transformCatalog(sourcePath, variant, coverPosition);
 }
 
 function buildPlans(args: {
   sourceDir: string | null;
   organizationLogo: string | null;
+  organizationLogoDark: string | null;
   jciThumbnail: string | null;
 }): AssetPlan[] {
   const plans: AssetPlan[] = [];
@@ -183,6 +233,14 @@ function buildPlans(args: {
       sourceFile: args.organizationLogo,
       target: ORGANIZATION_LOGO_TARGET,
       variant: 'logo',
+      absoluteSource: true,
+    });
+  }
+  if (args.organizationLogoDark) {
+    plans.push({
+      sourceFile: args.organizationLogoDark,
+      target: ORGANIZATION_LOGO_DARK_TARGET,
+      variant: 'logoDark',
       absoluteSource: true,
     });
   }

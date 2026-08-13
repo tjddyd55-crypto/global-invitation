@@ -4,6 +4,7 @@ import { isSharedInvitationAssetUrlOrKey } from '@/src/invitation/galleryAsset';
 import { getVisualTemplatePreviewFixture } from './previewFixtures';
 import {
   ORGANIZATION_SAMPLE_LOGO,
+  ORGANIZATION_SAMPLE_LOGO_DARK,
   ORGANIZATION_SAMPLE_PHOTOS,
   templateHeroAsset,
   templateOrganizationLogoAsset,
@@ -35,6 +36,14 @@ test('Official hero alias unchanged; JCI hero still reuses GENERAL classic', () 
   assert.equal(
     templateHeroAsset('ORGANIZATION_02_JCI'),
     'invitation/shared/images/templates/GENERAL_01_CLASSIC/hero.webp'
+  );
+});
+
+test('dark logo key is distinct from light sample logo', () => {
+  assert.notEqual(ORGANIZATION_SAMPLE_LOGO_DARK, ORGANIZATION_SAMPLE_LOGO);
+  assert.equal(
+    ORGANIZATION_SAMPLE_LOGO_DARK,
+    'invitation/shared/images/templates/ORGANIZATION_01_OFFICIAL/logo-dark.webp'
   );
 });
 

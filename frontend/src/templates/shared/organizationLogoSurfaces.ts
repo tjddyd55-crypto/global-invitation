@@ -3,16 +3,20 @@
  *
  * Dark backgrounds must use an official inverted / white logo variant when one exists.
  * Never invent, recolor, invert, or filter a logo in CSS.
+ * Never wrap the logo in a white holding plate.
  */
+import {
+  ORGANIZATION_SAMPLE_LOGO,
+  ORGANIZATION_SAMPLE_LOGO_DARK,
+} from '@/src/templates/visualTemplate/templateSampleAssets';
 
 export type OrganizationLogoSurface = 'light' | 'dark';
 
 /**
  * Official inverted/white logo keys, keyed by the default (light-surface) logo key.
- * Empty until an official dark variant is published to R2.
  */
 export const ORGANIZATION_DARK_LOGO_BY_LIGHT_KEY: Readonly<Record<string, string>> = {
-  // no official inverted asset yet
+  [ORGANIZATION_SAMPLE_LOGO]: ORGANIZATION_SAMPLE_LOGO_DARK,
 };
 
 export function resolveOrganizationLogoForSurface(

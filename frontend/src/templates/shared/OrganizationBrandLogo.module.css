@@ -60,28 +60,34 @@
 }
 
 /*
- * Dark surface holding plate — official color logo on white.
- * Not a logo recolor. filter/invert/mix-blend 금지.
+ * Dark surface — no plate/card. Transparent wrapper + white fallback text.
+ * filter/invert/mix-blend 금지. inverted asset 은 src 로 교체.
  */
 .wrapOnDark {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 8px 12px;
+  background: transparent;
+  border: 0;
   box-shadow: none;
+  border-radius: 0;
+  padding: 0;
 }
 
 .wrapOnDark .logo,
 .wrapOnDark .fallbackText {
   filter: none !important;
   mix-blend-mode: normal !important;
+  background: transparent;
+}
+
+.wrapOnDark .fallbackText {
+  color: #ffffff;
 }
 
 .wrapCompact.wrapOnDark {
   max-width: min(168px, 52vw);
-  max-height: 56px;
-  padding: 8px 14px;
+  max-height: 48px;
+  padding: 0;
 }
 
 .wrapCompact.wrapOnDark .logo {
-  max-height: 40px;
+  max-height: 44px;
 }
