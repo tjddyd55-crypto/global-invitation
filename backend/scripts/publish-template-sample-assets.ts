@@ -168,36 +168,127 @@ async function transformLogo(sourcePath: string): Promise<Buffer> {
     .toBuffer();
 }
 
-/**
- * Dark-surface inverted logo.
- * Trim white canvas → chroma-key JCI Black #130F2D to alpha → inside-fit WebP.
- * Does not recolor glyph/shield pixels.
- */
-async function transformLogoDark(sourcePath: string): Promise<Buffer> {
-  const JCI_BLACK = { r: 19, g: 15, b: 45 };
-  const DARK_THRESHOLD = 72;
+const JCI_BLACK = { r: 19, g: 15, b: 45 };
+const LOGO_DARK_KEY_THRESHOLD = 72;
+const LOGO_DARK_BRIGHT_LUMINANCE = 56;
+const LOGO_DARK_WHITE_MIN = 220;
 
-  const trimmed = await sharp(sourcePath).rotate().ensureAlpha().trim({ threshold: 24 }).toBuffer();
-  const { data, info } = await sharp(trimmed).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  const pixels = Buffer.from(data);
-  const channels = info.channels;
-
+function chromaKeyNearJciBlack(pixels: Buffer, channels: number): void {
   for (let index = 0; index < pixels.length; index += channels) {
     const dist =
       Math.abs(pixels[index] - JCI_BLACK.r) +
       Math.abs(pixels[index + 1] - JCI_BLACK.g) +
       Math.abs(pixels[index + 2] - JCI_BLACK.b);
-    if (dist <= DARK_THRESHOLD) pixels[index + 3] = 0;
+    if (dist <= LOGO_DARK_KEY_THRESHOLD) pixels[index + 3] = 0;
+  }
+}
+
+function isNearWhitePixel(pixels: Buffer, index: number): boolean {
+  return (
+    pixels[index] >= LOGO_DARK_WHITE_MIN &&
+    pixels[index + 1] >= LOGO_DARK_WHITE_MIN &&
+    pixels[index + 2] >= LOGO_DARK_WHITE_MIN
+  );
+}
+
+/** Clear white canvas from the border only — does not reach centered white glyphs. */
+function floodClearBorderWhite(pixels: Buffer, width: number, height: number): void {
+  const seen = new Uint8Array(width * height);
+  const queue: number[] = [];
+  const enqueue = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const id = y * width + x;
+    if (seen[id]) return;
+    seen[id] = 1;
+    queue.push(id);
+  };
+
+  for (let x = 0; x < width; x += 1) {
+    enqueue(x, 0);
+    enqueue(x, height - 1);
+  }
+  for (let y = 0; y < height; y += 1) {
+    enqueue(0, y);
+    enqueue(width - 1, y);
   }
 
+  while (queue.length > 0) {
+    const id = queue.pop() as number;
+    const index = id * 4;
+    if (pixels[index + 3] === 0) continue;
+    const maxC = Math.max(pixels[index], pixels[index + 1], pixels[index + 2]);
+    const minC = Math.min(pixels[index], pixels[index + 1], pixels[index + 2]);
+    const lowSaturationGray = maxC - minC < 40;
+    if (!isNearWhitePixel(pixels, index) && !lowSaturationGray) continue;
+    pixels[index + 3] = 0;
+    const x = id % width;
+    const y = Math.floor(id / width);
+    enqueue(x - 1, y);
+    enqueue(x + 1, y);
+    enqueue(x, y - 1);
+    enqueue(x, y + 1);
+  }
+}
+
+function brightContentRegion(
+  data: Buffer,
+  width: number,
+  height: number
+): { left: number; top: number; width: number; height: number } {
+  let minX = width;
+  let minY = height;
+  let maxX = 0;
+  let maxY = 0;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const index = (y * width + x) * 4;
+      if (data[index + 3] < 32) continue;
+      const luminance = (data[index] + data[index + 1] + data[index + 2]) / 3;
+      if (luminance < LOGO_DARK_BRIGHT_LUMINANCE) continue;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (maxX < minX || maxY < minY) {
+    throw new Error('logo-dark: no bright logo content after chroma-key');
+  }
+  const padX = Math.max(2, Math.round((maxX - minX + 1) * 0.08));
+  const padY = Math.max(2, Math.round((maxY - minY + 1) * 0.08));
+  const left = Math.max(0, minX - padX);
+  const top = Math.max(0, minY - padY);
+  return {
+    left,
+    top,
+    width: Math.min(width - left, maxX - minX + 1 + padX * 2),
+    height: Math.min(height - top, maxY - minY + 1 + padY * 2),
+  };
+}
+
+/**
+ * Dark-surface inverted logo.
+ * Trim white canvas → chroma-key JCI Black → crop bright glyphs → WebP.
+ * Does not recolor logo pixels.
+ */
+async function transformLogoDark(sourcePath: string): Promise<Buffer> {
+  const trimmed = await sharp(sourcePath).rotate().ensureAlpha().trim({ threshold: 24 }).toBuffer();
+  const { data, info } = await sharp(trimmed).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const pixels = Buffer.from(data);
+  chromaKeyNearJciBlack(pixels, info.channels);
+  floodClearBorderWhite(pixels, info.width, info.height);
+
   const keyedPng = await sharp(pixels, {
-    raw: { width: info.width, height: info.height, channels },
+    raw: { width: info.width, height: info.height, channels: info.channels },
   })
     .png()
     .toBuffer();
 
+  const keyed = await sharp(keyedPng).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const region = brightContentRegion(keyed.data, keyed.info.width, keyed.info.height);
+
   return sharp(keyedPng)
-    .trim()
+    .extract(region)
     .resize({
       width: LOGO_MAX_EDGE,
       height: LOGO_MAX_EDGE,
