@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { listMyInvitations, type InvitationSummary } from '@/src/lib/api';
+import { listMyInvitations, type InvitationSummary } from '@/src/shared/api';
 import { fetchCurrentUser } from '@/src/shared/auth';
 
 export type InvitationsLoadStatus = 'loading' | 'ready' | 'empty' | 'error';
@@ -11,6 +11,7 @@ export interface UseMyInvitationsResult {
   guestToken: string | null;
   status: InvitationsLoadStatus;
   reload: () => Promise<void>;
+  removeItem: (invitationId: string) => void;
 }
 
 /**
@@ -32,16 +33,20 @@ export function useMyInvitations(): UseMyInvitationsResult {
       }
       const loaded = await listMyInvitations();
       setItems(loaded);
-      setStatus(loaded.length === 0 ? 'empty' : 'ready');
+      setStatus('ready');
     } catch {
       setItems([]);
       setStatus('error');
     }
   }, []);
 
+  const removeItem = useCallback((invitationId: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== invitationId));
+  }, []);
+
   useEffect(() => {
     void reload();
   }, [reload]);
 
-  return { items, guestToken: null, status, reload };
+  return { items, guestToken: null, status, reload, removeItem };
 }

@@ -6,6 +6,7 @@ import { generateSlug } from '../utils/slug';
 import { getAuthUser, getGuestToken } from '../lib/auth';
 import { collectInvitationCleanupR2Keys } from '../storage/mediaCleanup';
 import { hasPaidEntitlement } from '../lib/payments/service';
+import { resolveInvitationDeleteAuth } from '../lib/invitations/resolveInvitationDeleteAuth';
 
 const router = Router();
 const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
@@ -110,14 +111,28 @@ async function resolveTemplateReference(value: unknown): Promise<{ id: string; t
   return template ?? null;
 }
 
+function invitationIdentifierWhere(identifier: string) {
+  return isUuidLike(identifier)
+    ? { OR: [{ id: identifier }, { slug: identifier }] }
+    : { slug: identifier };
+}
+
 async function findInvitationByIdentifier(identifier: string) {
   const normalized = normalizeText(identifier);
   if (!normalized) return null;
   return prisma.invitation.findFirst({
     where: {
       isDeleted: false,
-      ...(isUuidLike(normalized) ? { OR: [{ id: normalized }, { slug: normalized }] } : { slug: normalized }),
+      ...invitationIdentifierWhere(normalized),
     },
+  });
+}
+
+async function findInvitationByIdentifierIncludingDeleted(identifier: string) {
+  const normalized = normalizeText(identifier);
+  if (!normalized) return null;
+  return prisma.invitation.findFirst({
+    where: invitationIdentifierWhere(normalized),
   });
 }
 
@@ -393,6 +408,7 @@ router.get('/', async (req, res) => {
       const invitations = await prisma.invitation.findMany({
         where: {
           userId: user.id,
+          isDeleted: false,
           status,
         },
         orderBy: { updatedAt: 'desc' },
@@ -889,25 +905,36 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
     }
 
-    const existing = await findInvitationByIdentifier(identifier);
+    const existing = await findInvitationByIdentifierIncludingDeleted(identifier);
     if (!existing) {
       return res.status(404).json({ error: 'Invitation not found' });
     }
 
     const user = await getAuthUser(req);
     const guestToken = resolveGuestTokenFromRequest(req) || getGuestToken(req);
-    const editable = await canEditInvitation(
-      {
-        invitation: {
-          userId: existing.userId,
-          guestToken: existing.guestToken,
-        },
-        userId: user?.id,
-        guestToken,
-      }
-    );
-    if (!editable) {
+    const auth = resolveInvitationDeleteAuth({
+      userId: user?.id,
+      guestToken,
+      invitation: {
+        userId: existing.userId,
+        guestToken: existing.guestToken,
+      },
+    });
+    if (auth === 'UNAUTHENTICATED') {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (auth === 'FORBIDDEN') {
       return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    if (existing.isDeleted) {
+      return res.status(200).json({
+        success: true,
+        id: existing.id,
+        slug: existing.slug,
+        cleanupJobsEnqueued: 0,
+        alreadyDeleted: true,
+      });
     }
 
     const r2Keys = await collectInvitationCleanupR2Keys({

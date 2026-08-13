@@ -14,6 +14,7 @@ import {
   parseInvitationUserAssetKey,
 } from '../lib/invitationAssetKeys';
 import { deleteImageByUrl, deleteMediaObjectKey, deleteStoragePrefix, sanitizePathSegment } from './mediaStorage';
+import { filterInvitationCleanupR2Keys } from '../lib/invitations/filterInvitationCleanupR2Keys';
 
 /** 신규 업로드에서는 사용하지 않는 구 스토리지 경로 (점진 삭제 대상) */
 export const LEGACY_MEDIA_STORAGE_PREFIXES = [
@@ -221,7 +222,7 @@ export async function collectInvitationCleanupR2Keys(params: {
     }
   }
 
-  return Array.from(unique);
+  return filterInvitationCleanupR2Keys(Array.from(unique));
 }
 
 export async function cleanupInvitationMedia(invitationId: string): Promise<number> {

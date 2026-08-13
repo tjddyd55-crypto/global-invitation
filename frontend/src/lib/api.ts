@@ -168,6 +168,31 @@ export async function listMyInvitations(): Promise<InvitationSummary[]> {
   return response.json();
 }
 
+export type DeleteInvitationResponse = {
+  success: boolean;
+  id: string;
+  slug?: string;
+  alreadyDeleted?: boolean;
+};
+
+export async function deleteInvitation(invitationId: string): Promise<DeleteInvitationResponse> {
+  const response = await fetch(
+    buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}`),
+    buildRequestInit({
+      method: 'DELETE',
+      headers: buildAuthHeaders(),
+    })
+  );
+
+  if (response.status === 401) {
+    throw new Error('Unauthorized');
+  }
+  if (!response.ok) {
+    throw new Error('Failed to delete invitation');
+  }
+  return response.json();
+}
+
 export type InvitationRsvpGuest = {
   id: string;
   guestName: string;
