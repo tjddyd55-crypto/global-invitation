@@ -66,7 +66,7 @@ test.describe('Locale Phase 3', () => {
       await expect(doc).toContainText('교통 안내');
       await expect(doc).toContainText('참석 여부');
       await expect(doc).toContainText('참석 여부 알리기');
-      await expect(page.getByTestId('invitation-share-block').or(page.getByTestId('desktop-public-share-panel'))).toContainText(
+      await expect(page.getByTestId('invitation-share-block')).toContainText(
         /공유하기|초대장 링크|링크 복사|카카오/
       );
       await expect(doc).not.toContainText("We're Getting Married");
@@ -100,7 +100,7 @@ test.describe('Locale Phase 3', () => {
       await expect(doc).toContainText('Directions');
       await expect(doc).toContainText('RSVP Now');
       await expect(doc).toContainText(/View on Google Maps|Get directions/);
-      await expect(page.getByTestId('invitation-share-block').or(page.getByTestId('desktop-public-share-panel'))).toContainText(
+      await expect(page.getByTestId('invitation-share-block')).toContainText(
         /Share|Invitation Link|Copy link|KakaoTalk/i
       );
       await expect(doc).not.toContainText('우리 결혼합니다');

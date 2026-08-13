@@ -190,6 +190,7 @@ export default function PublicShareInvitationPage() {
   });
   const baseSlug = invitation.slug;
   return (
+    <InvitationLocaleProvider locale={invitationLocale}>
     <div className={publicInvitationMobile.pageRoot} data-testid="public-route-root">
       <div className={publicInvitationMobile.layout}>
         <div className={publicInvitationMobile.inviteColumn} data-testid="desktop-invitation-column">
@@ -199,7 +200,6 @@ export default function PublicShareInvitationPage() {
             data-invitation-locale={invitationLocale}
             lang={htmlLangFromLocale(invitationLocale)}
           >
-            <InvitationLocaleProvider locale={invitationLocale}>
             {isCreatorTemplate && hasStudioConfig && FallbackTemplate ? (
               <SafeCreatorRenderer
                 creatorRenderer={Template}
@@ -231,7 +231,6 @@ export default function PublicShareInvitationPage() {
                 showPlayButton={false}
               />
             )}
-            </InvitationLocaleProvider>
 
             <section className={publicInvitationMobile.shareSectionMobile}>
               <InvitationShareBlock
@@ -279,5 +278,6 @@ export default function PublicShareInvitationPage() {
         <ShareFallbackNotice url={shareFallbackUrl} onClose={() => setShareFallbackUrl(null)} />
       ) : null}
     </div>
+    </InvitationLocaleProvider>
   );
 }
