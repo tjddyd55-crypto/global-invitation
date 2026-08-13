@@ -7,7 +7,7 @@
  * 사용법:
  *   railway run -s Backend -e development npx tsx scripts/publish-template-sample-assets.ts --source <dir>
  *   ... --organization-logo <png-or-webp>   (ORGANIZATION_01_OFFICIAL/logo.webp 만)
- *   ... --organization-logo-dark <file>     (ORGANIZATION_01_OFFICIAL/logo-dark.webp)
+ *   ... --organization-logo-dark <file>     (ORGANIZATION_01_OFFICIAL/logo-on-dark.webp)
  *   ... --jci-thumbnail <png-or-webp>       (ORGANIZATION_02_JCI/thumbnail.webp)
  *   ... --dry-run  (변환만 하고 업로드하지 않음)
  *
@@ -36,7 +36,7 @@ type AssetPlan = {
 
 const TEMPLATE_ASSET_PREFIX = 'invitation/shared/images/templates';
 const ORGANIZATION_LOGO_TARGET = 'ORGANIZATION_01_OFFICIAL/logo';
-const ORGANIZATION_LOGO_DARK_TARGET = 'ORGANIZATION_01_OFFICIAL/logo-dark';
+const ORGANIZATION_LOGO_DARK_TARGET = 'ORGANIZATION_01_OFFICIAL/logo-on-dark';
 const JCI_THUMBNAIL_TARGET = 'ORGANIZATION_02_JCI/thumbnail';
 const LOGO_MAX_EDGE = 1600;
 

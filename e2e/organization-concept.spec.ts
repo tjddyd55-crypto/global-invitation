@@ -383,7 +383,7 @@ test.describe('ORGANIZATION concept flow', () => {
     const headerLogo = doc.getByTestId('organization-brand-logo').first();
     const headerSrc = await headerLogo.locator('img').getAttribute('src');
     expect(headerSrc || '').toContain('ORGANIZATION_01_OFFICIAL/logo.webp');
-    expect(headerSrc || '').not.toContain('logo-dark.webp');
+    expect(headerSrc || '').not.toContain('logo-on-dark.webp');
 
     const footerLogo = footer.getByTestId('organization-brand-logo');
     await expect(footerLogo).toBeVisible();
@@ -396,7 +396,7 @@ test.describe('ORGANIZATION concept flow', () => {
       })
       .toBeGreaterThan(0);
     const footerSrc = await footerImg.getAttribute('src');
-    expect(footerSrc || '').toContain('logo-dark.webp');
+    expect(footerSrc || '').toContain('logo-on-dark.webp');
     const footerImgFilter = await footerImg.evaluate((el) => getComputedStyle(el).filter);
     expect(footerImgFilter === 'none' || footerImgFilter === '').toBeTruthy();
     const footerLogoBg = await footerLogo.evaluate((el) => getComputedStyle(el).backgroundColor);

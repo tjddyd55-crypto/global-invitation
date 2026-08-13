@@ -67,7 +67,7 @@ export const ORGANIZATION_SAMPLE_LOGO =
 
 /** Dark-surface inverted/white logo — Footer 등. 저장 SSOT 는 여전히 light key. */
 export const ORGANIZATION_SAMPLE_LOGO_DARK =
-  `${TEMPLATE_ASSET_PREFIX}/ORGANIZATION_01_OFFICIAL/logo-dark.webp`;
+  `${TEMPLATE_ASSET_PREFIX}/ORGANIZATION_01_OFFICIAL/logo-on-dark.webp`;
 
 export const WEDDING_GROOM_PROFILE = `${TEMPLATE_ASSET_PREFIX}/shared-wedding/groom.webp`;
 export const WEDDING_BRIDE_PROFILE = `${TEMPLATE_ASSET_PREFIX}/shared-wedding/bride.webp`;

@@ -43,7 +43,7 @@ test('dark logo key is distinct from light sample logo', () => {
   assert.notEqual(ORGANIZATION_SAMPLE_LOGO_DARK, ORGANIZATION_SAMPLE_LOGO);
   assert.equal(
     ORGANIZATION_SAMPLE_LOGO_DARK,
-    'invitation/shared/images/templates/ORGANIZATION_01_OFFICIAL/logo-dark.webp'
+    'invitation/shared/images/templates/ORGANIZATION_01_OFFICIAL/logo-on-dark.webp'
   );
 });
 

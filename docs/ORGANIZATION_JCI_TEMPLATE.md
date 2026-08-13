@@ -40,7 +40,7 @@ JCI Brand Guidelines v1.2 (November 27, 2025).
 ### Logo
 
 - Shared key (light / header): `invitation/shared/images/templates/ORGANIZATION_01_OFFICIAL/logo.webp`
-- Dark footer: `.../ORGANIZATION_01_OFFICIAL/logo-dark.webp` via `organizationLogoSurfaces.ts`
+- Dark footer: `.../ORGANIZATION_01_OFFICIAL/logo-on-dark.webp` via `organizationLogoSurfaces.ts`
 - 흰 홀딩 플레이트 금지. CSS filter/invert/recolor 금지
 - 변형·회전·stretch·색상 변조·shadow 금지
 - Placement: header top-left (colour logo on pale); Footer brand mark (inverted logo on JCI dark, no plate)
