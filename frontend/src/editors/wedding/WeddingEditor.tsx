@@ -348,7 +348,14 @@ export default function WeddingEditor({
                 ? state.extras.accountEnabled
                 : conceptPresentation.accountDefaultEnabled
             )}
-            accountsTitle={state.extras.accountsTitle ?? conceptPresentation.accountsTitle}
+            accountsTitle={
+              state.extras.accountsTitle ??
+              t(
+                state.setup.conceptType === 'GENERAL' || state.setup.conceptType === 'ORGANIZATION'
+                  ? 'invitation.accounts.fee'
+                  : 'invitation.accounts.gift'
+              )
+            }
             onAccountEnabledChange={(enabled) =>
               dispatch({ type: 'SET_EXTRAS', payload: { accountEnabled: enabled } })
             }

@@ -63,7 +63,7 @@ export default function Step7Accounts({
               type="text"
               value={accountsTitle}
               onChange={(event) => onAccountsTitleChange(event.target.value)}
-              placeholder={config.accountsTitle}
+              placeholder={t(isEventLike ? 'invitation.accounts.fee' : 'invitation.accounts.gift')}
               data-testid="accounts-title-input"
             />
           </label>

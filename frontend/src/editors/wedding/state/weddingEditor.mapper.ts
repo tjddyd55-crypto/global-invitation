@@ -101,9 +101,7 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
       ? state.extras.accountEnabled
       : conceptConfig.accountDefaultEnabled;
   const accountsTitle =
-    (state.extras.accountsTitle ?? '').trim() ||
-    conceptConfig.accountsTitle ||
-    defaultLabels.accountsTitle;
+    (state.extras.accountsTitle ?? '').trim() || defaultLabels.accountsTitle;
 
   const ogFields = buildOpenGraphSaveFields({
     title: state.share.ogTitle,

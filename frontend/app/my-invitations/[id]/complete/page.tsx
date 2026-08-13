@@ -8,6 +8,7 @@ import ResponsivePlatformBoundary from '@/src/shared/platform/ResponsivePlatform
 import { getInvitationOpenGraphSettings } from '@/src/invitation/openGraphSettings';
 import { getInvitationForEditor } from '@/src/lib/api';
 import { buildAbsolutePublicInvitationUrl } from '@/src/lib/publicInvitation';
+import { useI18n } from '@/src/contexts/I18nContext';
 import MobileShell from '@/src/ui/mobile/MobileShell';
 import PcShell from '@/src/ui/pc/PcShell';
 
@@ -20,6 +21,7 @@ type CompleteShareState = {
 
 export default function PublishCompletePage() {
   const params = useParams();
+  const { t } = useI18n();
   const invitationId = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : '';
   const [share, setShare] = useState<CompleteShareState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export default function PublishCompletePage() {
         const invitation = await getInvitationForEditor(invitationId);
         if (!mounted) return;
         if (!invitation.shareSlug) {
-          setError('아직 공개 링크가 없습니다. 에디터에서 먼저 공개해 주세요.');
+          setError(t('publishComplete.errorNoLink'));
           return;
         }
         const origin = window.location.origin;
@@ -45,14 +47,14 @@ export default function PublishCompletePage() {
           imageUrl: og.imageUrl,
         });
       } catch {
-        if (mounted) setError('초대장 정보를 불러오지 못했습니다.');
+        if (mounted) setError(t('publishComplete.errorLoad'));
       }
     }
     void load();
     return () => {
       mounted = false;
     };
-  }, [invitationId]);
+  }, [invitationId, t]);
 
   const body = (
     <RequireAuth nextPath={`/my-invitations/${invitationId}/complete`}>

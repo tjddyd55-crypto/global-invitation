@@ -124,6 +124,21 @@ URL prefix(`/en`, `/ko`)는 도입하지 않음 (전략 B: cookie/state only).
 
 약관/개인정보는 한국어 원문 유지. 임의 영어 법률 번역은 하지 않음.
 
+## Phase 3 Finish (KO/EN 1차)
+
+Live Railway development E2E (`e2e/locale-phase3.spec.ts`):
+
+- Published KO invitation + EN browser/service → Public Korean
+- Published EN invitation + KO browser/service → Public English
+- Create snapshot stores `Invitation.language`
+- Mixed service/invitation editor locale
+- Comments public = invitation locale
+- Comments admin / RSVP admin = service locale
+- RSVP public form = invitation locale
+- 390 / 1280 overflow smoke
+
+Public `/i/{shareSlug}` wraps renderer + share chrome in `InvitationLocaleProvider`.
+
 ## Phase 4 remaining
 
 - Viewer Translation

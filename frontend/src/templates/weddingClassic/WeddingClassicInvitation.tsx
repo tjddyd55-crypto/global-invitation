@@ -514,7 +514,7 @@ export default function WeddingClassicInvitation({
           data-testid="invitation-accounts-placeholder"
           style={{ padding: '32px 24px', textAlign: 'center', opacity: 0.65 }}
         >
-          <p style={{ margin: 0, fontSize: 13 }}>계좌 정보를 추가해 주세요</p>
+          <p style={{ margin: 0, fontSize: 13 }}>{t('invitation.placeholder.accounts')}</p>
         </section>
       ) : null}
 

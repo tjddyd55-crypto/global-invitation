@@ -5,7 +5,6 @@ import { useState } from 'react';
 import {
   getInvitationAccountItems,
   isAccountItemComplete,
-  resolveAccountsSectionTitle,
   type InvitationAccountItem,
 } from '@/src/invitation/accountItems';
 import type { InvitationConceptType } from '@/src/invitation/conceptPresentationConfig';
@@ -125,9 +124,10 @@ export default function InvitationAccountsSection({
   const items = getInvitationAccountItems(accounts).filter(isAccountItemComplete);
   if (items.length === 0) return null;
 
+  const eventLike = conceptType === 'GENERAL' || conceptType === 'ORGANIZATION';
   const title =
     (typeof accountsTitle === 'string' && accountsTitle.trim()) ||
-    resolveAccountsSectionTitle({ accountsTitle }, conceptType);
+    t(eventLike ? 'invitation.accounts.fee' : 'invitation.accounts.gift');
 
   return (
     <section

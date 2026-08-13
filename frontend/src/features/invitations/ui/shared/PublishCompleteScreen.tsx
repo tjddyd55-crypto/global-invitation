@@ -1,8 +1,9 @@
 'use client';
-/* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
 import GlobalSharePanel from '@/src/components/share/GlobalSharePanel';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { interpolate } from '@/src/i18n';
 import styles from './PublishCompleteScreen.module.css';
 
 type PublishCompleteScreenProps = {
@@ -16,6 +17,7 @@ type PublishCompleteScreenProps = {
 /**
  * 공개 완료 화면 (Figma Make: Publish Complete).
  * KakaoTalk payload는 persisted OG title/description/imageUrl을 그대로 전달한다.
+ * Locale: My Invitations shell → service locale.
  */
 export default function PublishCompleteScreen({
   invitationId,
@@ -24,21 +26,22 @@ export default function PublishCompleteScreen({
   description,
   imageUrl,
 }: PublishCompleteScreenProps) {
-  const shareTitle = (title || '').trim() || '초대장';
-  const shareDescription = (description || '').trim() || '초대장을 확인해 주세요.';
+  const { t } = useI18n();
+  const shareTitle = (title || '').trim() || t('publishComplete.fallbackTitle');
+  const shareDescription = (description || '').trim() || t('publishComplete.fallbackDesc');
 
   return (
     <section className={styles.screen} data-testid="share-panel">
       <header className={styles.header}>
-        <p className={styles.eyebrow}>Publish Complete</p>
-        <h1>초대장이 공개되었습니다</h1>
-        <p>{shareTitle}을 공유하고 참석 응답을 관리해 보세요.</p>
+        <p className={styles.eyebrow}>{t('publishComplete.eyebrow')}</p>
+        <h1>{t('publishComplete.title')}</h1>
+        <p>{interpolate(t('publishComplete.desc'), { title: shareTitle })}</p>
       </header>
 
       <div className={styles.layout}>
         <div className={styles.mainColumn}>
           <p className={styles.shareUrlLine}>
-            공유 URL: <strong data-testid="share-url">{shareUrl}</strong>
+            {t('publishComplete.shareUrl')}: <strong data-testid="share-url">{shareUrl}</strong>
           </p>
           <GlobalSharePanel
             shareUrl={shareUrl}
@@ -49,19 +52,19 @@ export default function PublishCompleteScreen({
         </div>
         <aside className={styles.sideColumn}>
           <Link href={shareUrl} className={styles.primaryLink} target="_blank" rel="noreferrer">
-            완성 초대장 보기
+            {t('publishComplete.viewInvitation')}
           </Link>
           <Link href={`/my-invitations/${invitationId}/rsvp`} className={styles.secondaryLink}>
-            참석 관리
+            {t('publishComplete.manageRsvp')}
           </Link>
           <Link href={`/my-invitations/${invitationId}/comments`} className={styles.secondaryLink}>
-            댓글 관리
+            {t('publishComplete.manageComments')}
           </Link>
           <Link href={`/editor/${invitationId}`} className={styles.secondaryLink}>
-            에디터로 돌아가기
+            {t('publishComplete.backToEditor')}
           </Link>
           <Link href="/my-invitations" className={styles.ghostLink}>
-            내 초대장 목록
+            {t('publishComplete.myInvitations')}
           </Link>
         </aside>
       </div>
