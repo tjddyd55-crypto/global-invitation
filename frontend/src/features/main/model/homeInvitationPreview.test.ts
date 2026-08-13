@@ -65,4 +65,5 @@ test('funeral home example English fixture uses English sample names', () => {
   assert.ok(isFuneralInvitationData(data));
   assert.equal(data.deceasedName, 'Michael Anderson');
   assert.equal(data.funeralHall.name, 'Serenity Memorial Hall');
+  assert.equal((data as { language?: string }).language, 'en-US');
 });

@@ -2,6 +2,9 @@ export type FuneralInvitation = {
   templateType?: 'FULL';
   conceptType?: 'FUNERAL';
   templateKey: 'funeral_classic' | 'invitation_full';
+  /** Runtime invitation locale injection — not a stored funeral field. */
+  language?: string;
+  locale?: string;
   deceasedName: string;
   birthDate?: string;
   deathDate: string;
@@ -39,11 +42,14 @@ export function isFuneralClassicTemplate(templateKey?: string | null): boolean {
 
 export function getFuneralClassicDemoData(locale?: string | null): FuneralInvitation {
   const isEn = (locale || '').toLowerCase().startsWith('en');
+  const productLocale = isEn ? 'en-US' : 'ko-KR';
   if (isEn) {
     return {
       templateType: 'FULL',
       conceptType: 'FUNERAL',
       templateKey: 'invitation_full',
+      language: productLocale,
+      locale: productLocale,
       deceasedName: 'Michael Anderson',
       birthDate: '1952-04-11',
       deathDate: '2035-05-02',
@@ -73,6 +79,8 @@ export function getFuneralClassicDemoData(locale?: string | null): FuneralInvita
     templateType: 'FULL',
     conceptType: 'FUNERAL',
     templateKey: 'invitation_full',
+    language: productLocale,
+    locale: productLocale,
     deceasedName: '홍길동',
     birthDate: '1952-04-11',
     deathDate: '2035-05-02',
