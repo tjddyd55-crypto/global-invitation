@@ -50,7 +50,7 @@ export default function Step7Accounts({
             <span>{t('editor.accounts.headingFee')}</span>
           </label>
           <p className={styles.sectionHint}>
-            공개하면 초대장 방문자가 계좌 정보를 볼 수 있습니다. OFF해도 입력한 계좌 데이터는 유지됩니다.
+            {t('editor.accounts.visibilityHint')}
           </p>
         </div>
       ) : null}
@@ -58,7 +58,7 @@ export default function Step7Accounts({
       {showForm ? (
         <>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>섹션 제목</span>
+            <span className={styles.fieldLabel}>{t('editor.accounts.sectionTitle')}</span>
             <input
               type="text"
               value={accountsTitle}

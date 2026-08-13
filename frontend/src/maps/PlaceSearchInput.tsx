@@ -2,6 +2,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useEffect, useRef } from 'react';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import { useGoogleMaps } from './GoogleMapsProvider';
 import styles from './PlaceSearchInput.module.css';
 
@@ -21,8 +22,10 @@ export default function PlaceSearchInput({
   onChange,
   onPlaceSelected,
   disabled,
-  placeholder = '장소명 또는 주소 검색',
+  placeholder,
 }: PlaceSearchInputProps) {
+  const { t } = useInvitationT();
+  const resolvedPlaceholder = placeholder || t('editor.map.searchPlaceholder');
   const { ready, maps } = useGoogleMaps();
   const inputRef = useRef<HTMLInputElement>(null);
   const onPlaceSelectedRef = useRef(onPlaceSelected);
@@ -55,7 +58,7 @@ export default function PlaceSearchInput({
         className={styles.input}
         value={value}
         disabled={disabled || !ready}
-        placeholder={ready ? placeholder : '지도 서비스 준비 중…'}
+        placeholder={ready ? resolvedPlaceholder : t('editor.map.loading')}
         onChange={(event) => onChange(event.target.value)}
         autoComplete="off"
         data-testid="place-search-input"

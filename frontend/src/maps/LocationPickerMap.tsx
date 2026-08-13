@@ -2,6 +2,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useEffect, useRef } from 'react';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import { DEFAULT_MAP_ZOOM, EDITOR_MAP_HEIGHT_PX, getGoogleMapsMapId } from './config';
 import { useGoogleMaps } from './GoogleMapsProvider';
 import type { PendingInvitationLocation } from './types';
@@ -58,6 +59,7 @@ export default function LocationPickerMap({
   location,
   height = EDITOR_MAP_HEIGHT_PX,
 }: LocationPickerMapProps) {
+  const { t } = useInvitationT();
   const { ready, maps, loading, error } = useGoogleMaps();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -170,7 +172,7 @@ export default function LocationPickerMap({
   if (error) {
     return (
       <div className={styles.fallback} style={{ height }} data-testid="location-picker-map-error">
-        지도를 불러오지 못했습니다. 주소 텍스트는 저장할 수 있습니다.
+        {t('editor.map.loadFailed')}
       </div>
     );
   }
@@ -178,7 +180,7 @@ export default function LocationPickerMap({
   if (loading || !ready) {
     return (
       <div className={styles.fallback} style={{ height }} data-testid="location-picker-map-loading">
-        지도 로딩 중…
+        {t('editor.map.loading')}
       </div>
     );
   }

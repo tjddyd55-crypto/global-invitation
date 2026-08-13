@@ -2,7 +2,8 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useMemo, useState } from 'react';
-import { KAKAO_SHARE_FALLBACK_NOTICE, shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
 import styles from './GlobalSharePanel.module.css';
 
 export type GlobalSharePanelProps = {
@@ -38,6 +39,7 @@ export default function GlobalSharePanel({
   variant = 'card',
   onCopied,
 }: GlobalSharePanelProps) {
+  const { t } = useI18n();
   const [notice, setNotice] = useState<string | null>(null);
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedText = encodeURIComponent(`${text}\n${shareUrl}`);
@@ -45,8 +47,8 @@ export default function GlobalSharePanel({
 
   const targets = useMemo<ShareTarget[]>(() => {
     const items: ShareTarget[] = [
-      { id: 'copy', label: '링크 복사', action: 'copy' },
-      { id: 'native', label: '기기 공유', action: 'native' },
+      { id: 'copy', label: t('invitation.share.copyLink'), action: 'copy' },
+      { id: 'native', label: t('invitation.share.device'), action: 'native' },
       {
         id: 'whatsapp',
         label: 'WhatsApp',
@@ -91,21 +93,21 @@ export default function GlobalSharePanel({
       },
       {
         id: 'kakao',
-        label: '카카오톡',
+        label: t('invitation.share.kakao'),
         action: 'kakao',
       },
     );
 
     return items;
-  }, [encodedText, encodedUrl, facebookAppId, text, title]);
+  }, [encodedText, encodedUrl, facebookAppId, t, text, title]);
 
-  const handleCopy = async (successNotice = '링크를 복사했습니다.') => {
+  const handleCopy = async (successNotice = t('toast.linkCopied')) => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setNotice(successNotice);
       onCopied?.();
     } catch {
-      setNotice('복사에 실패했습니다. 주소를 직접 선택해 주세요.');
+      setNotice(t('invitation.share.copyFailed'));
     }
   };
 
@@ -133,28 +135,28 @@ export default function GlobalSharePanel({
         setNotice(null);
         return;
       }
-      setNotice(KAKAO_SHARE_FALLBACK_NOTICE);
+      setNotice(t('invitation.share.kakaoFallback'));
       if (result === 'clipboard') onCopied?.();
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         setNotice(null);
         return;
       }
-      setNotice('카카오톡 공유 URL이 올바르지 않습니다. 공개 링크를 확인해 주세요.');
+      setNotice(t('invitation.share.kakaoInvalid'));
     }
   };
 
   return (
     <section className={variant === 'sheet' ? styles.sheet : styles.card}>
-      <h2 className={styles.heading}>공유하기</h2>
+      <h2 className={styles.heading}>{t('invitation.share.sheetTitle')}</h2>
       <p className={styles.url}>{shareUrl}</p>
       <div className={styles.grid}>
         {targets.map((target) => {
           if (target.action === 'copy') {
             const noticeText =
               target.id === 'messenger'
-                ? 'Messenger 앱 ID가 없어 링크를 복사했습니다. Messenger에 붙여넣어 공유해 주세요.'
-                : '링크를 복사했습니다.';
+                ? t('invitation.share.kakaoFallback')
+                : t('toast.linkCopied');
             return (
               <button
                 key={target.id}

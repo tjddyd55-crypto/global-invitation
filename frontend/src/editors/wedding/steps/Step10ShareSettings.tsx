@@ -90,14 +90,12 @@ export default function Step10ShareSettings({
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>{t('editor.section.sharing')}</h2>
-        <p>카카오톡과 메신저에 초대장 링크를 공유할 때 보이는 미리보기 카드입니다.</p>
+        <p>{t('editor.share.desc')}</p>
       </div>
       <div className={styles.ogEditor}>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>공유 미리보기 제목</span>
-          <span className={styles.fieldDescription}>
-            카카오톡과 메신저에 초대장 링크를 공유할 때 표시되는 제목입니다.
-          </span>
+          <span className={styles.fieldLabel}>{t('editor.share.ogTitle')}</span>
+          <span className={styles.fieldDescription}>{t('editor.share.ogTitleHint')}</span>
           <input
             type="text"
             value={value.ogTitle}
@@ -108,8 +106,8 @@ export default function Step10ShareSettings({
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>공유 미리보기 설명</span>
-          <span className={styles.fieldDescription}>공유 카드 제목 아래에 표시되는 설명입니다.</span>
+          <span className={styles.fieldLabel}>{t('editor.share.ogDesc')}</span>
+          <span className={styles.fieldDescription}>{t('editor.share.ogDescHint')}</span>
           <textarea
             rows={3}
             value={value.ogDescription}
@@ -154,7 +152,7 @@ export default function Step10ShareSettings({
             disabled={!hasHero || persistingShareImage || clearingExtra}
             data-testid="og-use-hero"
           >
-            대표 이미지 사용
+            {t('editor.share.useHero')}
           </button>
           <button
             type="button"
@@ -169,11 +167,11 @@ export default function Step10ShareSettings({
           </button>
         </div>
         {!hasHero ? (
-          <p className={styles.fieldDescription}>대표 이미지가 없어 ‘대표 이미지 사용’을 쓸 수 없습니다.</p>
+          <p className={styles.fieldDescription}>{t('editor.share.noHero')}</p>
         ) : null}
         {persistingShareImage || clearingExtra ? (
           <p className={styles.fieldDescription} data-testid="og-image-persisting">
-            공유 이미지 설정을 저장하는 중…
+            {t('editor.share.persisting')}
           </p>
         ) : null}
         {clearError ? (

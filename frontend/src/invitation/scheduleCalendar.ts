@@ -57,3 +57,19 @@ export function getInvitationScheduleCalendarModel(data: {
 }
 
 export const SCHEDULE_WEEKDAY_LABELS_KO = ['일', '월', '화', '수', '목', '금', '토'] as const;
+export const SCHEDULE_WEEKDAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+
+export function scheduleWeekdayLabels(locale?: string | null): readonly string[] {
+  const raw = (locale || '').toLowerCase();
+  if (raw.startsWith('en')) return SCHEDULE_WEEKDAY_LABELS_EN;
+  return SCHEDULE_WEEKDAY_LABELS_KO;
+}
+
+export function scheduleCalendarAriaLabel(year: number, monthIndex: number, locale?: string | null): string {
+  const date = new Date(year, monthIndex, 1);
+  const raw = (locale || '').toLowerCase();
+  if (raw.startsWith('en')) {
+    return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date);
+  }
+  return `${year}년 ${monthIndex + 1}월`;
+}

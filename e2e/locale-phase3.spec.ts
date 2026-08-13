@@ -61,9 +61,17 @@ test.describe('Locale Phase 3', () => {
       await page.goto(`${FE}/i/${created.shareSlug}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
       const doc = page.getByTestId('public-invitation-document');
       await expect(doc).toBeVisible({ timeout: 60_000 });
-      await expect(doc).toContainText(/초대의 말씀|위치 안내|지도에서 보기|참석 여부|길찾기/);
-      await expect(doc).not.toContainText('View on map');
+      await expect(doc).toContainText('우리 결혼합니다');
+      await expect(doc).toContainText('예식 일정');
+      await expect(doc).toContainText('교통 안내');
+      await expect(doc).toContainText('참석 여부');
+      await expect(doc).toContainText('참석 여부 알리기');
+      await expect(page.getByTestId('invitation-share-block').or(page.getByTestId('desktop-public-share-panel'))).toContainText(
+        /공유하기|초대장 링크|링크 복사|카카오/
+      );
+      await expect(doc).not.toContainText("We're Getting Married");
       await expect(doc).not.toContainText('RSVP Now');
+      await expect(doc).not.toContainText('Date & Time');
     } finally {
       await cleanupInvitation(page, created.id);
       await context.close();
@@ -87,10 +95,18 @@ test.describe('Locale Phase 3', () => {
       await page.goto(`${FE}/i/${created.shareSlug}`, { waitUntil: 'domcontentloaded', timeout: 90_000 });
       const doc = page.getByTestId('public-invitation-document');
       await expect(doc).toBeVisible({ timeout: 60_000 });
-      await expect(doc).toContainText(/Invitation|View on map|RSVP|Directions|Location/i);
-      await expect(doc).not.toContainText('초대의 말씀');
-      await expect(doc).not.toContainText('지도에서 보기');
+      await expect(doc).toContainText("We're Getting Married");
+      await expect(doc).toContainText('Date & Time');
+      await expect(doc).toContainText('Directions');
+      await expect(doc).toContainText('RSVP Now');
+      await expect(doc).toContainText(/View on Google Maps|Get directions/);
+      await expect(page.getByTestId('invitation-share-block').or(page.getByTestId('desktop-public-share-panel'))).toContainText(
+        /Share|Invitation Link|Copy link|KakaoTalk/i
+      );
+      await expect(doc).not.toContainText('우리 결혼합니다');
+      await expect(doc).not.toContainText('예식 일정');
       await expect(doc).not.toContainText('참석 여부 알리기');
+      await expect(doc).not.toContainText('교통 안내');
     } finally {
       await cleanupInvitation(page, created.id);
       await context.close();
@@ -202,30 +218,52 @@ test.describe('Locale Phase 3', () => {
     }
   });
 
-  test('Funeral / General / JCI preview KO and EN system headings', async ({ page }) => {
+  test('Festive preview EN system headings', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(FE, { waitUntil: 'domcontentloaded', timeout: 90_000 });
     await page.getByTestId('locale-selector').first().selectOption('en-US');
-
     await page.goto(`${FE}/templates/GENERAL_05_FESTIVE/preview`, {
       waitUntil: 'domcontentloaded',
       timeout: 90_000,
     });
-    await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 60_000 });
-    await expect(page.getByTestId('public-invitation-document')).not.toContainText('행사 소개를 입력해 주세요');
+    const doc = page.getByTestId('public-invitation-document');
+    await expect(doc).toBeVisible({ timeout: 60_000 });
+    await expect(doc).not.toContainText('행사 소개를 입력해 주세요');
+  });
 
+  test('JCI preview EN system headings', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(FE, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.getByTestId('locale-selector').first().selectOption('en-US');
     await page.goto(`${FE}/templates/ORGANIZATION_02_JCI/preview`, {
       waitUntil: 'domcontentloaded',
       timeout: 90_000,
     });
     await expect(page.getByText('JCI Seoul Gwangjin').first()).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId('public-invitation-document')).toContainText(/Date|Venue|RSVP/i);
+    await expect(page.getByTestId('public-invitation-document')).not.toContainText('참석 여부 알리기');
+  });
 
-    await page.getByTestId('locale-selector').first().selectOption('ko-KR').catch(() => undefined);
+  test('Classic preview KO system headings', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(FE, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.getByTestId('locale-selector').first().selectOption('ko-KR');
     await page.goto(`${FE}/templates/GENERAL_01_CLASSIC/preview`, {
       waitUntil: 'domcontentloaded',
       timeout: 90_000,
     });
     await expect(page.getByTestId('public-invitation-document')).toBeVisible({ timeout: 60_000 });
+  });
+
+  test('1280 English marketing home does not overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(FE, { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.getByTestId('locale-selector').first().selectOption('en-US');
+    await expect(page.locator('body')).toBeVisible();
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+    );
+    expect(overflow).toBeFalsy();
   });
 
   test('390 English public garden does not overflow horizontally', async ({ page }) => {

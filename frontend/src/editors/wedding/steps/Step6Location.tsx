@@ -97,7 +97,7 @@ export default function Step6Location({
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>{t('editor.section.location')}</h2>
-        <p>지도 서비스를 선택한 뒤 장소를 검색·확정합니다.</p>
+        <p>{t('editor.location.desc')}</p>
       </div>
 
       <div className={mapStyles.providerSwitch} data-testid="map-provider-switch">
@@ -107,8 +107,8 @@ export default function Step6Location({
           data-testid="map-provider-google"
           onClick={() => handleProviderChange('GOOGLE')}
         >
-          <strong>Google 지도</strong>
-          <span>전 세계 장소 검색 및 길찾기</span>
+          <strong>Google Maps</strong>
+          <span>{t('editor.location.googleHelper')}</span>
         </button>
         <button
           type="button"
@@ -116,8 +116,8 @@ export default function Step6Location({
           data-testid="map-provider-naver"
           onClick={() => handleProviderChange('NAVER')}
         >
-          <strong>Naver 지도</strong>
-          <span>대한민국 주소 및 장소 검색</span>
+          <strong>Naver Map</strong>
+          <span>{t('editor.location.naverHelper')}</span>
         </button>
       </div>
 

@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import type { InvitationLocation } from './types';
 import styles from './LocationConfirmationCard.module.css';
 
@@ -19,20 +20,23 @@ export default function LocationConfirmationCard({
   statusMessage,
   onConfirm,
 }: LocationConfirmationCardProps) {
+  const { t } = useInvitationT();
   return (
     <div className={styles.card} data-testid="location-confirmation-card">
-      <p className={styles.selectedLabel}>{confirmed ? '확정된 위치' : '선택된 위치'}</p>
+      <p className={styles.selectedLabel}>
+        {confirmed ? t('editor.map.confirmedLabel') : t('editor.map.selectedLabel')}
+      </p>
       <div className={styles.row}>
-        <span className={styles.label}>장소명</span>
+        <span className={styles.label}>{t('editor.map.venueName')}</span>
         <strong className={styles.value}>{location.venueName || '—'}</strong>
       </div>
       <div className={styles.row}>
-        <span className={styles.label}>주소</span>
+        <span className={styles.label}>{t('editor.funeral.address')}</span>
         <span className={styles.value}>{location.formattedAddress || '—'}</span>
       </div>
       {location.detailAddress?.trim() ? (
         <div className={styles.row}>
-          <span className={styles.label}>상세</span>
+          <span className={styles.label}>{t('editor.map.detail')}</span>
           <span className={styles.value}>{location.detailAddress}</span>
         </div>
       ) : null}
@@ -44,7 +48,7 @@ export default function LocationConfirmationCard({
         disabled={!canConfirm}
         data-testid="location-confirm-button"
       >
-        {confirmed ? '위치가 확정되었습니다' : '이 위치로 확정'}
+        {confirmed ? t('editor.map.confirmedOk') : t('editor.map.confirmHere')}
       </button>
     </div>
   );

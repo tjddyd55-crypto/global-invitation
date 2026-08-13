@@ -3,6 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import {
   getVisualTemplateDefinition,
   listActiveVisualTemplates,
@@ -24,6 +25,7 @@ function isSwitchableConcept(
 }
 
 export default function EditorTemplateSwitcher({ conceptType, visualTemplateId, onChange }: Props) {
+  const { t } = useInvitationT();
   const [open, setOpen] = useState(false);
   const [confirmId, setConfirmId] = useState<VisualTemplateId | null>(null);
 
@@ -55,18 +57,18 @@ export default function EditorTemplateSwitcher({ conceptType, visualTemplateId, 
           fallback={<span className={styles.thumbFallback}>{current.name.slice(0, 1)}</span>}
         />
         <div className={styles.meta}>
-          <span className={styles.label}>템플릿</span>
+          <span className={styles.label}>{t('editor.template.label')}</span>
           <strong>{current.name}</strong>
         </div>
         <button type="button" className={styles.changeBtn} onClick={() => setOpen(true)}>
-          템플릿 변경
+          {t('editor.template.change')}
         </button>
       </div>
 
       {open ? (
         <div className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="tpl-change-title">
           <div className={styles.panel}>
-            <h2 id="tpl-change-title">템플릿 선택</h2>
+            <h2 id="tpl-change-title">{t('editor.template.choose')}</h2>
             <ul className={styles.list}>
               {options.map((opt) => (
                 <li key={opt.id}>
@@ -90,7 +92,7 @@ export default function EditorTemplateSwitcher({ conceptType, visualTemplateId, 
               ))}
             </ul>
             <button type="button" className={styles.cancel} onClick={() => setOpen(false)}>
-              닫기
+              {t('editor.template.close')}
             </button>
           </div>
         </div>
@@ -99,11 +101,11 @@ export default function EditorTemplateSwitcher({ conceptType, visualTemplateId, 
       {confirmId ? (
         <div className={styles.modal} role="alertdialog" aria-modal="true">
           <div className={styles.panel}>
-            <h2>템플릿을 변경할까요?</h2>
-            <p>입력한 내용은 유지되고 화면 디자인만 변경됩니다.</p>
+            <h2>{t('editor.template.confirmTitle')}</h2>
+            <p>{t('editor.template.confirmDesc')}</p>
             <div className={styles.confirmActions}>
               <button type="button" className={styles.cancel} onClick={() => setConfirmId(null)}>
-                취소
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -114,7 +116,7 @@ export default function EditorTemplateSwitcher({ conceptType, visualTemplateId, 
                   setOpen(false);
                 }}
               >
-                템플릿 변경
+                {t('editor.template.change')}
               </button>
             </div>
           </div>

@@ -55,6 +55,8 @@ export const INVITATION_COPY_KO = {
   'invitation.funeral.wake': '빈소',
   'invitation.funeral.service': '발인',
   'invitation.funeral.condolence': '조문',
+  'invitation.funeral.wakeGuide': '빈소 안내',
+  'invitation.funeral.burial': '장지',
   'invitation.share.kakao': '카카오톡',
   'invitation.share.copyLink': '링크 복사',
   'invitation.share.copied': '복사됨!',
@@ -135,6 +137,10 @@ export const INVITATION_COPY_KO = {
   'invitation.music.untitled': '배경 음악',
   'invitation.share.cultureLead': '이 초대장을 함께 나누어 주세요',
   'invitation.share.kakaoAction': '카카오톡 공유',
+  'invitation.share.kakaoFallback': '카카오톡 공유를 사용할 수 없어 링크를 복사했습니다.',
+  'invitation.share.copyHint': '링크를 복사해 전달하세요.',
+  'invitation.share.linkLabel': '초대장 링크',
+  'invitation.rsvp.asideTitle': 'RSVP 바로가기',
   'invitation.placeholder.shareMeta': '공유 제목·설명을 설정해 주세요.',
 } as const;
 
@@ -195,6 +201,8 @@ export const INVITATION_COPY_EN = {
   'invitation.funeral.wake': 'Service Location',
   'invitation.funeral.service': 'Service Date',
   'invitation.funeral.condolence': 'Visitation',
+  'invitation.funeral.wakeGuide': 'Service Location',
+  'invitation.funeral.burial': 'Burial / Final Resting Place',
   'invitation.share.kakao': 'KakaoTalk',
   'invitation.share.copyLink': 'Copy link',
   'invitation.share.copied': 'Copied!',
@@ -275,5 +283,9 @@ export const INVITATION_COPY_EN = {
   'invitation.music.untitled': 'Background music',
   'invitation.share.cultureLead': 'Share this invitation',
   'invitation.share.kakaoAction': 'Share on KakaoTalk',
+  'invitation.share.kakaoFallback': 'Kakao sharing is unavailable, so the link was copied instead.',
+  'invitation.share.copyHint': 'Copy the link and send it to your guests.',
+  'invitation.share.linkLabel': 'Invitation Link',
+  'invitation.rsvp.asideTitle': 'Jump to RSVP',
   'invitation.placeholder.shareMeta': 'Add a share title and description.',
 } as const;

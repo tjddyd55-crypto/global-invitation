@@ -205,7 +205,7 @@ export default function StepOrganizationBranding({
                 void applyPreset('JCI');
               }}
             >
-              적용
+              {t('editor.org.apply')}
             </button>
           </div>
         </div>
@@ -278,7 +278,7 @@ export default function StepOrganizationBranding({
             onClick={() => onChange({ accentColor: DEFAULT_BRAND_ACCENT_COLOR })}
             data-testid="organization-accent-reset"
           >
-            기본색으로
+            {t('editor.org.resetColor')}
           </button>
         </div>
       </label>

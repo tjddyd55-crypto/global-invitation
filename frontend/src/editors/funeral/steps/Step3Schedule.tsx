@@ -17,7 +17,7 @@ export default function Step3Schedule({ schedule, onChange }: Step3ScheduleProps
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>{t('editor.section.schedule')}</h2>
-        <p>빈소/발인/장지를 입력합니다.</p>
+        <p>{t('editor.funeral.scheduleDesc')}</p>
       </div>
       <div className={styles.fieldGrid}>
         <label className={styles.field}>
@@ -39,12 +39,12 @@ export default function Step3Schedule({ schedule, onChange }: Step3ScheduleProps
         </label>
       </div>
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>장지 (선택)</span>
+        <span className={styles.fieldLabel}>{t('editor.funeral.burial')}</span>
         <input
           type="text"
           value={schedule.burial ?? ''}
           onChange={(event) => onChange({ ...schedule, burial: event.target.value })}
-          placeholder="예: 성지 공원묘원"
+          placeholder={t('editor.funeral.burialPlaceholder')}
         />
       </label>
     </section>

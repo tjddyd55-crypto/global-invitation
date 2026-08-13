@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from './LocationPicker.module.css';
 
 export type NaverGeocodeItem = {
@@ -33,6 +34,7 @@ export default function NaverPlaceSearch({
   onSearch,
   onSelect,
 }: NaverPlaceSearchProps) {
+  const { t } = useInvitationT();
   return (
     <>
       <div className={styles.searchRow}>
@@ -40,7 +42,7 @@ export default function NaverPlaceSearch({
           type="text"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="장소명 또는 주소 검색 (Naver)"
+          placeholder={t('editor.map.naverSearchPlaceholder')}
           data-testid="naver-place-search"
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
@@ -50,7 +52,7 @@ export default function NaverPlaceSearch({
           }}
         />
         <button type="button" onClick={onSearch} disabled={loading}>
-          검색
+          {t('editor.map.search')}
         </button>
       </div>
 

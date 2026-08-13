@@ -26,7 +26,7 @@ type FullInvitationRendererProps = {
  */
 export default function FullInvitationRenderer(props: FullInvitationRendererProps) {
   const data = props.data as { locale?: string; language?: string };
-  const locale = resolveInvitationLocale(data?.locale || data?.language);
+  const locale = resolveInvitationLocale(data?.language || data?.locale);
   return (
     <InvitationLocaleProvider locale={locale}>
       <RenderInvitationByConcept {...props} />

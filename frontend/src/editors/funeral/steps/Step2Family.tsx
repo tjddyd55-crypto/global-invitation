@@ -24,7 +24,7 @@ export default function Step2Family({ chiefMourner, familyMembers, onChange }: S
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>{t('editor.section.deceased')}</h2>
-        <p>고인/유가족 관련 정보를 입력합니다.</p>
+        <p>{t('editor.funeral.familyDesc')}</p>
       </div>
       <label className={styles.field}>
         <span className={styles.fieldLabel}>{t('editor.field.chiefContact')}</span>
@@ -37,12 +37,12 @@ export default function Step2Family({ chiefMourner, familyMembers, onChange }: S
         />
       </label>
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>유가족 관계 (선택)</span>
+        <span className={styles.fieldLabel}>{t('editor.funeral.familyRelations')}</span>
         <textarea
           rows={4}
           value={(familyMembers ?? []).join('\n')}
           onChange={(event) => onChange({ familyMembers: toLines(event.target.value) })}
-          placeholder="예: 아들 홍석주 · 홍석민"
+          placeholder={t('editor.funeral.familyPlaceholder')}
         />
       </label>
     </section>

@@ -329,17 +329,17 @@ export default function MultiImageUploader({
             disabled={uploading}
           />
         </div>
-        <div className={styles.uploadDropHint}>파일을 이 영역에 드래그해 여러 장을 한 번에 업로드할 수 있습니다.</div>
+        <div className={styles.uploadDropHint}>{t('editor.gallery.dropHint')}</div>
         {error && <p className={styles.fieldDescription}>{error}</p>}
         {cleanupWarning && <p className={styles.fieldDescription}>{cleanupWarning}</p>}
         {persistStatus === 'saving' ? (
           <p className={styles.fieldDescription} data-testid="gallery-persist-status">
-            삭제됨 · 저장 중…
+            {t('editor.gallery.persistSaving')}
           </p>
         ) : null}
         {persistStatus === 'saved' ? (
           <p className={styles.fieldDescription} data-testid="gallery-persist-status">
-            저장 완료
+            {t('editor.gallery.persistSaved')}
           </p>
         ) : null}
         {activeQueue.length > 0 && (
@@ -384,7 +384,7 @@ export default function MultiImageUploader({
         )}
         {visibleImages.length === 0 ? (
           <div className={styles.uploaderPlaceholder} data-testid="gallery-editor-empty">
-            아직 등록된 이미지가 없습니다.
+            {t('editor.gallery.empty')}
           </div>
         ) : (
           <ul
@@ -420,9 +420,9 @@ export default function MultiImageUploader({
                       {fileName}
                     </p>
                     <p className={styles.editorGalleryItemStatus}>
-                      <span className={styles.editorGalleryDoneBadge}>✓ 업로드 완료</span>
+                      <span className={styles.editorGalleryDoneBadge}>✓ {t('editor.gallery.uploaded')}</span>
                       <span aria-hidden>·</span>
-                      <span>{index + 1}번째 이미지</span>
+                      <span>{t('editor.gallery.nthImage', { n: index + 1 })}</span>
                     </p>
                     <div className={styles.editorGalleryItemActions}>
                       <button

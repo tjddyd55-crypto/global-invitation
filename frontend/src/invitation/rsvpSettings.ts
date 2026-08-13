@@ -65,7 +65,7 @@ export function getInvitationRsvpSettings(
     'GENERAL';
   const conceptAllows = getConceptPresentationConfig(resolvedConcept).rsvp;
   const localeSource = isRecord(data)
-    ? String(data.locale || data.language || '')
+    ? String(data.language || data.locale || '')
     : '';
   const defaults = defaultRsvpCopy(localeSource, resolvedConcept);
 

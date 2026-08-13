@@ -21,7 +21,7 @@ export default function Step4Hall({ funeralHall, contact, onHallChange, onContac
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>{t('editor.section.location')}</h2>
-        <p>위치와 연락처 정보를 입력합니다.</p>
+        <p>{t('editor.funeral.hallDesc')}</p>
       </div>
       <label className={styles.field}>
         <span className={styles.fieldLabel}>{t('editor.field.wakeLocation')}</span>
@@ -34,12 +34,12 @@ export default function Step4Hall({ funeralHall, contact, onHallChange, onContac
         />
       </label>
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>주소</span>
+        <span className={styles.fieldLabel}>{t('editor.funeral.address')}</span>
         <input
           type="text"
           value={funeralHall.address ?? ''}
           onChange={(event) => onHallChange({ ...funeralHall, address: event.target.value })}
-          placeholder="예: 서울특별시 송파구 올림픽로 43길 88"
+          placeholder={t('editor.funeral.addressPlaceholder')}
         />
       </label>
       <ImageUploader

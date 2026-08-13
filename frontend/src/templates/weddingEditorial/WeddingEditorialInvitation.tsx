@@ -199,6 +199,7 @@ export default function WeddingEditorialInvitation(props: VisualTemplateProps) {
             eventDate={data.eventDate}
             weddingDate={data.weddingDate}
             weddingDateTime={data.weddingDateTime}
+            locale={model.locale}
             className={styles.dateGrid}
           />
         </InvitationReveal>

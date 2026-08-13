@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { InvitationPaymentStatus, InvitationStatus, type Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { getAuthUser } from '../lib/auth';
+import { isE2eFactoryDisabled } from '../lib/e2eFactoryGuard';
 import { parseCreateInvitationLocale, stripLegacyDataJsonLocale } from '../lib/invitationLocale';
 import { getInvitationPricingSnapshot } from '../lib/pricing/invitationPricing';
 
@@ -9,7 +10,7 @@ const router = Router();
 const TITLE_PREFIX = '[E2E-LOCALE]';
 
 function isProductionEnvironment(): boolean {
-  return process.env.NODE_ENV === 'production';
+  return isE2eFactoryDisabled();
 }
 
 function e2eSlug(prefix: string): string {
@@ -57,8 +58,8 @@ router.post('/', async (req, res) => {
       locationText,
       venueName: locationText,
       rsvpEnabled: true,
-      guestbookEnabled: false,
-      commentsEnabled: false,
+      guestbookEnabled: true,
+      commentsEnabled: true,
     }) as Prisma.InputJsonValue;
 
     const invitation = await prisma.invitation.create({
@@ -148,6 +149,11 @@ router.delete('/:id', async (req, res) => {
       return res.status(403).json({ error: 'FORBIDDEN' });
     }
 
+    await prisma.rSVP.deleteMany({ where: { invitationId: invitation.id } });
+    await prisma.invitationComment.deleteMany({ where: { invitationId: invitation.id } });
+    await prisma.invitationPayment.deleteMany({
+      where: { invitationId: invitation.id, provider: 'mock' },
+    });
     await prisma.invitation.update({
       where: { id: invitation.id },
       data: { isDeleted: true },

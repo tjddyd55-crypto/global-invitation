@@ -4,7 +4,8 @@
 import { useMemo } from 'react';
 import {
   getInvitationScheduleCalendarModel,
-  SCHEDULE_WEEKDAY_LABELS_KO,
+  scheduleCalendarAriaLabel,
+  scheduleWeekdayLabels,
 } from '@/src/invitation/scheduleCalendar';
 import styles from './TemplateDateGrid.module.css';
 
@@ -14,6 +15,7 @@ type TemplateDateGridProps = {
   weddingDateTime?: string | null;
   variant: 'editorial' | 'garden' | 'night' | 'clean' | 'festive' | 'culture';
   className?: string;
+  locale?: string | null;
 };
 
 export default function TemplateDateGrid({
@@ -22,6 +24,7 @@ export default function TemplateDateGrid({
   weddingDateTime,
   variant,
   className,
+  locale,
 }: TemplateDateGridProps) {
   const model = useMemo(
     () =>
@@ -32,6 +35,7 @@ export default function TemplateDateGrid({
       }),
     [eventDate, weddingDate, weddingDateTime]
   );
+  const weekdays = scheduleWeekdayLabels(locale);
 
   if (!model) {
     return <div className={`${styles.grid} ${styles[variant]} ${className ?? ''}`.trim()} aria-hidden />;
@@ -40,10 +44,10 @@ export default function TemplateDateGrid({
   return (
     <div
       className={`${styles.grid} ${styles[variant]} ${className ?? ''}`.trim()}
-      aria-label={`${model.year}년 ${model.monthIndex + 1}월`}
+      aria-label={scheduleCalendarAriaLabel(model.year, model.monthIndex, locale)}
     >
-      {SCHEDULE_WEEKDAY_LABELS_KO.map((day) => (
-        <span key={day} className={styles.weekday}>
+      {weekdays.map((day, index) => (
+        <span key={`${day}-${index}`} className={styles.weekday}>
           {day}
         </span>
       ))}

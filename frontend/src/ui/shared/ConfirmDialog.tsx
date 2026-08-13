@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef } from 'react';
 import { useI18n } from '@/src/contexts/I18nContext';
+import { invitationT } from '@/src/i18n/invitationT';
+import type { ProductLocaleId } from '@/src/i18n/productLocales';
 import styles from './ConfirmDialog.module.css';
 
 export type ConfirmDialogVariant = 'primary' | 'danger';
@@ -13,6 +15,8 @@ export type ConfirmDialogProps = {
   description: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  /** Invitation locale for editor dialogs. Omit to use service locale (My Invitations). */
+  locale?: ProductLocaleId;
   variant?: ConfirmDialogVariant;
   testId?: string;
   onCancel: () => void;
@@ -21,7 +25,7 @@ export type ConfirmDialogProps = {
 
 /**
  * App confirm SSOT. Backdrop click does not dismiss.
- * Default labels use service locale (My Invitations shell + editor).
+ * Default labels: `locale` → invitation locale; otherwise service locale.
  */
 export default function ConfirmDialog({
   open,
@@ -30,14 +34,16 @@ export default function ConfirmDialog({
   description,
   confirmLabel,
   cancelLabel,
+  locale,
   variant = 'primary',
   testId = 'confirm-dialog',
   onCancel,
   onConfirm,
 }: ConfirmDialogProps) {
-  const { t } = useI18n();
-  const resolvedConfirm = confirmLabel ?? t('common.confirm');
-  const resolvedCancel = cancelLabel ?? t('common.cancel');
+  const { t: serviceT } = useI18n();
+  const labelT = (key: string) => (locale ? invitationT(locale, key) : serviceT(key));
+  const resolvedConfirm = confirmLabel ?? labelT('common.confirm');
+  const resolvedCancel = cancelLabel ?? labelT('common.cancel');
   const titleId = useId();
   const descId = useId();
   const confirmRef = useRef<HTMLButtonElement>(null);

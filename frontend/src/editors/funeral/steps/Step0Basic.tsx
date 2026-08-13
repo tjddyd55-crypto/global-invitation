@@ -27,7 +27,7 @@ export default function Step0Basic({
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>{t('editor.section.basicInfo')}</h2>
-        <p>고인명과 별세일을 입력합니다.</p>
+        <p>{t('editor.funeral.basicDesc')}</p>
       </div>
       <div className={styles.fieldGrid}>
         <label className={styles.field}>
@@ -41,7 +41,7 @@ export default function Step0Basic({
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>별세일</span>
+          <span className={styles.fieldLabel}>{t('editor.funeral.deathDate')}</span>
           <input
             type="date"
             value={deathDate}
@@ -50,7 +50,7 @@ export default function Step0Basic({
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>생년월일 (선택)</span>
+          <span className={styles.fieldLabel}>{t('editor.funeral.birthDate')}</span>
           <input
             type="date"
             value={birthDate ?? ''}

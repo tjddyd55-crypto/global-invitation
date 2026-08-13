@@ -16,7 +16,7 @@ export default function Step1Message({ message, onChange }: Step1MessageProps) {
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
         <h2>{t('editor.section.memorialMessage')}</h2>
-        <p>부고문을 입력합니다. 줄바꿈을 지원합니다.</p>
+        <p>{t('editor.funeral.messageDesc')}</p>
       </div>
       <label className={styles.field}>
         <span className={styles.fieldLabel}>{t('editor.section.memorialMessage')}</span>

@@ -15,6 +15,7 @@ import {
   resolveEditorPreviewSectionId,
   scrollPreviewToSection,
 } from '@/src/editors/shared/editorPreviewSections';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../weddingEditor.module.css';
 
 type LivePreviewPanelProps = {
@@ -35,13 +36,15 @@ type LivePreviewPanelProps = {
  */
 export default function LivePreviewPanel({
   data,
-  title = '실시간 미리보기',
+  title,
   fullscreen = false,
   editingStepLabel,
   focusSectionId,
   scrollRequestId = 0,
   conceptType = 'WEDDING',
 }: LivePreviewPanelProps) {
+  const { t } = useInvitationT();
+  const resolvedTitle = title || t('editor.preview.live');
   const frameClassName = fullscreen
     ? `${styles.previewFrame} ${styles.previewFrameFullscreen}`
     : styles.previewFrame;
@@ -127,7 +130,7 @@ export default function LivePreviewPanel({
       style={{ width: fullscreen ? undefined : 340 }}
       data-testid="editor-live-preview-panel"
     >
-      {!fullscreen && title ? <p className={styles.previewTitle}>{title}</p> : null}
+      {!fullscreen && resolvedTitle ? <p className={styles.previewTitle}>{resolvedTitle}</p> : null}
       <div className={frameClassName} style={{ position: 'relative' }}>
         {!fullscreen ? <div className={styles.previewNotch} aria-hidden /> : null}
         <div
@@ -146,7 +149,8 @@ export default function LivePreviewPanel({
       {!fullscreen && editingStepLabel ? (
         <div className={styles.editingCard} data-testid="editor-preview-editing-indicator">
           <p>
-            현재 편집 중: <strong>{editingStepLabel}</strong>
+            {t('editor.preview.editing')}
+            <strong>{editingStepLabel}</strong>
           </p>
         </div>
       ) : null}

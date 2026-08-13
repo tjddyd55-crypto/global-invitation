@@ -373,27 +373,29 @@ export default function WeddingClassicInvitation({
           data-section-id="deceased"
           data-preview-section="deceased"
         >
-          <h2 className={styles.calendarTitle}>고인</h2>
+          <h2 className={styles.calendarTitle}>{t('invitation.funeral.deceased')}</h2>
           <p className={styles.funeralLine}>{(r.deceasedName ?? '').trim()}</p>
         </section>
       ) : null}
 
       {(r.funeralHall ?? '').trim() || (r.funeralDate ?? '').trim() || (r.contactPerson ?? '').trim() ? (
         <section className={`${styles.section} ${styles.funeralBlock}`}>
-          <h2 className={styles.calendarTitle}>빈소 안내</h2>
+          <h2 className={styles.calendarTitle}>{t('invitation.funeral.wakeGuide')}</h2>
           {(r.funeralHall ?? '').trim() ? (
             <p className={styles.funeralLine}>
-              <span className={styles.funeralLabel}>빈소</span> {(r.funeralHall ?? '').trim()}
+              <span className={styles.funeralLabel}>{t('invitation.funeral.wake')}</span> {(r.funeralHall ?? '').trim()}
             </p>
           ) : null}
           {(r.funeralDate ?? '').trim() ? (
             <p className={styles.funeralLine}>
-              <span className={styles.funeralLabel}>발인</span> {(r.funeralDate ?? '').trim()}
+              <span className={styles.funeralLabel}>{t('invitation.funeral.service')}</span>{' '}
+              {(r.funeralDate ?? '').trim()}
             </p>
           ) : null}
           {(r.contactPerson ?? '').trim() ? (
             <p className={styles.funeralLine}>
-              <span className={styles.funeralLabel}>조문</span> {(r.contactPerson ?? '').trim()}
+              <span className={styles.funeralLabel}>{t('invitation.funeral.condolence')}</span>{' '}
+              {(r.contactPerson ?? '').trim()}
             </p>
           ) : null}
         </section>

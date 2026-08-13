@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from '../wedding/weddingEditor.module.css';
 
 type DateTimeLocalFieldProps = {
@@ -24,6 +25,7 @@ export default function DateTimeLocalField({
   inputTestId = 'schedule-datetime-input',
   buttonTestId = 'schedule-datetime-picker-button',
 }: DateTimeLocalFieldProps) {
+  const { t } = useInvitationT();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const openPicker = () => {
@@ -59,10 +61,10 @@ export default function DateTimeLocalField({
           type="button"
           className={styles.dateTimePickerButton}
           onClick={openPicker}
-          aria-label="날짜와 시간 선택"
+          aria-label={t('editor.datetime.pickAria')}
           data-testid={buttonTestId}
         >
-          달력
+          {t('editor.datetime.calendar')}
         </button>
       </div>
     </label>

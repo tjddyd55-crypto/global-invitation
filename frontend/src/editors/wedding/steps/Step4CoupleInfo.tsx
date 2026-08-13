@@ -118,7 +118,7 @@ export default function Step4CoupleInfo({
           </label>
         </div>
       </div>
-      <div className={styles.noticeBox}>모바일에서도 좌우 2컬럼을 유지합니다.</div>
+      <div className={styles.noticeBox}>{t('editor.couple.mobileNotice')}</div>
     </section>
   );
 }

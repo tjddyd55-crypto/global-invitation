@@ -5,7 +5,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useMemo, useState } from 'react';
-import { KAKAO_SHARE_FALLBACK_NOTICE, shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
+import { shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
 import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from './DesktopPublicSharePanel.module.css';
 
@@ -85,7 +85,7 @@ export default function DesktopPublicSharePanel({
         setNotice(null);
         return;
       }
-      setNotice(KAKAO_SHARE_FALLBACK_NOTICE);
+      setNotice(t('invitation.share.kakaoFallback'));
       if (result === 'clipboard') setCopied(true);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {

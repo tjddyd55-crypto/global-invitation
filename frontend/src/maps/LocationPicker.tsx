@@ -2,6 +2,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import GoogleMapsExternalLinks from './GoogleMapsExternalLinks';
 import { GoogleMapsProvider, useGoogleMaps } from './GoogleMapsProvider';
 import LocationConfirmationCard from './LocationConfirmationCard';
@@ -46,6 +47,7 @@ function placeToPending(place: google.maps.places.PlaceResult, venueNameFallback
 }
 
 function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: LocationPickerProps) {
+  const { t } = useInvitationT();
   const { hasApiKey, error: mapsError, loading, ready, maps } = useGoogleMaps();
   const [venueName, setVenueName] = useState(value.venueName || '');
   const [detailAddress, setDetailAddress] = useState(value.detailAddress || '');
@@ -199,9 +201,9 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
   }, [preview, needsPlaceSelection, pending, venueName, detailAddress, onConfirm]);
 
   const statusMessage = needsPlaceSelection
-    ? '검색 결과에서 위치를 선택해 주세요.'
+    ? t('editor.map.selectFromResults')
     : !confirmed && preview
-      ? '검색 결과에서 위치를 선택하면 지도에서 정확한 위치를 확인할 수 있습니다.'
+      ? t('editor.map.selectHint')
       : null;
 
   const canConfirm = Boolean(
@@ -211,13 +213,10 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
   if (!hasApiKey) {
     return (
       <div className={styles.fallback} data-testid="location-picker-no-key">
-        <p className={styles.fallbackTitle}>Google Maps API 키가 필요합니다</p>
-        <p className={styles.fallbackBody}>
-          `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`를 설정하면 주소 검색과 지도 확인을 사용할 수 있습니다. 지금은 주소
-          텍스트만 저장할 수 있습니다.
-        </p>
+        <p className={styles.fallbackTitle}>{t('editor.map.googleKeyRequired')}</p>
+        <p className={styles.fallbackBody}>{t('editor.map.googleKeyHint')}</p>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>장소명</span>
+          <span className={styles.fieldLabel}>{t('editor.map.venueName')}</span>
           <input
             type="text"
             value={venueName}
@@ -226,7 +225,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>장소명 또는 주소 검색</span>
+          <span className={styles.fieldLabel}>{t('editor.map.addressSearch')}</span>
           <input
             type="text"
             value={searchText}
@@ -238,7 +237,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>상세 주소 (선택)</span>
+          <span className={styles.fieldLabel}>{t('editor.map.detailAddress')}</span>
           <input
             type="text"
             value={detailAddress}
@@ -258,7 +257,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
             setConfirmed(true);
           }}
         >
-          이 위치로 확정
+          {t('editor.map.confirmHere')}
         </button>
       </div>
     );
@@ -267,7 +266,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
   return (
     <div className={styles.root} data-testid="location-picker">
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>장소명</span>
+        <span className={styles.fieldLabel}>{t('editor.map.venueName')}</span>
         <input
           type="text"
           value={venueName}
@@ -281,17 +280,15 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
       </label>
 
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>장소명 또는 주소 검색</span>
+        <span className={styles.fieldLabel}>{t('editor.map.addressSearch')}</span>
         <PlaceSearchInput
           value={searchText}
           onChange={handleSearchChange}
           onPlaceSelected={handlePlaceSelected}
           disabled={loading}
-          placeholder="장소명 또는 주소 검색"
+          placeholder={t('editor.map.searchPlaceholder')}
         />
-        <p className={styles.hint}>
-          검색 결과에서 위치를 선택하면 지도에서 정확한 위치를 확인할 수 있습니다.
-        </p>
+        <p className={styles.hint}>{t('editor.map.selectHint')}</p>
         {mapsError ? <p className={styles.error}>{mapsError}</p> : null}
       </label>
 
@@ -300,7 +297,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
       </div>
 
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>상세 주소 (선택)</span>
+        <span className={styles.fieldLabel}>{t('editor.map.detailAddress')}</span>
         <input
           type="text"
           value={detailAddress}
@@ -329,7 +326,7 @@ function LocationPickerInner({ value, onConfirm, onAddressFallbackChange }: Loca
           onConfirm={handleConfirm}
         />
       ) : (
-        <p className={styles.hint}>검색 결과에서 위치를 선택해 주세요.</p>
+        <p className={styles.hint}>{t('editor.map.selectFromResults')}</p>
       )}
 
       {confirmed && preview ? (

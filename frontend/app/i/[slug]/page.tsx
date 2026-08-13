@@ -25,7 +25,9 @@ import publicInvitationMobile from '@/src/styles/publicInvitationMobile.module.c
 import { resolveInvitationConceptType } from '@/src/invitation/schemas';
 import { getInvitationRsvpSettings } from '@/src/invitation/rsvpSettings';
 import SafeCreatorRenderer from '@/src/templates/creator/SafeCreatorRenderer';
+import { useI18n } from '@/src/contexts/I18nContext';
 import { InvitationLocaleProvider } from '@/src/i18n/InvitationLocaleContext';
+import { invitationT } from '@/src/i18n/invitationT';
 import { htmlLangFromLocale, resolveInvitationProductLocale } from '@/src/i18n/productLocales';
 
 function resolveSafeSlug(value: unknown): string {
@@ -35,6 +37,7 @@ function resolveSafeSlug(value: unknown): string {
 }
 
 export default function PublicShareInvitationPage() {
+  const { t } = useI18n();
   const params = useParams();
   const shareSlugParam = resolveSafeSlug(params.slug);
   const [loading, setLoading] = useState(true);
@@ -48,7 +51,7 @@ export default function PublicShareInvitationPage() {
     let mounted = true;
     async function loadSharedInvitation() {
       if (!shareSlugParam) {
-        setError('유효하지 않은 공유 링크입니다.');
+        setError(t('notFound'));
         setLoading(false);
         return;
       }
@@ -61,7 +64,7 @@ export default function PublicShareInvitationPage() {
         setInvitation(shared);
       } catch {
         if (!mounted) return;
-        setError('공유 초대장을 불러올 수 없습니다.');
+        setError(t('loadFailed'));
       } finally {
         if (mounted) {
           setLoading(false);
@@ -72,7 +75,7 @@ export default function PublicShareInvitationPage() {
     return () => {
       mounted = false;
     };
-  }, [shareSlugParam]);
+  }, [shareSlugParam, t]);
 
   const templateId = invitation?.templateId;
   useEffect(() => {
@@ -140,7 +143,7 @@ export default function PublicShareInvitationPage() {
   if (loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>로딩 중...</p>
+        <p>{t('loading')}</p>
       </div>
     );
   }
@@ -148,8 +151,8 @@ export default function PublicShareInvitationPage() {
   if (error || !invitation) {
     return (
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '2rem 1rem', textAlign: 'center' }}>
-        <h1 style={{ marginBottom: '0.6rem' }}>초대장을 찾을 수 없습니다.</h1>
-        <p style={{ color: '#666' }}>{error || '유효하지 않은 링크입니다.'}</p>
+        <h1 style={{ marginBottom: '0.6rem' }}>{t('notFound')}</h1>
+        <p style={{ color: '#666' }}>{error || t('notFound')}</p>
       </div>
     );
   }
@@ -158,8 +161,8 @@ export default function PublicShareInvitationPage() {
   if (!Template || !runtimeData) {
     return (
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '2rem 1rem', textAlign: 'center' }}>
-        <h1 style={{ marginBottom: '0.6rem' }}>렌더링할 수 없는 템플릿입니다.</h1>
-        <p style={{ color: '#666' }}>템플릿 설정을 확인해 주세요.</p>
+        <h1 style={{ marginBottom: '0.6rem' }}>{t('error')}</h1>
+        <p style={{ color: '#666' }}>{t('loadFailed')}</p>
       </div>
     );
   }
@@ -250,7 +253,9 @@ export default function PublicShareInvitationPage() {
           />
           {showRsvp ? (
             <div className={publicInvitationMobile.asideHint}>
-              <div className={publicInvitationMobile.asideHintTitle}>RSVP 바로가기</div>
+              <div className={publicInvitationMobile.asideHintTitle}>
+                {invitationT(invitationLocale, 'invitation.rsvp.asideTitle')}
+              </div>
               <button
                 type="button"
                 className={publicInvitationMobile.asideRsvpButton}

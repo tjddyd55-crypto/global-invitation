@@ -7,6 +7,7 @@ import {
   resolveInvitationConceptType,
 } from '@/src/invitation/schemas';
 import { normalizeOrganizationBranding } from '@/src/invitation/conceptTypes';
+import { copyRuntimeInvitationLocale } from '@/src/invitation/runtimeLocale';
 import FuneralClassicInvitation from '@/src/templates/funeralClassic/FuneralClassicInvitation';
 import { buildWeddingClassicData, getSampleWeddingInvitation } from '@/src/templates/weddingClassic/data';
 import { resolveCommentsEnabled } from '@/src/invitation/commentsSettings';
@@ -32,7 +33,8 @@ function toWeddingFromFuneral(data: FuneralInvitationData): WeddingInvitationDat
   const base = buildWeddingClassicData(getSampleWeddingInvitation());
   const funeralDate = new Date(data.schedule.funeralDate);
   const normalizedDate = Number.isNaN(funeralDate.getTime()) ? base.weddingDate : funeralDate;
-  return {
+  return copyRuntimeInvitationLocale(
+    {
     ...base,
     templateType: 'FULL',
     conceptType: 'FUNERAL',
@@ -69,7 +71,9 @@ function toWeddingFromFuneral(data: FuneralInvitationData): WeddingInvitationDat
     groomPhone: '',
     bridePhone: '',
     parentsInfo: '',
-  };
+    },
+    data as unknown as Record<string, unknown>
+  ) as WeddingInvitationData;
 }
 
 function textOrEmpty(value: unknown): string {
@@ -92,7 +96,8 @@ function toSparseWeddingLike(
 ): WeddingInvitationData {
   const eventDate = textOrEmpty(data.eventDate);
   const parsedDate = eventDate ? new Date(eventDate) : new Date(0);
-  return {
+  return copyRuntimeInvitationLocale(
+    {
     templateType: 'FULL',
     conceptType,
     visualTemplateId: textOrEmpty(data.visualTemplateId) || undefined,
@@ -138,7 +143,9 @@ function toSparseWeddingLike(
         ? (data.bride as WeddingInvitationData['bride'])
         : { name: textOrEmpty(data.brideName) },
     organization: normalizeOrganizationBranding(data.organization),
-  };
+    },
+    data
+  ) as WeddingInvitationData;
 }
 
 function resolveWeddingLikePayload(data: InvitationRuntimeData): WeddingInvitationData | null {

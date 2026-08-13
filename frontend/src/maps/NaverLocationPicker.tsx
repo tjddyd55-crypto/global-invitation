@@ -2,6 +2,7 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useRef, useState } from 'react';
+import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import { hasNaverMapsClientId } from './loadNaverMaps';
 import NaverPlaceSearch, { type NaverGeocodeItem } from './NaverPlaceSearch';
 import NaverLocationPickerMap, {
@@ -39,6 +40,7 @@ export default function NaverLocationPicker({
   confirmed,
   onConfirm,
 }: NaverLocationPickerProps) {
+  const { t } = useInvitationT();
   const mapHandleRef = useRef<NaverLocationPickerMapHandle | null>(null);
 
   const [query, setQuery] = useState(initialQuery);
@@ -51,11 +53,11 @@ export default function NaverLocationPicker({
   const handleSearch = () => {
     const q = query.trim();
     if (!q) {
-      setError('장소 또는 주소를 입력해 주세요.');
+      setError(t('editor.map.enterQuery'));
       return;
     }
     if (!window.naver?.maps?.Service?.geocode) {
-      setError('Naver 검색 서비스를 사용할 수 없습니다.');
+      setError(t('editor.map.naverUnavailable'));
       return;
     }
     setError(null);
@@ -65,7 +67,7 @@ export default function NaverLocationPicker({
       const ok = window.naver?.maps?.Service?.Status?.OK || 'OK';
       if (status !== ok) {
         setResults([]);
-        setError('검색 결과가 없습니다.');
+        setError(t('editor.map.noResults'));
         return;
       }
       const payload = response as {
@@ -99,7 +101,7 @@ export default function NaverLocationPicker({
         .filter((item): item is NaverGeocodeItem => Boolean(item));
       setResults(items);
       if (items.length === 0) {
-        setError('검색 결과가 없습니다.');
+        setError(t('editor.map.noResults'));
       }
     });
   };
@@ -118,9 +120,9 @@ export default function NaverLocationPicker({
   if (!hasNaverMapsClientId()) {
     return (
       <div className={styles.fallback} data-testid="naver-map-fallback">
-        <p>선택한 지도 서비스를 불러오지 못했습니다.</p>
-        <p>주소는 저장되며 외부 지도에서 확인할 수 있습니다.</p>
-        <p className={styles.hint}>NEXT_PUBLIC_NAVER_MAPS_CLIENT_ID 를 development에 등록해 주세요.</p>
+        <p>{t('editor.map.naverLoadFailed')}</p>
+        <p>{t('editor.map.addressSavedExternal')}</p>
+        <p className={styles.hint}>{t('editor.map.naverClientHint')}</p>
       </div>
     );
   }
@@ -146,7 +148,7 @@ export default function NaverLocationPicker({
         onError={(message) => setError(message || null)}
       />
 
-      {!ready && loading ? <p className={styles.hint}>지도를 불러오는 중…</p> : null}
+      {!ready && loading ? <p className={styles.hint}>{t('editor.map.loading')}</p> : null}
 
       {pending ? (
         <div className={styles.confirmCard} data-testid="naver-confirm-card">
@@ -155,7 +157,7 @@ export default function NaverLocationPicker({
             <p>{pending.formattedAddress}</p>
           </div>
           <button type="button" onClick={() => onConfirm(pending)}>
-            이 위치로 확정
+            {t('editor.map.confirmHere')}
           </button>
         </div>
       ) : null}

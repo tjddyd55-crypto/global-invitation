@@ -44,17 +44,48 @@ Conflict precedence:
 1차 생성 시:
 
 ```
-serviceLocale === invitation.locale
+serviceLocale === invitation.language
 ```
 
 이후:
 
-- Marketing / My Invitations / Create catalog = **service locale**
-- Editor workspace / Public `/i/{slug}` = **invitation.locale**
-- Template preview = **service locale** (저장하지 않음)
-- 브라우저 언어는 public invitation을 바꾸지 않음
+| Surface | Locale SSOT |
+| --- | --- |
+| Marketing / Create / Template catalog / My Invitations shell / Admin shell | **service locale** (`gi_locale`) |
+| Editor workspace (steps, helpers, ConfirmDialog, template switcher) | **Invitation.language** |
+| Public `/i/{shareSlug}` / RSVP public / Comments public / Share | **Invitation.language** |
+| Template preview / Home miniatures | **service locale** fixture |
+| My Invitations delete confirm | **service locale** |
+
+브라우저 locale / Accept-Language / service cookie는 public invitation system copy를 바꾸지 않는다.
 
 이미 만든 invitation의 locale을 한 번에 바꾸는 UI는 없다.
+
+## Editor ConfirmDialog
+
+공용 `ConfirmDialog` 기본 버튼은:
+
+- `locale` prop이 있으면 **invitation locale**
+- 없으면 **service locale** (`useI18n`)
+
+Editor 내부 destructive/confirm(JCI preset, template change)은 invitation locale.  
+My Invitations 초대장 삭제는 service locale.
+
+## Published public mismatch
+
+`Invitation.language = ko-KR` + EN browser/service → Public system copy = Korean  
+`Invitation.language = en-US` + KO browser/service → Public system copy = English
+
+Sparse `dataJson` runtime path는 `language`/`locale` injection을 유지해야 한다. (`copyRuntimeInvitationLocale`)
+
+## E2E factory
+
+Development/test only:
+
+- `POST /api/test/published-invitation`
+- `DELETE /api/test/published-invitation/:id`
+
+Production(`NODE_ENV=production`) → 404. Mock PAID row only. Title prefix `[E2E-LOCALE]`. Cleanup deletes mock payment / RSVP / comments for that invitation id only.
 
 ## Resolve priority (service)
 
@@ -93,11 +124,14 @@ URL prefix(`/en`, `/ko`)는 도입하지 않음 (전략 B: cookie/state only).
 
 약관/개인정보는 한국어 원문 유지. 임의 영어 법률 번역은 하지 않음.
 
-## Future
+## Phase 4 remaining
 
 - Viewer Translation
 - Duplicate as English / AI translate draft
 - Locale별 section visibility (계좌 문화)
-- International phone E.164 완성
+- International phone E.164 canonical normalization
+- English approved legal documents
+- message-card locale policy (`messageSimple` / `ThankYou` / `BrandedJCI` — FULL registry 밖)
 - URL prefix SEO (`/en`, `/ko`)
-- ja/zh 실제 copy
+- ja-JP / zh-TW / zh-CN
+- text-heavy thumbnail audit

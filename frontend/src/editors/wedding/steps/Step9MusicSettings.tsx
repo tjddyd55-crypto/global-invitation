@@ -137,13 +137,13 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
     <section className={styles.stepSection} data-testid="editor-music-step">
       <div className={styles.sectionHeader}>
         <h2>{t('editor.section.music')}</h2>
-        <p>초대장을 보는 방문자가 직접 재생할 수 있는 배경음악을 설정합니다.</p>
+        <p>{t('editor.music.desc')}</p>
       </div>
 
       <div className={styles.toggleGroup} data-testid="editor-music-settings">
         <ToggleRow
           label={t('editor.music.use')}
-          description="OFF면 공개 초대장에 음악 플레이어가 표시되지 않습니다. 기본은 사용하지 않습니다."
+          description={t('editor.music.toggleDesc')}
           checked={musicOn}
           testId="editor-music-enabled-toggle"
           onChange={(checked) =>
@@ -173,7 +173,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
               data-testid="editor-music-source-shared"
               onClick={() => setSourceType('SHARED')}
             >
-              제공 음악
+              {t('editor.music.tabRecommended')}
             </button>
             <button
               type="button"
@@ -185,7 +185,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
               data-testid="editor-music-source-upload"
               onClick={() => setSourceType('UPLOAD')}
             >
-              내 음악 업로드
+              {t('editor.music.tabUpload')}
             </button>
           </div>
 
@@ -209,7 +209,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
             />
           ) : (
             <label className={styles.field}>
-              <span className={styles.fieldLabel}>내 음악 업로드 (MP3/M4A/AAC, 최대 10MB)</span>
+              <span className={styles.fieldLabel}>{t('editor.music.uploadLabel')}</span>
               <input
                 type="file"
                 accept="audio/mpeg,audio/mp4,audio/aac,audio/x-m4a,.mp3,.m4a,.aac"
@@ -246,7 +246,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
               ) : null}
               {value.musicFileUrl ? (
                 <p className={styles.helperText} data-testid="editor-music-upload-ok">
-                  업로드된 음악이 사용됩니다.
+                  {t('editor.music.uploadOk')}
                 </p>
               ) : null}
             </label>
@@ -256,12 +256,12 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
 
           {!hasValidMusicSource(value) ? (
             <p className={styles.helperText} data-testid="editor-music-incomplete-hint">
-              음악을 선택하거나 업로드해야 미리보기·공개 초대장에 플레이어가 표시됩니다.
+              {t('editor.music.incompleteHint')}
             </p>
           ) : null}
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>음악 제목 (선택)</span>
+            <span className={styles.fieldLabel}>{t('editor.music.titleLabel')}</span>
             <input
               type="text"
               value={value.musicTitle ?? ''}
@@ -272,7 +272,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
           </label>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>시작 위치 (초)</span>
+            <span className={styles.fieldLabel}>{t('editor.music.startLabel')}</span>
             <input
               type="text"
               inputMode="numeric"
@@ -331,7 +331,7 @@ export default function Step9MusicSettings({ value, conceptType, onChange }: Ste
               })
             }
           >
-            음악 삭제
+            {t('editor.music.clear')}
           </button>
         </div>
       )}

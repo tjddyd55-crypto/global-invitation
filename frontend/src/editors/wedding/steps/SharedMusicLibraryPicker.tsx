@@ -153,7 +153,7 @@ export default function SharedMusicLibraryPicker({
   return (
     <div className={styles.musicLibrary}>
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>제공 음악 검색</span>
+        <span className={styles.fieldLabel}>{t('editor.music.searchLabel')}</span>
         <input
           type="search"
           value={search}
@@ -161,18 +161,18 @@ export default function SharedMusicLibraryPicker({
           onChange={(event) => setSearch(event.target.value)}
         />
       </label>
-      {isLoading ? <p className={styles.helperText}>제공 음악을 불러오는 중…</p> : null}
+      {isLoading ? <p className={styles.helperText}>{t('editor.music.loadingLibrary')}</p> : null}
       {error ? (
         <div className={styles.musicLibraryError} data-testid="music-library-error">
           <p className={styles.errorText}>{error}</p>
           <button type="button" className={styles.buttonSubtle} onClick={handleRetry}>
-            다시 불러오기
+            {t('editor.music.retry')}
           </button>
         </div>
       ) : null}
       {!isLoading && !error && tracks.length === 0 ? (
         <p className={styles.helperText}>
-          등록된 제공 음악이 없습니다. 관리자가 음원을 등록하면 여기에 표시됩니다.
+          {t('editor.music.libraryEmpty')}
         </p>
       ) : null}
       <div className={styles.musicLibraryList}>
@@ -200,7 +200,9 @@ export default function SharedMusicLibraryPicker({
         ))}
       </div>
       {!selectedTrackId && legacyMusicKey && getMusicByKey(legacyMusicKey) ? (
-        <p className={styles.helperText}>기존 제공 음악: {getMusicByKey(legacyMusicKey)?.title}</p>
+        <p className={styles.helperText}>
+          {t('editor.music.legacySelected', { title: getMusicByKey(legacyMusicKey)?.title || '' })}
+        </p>
       ) : null}
     </div>
   );

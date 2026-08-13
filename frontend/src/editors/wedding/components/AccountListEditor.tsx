@@ -27,7 +27,14 @@ const EMPTY_ACCOUNT: Omit<WeddingEditorAccount, 'id'> = {
   paymentNote: '',
 };
 
-const GENERAL_ROLE_HINTS = ['참가비', '등록비', '회비', '후원금', '기부금', '기타'];
+const GENERAL_ROLE_HINT_KEYS = [
+  'editor.accounts.roleHintFee',
+  'editor.accounts.roleHintRegistration',
+  'editor.accounts.roleHintDues',
+  'editor.accounts.roleHintContribution',
+  'editor.accounts.roleHintDonation',
+  'editor.accounts.roleHintOther',
+] as const;
 
 export default function AccountListEditor({
   accounts,
@@ -89,7 +96,7 @@ export default function AccountListEditor({
             <div key={account.id} className={styles.accountCard}>
               <div className={styles.accountActions}>
                 <button type="button" className={styles.buttonSubtle} onClick={() => handleCopy(account.id)}>
-                  항목 복제
+                  {t('editor.accounts.duplicate')}
                 </button>
                 <button type="button" className={styles.buttonDanger} onClick={() => handleRemove(account.id)}>
                   {t('comments.admin.delete')}
@@ -111,8 +118,8 @@ export default function AccountListEditor({
                   />
                   {isGeneral ? (
                     <datalist id={`account-role-hints-${account.id}`}>
-                      {GENERAL_ROLE_HINTS.map((hint) => (
-                        <option key={hint} value={hint} />
+                      {GENERAL_ROLE_HINT_KEYS.map((key) => (
+                        <option key={key} value={t(key)} />
                       ))}
                     </datalist>
                   ) : null}
@@ -159,7 +166,7 @@ export default function AccountListEditor({
                 </label>
               </div>
               <details className={styles.accountAdvanced}>
-                <summary>추가 정보 (IBAN / SWIFT / Routing)</summary>
+                <summary>{t('editor.accounts.advanced')}</summary>
                 <div className={styles.fieldGrid}>
                   <label className={styles.field}>
                     <span className={styles.fieldLabel}>IBAN</span>
@@ -167,7 +174,7 @@ export default function AccountListEditor({
                       type="text"
                       value={account.iban ?? ''}
                       onChange={(event) => handleFieldChange(account.id, 'iban', event.target.value)}
-                      placeholder="예: GB29 NWBK 6016 1331 9268 19"
+                      placeholder={t('editor.accounts.ibanPlaceholder')}
                     />
                   </label>
                   <label className={styles.field}>
@@ -176,7 +183,7 @@ export default function AccountListEditor({
                       type="text"
                       value={account.swiftBic ?? ''}
                       onChange={(event) => handleFieldChange(account.id, 'swiftBic', event.target.value)}
-                      placeholder="예: CHASUS33"
+                      placeholder={t('editor.accounts.swiftPlaceholder')}
                     />
                   </label>
                   <label className={styles.field}>
@@ -185,7 +192,7 @@ export default function AccountListEditor({
                       type="text"
                       value={account.routingCode ?? ''}
                       onChange={(event) => handleFieldChange(account.id, 'routingCode', event.target.value)}
-                      placeholder="예: 021000021"
+                      placeholder={t('editor.accounts.routingPlaceholder')}
                     />
                   </label>
                 </div>

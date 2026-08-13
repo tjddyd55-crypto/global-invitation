@@ -50,7 +50,7 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
       {value.rsvpEnabled && (
         <div className={styles.rsvpButtonField} data-testid="editor-rsvp-button-field">
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>공개 초대장 버튼 문구</span>
+            <span className={styles.fieldLabel}>{t('editor.rsvp.buttonLabel')}</span>
             <input
               type="text"
               value={value.rsvpButtonText ?? ''}
@@ -60,12 +60,9 @@ export default function Step8Extras({ value, onChange }: Step8ExtrasProps) {
               placeholder={t('editor.rsvp.buttonPlaceholder')}
             />
           </label>
-          <p className={styles.helperText}>
-            공개 초대장에 표시되는 참석 여부 CTA 버튼의 문구입니다. 오른쪽 미리보기의 참석 여부
-            버튼에 바로 반영됩니다.
-          </p>
+          <p className={styles.helperText}>{t('editor.rsvp.buttonHint')}</p>
           <div className={styles.rsvpButtonPreview} data-testid="editor-rsvp-button-preview">
-            <span className={styles.rsvpButtonPreviewLabel}>버튼 미리보기</span>
+            <span className={styles.rsvpButtonPreviewLabel}>{t('editor.rsvp.buttonPreview')}</span>
             <div className={styles.rsvpButtonPreviewCta}>{buttonLabelPreview}</div>
           </div>
         </div>

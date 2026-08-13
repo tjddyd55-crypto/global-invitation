@@ -4,7 +4,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { KAKAO_SHARE_FALLBACK_NOTICE, shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
+import { shareViaKakaoTalk } from '@/src/lib/shareKakaoTalk';
 import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import styles from './InvitationShareBlock.module.css';
 
@@ -82,7 +82,7 @@ export default function InvitationShareBlock({
           imageUrl,
           canonicalUrl: shareUrl,
         });
-        setNotice(result === 'kakao-sdk' ? null : KAKAO_SHARE_FALLBACK_NOTICE);
+        setNotice(result === 'kakao-sdk' ? null : t('invitation.share.kakaoFallback'));
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
           setNotice(null);
