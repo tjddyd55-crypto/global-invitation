@@ -22,6 +22,7 @@ import templateSubmissionsRouter from './routes/templateSubmissions';
 import adminTemplateSubmissionsRouter from './routes/adminTemplateSubmissions';
 import adminSuperRouter from './routes/adminSuper';
 import testLoginRouter from './routes/testLogin';
+import testPublishedInvitationRouter from './routes/testPublishedInvitation';
 import notificationsRouter from './routes/notifications';
 import paymentsRouter from './routes/payments';
 import { startCleanupWorker } from './workers/cleanupWorker';
@@ -165,6 +166,7 @@ app.use('/api/rsvp', rsvpRouter);
 app.use('/api/media', mediaRouter);
 app.use('/api/music-library', musicLibraryRouter);
 app.use('/api/test-login', testLoginRouter);
+app.use('/api/test/published-invitation', testPublishedInvitationRouter);
 app.use('/api', paymentsRouter);
 
 // Start server
