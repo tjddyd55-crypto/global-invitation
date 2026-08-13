@@ -24,7 +24,8 @@ JCI Brand Guidelines v1.2 (November 27, 2025).
 ### Theme tokens (`organizationJciTheme.ts`)
 
 - Blue `#0097D7`
-- Black `#130F2D`
+- Black `#130F2D` (ink on light surfaces)
+- Footer background `#130F2D` (`footerBackground` — dark logo square fill, Footer only)
 - White `#FFFFFF`
 - Navy `#1F4789`
 - Teal `#57BCBC`
@@ -92,7 +93,7 @@ Shared RSVP/account/map/music CSS는 `var(--invite-*, fallback)` 를 읽는다.
 - RSVP CTA: Blue `#0097D7` / hover Navy `#1F4789`
 - Account copy: Blue outline
 - Map links: subtle Blue border
-- Footer: Black `#130F2D` + white holding plate around official color logo + Teal title + low-opacity Blue/Teal/Navy ripple
+- Footer: `footerBackground` `#130F2D` (dark logo square) + white holding plate + Teal title + low-opacity Blue/Teal/Navy ripple
 - Music FAB playing: Blue (idle Black)
 
 Official fallback은 기존 `#4f46e5` 유지.

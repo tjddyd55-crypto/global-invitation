@@ -59,7 +59,12 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
   return (
     <div
       className={styles.page}
-      style={{ ['--brand-accent' as string]: accent } as CSSProperties}
+      style={
+        {
+          ['--brand-accent']: accent,
+          ['--jci-footer-bg']: ORGANIZATION_JCI_THEME.footerBackground,
+        } as CSSProperties
+      }
       data-testid="public-invitation-document"
       data-visual-template="ORGANIZATION_02_JCI"
       data-concept={model.conceptType}

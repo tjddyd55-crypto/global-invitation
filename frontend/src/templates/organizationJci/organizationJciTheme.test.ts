@@ -16,6 +16,7 @@ const officialRsvp = readFileSync(
 test('JCI theme tokens match Brand Guidelines 2026', () => {
   assert.equal(ORGANIZATION_JCI_THEME.blue, '#0097D7');
   assert.equal(ORGANIZATION_JCI_THEME.black, '#130F2D');
+  assert.equal(ORGANIZATION_JCI_THEME.footerBackground, '#130F2D');
   assert.equal(ORGANIZATION_JCI_THEME.white, '#FFFFFF');
   assert.equal(ORGANIZATION_JCI_THEME.navy, '#1F4789');
   assert.equal(ORGANIZATION_JCI_THEME.teal, '#57BCBC');
@@ -36,7 +37,14 @@ test('JCI page maps shared chrome tokens to JCI brand variables', () => {
   assert.match(jciCss, /--invite-cta-bg:\s*var\(--jci-blue\)/);
   assert.match(jciCss, /--invite-copy-border:\s*var\(--jci-blue\)/);
   assert.match(jciCss, /--invite-map-color:\s*var\(--jci-black\)/);
-  assert.match(jciCss, /background:\s*var\(--jci-black\)/);
+  assert.match(jciCss, /background:\s*var\(--jci-footer-bg\)/);
+});
+
+test('JCI footer background uses dedicated token, not ink black alias in footer rule', () => {
+  const footerBlock = jciCss.slice(jciCss.indexOf('.footer {'), jciCss.indexOf('.footerRipple'));
+  assert.match(footerBlock, /background:\s*var\(--jci-footer-bg\)/);
+  assert.doesNotMatch(footerBlock, /background:\s*var\(--jci-black\)/);
+  assert.doesNotMatch(footerBlock, /#d6e8f2/i);
 });
 
 test('Official RSVP fallback remains SaaS purple', () => {

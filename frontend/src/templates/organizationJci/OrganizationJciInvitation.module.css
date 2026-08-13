@@ -2,6 +2,8 @@
 .page {
   --jci-blue: #0097d7;
   --jci-black: #130f2d;
+  /* Footer SSOT — dark logo square fill. Override via --jci-footer-bg from theme. */
+  --jci-footer-bg: #130f2d;
   --jci-white: #ffffff;
   --jci-navy: #1f4789;
   --jci-teal: #57bcbc;
@@ -443,9 +445,9 @@
 .footer {
   position: relative;
   padding: 32px var(--gutter) 48px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   text-align: center;
-  background: var(--jci-black);
+  background: var(--jci-footer-bg);
   color: var(--jci-white);
   display: flex;
   flex-direction: column;
@@ -461,7 +463,7 @@
   width: 128px;
   height: 128px;
   pointer-events: none;
-  opacity: 0.18;
+  opacity: 0.22;
   background: radial-gradient(
     circle,
     transparent 28%,
