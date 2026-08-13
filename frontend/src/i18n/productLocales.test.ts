@@ -5,6 +5,7 @@ import {
   languageFromLocale,
   localeFromLanguage,
   resolveInvitationLocale,
+  resolveInvitationProductLocale,
   resolveServiceLocale,
 } from './productLocales';
 
@@ -20,9 +21,23 @@ test('invitation locale missing/legacy falls back to ko-KR', () => {
   assert.equal(resolveInvitationLocale(undefined), 'ko-KR');
   assert.equal(resolveInvitationLocale(''), 'ko-KR');
   assert.equal(resolveInvitationLocale('mn'), 'ko-KR');
+  assert.equal(resolveInvitationLocale('kr'), 'ko-KR');
   assert.equal(resolveInvitationLocale('ja-JP'), 'ko-KR');
   assert.equal(resolveInvitationLocale('en'), 'en-US');
   assert.equal(resolveInvitationLocale('en-US'), 'en-US');
+});
+
+test('Invitation.language is canonical over dataJson.locale', () => {
+  assert.equal(
+    resolveInvitationProductLocale({ language: 'ko-KR', dataJson: { locale: 'en-US' } }),
+    'ko-KR'
+  );
+  assert.equal(
+    resolveInvitationProductLocale({ language: 'en', dataJson: { locale: 'ko-KR' } }),
+    'en-US'
+  );
+  assert.equal(resolveInvitationProductLocale({ language: null, dataJson: { locale: 'en-US' } }), 'en-US');
+  assert.equal(resolveInvitationProductLocale({ language: '', dataJson: {} }), 'ko-KR');
 });
 
 test('service locale priority: stored > cookie > legacy language > browser > default', () => {

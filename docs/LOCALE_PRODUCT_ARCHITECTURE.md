@@ -23,12 +23,21 @@ Viewer Translation(공유받은 사람이 나중에 따로 번역해서 보기)�
 | --- | --- |
 | Product registry / persist / resolve | `frontend/src/i18n/productLocales.ts` |
 | Feature re-export | `frontend/src/shared/locale` |
-| Dictionary | `frontend/src/i18n/locales/{ko,en,mn}.ts` + `productModeCopy.ts` |
-| Invitation snapshot (BE) | `Invitation.language` + `dataJson.locale` |
+| Dictionary | `frontend/src/i18n/locales/{ko,en,mn}.ts` + `productModeCopy.ts` + `i18n/product/*Copy.ts` |
+| Invitation snapshot (BE) | **`Invitation.language` only (canonical)** |
+| Legacy read fallback | `dataJson.locale` / `dataJson.language` |
 | BE normalizer | `backend/src/lib/invitationLocale.ts` |
 
-Prisma 기본값 `Invitation.language = "en"` 은 레거시. **해석 fallback은 `ko-KR`**.  
-Production backfill은 별도 승인 전 금지.
+Prisma 기본값 `Invitation.language = "en"` 은 레거시. **create API는 language를 항상 명시**하므로 DB default에 의존하지 않는다.  
+해석 fallback은 `ko-KR`. Production backfill은 별도 승인 전 금지.
+
+Conflict precedence:
+
+1. `Invitation.language` (canonical)
+2. legacy `dataJson.locale` / `dataJson.language`
+3. `ko-KR`
+
+브라우저 locale / service locale은 public invitation을 바꾸지 않는다.
 
 ## Service locale vs Invitation locale
 
@@ -59,12 +68,13 @@ URL prefix(`/en`, `/ko`)는 도입하지 않음 (전략 B: cookie/state only).
 
 ## Create snapshot
 
-`POST /api/invitations` 는 `locale`/`language` 를 `ko-KR` \| `en-US` 로 normalize 한 뒤:
+`POST /api/invitations` 는 `locale`/`language` 를 받는다.
 
-- `Invitation.language`
-- `dataJson.locale` / `dataJson.language`
-
-에 저장한다. 미지원 값은 `ko-KR`.
+- 지원: `ko-KR` \| `en-US` (+ legacy `ko`/`en`/`kr`)
+- omitted → `ko-KR` (compatibility; FE 정상 경로는 항상 전송)
+- unsupported (`mn`, `fr-FR`, garbage) → **400 `INVALID_LOCALE`**
+- 저장: `Invitation.language` only
+- 신규 write에서 `dataJson.locale` 는 strip (legacy read fallback만 유지)
 
 ## Public SSOT
 

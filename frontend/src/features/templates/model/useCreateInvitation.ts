@@ -81,7 +81,7 @@ export function useCreateInvitation(): UseCreateInvitationResult {
           locale,
           language: locale,
           ...(sanitized ? { visualTemplateId: sanitized } : {}),
-          ...(organizationData ? { data: { ...organizationData, locale } } : { data: { locale } }),
+          ...(organizationData ? { data: organizationData } : {}),
         });
         clearPendingVisualTemplate();
         router.push(`/editor/${created.id}?concept=${concept}`);

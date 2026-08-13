@@ -7,7 +7,10 @@ import { getAuthUser, getGuestToken } from '../lib/auth';
 import { collectInvitationCleanupR2Keys } from '../storage/mediaCleanup';
 import { hasPaidEntitlement } from '../lib/payments/service';
 import { resolveInvitationDeleteAuth } from '../lib/invitations/resolveInvitationDeleteAuth';
-import { normalizeInvitationLocale, withInvitationLocaleSnapshot } from '../lib/invitationLocale';
+import {
+  parseCreateInvitationLocale,
+  stripLegacyDataJsonLocale,
+} from '../lib/invitationLocale';
 
 const router = Router();
 const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
@@ -230,9 +233,14 @@ async function createInvitationRecord(params: {
   guestToken?: string | null;
   data?: Prisma.InputJsonValue;
   countryCode?: string;
-  language?: string;
+  /** Canonical product locale. Required — never rely on Prisma default "en". */
+  language: string;
 }) {
   const slug = generateSlug();
+  const parsedLocale = parseCreateInvitationLocale(params.language);
+  if (!parsedLocale.ok) {
+    throw new Error('INVALID_LOCALE');
+  }
   return prisma.invitation.create({
     data: {
       id: crypto.randomUUID(),
@@ -249,7 +257,7 @@ async function createInvitationRecord(params: {
       data: params.data,
       dataJson: params.data,
       countryCode: params.countryCode || 'GLOBAL',
-      language: normalizeInvitationLocale(params.language),
+      language: parsedLocale.locale,
       userId: params.userId || null,
       guestToken: params.guestToken || null,
     },
@@ -260,6 +268,7 @@ async function createInvitationRecord(params: {
       templateId: true,
       templateKey: true,
       title: true,
+      language: true,
       data: true,
       dataJson: true,
       createdBy: true,
@@ -535,17 +544,18 @@ router.post('/', async (req, res) => {
     const explicitVisual =
       normalizeText(req.body?.visualTemplateId) ||
       (typeof baseData.visualTemplateId === 'string' ? baseData.visualTemplateId : undefined);
-    const invitationLocale = normalizeInvitationLocale(
+    const parsedLocale = parseCreateInvitationLocale(
       normalizeText(req.body?.locale) || normalizeText(req.body?.language)
     );
-    const dataWithConcept = withInvitationLocaleSnapshot(
-      {
-        ...applyVisualTemplateToDataJson(baseData, conceptType, explicitVisual),
-        templateType: 'FULL',
-        ...(conceptType ? { conceptType } : {}),
-      },
-      invitationLocale
-    ) as Prisma.InputJsonValue;
+    if (!parsedLocale.ok) {
+      return res.status(400).json({ error: 'INVALID_LOCALE' });
+    }
+    const invitationLocale = parsedLocale.locale;
+    const dataWithConcept = stripLegacyDataJsonLocale({
+      ...applyVisualTemplateToDataJson(baseData, conceptType, explicitVisual),
+      templateType: 'FULL',
+      ...(conceptType ? { conceptType } : {}),
+    }) as Prisma.InputJsonValue;
 
     const invitation = await createInvitationRecord({
       templateId: resolvedTemplate?.id || null,

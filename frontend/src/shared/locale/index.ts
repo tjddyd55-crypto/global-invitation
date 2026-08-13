@@ -13,6 +13,7 @@ export {
   localeFromLanguage,
   persistServiceLocale,
   resolveInvitationLocale,
+  resolveInvitationProductLocale,
   resolveServiceLocale,
   type LocaleProduct,
   type ProductLocaleId,

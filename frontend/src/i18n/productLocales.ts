@@ -67,8 +67,32 @@ export function resolveInvitationLocale(value: string | null | undefined): Produ
   if (isProductLocaleId(raw)) return raw;
   const lower = raw.toLowerCase();
   if (lower === 'en' || lower.startsWith('en-')) return 'en-US';
-  if (lower === 'ko' || lower.startsWith('ko-')) return 'ko-KR';
+  if (lower === 'ko' || lower === 'kr' || lower.startsWith('ko-')) return 'ko-KR';
   return LEGACY_INVITATION_LOCALE;
+}
+
+function readLegacyDataLocale(data: unknown): string | undefined {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return undefined;
+  const locale = (data as { locale?: unknown }).locale;
+  if (typeof locale === 'string' && locale.trim()) return locale;
+  const language = (data as { language?: unknown }).language;
+  if (typeof language === 'string' && language.trim()) return language;
+  return undefined;
+}
+
+/**
+ * Canonical invitation locale SSOT.
+ * Invitation.language wins over legacy dataJson.locale. Browser locale is ignored.
+ */
+export function resolveInvitationProductLocale(invitation: {
+  language?: string | null;
+  dataJson?: unknown;
+  data?: unknown;
+}): ProductLocaleId {
+  if (invitation.language && invitation.language.trim()) {
+    return resolveInvitationLocale(invitation.language);
+  }
+  return resolveInvitationLocale(readLegacyDataLocale(invitation.dataJson ?? invitation.data));
 }
 
 export function languageFromLocale(locale: ProductLocaleId): 'ko' | 'en' {

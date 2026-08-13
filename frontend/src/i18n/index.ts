@@ -10,6 +10,7 @@ export {
   getPersistedServiceLocale,
   persistServiceLocale,
   resolveInvitationLocale,
+  resolveInvitationProductLocale,
   resolveServiceLocale,
   type ProductLocaleId,
 } from './productLocales';
