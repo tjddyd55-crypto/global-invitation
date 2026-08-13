@@ -17,12 +17,16 @@ import {
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
 import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
+import { invitationT } from '@/src/i18n/invitationT';
 import styles from './GeneralFestiveInvitation.module.css';
 
 export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
+  const t = (key: string) => invitationT(model.locale, key);
+  const weekdayChip =
+    model.locale === 'en-US' ? model.dateParts?.weekdayEn : model.dateParts?.weekday;
 
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
   const chips = [model.dateText, model.venueName, model.venueDetail].filter(Boolean);
@@ -44,7 +48,7 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
               src={model.heroImage || null}
               alt=""
               loading="eager"
-              fallback={<div className={styles.photoPlaceholder}>대표 이미지를 추가해 주세요</div>}
+              fallback={<div className={styles.photoPlaceholder}>{t('invitation.placeholder.hero')}</div>}
             />
           </div>
         ) : null}
@@ -53,7 +57,7 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
         {model.dateParts ? (
           <p className={styles.sticker}>
             <span className={styles.stickerMonth}>{`${model.dateParts.month}.${model.dateParts.day}`}</span>
-            <span className={styles.stickerWeekday}>{model.dateParts.weekdayEn}</span>
+            <span className={styles.stickerWeekday}>{weekdayChip}</span>
           </p>
         ) : null}
       </section>
@@ -69,7 +73,7 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
               ))}
             </div>
           ) : (
-            <p className={styles.placeholder}>행사 일정과 장소를 입력해 주세요</p>
+            <p className={styles.placeholder}>{t('invitation.placeholder.eventSchedule')}</p>
           )}
         </section>
       ) : null}
@@ -77,7 +81,7 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
       {model.hasGreeting || flags.showEmptyPlaceholder ? (
         <section className={styles.copy} data-section-id="greeting" data-preview-section="greeting">
           <InvitationReveal variant="rise">
-            <h2 className={styles.sectionTitle}>초대합니다</h2>
+            <h2 className={styles.sectionTitle}>{t('invitation.defaults.inviteTitle')}</h2>
             {model.hasGreeting ? (
               model.greetingLines.map((line, index) => (
                 <p key={`greeting-${index}`} className={styles.copyLine}>
@@ -85,7 +89,7 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
                 </p>
               ))
             ) : (
-              <p className={styles.placeholder}>안내 문구를 입력해 주세요</p>
+              <p className={styles.placeholder}>{t('invitation.placeholder.notice')}</p>
             )}
           </InvitationReveal>
         </section>
@@ -96,20 +100,20 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
           visualTemplateId="GENERAL_05_FESTIVE"
           items={model.gallery.items}
           displayMode={model.gallery.displayMode}
-          sectionLabel="스냅"
+          sectionLabel={t('invitation.section.snap')}
           labelClassName={styles.sectionTitle}
           lockBodyScroll={flags.isPublic}
         />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.gallery')}</p>
         </section>
       ) : null}
 
       <section className={styles.schedule} data-section-id="schedule" data-preview-section="schedule">
         <InvitationReveal variant="rise">
-          <h2 className={styles.sectionTitle}>일정</h2>
-          <p className={styles.scheduleDate}>{model.dateText || '일정을 입력해 주세요'}</p>
+          <h2 className={styles.sectionTitle}>{t('invitation.section.eventSchedule')}</h2>
+          <p className={styles.scheduleDate}>{model.dateText || t('invitation.placeholder.schedule')}</p>
         </InvitationReveal>
         <InvitationReveal variant="fade" delayMs={100}>
           <div className={styles.calendarCard}>
@@ -127,7 +131,7 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
       {model.hasLocation || flags.showEmptyPlaceholder ? (
         <section className={styles.location} data-section-id="location" data-preview-section="location">
           <LocationMapSection
-            sectionTitle="오시는 길"
+            sectionTitle={t('invitation.defaults.directions')}
             title={model.venueName}
             address={model.address}
             detailAddress={model.detailAddress || undefined}
@@ -141,9 +145,9 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
             mapImage={data.mapImage}
             tone="light"
             previewMode={flags.previewMode}
-            transportTitle="교통 안내"
+            transportTitle={t('invitation.defaults.directions')}
             transportInfo={model.transportInfo}
-            parkingTitle="주차 안내"
+            parkingTitle={t('invitation.defaults.parking')}
             parkingInfo={model.parkingInfo}
           />
         </section>
@@ -169,7 +173,7 @@ export default function GeneralFestiveInvitation(props: VisualTemplateProps) {
           data-section-id="accounts"
           data-preview-section="accounts"
         >
-          <p className={styles.placeholder}>계좌 정보를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.accounts')}</p>
         </section>
       ) : null}
 

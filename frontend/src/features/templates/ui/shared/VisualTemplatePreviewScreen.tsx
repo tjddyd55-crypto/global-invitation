@@ -28,7 +28,7 @@ export default function VisualTemplatePreviewScreen({ visualTemplateId }: Props)
   const { locale, t } = useI18n();
   const def = getVisualTemplateDefinition(visualTemplateId);
   const fixture = useMemo(
-    () => ({ ...getVisualTemplatePreviewFixture(visualTemplateId), locale }),
+    () => getVisualTemplatePreviewFixture(visualTemplateId, locale),
     [visualTemplateId, locale]
   );
   const { start, creatingConcept } = useCreateInvitation();

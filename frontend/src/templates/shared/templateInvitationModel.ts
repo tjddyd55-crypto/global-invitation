@@ -20,8 +20,8 @@ import {
 } from '@/src/invitation/scheduleDisplay';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import type { InvitationRenderMode } from '@/src/templates/visualTemplate/visualTemplateRegistry';
-import { languageFromLocale, resolveInvitationLocale } from '@/src/i18n/productLocales';
-import { translate } from '@/src/i18n';
+import { invitationT } from '@/src/i18n/invitationT';
+import { resolveInvitationLocale, type ProductLocaleId } from '@/src/i18n/productLocales';
 
 /** 6종 renderer 공통 props (VisualTemplateRendererProps 와 구조 호환) */
 export type VisualTemplateProps = {
@@ -68,6 +68,7 @@ export type TemplateGalleryModel = {
 };
 
 export type TemplateInvitationModel = {
+  locale: ProductLocaleId;
   conceptType: InvitationConceptType;
   title: string;
   subtitle: string;
@@ -143,7 +144,7 @@ function buildPerson(
   return { role, name, image, phone, parentsText };
 }
 
-function buildCouple(data: WeddingInvitationData): {
+function buildCouple(data: WeddingInvitationData, locale: ProductLocaleId): {
   groom: TemplatePerson | null;
   bride: TemplatePerson | null;
 } {
@@ -153,14 +154,14 @@ function buildCouple(data: WeddingInvitationData): {
     .filter(Boolean);
   return {
     groom: buildPerson(
-      '신랑',
+      invitationT(locale, 'invitation.wedding.groom'),
       text(data.groomName) || text(data.groom?.name),
       text(data.groomImage) || text(data.groom?.image),
       text(data.groomPhone) || text(data.groom?.phone),
       text(data.groom?.parentsText) || (groomFallback ?? '')
     ),
     bride: buildPerson(
-      '신부',
+      invitationT(locale, 'invitation.wedding.bride'),
       text(data.brideName) || text(data.bride?.name),
       text(data.brideImage) || text(data.bride?.image),
       text(data.bridePhone) || text(data.bride?.phone),
@@ -169,8 +170,8 @@ function buildCouple(data: WeddingInvitationData): {
   };
 }
 
-function buildGallery(data: WeddingInvitationData): TemplateGalleryModel {
-  const settings = getInvitationGallerySettings(data, { alt: '갤러리 이미지' });
+function buildGallery(data: WeddingInvitationData, locale: ProductLocaleId): TemplateGalleryModel {
+  const settings = getInvitationGallerySettings(data, { alt: invitationT(locale, 'invitation.gallery.alt') });
   return {
     items: settings.images,
     displayMode: settings.displayMode,
@@ -191,7 +192,7 @@ function resolveConceptType(data: WeddingInvitationData): InvitationConceptType 
 
 function readDataLocale(data: WeddingInvitationData): string | undefined {
   const record = data as WeddingInvitationData & { locale?: string; language?: string };
-  return record.locale || record.language;
+  return record.language || record.locale;
 }
 
 export function buildTemplateInvitationModel(data: WeddingInvitationData): TemplateInvitationModel {
@@ -205,23 +206,24 @@ export function buildTemplateInvitationModel(data: WeddingInvitationData): Templ
     },
     invitationLocale
   );
-  const { groom, bride } = buildCouple(data);
+  const { groom, bride } = buildCouple(data, invitationLocale);
   const venueName = text(data.locationText) || text(data.venueName);
   const address = text(data.address) || venueName;
   const greetingLines = toLines(data.content).length > 0 ? toLines(data.content) : toLines(data.introText);
 
   return {
+    locale: invitationLocale,
     conceptType,
     title:
       text(data.title) ||
       text(data.heroTitle) ||
       text(data.coupleNames) ||
-      translate(languageFromLocale(invitationLocale), 'invitation.defaults.inviteTitle'),
+      invitationT(invitationLocale, 'invitation.defaults.inviteTitle'),
     subtitle: text(data.subtitle) || text(data.heroSubtitle) || text(data.introQuote),
     greetingLines,
     hasGreeting: greetingLines.length > 0,
     heroImage: text(data.heroImage),
-    gallery: buildGallery(data),
+    gallery: buildGallery(data, invitationLocale),
     dateText: scheduleDisplay?.full ?? '',
     dateCompact: scheduleDisplay?.compact ?? '',
     timeText: scheduleDisplay?.timeText ?? '',

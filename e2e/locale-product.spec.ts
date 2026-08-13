@@ -50,4 +50,32 @@ test.describe('Locale Product Mode', () => {
     await expect(doc).toHaveAttribute('data-visual-template', 'ORGANIZATION_02_JCI');
     await expect(page.getByText('서울광진청년회의소').first()).toBeVisible();
   });
+
+  test('EN preview fixture and chrome are English', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.getByTestId('locale-selector').first().selectOption('en-US');
+    await page.goto('/templates/ORGANIZATION_02_JCI/preview', {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+    const doc = page.getByTestId('public-invitation-document');
+    await expect(doc).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByText('JCI Seoul Gwangjin').first()).toBeVisible();
+    await expect(page.getByText('Inauguration', { exact: false }).first()).toBeVisible();
+    await expect(doc).not.toContainText('기관명을 입력해 주세요');
+    await expect(doc).not.toContainText('참석 여부');
+  });
+
+  test('KO preview remains Korean', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 90_000 });
+    await page.getByTestId('locale-selector').first().selectOption('ko-KR');
+    await page.goto('/templates/ORGANIZATION_02_JCI/preview', {
+      waitUntil: 'domcontentloaded',
+      timeout: 90_000,
+    });
+    const doc = page.getByTestId('public-invitation-document');
+    await expect(doc).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByText('서울광진청년회의소').first()).toBeVisible();
+    await expect(doc).not.toContainText('Basic Info');
+  });
 });

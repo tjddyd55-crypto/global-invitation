@@ -1,6 +1,8 @@
 'use client';
 
 import DateTimeLocalField from '@/src/editors/shared/DateTimeLocalField';
+import { invitationT } from '@/src/i18n/invitationT';
+import type { ProductLocaleId } from '@/src/i18n/productLocales';
 import styles from '../weddingEditor.module.css';
 import type {
   WeddingEditorBasic,
@@ -10,6 +12,7 @@ import type {
 type Step1BasicInfoProps = {
   value: WeddingEditorBasic;
   conceptType: WeddingEditorSetup['conceptType'];
+  locale?: ProductLocaleId;
   onChange: (value: Partial<WeddingEditorBasic>) => void;
 };
 
@@ -20,8 +23,10 @@ type Step1BasicInfoProps = {
 export default function Step1BasicInfo({
   value,
   conceptType,
+  locale = 'ko-KR',
   onChange,
 }: Step1BasicInfoProps) {
+  const t = (key: string) => invitationT(locale, key);
   type BasicStepLabel = {
     title: string;
     subtitle: string;
@@ -37,49 +42,49 @@ export default function Step1BasicInfo({
   const labels: BasicStepLabel =
     conceptType === 'FUNERAL'
       ? {
-          title: '고인 이름',
-          subtitle: '상주 연락처 (선택)',
-          datetime: '발인 날짜',
-          venue: '빈소 위치',
-          detail: '추가 안내 (선택)',
-          titlePlaceholder: '예: 부고를 전합니다',
-          subtitlePlaceholder: '예: 상주 홍길동 010-1234-5678',
-          venuePlaceholder: '예: 서울아산병원장례식장 특실',
-          detailPlaceholder: '예: 조문 시간: 오전 10시 - 오후 8시',
+          title: t('editor.field.deceasedName'),
+          subtitle: t('editor.field.chiefContact'),
+          datetime: t('editor.field.funeralDate'),
+          venue: t('editor.field.wakeLocation'),
+          detail: t('editor.field.extraInfo'),
+          titlePlaceholder: t('editor.placeholder.funeralTitle'),
+          subtitlePlaceholder: t('editor.placeholder.funeralContact'),
+          venuePlaceholder: t('editor.placeholder.wake'),
+          detailPlaceholder: t('editor.placeholder.funeralNote'),
         }
       : conceptType === 'GENERAL' || conceptType === 'ORGANIZATION'
         ? {
-            title: '행사 제목',
-            subtitle: '행사 부제 (선택)',
-            datetime: '행사 날짜/시간',
-            venue: '장소명',
-            detail: '홀 이름 (선택)',
+            title: t('editor.field.eventTitle'),
+            subtitle: t('editor.field.eventSubtitle'),
+            datetime: t('editor.field.eventDateTime'),
+            venue: t('editor.field.venue'),
+            detail: t('editor.field.hallDetail'),
             titlePlaceholder:
-              conceptType === 'ORGANIZATION' ? '예: 2026 회장단 이·취임식' : '예: 초대합니다',
+              conceptType === 'ORGANIZATION' ? t('editor.placeholder.orgTitle') : t('editor.placeholder.generalTitle'),
             subtitlePlaceholder:
               conceptType === 'ORGANIZATION'
-                ? '예: 서울광진청년회의소와 함께하는 공식 초청'
-                : '예: 함께 만드는 미래',
-            venuePlaceholder: '예: 코엑스 컨퍼런스홀',
-            detailPlaceholder: '예: 3층 오디토리움',
+                ? t('editor.placeholder.orgSubtitle')
+                : t('editor.placeholder.generalSubtitle'),
+            venuePlaceholder: t('editor.placeholder.venue'),
+            detailPlaceholder: t('editor.placeholder.hall'),
           }
         : {
-            title: '제목',
-            subtitle: '부제 (선택)',
-            datetime: '예식 날짜/시간',
-            venue: '장소명',
-            detail: '홀 이름 (선택)',
-            titlePlaceholder: '예: 결혼식에 초대합니다',
-            subtitlePlaceholder: '예: 사랑의 약속',
-            venuePlaceholder: '예: 더링크호텔 서울',
-            detailPlaceholder: '예: 3층 베일리홀',
+            title: t('editor.field.weddingTitle'),
+            subtitle: t('editor.field.weddingSubtitle'),
+            datetime: t('editor.field.weddingDateTime'),
+            venue: t('editor.field.venue'),
+            detail: t('editor.field.hallDetail'),
+            titlePlaceholder: t('editor.placeholder.weddingTitle'),
+            subtitlePlaceholder: t('editor.placeholder.weddingSubtitle'),
+            venuePlaceholder: t('editor.placeholder.weddingVenue'),
+            detailPlaceholder: t('editor.placeholder.weddingHall'),
           };
 
   return (
     <section className={styles.stepSection}>
       <div className={styles.sectionHeader}>
-        <h2>기본 정보</h2>
-        <p>컨셉에 맞는 기본 제목·일정·장소 정보를 입력하면 미리보기에 즉시 반영됩니다.</p>
+        <h2>{t('editor.basic.heading')}</h2>
+        <p>{t('editor.basic.desc')}</p>
       </div>
       <div className={styles.fieldGrid}>
         <label className={styles.field}>

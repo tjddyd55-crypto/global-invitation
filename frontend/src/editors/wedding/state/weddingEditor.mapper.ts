@@ -12,6 +12,7 @@ import { sanitizeGalleryItems } from '@/src/invitation/galleryAsset';
 import { normalizeGalleryDisplayMode } from '@/src/invitation/galleryDisplay';
 import { buildOpenGraphSaveFields } from '@/src/invitation/openGraphSettings';
 import { formatDateTime } from '@/src/lib/i18n/format';
+import { resolveInvitationLocale } from '@/src/i18n/productLocales';
 import type { Invitation } from '@/src/models/invitation';
 import { sanitizeVisualTemplateIdForSave } from '@/src/templates/visualTemplate/resolveVisualTemplateId';
 import type { WeddingEditorState } from './weddingEditor.types';
@@ -116,9 +117,12 @@ export function buildWeddingClassicPreviewData(state: WeddingEditorState): Weddi
     state.setup.conceptType
   );
 
+  const invitationLocale = resolveInvitationLocale(state.setup.language);
   const base = {
     templateType: 'FULL' as const,
     conceptType: state.setup.conceptType,
+    locale: invitationLocale,
+    language: invitationLocale,
     ...(sanitizedVisualId ? { visualTemplateId: sanitizedVisualId } : {}),
     title,
     subtitle: (state.basic.subtitle ?? '').trim(),

@@ -66,19 +66,22 @@ export function getHomeInvitationExample(id: HomeInvitationExampleId): HomeInvit
 }
 
 /** Hero still uses the wedding Garden sample. */
-export function getHomeInvitationPreviewData(): WeddingInvitationData {
-  return getHomeInvitationExampleData('wedding') as WeddingInvitationData;
+export function getHomeInvitationPreviewData(locale?: string | null): WeddingInvitationData {
+  return getHomeInvitationExampleData('wedding', locale) as WeddingInvitationData;
 }
 
-export function getHomeInvitationExampleData(id: HomeInvitationExampleId): InvitationRuntimeData {
+export function getHomeInvitationExampleData(
+  id: HomeInvitationExampleId,
+  locale?: string | null
+): InvitationRuntimeData {
   if (id === 'funeral') return lightenFuneralFixture(getFuneralClassicDemoData());
   if (id === 'general') {
-    return lightenVisualFixture(getVisualTemplatePreviewFixture(GENERAL_PREVIEW_TEMPLATE_ID));
+    return lightenVisualFixture(getVisualTemplatePreviewFixture(GENERAL_PREVIEW_TEMPLATE_ID, locale));
   }
   if (id === 'organization') {
-    return lightenVisualFixture(getVisualTemplatePreviewFixture(ORGANIZATION_PREVIEW_TEMPLATE_ID));
+    return lightenVisualFixture(getVisualTemplatePreviewFixture(ORGANIZATION_PREVIEW_TEMPLATE_ID, locale));
   }
-  return lightenVisualFixture(getVisualTemplatePreviewFixture(HOME_PREVIEW_TEMPLATE_ID));
+  return lightenVisualFixture(getVisualTemplatePreviewFixture(HOME_PREVIEW_TEMPLATE_ID, locale));
 }
 
 function lightenVisualFixture(fixture: WeddingInvitationData): WeddingInvitationData {

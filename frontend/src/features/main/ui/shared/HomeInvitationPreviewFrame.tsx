@@ -11,6 +11,7 @@ import {
   type HomeInvitationExampleId,
 } from '@/src/features/main/model/homeInvitationPreview';
 import { useNearViewport } from '@/src/features/main/model/useNearViewport';
+import { useI18n } from '@/src/contexts/I18nContext';
 import styles from './HomeInvitationPreviewFrame.module.css';
 
 type HomeInvitationPreviewFrameProps = {
@@ -30,12 +31,13 @@ export default function HomeInvitationPreviewFrame({
   defer = false,
   mount = true,
 }: HomeInvitationPreviewFrameProps) {
+  const { locale, t } = useI18n();
   const resolved = example ?? getHomeInvitationExample(exampleId);
   const { ref, isNear } = useNearViewport(defer);
   const ready = mount && isNear;
   const data = useMemo(
-    () => (ready ? getHomeInvitationExampleData(resolved.id) : null),
-    [ready, resolved.id]
+    () => (ready ? getHomeInvitationExampleData(resolved.id, locale) : null),
+    [ready, resolved.id, locale]
   );
 
   return (
@@ -64,7 +66,11 @@ export default function HomeInvitationPreviewFrame({
             <div className={styles.placeholder} aria-hidden />
           )}
         </div>
-        <Link href={resolved.href} className={styles.hit} aria-label={`${resolved.label} 완성 예시 보기`} />
+        <Link
+          href={resolved.href}
+          className={styles.hit}
+          aria-label={`${t(`marketing.examples.${resolved.id}.label`)} ${t('marketing.examples.eyebrow')}`}
+        />
       </div>
     </div>
   );

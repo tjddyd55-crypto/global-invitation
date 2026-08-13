@@ -3,6 +3,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatEditorSavedAtLabel } from '@/src/lib/i18n/format';
+import { invitationT } from '@/src/i18n/invitationT';
+import type { ProductLocaleId } from '@/src/i18n/productLocales';
 import styles from './EditorHeader.module.css';
 
 export type EditorLanguageOption = 'ko' | 'en' | 'mn';
@@ -24,6 +26,7 @@ type EditorHeaderProps = {
   onPreview?: () => void;
   language?: EditorLanguageOption;
   onLanguageChange?: (language: EditorLanguageOption) => void;
+  locale?: ProductLocaleId;
   shell?: 'mobile' | 'desktop';
 };
 
@@ -41,23 +44,25 @@ export default function EditorHeader({
   saving,
   publishing,
   saveDisabled,
-  saveLabel = '저장',
+  saveLabel,
   onSave,
   onSaveAndExit,
   onPublish,
   language,
   onLanguageChange,
+  locale = 'ko-KR',
   shell = 'desktop',
 }: EditorHeaderProps) {
   const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   const moreMenuId = useId();
+  const t = (key: string) => invitationT(locale, key);
 
-  const statusLabel = draftStatus === 'published' ? '공개됨' : '초안';
+  const statusLabel = draftStatus === 'published' ? t('editor.header.published') : t('editor.header.draft');
   const statusClassName =
     draftStatus === 'published' ? `${styles.statusBadge} ${styles.statusPublished}` : styles.statusBadge;
-  const lastSavedLabel = formatEditorSavedAtLabel(lastSavedAt);
+  const lastSavedLabel = formatEditorSavedAtLabel(lastSavedAt, locale);
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -87,39 +92,24 @@ export default function EditorHeader({
     await onPublish();
   };
 
+  const resolvedSaveLabel = saveLabel || t('editor.action.save');
   const moreItems: Array<{ key: string; label: string; onClick: () => void; danger?: boolean }> = [];
   if (shell === 'mobile' && onPublish) {
     moreItems.push({
       key: 'publish',
-      label: publishing ? '공개 중...' : '공개하기',
+      label: publishing ? t('editor.action.publishing') : t('editor.action.publish'),
       onClick: () => void handlePublish(),
     });
   }
   if (onSaveAndExit) {
     moreItems.push({
       key: 'exit',
-      label: '저장하고 나가기',
+      label: t('editor.action.saveAndExit'),
       onClick: () => void handleSaveAndExit(),
     });
   }
-  if (language && onLanguageChange) {
-    moreItems.push({
-      key: 'lang-ko',
-      label: '언어: 한국어',
-      onClick: () => {
-        onLanguageChange('ko');
-        setMoreOpen(false);
-      },
-    });
-    moreItems.push({
-      key: 'lang-en',
-      label: '언어: English',
-      onClick: () => {
-        onLanguageChange('en');
-        setMoreOpen(false);
-      },
-    });
-  }
+  void language;
+  void onLanguageChange;
 
   if (shell === 'mobile') {
     return (
@@ -127,7 +117,7 @@ export default function EditorHeader({
         <button
           type="button"
           className={styles.iconButton}
-          aria-label="뒤로"
+          aria-label={t('editor.nav.back')}
           onClick={() => router.back()}
         >
           ←
@@ -144,13 +134,13 @@ export default function EditorHeader({
           data-testid="editor-save-button"
           data-saving={saving ? 'true' : 'false'}
         >
-          {saving ? '저장 중' : saveLabel}
+          {saving ? t('editor.nav.saving') : resolvedSaveLabel}
         </button>
         <div className={styles.menuWrap} ref={moreRef}>
           <button
             type="button"
             className={styles.iconButton}
-            aria-label="더보기"
+            aria-label={t('editor.nav.more')}
             aria-expanded={moreOpen}
             aria-controls={moreMenuId}
             onClick={() => setMoreOpen((open) => !open)}
@@ -186,7 +176,7 @@ export default function EditorHeader({
   return (
     <header className={styles.desktopHeader} data-testid="editor-header-desktop">
       <button type="button" className={styles.backButton} onClick={() => router.back()}>
-        ← 뒤로
+        ← {t('editor.nav.back')}
       </button>
       <div className={styles.desktopDivider} aria-hidden />
       <div className={styles.desktopTitleGroup}>
@@ -203,7 +193,7 @@ export default function EditorHeader({
           data-testid="editor-save-button"
           data-saving={saving ? 'true' : 'false'}
         >
-          {saving ? '저장 중...' : saveLabel}
+          {saving ? `${t('editor.nav.saving')}...` : resolvedSaveLabel}
         </button>
         {onPublish ? (
           <button
@@ -213,14 +203,14 @@ export default function EditorHeader({
             disabled={saving || publishing}
             data-testid="editor-publish-button"
           >
-            {publishing ? '공개 중...' : '공개하기'}
+            {publishing ? t('editor.action.publishing') : t('editor.action.publish')}
           </button>
         ) : null}
         <div className={styles.menuWrap} ref={moreRef}>
           <button
             type="button"
             className={styles.desktopMore}
-            aria-label="더보기"
+            aria-label={t('editor.nav.more')}
             aria-expanded={moreOpen}
             aria-controls={moreMenuId}
             onClick={() => setMoreOpen((open) => !open)}

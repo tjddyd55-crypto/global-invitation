@@ -35,6 +35,9 @@ export type WeddingClassicMessage = {
 export type WeddingClassicData = {
   templateType: 'FULL';
   conceptType: 'WEDDING' | 'FUNERAL' | 'GENERAL' | 'ORGANIZATION';
+  /** Runtime invitation locale snapshot. Canonical SSOT is Invitation.language. */
+  locale?: string;
+  language?: string;
   /** Visual template SSOT — optional; missing → Classic fallback at read time */
   visualTemplateId?: string;
   /** ORGANIZATION branding — logo / name / accent */

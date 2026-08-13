@@ -23,11 +23,14 @@ import {
   type OrganizationPresetMusicSnapshot,
 } from '../lib/applyOrganizationPreset';
 import { persistThenDeleteMedia } from '../lib/persistThenDeleteMedia';
+import { invitationT } from '@/src/i18n/invitationT';
+import type { ProductLocaleId } from '@/src/i18n/productLocales';
 import styles from '../weddingEditor.module.css';
 
 type StepOrganizationBrandingProps = {
   value: OrganizationBranding;
   music: OrganizationPresetMusicSnapshot;
+  locale?: ProductLocaleId;
   onChange: (value: Partial<OrganizationBranding>) => void;
   onChangeMusic: (value: Partial<OrganizationPresetMusicSnapshot>) => void;
   onPersistClear?: () => Promise<void>;
@@ -41,11 +44,13 @@ type StepOrganizationBrandingProps = {
 export default function StepOrganizationBranding({
   value,
   music,
+  locale = 'ko-KR',
   onChange,
   onChangeMusic,
   onPersistClear,
   onPersistPresetApply,
 }: StepOrganizationBrandingProps) {
+  const t = (key: string, vars?: Record<string, string | number>) => invitationT(locale, key, vars);
   const accent = normalizeBrandAccentColor(value.accentColor);
   const logoGuidance = getOrganizationLogoUploadGuidance();
   const selectedPreset = normalizeOrganizationPresetId(value.presetId);
@@ -122,13 +127,13 @@ export default function StepOrganizationBranding({
   return (
     <section className={styles.stepSection} data-testid="step-organization-branding">
       <div className={styles.sectionHeader}>
-        <h2>기관 브랜딩</h2>
-        <p>기관명·로고·브랜드 색상을 입력하면 초대장 상단에 반영됩니다.</p>
+        <h2>{t('editor.org.heading')}</h2>
+        <p>{t('editor.org.desc')}</p>
       </div>
 
       <div className={styles.presetBlock} data-testid="organization-preset-selector">
         <span className={styles.fieldLabel} id="organization-preset-label">
-          기관 선택
+          {t('editor.org.preset')}
         </span>
         <div
           className={styles.presetGrid}
@@ -208,29 +213,29 @@ export default function StepOrganizationBranding({
 
       <div className={styles.fieldGrid}>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>기관명</span>
+          <span className={styles.fieldLabel}>{t('editor.field.organizationName')}</span>
           <input
             type="text"
             value={value.name ?? ''}
             onChange={(event) => onChange({ name: event.target.value })}
-            placeholder="예: 서울광진청년회의소"
+            placeholder={locale === 'en-US' ? 'e.g. JCI Seoul Gwangjin' : '예: 서울광진청년회의소'}
             data-testid="organization-name-input"
           />
         </label>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>영문명 (선택)</span>
+          <span className={styles.fieldLabel}>{t('editor.field.secondaryName')}</span>
           <input
             type="text"
             value={value.englishName ?? ''}
             onChange={(event) => onChange({ englishName: event.target.value })}
-            placeholder="예: JCI Seoul Gwangjin"
+            placeholder="e.g. JCI Seoul Gwangjin"
             data-testid="organization-english-name-input"
           />
         </label>
       </div>
 
       <ImageUploader
-        label="로고"
+        label={t('editor.field.logo')}
         value={value.logo}
         onChange={(logo) => onChange({ logo })}
         onClear={() => onChange({ logo: '' })}

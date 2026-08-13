@@ -25,22 +25,13 @@ import publicInvitationMobile from '@/src/styles/publicInvitationMobile.module.c
 import { resolveInvitationConceptType } from '@/src/invitation/schemas';
 import { getInvitationRsvpSettings } from '@/src/invitation/rsvpSettings';
 import SafeCreatorRenderer from '@/src/templates/creator/SafeCreatorRenderer';
-import { htmlLangFromLocale, resolveInvitationLocale } from '@/src/i18n/productLocales';
+import { InvitationLocaleProvider } from '@/src/i18n/InvitationLocaleContext';
+import { htmlLangFromLocale, resolveInvitationProductLocale } from '@/src/i18n/productLocales';
 
 function resolveSafeSlug(value: unknown): string {
   if (typeof value === 'string') return value;
   if (Array.isArray(value)) return typeof value[0] === 'string' ? value[0] : '';
   return '';
-}
-
-function readInvitationLocaleSource(invitation: Invitation | null): string | undefined {
-  if (!invitation) return undefined;
-  const data = invitation.dataJson;
-  if (data && typeof data === 'object' && !Array.isArray(data)) {
-    const locale = (data as { locale?: unknown }).locale;
-    if (typeof locale === 'string' && locale.trim()) return locale;
-  }
-  return invitation.language;
 }
 
 export default function PublicShareInvitationPage() {
@@ -117,7 +108,11 @@ export default function PublicShareInvitationPage() {
     trackInvitationView(invitation.slug);
   }, [invitation?.slug, loading]);
 
-  const invitationLocale = resolveInvitationLocale(readInvitationLocaleSource(invitation));
+  const invitationLocale = resolveInvitationProductLocale({
+    language: invitation?.language,
+    dataJson: invitation?.dataJson,
+    data: invitation?.data,
+  });
 
   useEffect(() => {
     if (!invitation) return;
@@ -201,6 +196,7 @@ export default function PublicShareInvitationPage() {
             data-invitation-locale={invitationLocale}
             lang={htmlLangFromLocale(invitationLocale)}
           >
+            <InvitationLocaleProvider locale={invitationLocale}>
             {isCreatorTemplate && hasStudioConfig && FallbackTemplate ? (
               <SafeCreatorRenderer
                 creatorRenderer={Template}
@@ -232,6 +228,7 @@ export default function PublicShareInvitationPage() {
                 showPlayButton={false}
               />
             )}
+            </InvitationLocaleProvider>
 
             <section className={publicInvitationMobile.shareSectionMobile}>
               <InvitationShareBlock

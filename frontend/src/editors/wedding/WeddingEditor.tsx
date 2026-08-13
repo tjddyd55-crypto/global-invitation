@@ -29,6 +29,7 @@ import UnifiedStepperNav from '@/src/editors/shared/UnifiedStepperNav';
 import EditorTemplateSwitcher from './components/EditorTemplateSwitcher';
 import type { VisualTemplateId } from '@/src/templates/visualTemplate/ids';
 import { useEditorShell } from '@/src/editors/shared/useEditorShell';
+import { editorProductLocale, invitationT } from '@/src/i18n/invitationT';
 
 type WeddingEditorProps = {
   initialState: WeddingEditorState;
@@ -78,8 +79,13 @@ export default function WeddingEditor({
     setSiteOrigin(window.location.origin);
   }, []);
 
+  const invitationLocale = editorProductLocale(state.setup.language);
+  const t = (key: string) => invitationT(invitationLocale, key);
   const previewData = useMemo(() => buildWeddingClassicPreviewData(state), [state]);
-  const visibleSections = useMemo(() => resolveVisibleSections(state.setup.conceptType), [state.setup.conceptType]);
+  const visibleSections = useMemo(
+    () => resolveVisibleSections(state.setup.conceptType, invitationLocale),
+    [state.setup.conceptType, invitationLocale]
+  );
   const completeness = useMemo(() => computeEditorCompleteness(state), [state]);
   const activeSection = visibleSections[currentStep]?.key ?? visibleSections[0]?.key ?? 'setup';
   const conceptPresentation = getConceptPresentationConfig(state.setup.conceptType);
@@ -251,12 +257,12 @@ export default function WeddingEditor({
 
   const conceptLabel =
     state.setup.conceptType === 'WEDDING'
-      ? '결혼식 초대장'
+      ? t('editor.concept.wedding')
       : state.setup.conceptType === 'FUNERAL'
-        ? '부고장'
+        ? t('editor.concept.funeral')
         : state.setup.conceptType === 'ORGANIZATION'
-          ? '기관 행사'
-          : '일반 행사';
+          ? t('editor.concept.organization')
+          : t('editor.concept.general');
 
   const renderStep = () => {
     switch (activeSection) {
@@ -265,6 +271,7 @@ export default function WeddingEditor({
           <Step1BasicInfo
             value={state.basic}
             conceptType={state.setup.conceptType}
+            locale={invitationLocale}
             onChange={(payload) => dispatch({ type: 'SET_BASIC', payload })}
           />
         );
@@ -273,6 +280,7 @@ export default function WeddingEditor({
           <StepOrganizationBranding
             value={state.organization}
             music={state.extras}
+            locale={invitationLocale}
             onChange={(payload) => dispatch({ type: 'SET_ORGANIZATION', payload })}
             onChangeMusic={(payload) => dispatch({ type: 'SET_EXTRAS', payload })}
             onPersistClear={onSave ? handleOrganizationPersistClear : undefined}
@@ -393,7 +401,7 @@ export default function WeddingEditor({
             fontSize: 14,
           }}
         >
-          에디터 준비 중…
+          {t('editor.ready')}
         </div>
       </div>
     );
@@ -406,7 +414,15 @@ export default function WeddingEditor({
       data-editor-shell={shell}
     >
       <EditorHeader
-        title={`${conceptLabel} 에디터`}
+        title={
+          state.setup.conceptType === 'WEDDING'
+            ? t('editor.header.titleWedding')
+            : state.setup.conceptType === 'FUNERAL'
+              ? t('editor.header.titleFuneral')
+              : state.setup.conceptType === 'ORGANIZATION'
+                ? t('editor.header.titleOrganization')
+                : t('editor.header.titleGeneral')
+        }
         conceptLabel={conceptLabel}
         draftStatus={draftStatus}
         lastSavedAt={lastSavedAt}
@@ -415,7 +431,8 @@ export default function WeddingEditor({
         saving={saving}
         publishing={publishing}
         saveDisabled={hasBlockingUploadState}
-        saveLabel={isDemo ? '저장(데모)' : '저장'}
+        saveLabel={isDemo ? t('editor.action.saveDemo') : t('editor.action.save')}
+        locale={invitationLocale}
         onSave={onSave ? handleSave : undefined}
         onSaveAndExit={onSaveAndExit ? handleSaveAndExit : undefined}
         onPublish={onPublish ? handlePublish : undefined}
@@ -443,7 +460,7 @@ export default function WeddingEditor({
                 }
               />
               <h2 className={styles.formCardTitle}>
-                {visibleSections[currentStep]?.title ?? '편집'}
+                {visibleSections[currentStep]?.title ?? t('editor.fallback.edit')}
               </h2>
               <div className={styles.sectionStack}>{renderStep()}</div>
             </div>
@@ -455,14 +472,14 @@ export default function WeddingEditor({
               onClick={() => handleStepSelect(Math.max(0, currentStep - 1))}
               disabled={currentStep <= 0}
             >
-              이전
+              {t('editor.nav.prev')}
             </button>
             <button
               type="button"
               className={styles.mobileActionPreview}
               onClick={() => setFullscreenPreviewOpen(true)}
             >
-              미리보기
+              {t('editor.action.preview')}
             </button>
             <button
               type="button"
@@ -475,14 +492,14 @@ export default function WeddingEditor({
                 handleStepSelect(Math.min(visibleSections.length - 1, currentStep + 1));
               }}
             >
-              {currentStep >= visibleSections.length - 1 ? '공개하기' : '다음'}
+              {currentStep >= visibleSections.length - 1 ? t('editor.action.publish') : t('editor.nav.next')}
             </button>
           </div>
         </div>
       ) : (
         <div className={styles.editorLayout} data-testid="desktop-editor-layout">
           <aside className={styles.navColumn} data-testid="desktop-editor-sidebar">
-            <p className={styles.navColumnLabel}>편집 단계</p>
+            <p className={styles.navColumnLabel}>{t('editor.nav.editSteps')}</p>
             <UnifiedStepperNav
               steps={visibleSections}
               currentStep={currentStep}
@@ -491,7 +508,7 @@ export default function WeddingEditor({
             />
             <div className={styles.progressCard}>
               <div className={styles.progressHeader}>
-                <span>완성도</span>
+                <span>{t('editor.nav.completeness')}</span>
                 <strong>{completeness.percent}%</strong>
               </div>
               <div className={styles.progressTrack}>
@@ -515,7 +532,7 @@ export default function WeddingEditor({
                 }
               />
               <h2 className={styles.formCardTitle}>
-                {visibleSections[currentStep]?.title ?? '편집'}
+                {visibleSections[currentStep]?.title ?? t('editor.fallback.edit')}
               </h2>
               <div className={styles.sectionStack}>{renderStep()}</div>
             </div>
@@ -526,7 +543,7 @@ export default function WeddingEditor({
                 onClick={() => handleStepSelect(Math.max(0, currentStep - 1))}
                 disabled={currentStep <= 0}
               >
-                ← 이전
+                ← {t('editor.nav.prev')}
               </button>
               <button
                 type="button"
@@ -540,8 +557,8 @@ export default function WeddingEditor({
                 }}
               >
                 {currentStep >= visibleSections.length - 1
-                  ? '완료하고 공개하기'
-                  : '다음 단계로 →'}
+                  ? t('editor.nav.completePublish')
+                  : t('editor.nav.nextStep')}
               </button>
             </div>
           </main>
@@ -554,7 +571,7 @@ export default function WeddingEditor({
             data-preview-mode={activeSection === 'share' ? 'phone-and-share' : 'phone'}
           >
             <LivePreviewPanel
-              title="실시간 미리보기"
+              title={t('editor.preview.live')}
               data={previewData}
               editingStepLabel={visibleSections[currentStep]?.title}
               focusSectionId={activeSection}
@@ -591,12 +608,12 @@ export default function WeddingEditor({
         <div className={styles.fullscreenPreviewOverlay} data-testid="mobile-preview-overlay">
           <div className={styles.previewModal}>
             <div className={styles.fullscreenPreviewHeader}>
-              <strong>미리보기</strong>
+              <strong>{t('editor.action.preview')}</strong>
               <button
                 type="button"
                 className={styles.previewBackButton}
                 onClick={() => setFullscreenPreviewOpen(false)}
-                aria-label="미리보기 닫기"
+                aria-label={t('editor.preview.close')}
               >
                 ✕
               </button>

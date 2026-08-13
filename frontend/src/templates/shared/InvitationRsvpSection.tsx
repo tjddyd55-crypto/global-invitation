@@ -33,7 +33,10 @@ export default function InvitationRsvpSection({
   const settings = getInvitationRsvpSettings(data, conceptType);
   const [formOpen, setFormOpen] = useState(false);
   const invitationLocale = resolveInvitationLocale(
-    data && typeof data === 'object' ? (data as { locale?: string; language?: string }).locale || (data as { language?: string }).language : undefined
+    data && typeof data === 'object'
+      ? (data as { language?: string; locale?: string }).language ||
+        (data as { locale?: string }).locale
+      : undefined
   );
   const t = (key: string) => translate(languageFromLocale(invitationLocale), key);
 
@@ -66,7 +69,7 @@ export default function InvitationRsvpSection({
       {formOpen ? (
         <div className={styles.formWrap} data-testid="invitation-rsvp-form-wrap">
           {canSubmit ? (
-            <RSVPForm invitationSlug={invitationSlug} />
+            <RSVPForm invitationSlug={invitationSlug} locale={invitationLocale} />
           ) : (
             <PreviewRsvpFormPlaceholder settings={settings} onClose={() => setFormOpen(false)} t={t} />
           )}

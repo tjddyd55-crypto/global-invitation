@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable i18next/no-literal-string */
 
 import { FormEvent } from 'react';
 import { useEmailAuthFlow } from '@/src/features/auth/model/useEmailAuthFlow';
@@ -36,6 +37,7 @@ export default function EmailAuthForm() {
   if (step === 'code') {
     return (
       <section className={styles.screen} data-testid="email-verify-screen">
+        {/* eslint-disable-next-line i18next/no-literal-string -- brand name */}
         <div className={styles.brandMark}>Global Invitation</div>
         <header className={styles.header}>
           <h1>{t('auth.code.title')}</h1>

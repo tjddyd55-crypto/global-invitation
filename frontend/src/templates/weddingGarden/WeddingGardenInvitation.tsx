@@ -19,9 +19,18 @@ import {
   type VisualTemplateProps,
 } from '@/src/templates/shared/templateInvitationModel';
 import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
+import { invitationT } from '@/src/i18n/invitationT';
 import styles from './WeddingGardenInvitation.module.css';
 
-function PersonCard({ person, offset }: { person: TemplatePerson; offset: boolean }) {
+function PersonCard({
+  person,
+  offset,
+  contactLabel,
+}: {
+  person: TemplatePerson;
+  offset: boolean;
+  contactLabel: string;
+}) {
   return (
     <div className={`${styles.personCard} ${offset ? styles.personCardOffset : ''}`.trim()}>
       <div className={styles.personFrame}>
@@ -37,7 +46,7 @@ function PersonCard({ person, offset }: { person: TemplatePerson; offset: boolea
       {person.parentsText ? <p className={styles.personMeta}>{person.parentsText}</p> : null}
       {person.phone ? (
         <a className={styles.personPill} href={toTelHref(person.phone)}>
-          연락하기
+          {contactLabel}
         </a>
       ) : null}
     </div>
@@ -48,6 +57,7 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
+  const t = (key: string) => invitationT(model.locale, key);
 
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
 
@@ -67,13 +77,13 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
                 src={model.heroImage || null}
                 alt=""
                 loading="eager"
-                fallback={<div className={styles.archPlaceholder}>대표 이미지를 추가해 주세요</div>}
+                fallback={<div className={styles.archPlaceholder}>{t('invitation.placeholder.hero')}</div>}
               />
             </div>
           </InvitationReveal>
         ) : null}
         <InvitationReveal variant="rise" delayMs={120}>
-          <p className={styles.eyebrow}>우리 결혼합니다</p>
+          <p className={styles.eyebrow}>{t('invitation.placeholder.weddingHeadline')}</p>
           <h1 className={styles.title}>{model.title}</h1>
           <span className={styles.leaf} aria-hidden />
           {model.dateText ? <p className={styles.heroDate}>{model.dateText}</p> : null}
@@ -85,7 +95,7 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
         <section className={styles.letter} data-section-id="greeting" data-preview-section="greeting">
           <InvitationReveal variant="blur">
             <div className={styles.letterCard}>
-              <p className={styles.sectionLabel}>초대의 말씀</p>
+              <p className={styles.sectionLabel}>{t('invitation.section.greeting')}</p>
               {model.hasGreeting ? (
                 model.greetingLines.map((line, index) => (
                   <p key={`greeting-${index}`} className={styles.letterLine}>
@@ -93,7 +103,7 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
                   </p>
                 ))
               ) : (
-                <p className={styles.placeholder}>인사말을 입력해 주세요</p>
+                <p className={styles.placeholder}>{t('invitation.placeholder.greeting')}</p>
               )}
             </div>
           </InvitationReveal>
@@ -103,17 +113,17 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
       {model.hasCouple ? (
         <section className={styles.people} data-section-id="couple" data-preview-section="couple">
           <InvitationReveal variant="rise">
-            <p className={styles.sectionLabel}>신랑 · 신부</p>
+            <p className={styles.sectionLabel}>{t('invitation.section.couple')}</p>
           </InvitationReveal>
           <div className={styles.peopleGrid}>
             {model.groom ? (
               <InvitationReveal variant="slideLeft" delayMs={80}>
-                <PersonCard person={model.groom} offset={false} />
+                <PersonCard person={model.groom} offset={false} contactLabel={t('invitation.action.contact')} />
               </InvitationReveal>
             ) : null}
             {model.bride ? (
               <InvitationReveal variant="slideRight" delayMs={200}>
-                <PersonCard person={model.bride} offset />
+                <PersonCard person={model.bride} offset contactLabel={t('invitation.action.contact')} />
               </InvitationReveal>
             ) : null}
           </div>
@@ -122,8 +132,8 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
 
       <section className={styles.schedule} data-section-id="schedule" data-preview-section="schedule">
         <InvitationReveal variant="rise">
-          <p className={styles.sectionLabel}>예식 일정</p>
-          <p className={styles.scheduleDate}>{model.dateText || '일정을 입력해 주세요'}</p>
+          <p className={styles.sectionLabel}>{t('invitation.section.ceremony')}</p>
+          <p className={styles.scheduleDate}>{model.dateText || t('invitation.placeholder.schedule')}</p>
         </InvitationReveal>
         <InvitationReveal variant="fade" delayMs={120}>
           <TemplateDateGrid
@@ -152,20 +162,20 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
           visualTemplateId="WEDDING_05_GARDEN"
           items={model.gallery.items}
           displayMode={model.gallery.displayMode}
-          sectionLabel="우리의 순간"
+          sectionLabel={t('invitation.section.ourMoments')}
           labelClassName={styles.sectionLabel}
           lockBodyScroll={flags.isPublic}
         />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.gallery')}</p>
         </section>
       ) : null}
 
       {model.hasLocation || flags.showEmptyPlaceholder ? (
         <section className={styles.location} data-section-id="location" data-preview-section="location">
           <LocationMapSection
-            sectionTitle="오시는 길"
+            sectionTitle={t('invitation.defaults.directions')}
             title={model.venueName}
             address={model.address}
             detailAddress={model.detailAddress || undefined}
@@ -179,9 +189,9 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
             mapImage={data.mapImage}
             tone="light"
             previewMode={flags.previewMode}
-            transportTitle="교통 안내"
+            transportTitle={t('invitation.defaults.directions')}
             transportInfo={model.transportInfo}
-            parkingTitle="주차 안내"
+            parkingTitle={t('invitation.defaults.parking')}
             parkingInfo={model.parkingInfo}
           />
         </section>
@@ -200,7 +210,7 @@ export default function WeddingGardenInvitation(props: VisualTemplateProps) {
           data-section-id="accounts"
           data-preview-section="accounts"
         >
-          <p className={styles.placeholder}>계좌 정보를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.accounts')}</p>
         </section>
       ) : null}
 

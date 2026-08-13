@@ -9,6 +9,8 @@ import {
   type InvitationAccountItem,
 } from '@/src/invitation/accountItems';
 import type { InvitationConceptType } from '@/src/invitation/conceptPresentationConfig';
+import { useInvitationLocale } from '@/src/i18n/InvitationLocaleContext';
+import { invitationT } from '@/src/i18n/invitationT';
 import styles from './InvitationAccountsSection.module.css';
 
 type InvitationAccountsSectionProps = {
@@ -51,9 +53,13 @@ function isLongInternationalNumber(value: string): boolean {
 function AccountCard({
   account,
   onCopied,
+  copyLabel,
+  fallbackLabel,
 }: {
   account: InvitationAccountItem;
   onCopied: () => void;
+  copyLabel: string;
+  fallbackLabel: string;
 }) {
   const bank = (account.financialInstitution || '').trim();
   const number = (account.accountNumber || '').trim();
@@ -64,7 +70,7 @@ function AccountCard({
   return (
     <div className={styles.accountCard} data-testid="account-card">
       <div className={styles.accountHeader}>
-        <strong>{account.label || '계좌'}</strong>
+        <strong>{account.label || fallbackLabel}</strong>
         {number ? (
           <button
             className={styles.copyButton}
@@ -75,7 +81,7 @@ function AccountCard({
               if (ok) onCopied();
             }}
           >
-            복사
+            {copyLabel}
           </button>
         ) : null}
       </div>
@@ -113,6 +119,8 @@ export default function InvitationAccountsSection({
   accountsTitle,
   className,
 }: InvitationAccountsSectionProps) {
+  const locale = useInvitationLocale();
+  const t = (key: string) => invitationT(locale, key);
   const [toast, setToast] = useState<string | null>(null);
   const items = getInvitationAccountItems(accounts).filter(isAccountItemComplete);
   if (items.length === 0) return null;
@@ -134,8 +142,10 @@ export default function InvitationAccountsSection({
           <AccountCard
             key={account.id}
             account={account}
+            copyLabel={t('invitation.action.copy')}
+            fallbackLabel={t('invitation.accounts.label')}
             onCopied={() => {
-              setToast('계좌번호가 복사되었습니다');
+              setToast(t('invitation.action.copySuccess'));
               window.setTimeout(() => setToast(null), 1800);
             }}
           />

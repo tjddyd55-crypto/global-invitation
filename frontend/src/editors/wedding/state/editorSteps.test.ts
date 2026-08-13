@@ -6,7 +6,7 @@ import test from 'node:test';
 import { resolveVisibleSections } from './editorSteps';
 
 test('wedding has 10 steps with music then share', () => {
-  const steps = resolveVisibleSections('WEDDING');
+  const steps = resolveVisibleSections('WEDDING', 'ko-KR');
   assert.equal(steps.length, 10);
   assert.equal(steps[7]?.key, 'rsvp');
   assert.equal(steps[7]?.title, '참석 여부');
@@ -14,6 +14,13 @@ test('wedding has 10 steps with music then share', () => {
   assert.equal(steps[8]?.title, '음악 설정');
   assert.equal(steps[9]?.key, 'share');
   assert.equal(steps[9]?.title, '공유 설정');
+});
+
+test('english wedding steps are localized', () => {
+  const steps = resolveVisibleSections('WEDDING', 'en-US');
+  assert.equal(steps[0]?.title, 'Basic Info');
+  assert.equal(steps[7]?.title, 'RSVP');
+  assert.equal(steps[8]?.title, 'Music');
 });
 
 test('general has 9 steps without schedule; music then share', () => {
@@ -34,7 +41,7 @@ test('funeral has 10 steps with music then share', () => {
 });
 
 test('organization has 10 steps with branding first then music/share', () => {
-  const steps = resolveVisibleSections('ORGANIZATION');
+  const steps = resolveVisibleSections('ORGANIZATION', 'ko-KR');
   assert.equal(steps.length, 10);
   assert.equal(steps[0]?.key, 'organization');
   assert.equal(steps[0]?.title, '기관 브랜딩');

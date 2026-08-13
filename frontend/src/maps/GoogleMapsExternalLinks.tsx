@@ -1,6 +1,8 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
+import { useInvitationLocale } from '@/src/i18n/InvitationLocaleContext';
+import { invitationT } from '@/src/i18n/invitationT';
 import { buildGoogleMapsDirectionsUrl, buildGoogleMapsViewUrl } from './googleMapsUrls';
 import type { InvitationLocation } from './types';
 import styles from './GoogleMapsExternalLinks.module.css';
@@ -15,6 +17,8 @@ type GoogleMapsExternalLinksProps = {
  * 네이버/카카오/티맵 등 국내 앱은 사용하지 않는다.
  */
 export default function GoogleMapsExternalLinks({ location, className }: GoogleMapsExternalLinksProps) {
+  const locale = useInvitationLocale();
+  const t = (key: string) => invitationT(locale, key);
   const viewUrl = buildGoogleMapsViewUrl(location);
   const directionsUrl = buildGoogleMapsDirectionsUrl(location);
   const hasTarget = Boolean(
@@ -29,10 +33,10 @@ export default function GoogleMapsExternalLinks({ location, className }: GoogleM
   return (
     <div className={`${styles.row} ${className || ''}`.trim()} data-testid="google-maps-external-links">
       <a className={styles.link} href={viewUrl} target="_blank" rel="noopener noreferrer">
-        Google 지도에서 보기
+        {t('invitation.map.googleView')}
       </a>
       <a className={styles.link} href={directionsUrl} target="_blank" rel="noopener noreferrer">
-        Google Maps 길찾기
+        {t('invitation.map.googleDirections')}
       </a>
     </div>
   );

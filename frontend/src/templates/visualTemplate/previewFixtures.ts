@@ -8,6 +8,7 @@
  */
 import { getInvitationScheduleDisplay } from '@/src/invitation/scheduleDisplay';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
+import { resolveInvitationLocale, type ProductLocaleId } from '@/src/i18n/productLocales';
 import type { VisualTemplateId } from './ids';
 import { VISUAL_TEMPLATE_CONCEPT } from './ids';
 import {
@@ -22,8 +23,8 @@ import { getPreviewFixtureGalleryMode } from '@/src/templates/visualGallery/reso
 import { DEFAULT_BRAND_ACCENT_COLOR } from '@/src/invitation/conceptTypes';
 
 /** Classic renderer 는 `weddingDateTime` 문자열을 그대로 출력하므로 사람이 읽는 값으로 채운다. */
-function readableDateTime(isoDate: string): string {
-  return getInvitationScheduleDisplay({ eventDate: isoDate })?.full ?? '';
+function readableDateTime(isoDate: string, locale: ProductLocaleId = 'ko-KR'): string {
+  return getInvitationScheduleDisplay({ eventDate: isoDate }, locale)?.full ?? '';
 }
 
 const WEDDING_SIBLINGS: Record<string, VisualTemplateId[]> = {
@@ -386,9 +387,221 @@ function organizationFixture(visualTemplateId: VisualTemplateId): WeddingInvitat
   };
 }
 
-export function getVisualTemplatePreviewFixture(id: VisualTemplateId): WeddingInvitationData {
+const EN_WEDDING_OVERLAY = {
+  groomName: 'Daniel Kim',
+  brideName: 'Emma Park',
+  venueName: 'The Langham Chicago',
+  venueDetail: 'Grand Ballroom',
+  address: '330 N Wabash Ave, Chicago, IL',
+  subtitle: 'Two seasons become one',
+  greeting: [
+    'After walking through different seasons,',
+    'we are ready to walk in the same direction.',
+    'We would be honored by your presence.',
+  ],
+  schedule: ['Dinner follows the ceremony in the same ballroom'],
+  transportInfo: ['Red Line to Grand · 5-minute walk'],
+  parkingInfo: ['Valet available at the hotel entrance'],
+  accountsTitle: 'Gift / Contribution',
+  accounts: [
+    { role: 'Groom', bank: 'Chase', number: '****-1234', holder: 'Daniel Kim' },
+    { role: 'Bride', bank: 'Bank of America', number: '****-5678', holder: 'Emma Park' },
+  ],
+  groomParents: 'Son of David Kim & Susan Lee',
+  brideParents: 'Daughter of James Park & Grace Choi',
+};
+
+const EN_GENERAL_OVERLAY: Record<string, Partial<GeneralEvent>> = {
+  GENERAL_01_CLASSIC: {
+    title: 'Mumu 10th Anniversary Night',
+    subtitle: 'A quiet evening with the people who walked with us',
+    greeting: [
+      'Ten years from a small studio.',
+      'Please join us for a calm evening together.',
+    ],
+    venueName: 'Hannam Salon de Mumu',
+    venueDetail: 'B1 Lounge',
+    address: '245 Itaewon-ro, Yongsan, Seoul',
+    accountsTitle: 'Participation Fee',
+    accounts: [{ role: 'Ticket', bank: 'Chase', number: '****-0101', holder: 'Studio Mumu' }],
+    transportInfo: ['Line 6 Hangangjin Station, Exit 3 · 6 min walk'],
+    parkingInfo: ['2 hours free in the building garage'],
+  },
+  GENERAL_04_CLEAN: {
+    title: '2026 Brand Design Conference',
+    subtitle: 'How small starts become lasting brands',
+    greeting: [
+      'Six practitioners share a year of real work.',
+      'Talks are followed by Q&A and networking.',
+    ],
+    venueName: 'Seongsu Works Room',
+    venueDetail: '3F Conference Hall',
+    address: '100 Achasan-ro, Seongdong, Seoul',
+    accountsTitle: 'Registration',
+    accounts: [{ role: 'General', bank: 'Chase', number: '****-2222', holder: 'Works Room' }],
+    transportInfo: ['Line 2 Seongsu Station, Exit 3 · 7 min walk'],
+    parkingInfo: ['Limited parking · public transit recommended'],
+  },
+  GENERAL_05_FESTIVE: {
+    title: 'Mumu Market Night',
+    subtitle: 'A small festival to close the year',
+    greeting: [
+      'Twelve teams, music, and things to take home.',
+      'Drop by for an easy evening.',
+    ],
+    venueName: 'Yeonnam Warehouse 27',
+    venueDetail: 'Courtyard & indoor hall',
+    address: '27 Seongmisan-ro, Mapo, Seoul',
+    accountsTitle: 'Tickets & Support',
+    accounts: [{ role: 'Advance ticket', bank: 'Chase', number: '****-3333', holder: 'Mumu Market' }],
+    transportInfo: ['Gyeongui-Jungang Gajwa Station, Exit 1 · 10 min walk'],
+    parkingInfo: ['Use nearby public parking'],
+  },
+  GENERAL_06_CULTURE: {
+    title: 'Layered Time',
+    subtitle: 'Seoyeon Kim Solo Exhibition · Autumn 2026',
+    greeting: [
+      'Twenty-four paintings from the last three years, shown together for the first time.',
+      'An artist talk is planned for opening day.',
+    ],
+    venueName: 'Atelier Haru',
+    venueDetail: '2F Gallery',
+    address: '75 Samcheong-ro, Jongno, Seoul',
+    accountsTitle: 'Admission & Support',
+    accounts: [{ role: 'Admission', bank: 'Chase', number: '****-4444', holder: 'Atelier Haru' }],
+    transportInfo: ['Line 3 Anguk Station, Exit 1 · 12 min walk'],
+    parkingInfo: ['No dedicated parking · nearby public lots'],
+  },
+};
+
+const EN_ORGANIZATION_OVERLAY = {
+  title: '2026 Inauguration Ceremony',
+  subtitle: 'New leadership for a stronger community',
+  greeting: [
+    'You are warmly invited to our inauguration and the start of a new chapter for the community.',
+  ],
+  venueName: 'Signiel Busan Grand Ballroom',
+  address: '265 Haeundae-ro, Haeundae, Busan',
+  accountsTitle: 'Participation Fee',
+  accounts: [{ role: 'Registration', bank: 'Chase', number: '****-0000', holder: 'JCI Seoul Gwangjin' }],
+  transportInfo: ['Busan Metro Line 2 · Haeundae Station'],
+  parkingInfo: ['Please ask the hotel parking desk'],
+  organizationName: 'JCI Seoul Gwangjin',
+};
+
+function applyEnglishOverlay(
+  id: VisualTemplateId,
+  fixture: WeddingInvitationData,
+  locale: ProductLocaleId
+): WeddingInvitationData {
+  if (locale !== 'en-US') {
+    return { ...fixture, locale, language: locale };
+  }
   const concept = VISUAL_TEMPLATE_CONCEPT[id];
-  if (concept === 'WEDDING') return weddingFixture(id);
-  if (concept === 'ORGANIZATION') return organizationFixture(id);
-  return generalFixture(id);
+  if (concept === 'WEDDING') {
+    const coupleNames = `${EN_WEDDING_OVERLAY.groomName} · ${EN_WEDDING_OVERLAY.brideName}`;
+    return {
+      ...fixture,
+      locale,
+      language: locale,
+      title: coupleNames,
+      subtitle: EN_WEDDING_OVERLAY.subtitle,
+      content: EN_WEDDING_OVERLAY.greeting.join('\n'),
+      locationText: EN_WEDDING_OVERLAY.venueName,
+      venueName: EN_WEDDING_OVERLAY.venueName,
+      venueDetail: EN_WEDDING_OVERLAY.venueDetail,
+      address: EN_WEDDING_OVERLAY.address,
+      formattedAddress: EN_WEDDING_OVERLAY.address,
+      heroTitle: coupleNames,
+      heroSubtitle: readableDateTime(WEDDING_EVENT.eventDate, locale),
+      weddingDateTime: readableDateTime(WEDDING_EVENT.eventDate, locale),
+      coupleNames,
+      introQuote: EN_WEDDING_OVERLAY.subtitle,
+      introText: EN_WEDDING_OVERLAY.greeting,
+      schedule: EN_WEDDING_OVERLAY.schedule,
+      groomName: EN_WEDDING_OVERLAY.groomName,
+      brideName: EN_WEDDING_OVERLAY.brideName,
+      groom: {
+        ...fixture.groom,
+        name: EN_WEDDING_OVERLAY.groomName,
+        parentsText: EN_WEDDING_OVERLAY.groomParents,
+      },
+      bride: {
+        ...fixture.bride,
+        name: EN_WEDDING_OVERLAY.brideName,
+        parentsText: EN_WEDDING_OVERLAY.brideParents,
+      },
+      accounts: EN_WEDDING_OVERLAY.accounts,
+      accountsTitle: EN_WEDDING_OVERLAY.accountsTitle,
+      transportInfo: EN_WEDDING_OVERLAY.transportInfo,
+      parkingInfo: EN_WEDDING_OVERLAY.parkingInfo,
+    };
+  }
+  if (concept === 'ORGANIZATION') {
+    return {
+      ...fixture,
+      locale,
+      language: locale,
+      title: EN_ORGANIZATION_OVERLAY.title,
+      subtitle: EN_ORGANIZATION_OVERLAY.subtitle,
+      content: EN_ORGANIZATION_OVERLAY.greeting.join('\n'),
+      heroTitle: EN_ORGANIZATION_OVERLAY.title,
+      heroSubtitle: EN_ORGANIZATION_OVERLAY.subtitle,
+      introQuote: EN_ORGANIZATION_OVERLAY.subtitle,
+      introText: EN_ORGANIZATION_OVERLAY.greeting,
+      locationText: EN_ORGANIZATION_OVERLAY.venueName,
+      venueName: EN_ORGANIZATION_OVERLAY.venueName,
+      address: EN_ORGANIZATION_OVERLAY.address,
+      formattedAddress: EN_ORGANIZATION_OVERLAY.address,
+      weddingDateTime: readableDateTime(ORGANIZATION_EVENT.eventDate, locale),
+      accountsTitle: EN_ORGANIZATION_OVERLAY.accountsTitle,
+      accounts: EN_ORGANIZATION_OVERLAY.accounts,
+      transportInfo: EN_ORGANIZATION_OVERLAY.transportInfo,
+      parkingInfo: EN_ORGANIZATION_OVERLAY.parkingInfo,
+      organization: {
+        ...fixture.organization,
+        name: EN_ORGANIZATION_OVERLAY.organizationName,
+        englishName: EN_ORGANIZATION_OVERLAY.organizationName,
+      },
+    };
+  }
+  const overlay = EN_GENERAL_OVERLAY[id] || EN_GENERAL_OVERLAY.GENERAL_05_FESTIVE;
+  const event = GENERAL_EVENTS[id] ?? GENERAL_EVENTS.GENERAL_04_CLEAN;
+  return {
+    ...fixture,
+    locale,
+    language: locale,
+    title: overlay.title || fixture.title,
+    subtitle: overlay.subtitle || fixture.subtitle,
+    content: (overlay.greeting || []).join('\n') || fixture.content,
+    heroTitle: overlay.title || fixture.heroTitle,
+    heroSubtitle: overlay.subtitle || fixture.heroSubtitle,
+    introQuote: overlay.subtitle || fixture.introQuote,
+    introText: overlay.greeting || fixture.introText,
+    locationText: overlay.venueName || fixture.locationText,
+    venueName: overlay.venueName || fixture.venueName,
+    venueDetail: overlay.venueDetail || fixture.venueDetail,
+    address: overlay.address || fixture.address,
+    formattedAddress: overlay.address || fixture.formattedAddress,
+    weddingDateTime: readableDateTime(event.eventDate, locale),
+    accountsTitle: overlay.accountsTitle || fixture.accountsTitle,
+    accounts: overlay.accounts || fixture.accounts,
+    transportInfo: overlay.transportInfo || fixture.transportInfo,
+    parkingInfo: overlay.parkingInfo || fixture.parkingInfo,
+  };
+}
+
+export function getVisualTemplatePreviewFixture(
+  id: VisualTemplateId,
+  localeInput?: string | null
+): WeddingInvitationData {
+  const locale = resolveInvitationLocale(localeInput);
+  const concept = VISUAL_TEMPLATE_CONCEPT[id];
+  const base =
+    concept === 'WEDDING'
+      ? weddingFixture(id)
+      : concept === 'ORGANIZATION'
+        ? organizationFixture(id)
+        : generalFixture(id);
+  return applyEnglishOverlay(id, { ...base, locale, language: locale }, locale);
 }

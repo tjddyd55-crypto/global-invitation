@@ -3,10 +3,13 @@
 
 import { useState } from 'react';
 import { buildApiUrl } from '@/src/lib/apiBase';
+import { invitationT } from '@/src/i18n/invitationT';
+import type { ProductLocaleId } from '@/src/i18n/productLocales';
 import styles from './RSVPForm.module.css';
 
 type RSVPFormProps = {
   invitationSlug: string;
+  locale?: ProductLocaleId;
 };
 
 type AttendanceValue = 'yes' | 'no' | 'maybe';
@@ -36,7 +39,8 @@ const DEFAULT_FORM = {
   message: '',
 };
 
-export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
+export default function RSVPForm({ invitationSlug, locale = 'ko-KR' }: RSVPFormProps) {
+  const t = (key: string, vars?: Record<string, string | number>) => invitationT(locale, key, vars);
   const [guestName, setGuestName] = useState(DEFAULT_FORM.guestName);
   const [attendance, setAttendance] = useState<AttendanceValue>(DEFAULT_FORM.attendance);
   const [guestCountInput, setGuestCountInput] = useState(DEFAULT_FORM.guestCountInput);
@@ -67,19 +71,19 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
     const normalizedMessage = message.trim();
 
     if (!normalizedGuestName) {
-      setError('이름을 입력해 주세요.');
+      setError(t('rsvp.error.nameRequired'));
       return;
     }
 
     let guestCount = MIN_GUEST_COUNT;
     if (showGuestCount) {
       if (guestCountInput.trim() === '') {
-        setError('참석 인원을 입력해 주세요.');
+        setError(t('rsvp.error.countRequired'));
         return;
       }
       const parsed = Number(guestCountInput);
       if (!Number.isInteger(parsed) || parsed < MIN_GUEST_COUNT || parsed > MAX_GUEST_COUNT) {
-        setError(`참석 인원은 ${MIN_GUEST_COUNT}명 이상 ${MAX_GUEST_COUNT}명 이하로 입력해 주세요.`);
+        setError(t('rsvp.error.countRange', { min: MIN_GUEST_COUNT, max: MAX_GUEST_COUNT }));
         return;
       }
       guestCount = parsed;
@@ -109,36 +113,34 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
         if (payload?.error === 'RSVP_DISABLED') {
-          throw new Error('이 초대장은 RSVP 접수가 비활성화되어 있습니다.');
+          throw new Error(t('rsvp.error.disabled'));
         }
         if (payload?.error === 'RSVP_CLOSED') {
-          throw new Error('RSVP 접수 기간이 종료되었습니다.');
+          throw new Error(t('rsvp.error.closed'));
         }
         if (payload?.error === 'TOO_MANY_RSVP_REQUESTS') {
-          throw new Error('너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해 주세요.');
+          throw new Error(t('rsvp.error.rateLimit'));
         }
         if (payload?.error === 'INVITATION_NOT_FOUND') {
-          throw new Error('초대장을 찾을 수 없습니다.');
+          throw new Error(t('rsvp.error.notFound'));
         }
         if (payload?.error === 'GUEST_NAME_MISMATCH') {
-          throw new Error('기존 응답을 수정하려면 동일한 이름을 사용해 주세요.');
+          throw new Error(t('rsvp.error.nameMismatch'));
         }
         if (payload?.error === 'INVALID_GUEST_COUNT') {
-          throw new Error(`참석 인원은 ${MIN_GUEST_COUNT}명 이상 ${MAX_GUEST_COUNT}명 이하로 입력해 주세요.`);
+          throw new Error(t('rsvp.error.countRange', { min: MIN_GUEST_COUNT, max: MAX_GUEST_COUNT }));
         }
-        throw new Error('RSVP 제출에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        throw new Error(t('rsvp.error.failed'));
       }
 
       const payload = (await response.json()) as RsvpSubmissionResponse;
       setRsvpId(payload.rsvp.id);
       setSubmittedGuestName(payload.rsvp.guestName);
       setSuccess(
-        payload.mode === 'updated'
-          ? '기존 RSVP 응답이 업데이트되었습니다.'
-          : '참석 응답이 접수되었습니다. 감사합니다.'
+        payload.mode === 'updated' ? t('rsvp.success.updated') : t('rsvp.success.created')
       );
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : 'RSVP 제출에 실패했습니다.');
+      setError(submitError instanceof Error ? submitError.message : t('rsvp.error.failed'));
     } finally {
       setSubmitting(false);
     }
@@ -146,20 +148,16 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
 
   return (
     <section className={styles.section} data-testid="rsvp-form">
-      <h2 className={styles.title}>참석 여부</h2>
-      <p className={styles.description}>
-        초대해 주셔서 감사합니다. 참석 가능 여부와 간단한 메모를 남겨 주세요.
-      </p>
+      <h2 className={styles.title}>{t('rsvp.form.title')}</h2>
+      <p className={styles.description}>{t('rsvp.form.description')}</p>
       {submittedGuestName && (
-        <div className={styles.helperText}>
-          이미 RSVP를 제출하셨습니다. 같은 이름으로 다시 제출하면 기존 응답이 업데이트됩니다.
-        </div>
+        <div className={styles.helperText}>{t('rsvp.form.already')}</div>
       )}
 
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.fieldGrid}>
           <div className={styles.field}>
-            <label htmlFor="rsvp-guest-name">이름</label>
+            <label htmlFor="rsvp-guest-name">{t('rsvp.field.name')}</label>
             <input
               id="rsvp-guest-name"
               type="text"
@@ -171,21 +169,21 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
             />
           </div>
           <div className={styles.field}>
-            <label htmlFor="rsvp-attendance">참석 여부</label>
+            <label htmlFor="rsvp-attendance">{t('rsvp.field.attendance')}</label>
             <select
               id="rsvp-attendance"
               value={attendance}
               onChange={(event) => setAttendance(event.target.value as AttendanceValue)}
               disabled={submitting}
             >
-              <option value="yes">참석</option>
-              <option value="no">불참</option>
-              <option value="maybe">미정</option>
+              <option value="yes">{t('rsvp.option.yes')}</option>
+              <option value="no">{t('rsvp.option.no')}</option>
+              <option value="maybe">{t('rsvp.option.maybe')}</option>
             </select>
           </div>
           {showGuestCount ? (
             <div className={styles.field}>
-              <label htmlFor="rsvp-guest-count">참석 인원</label>
+              <label htmlFor="rsvp-guest-count">{t('rsvp.field.guestCount')}</label>
               <input
                 id="rsvp-guest-count"
                 type="text"
@@ -198,12 +196,12 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
                 aria-describedby="rsvp-guest-count-help"
               />
               <div id="rsvp-guest-count-help" className={styles.helperText}>
-                최대 {MAX_GUEST_COUNT}명까지 입력할 수 있습니다.
+                {t('rsvp.helper.guestCount', { max: MAX_GUEST_COUNT })}
               </div>
             </div>
           ) : null}
           <div className={styles.field}>
-            <label htmlFor="rsvp-meal-choice">식사 옵션 (선택)</label>
+            <label htmlFor="rsvp-meal-choice">{t('rsvp.field.meal')}</label>
             <input
               id="rsvp-meal-choice"
               type="text"
@@ -211,20 +209,20 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
               onChange={(event) => setMealChoice(event.target.value)}
               maxLength={80}
               disabled={submitting}
-              placeholder="예: 채식 / 어린이 식사"
+              placeholder={t('rsvp.placeholder.meal')}
             />
           </div>
         </div>
 
         <div className={styles.field}>
-          <label htmlFor="rsvp-message">메시지 (선택)</label>
+          <label htmlFor="rsvp-message">{t('rsvp.field.message')}</label>
           <textarea
             id="rsvp-message"
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             maxLength={1000}
             disabled={submitting}
-            placeholder="전하고 싶은 축하 메시지를 남겨 주세요."
+            placeholder={t('rsvp.placeholder.message')}
           />
         </div>
 
@@ -237,7 +235,11 @@ export default function RSVPForm({ invitationSlug }: RSVPFormProps) {
 
         <div className={styles.actions}>
           <button type="submit" className={styles.submitButton} disabled={submitting} data-testid="rsvp-submit">
-            {submitting ? '제출 중...' : submittedGuestName ? '응답 업데이트' : '응답 제출'}
+            {submitting
+              ? t('rsvp.action.submitting')
+              : submittedGuestName
+                ? t('rsvp.action.update')
+                : t('rsvp.action.submit')}
           </button>
         </div>
       </form>

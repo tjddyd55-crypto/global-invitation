@@ -1,4 +1,6 @@
 import { I18N_KEYS, translate, type Language } from '@/src/i18n';
+import { invitationT } from '@/src/i18n/invitationT';
+import { languageFromLocale, resolveInvitationLocale } from '@/src/i18n/productLocales';
 import { formatDateTime } from '@/src/lib/i18n/format';
 import type { Invitation } from '@/src/lib/api';
 import { buildWeddingClassicHeroTitle } from '@/src/templates/weddingClassic/data';
@@ -100,8 +102,7 @@ function resolveMessage(source: unknown, fallback: string): string {
 }
 
 function normalizeLanguage(language?: string | null): Language {
-  if (language === 'en' || language === 'mn') return language;
-  return 'ko';
+  return languageFromLocale(resolveInvitationLocale(language));
 }
 
 function normalizeTemplateKey(): 'invitation_full' {
@@ -117,18 +118,20 @@ function isEventLikeConcept(conceptType: EditorConceptType): boolean {
   return conceptType === 'GENERAL' || conceptType === 'ORGANIZATION';
 }
 
-function getDefaultTitleByConcept(conceptType: EditorConceptType): string {
-  if (conceptType === 'FUNERAL') return '부고를 전합니다';
-  if (conceptType === 'ORGANIZATION') return '행사에 초대합니다';
-  if (conceptType === 'GENERAL') return '초대합니다';
-  return '결혼식에 초대합니다';
+function getDefaultTitleByConcept(conceptType: EditorConceptType, language: Language): string {
+  const locale = resolveInvitationLocale(language);
+  if (conceptType === 'FUNERAL') return invitationT(locale, 'editor.default.funeralTitle');
+  if (conceptType === 'ORGANIZATION') return invitationT(locale, 'editor.default.organizationTitle');
+  if (conceptType === 'GENERAL') return invitationT(locale, 'editor.default.generalTitle');
+  return invitationT(locale, 'editor.default.weddingTitle');
 }
 
-function getDefaultMessageByConcept(conceptType: EditorConceptType): string {
-  if (conceptType === 'FUNERAL') return '삼가 고인의 명복을 빕니다.';
-  if (conceptType === 'ORGANIZATION') return '뜻깊은 자리에 함께해 주시기 바랍니다.';
-  if (conceptType === 'GENERAL') return '행사에 초대드립니다.';
-  return '소중한 분들을 모시고\n결혼식을 올리게 되었습니다.';
+function getDefaultMessageByConcept(conceptType: EditorConceptType, language: Language): string {
+  const locale = resolveInvitationLocale(language);
+  if (conceptType === 'FUNERAL') return invitationT(locale, 'editor.default.funeralMessage');
+  if (conceptType === 'ORGANIZATION') return invitationT(locale, 'editor.default.organizationMessage');
+  if (conceptType === 'GENERAL') return invitationT(locale, 'editor.default.generalMessage');
+  return invitationT(locale, 'editor.default.weddingMessage');
 }
 
 function getDefaultQuoteByConcept(conceptType: EditorConceptType): string {
@@ -228,8 +231,8 @@ export function createWeddingEditorState(
     (invitation?.data as { visualTemplateId?: unknown } | undefined)?.visualTemplateId;
   const visualTemplateId =
     typeof visualTemplateIdRaw === 'string' ? visualTemplateIdRaw : undefined;
-  const defaultTitle = getDefaultTitleByConcept(conceptType);
-  const defaultMessage = getDefaultMessageByConcept(conceptType);
+  const defaultTitle = getDefaultTitleByConcept(conceptType, language);
+  const defaultMessage = getDefaultMessageByConcept(conceptType, language);
   const defaultQuote = getDefaultQuoteByConcept(conceptType);
   const conceptConfig = getConceptPresentationConfig(conceptType);
   const eventLike = isEventLikeConcept(conceptType);

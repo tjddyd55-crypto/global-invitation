@@ -1,5 +1,7 @@
 import type { UnifiedStepItem } from '@/src/editors/shared/UnifiedStepperNav';
 import type { WeddingEditorState } from '@/src/editors/wedding/state/weddingEditor.types';
+import { invitationT } from '@/src/i18n/invitationT';
+import type { ProductLocaleId } from '@/src/i18n/productLocales';
 
 export type EditorSectionKey =
   | 'setup'
@@ -29,62 +31,65 @@ type ConceptType = WeddingEditorState['setup']['conceptType'];
  * ORGANIZATION은 branding step 추가 (organization key).
  * Preview/Public `schedule` 섹션은 renderer 전용으로 계속 존재한다.
  */
-export function resolveVisibleSections(conceptType: ConceptType): EditorSectionItem[] {
+export function resolveVisibleSections(
+  conceptType: ConceptType,
+  locale: ProductLocaleId = 'ko-KR'
+): EditorSectionItem[] {
+  const t = (key: string) => invitationT(locale, key);
   if (conceptType === 'WEDDING') {
     return [
-      { id: 0, key: 'setup', title: '기본 정보', previewSectionId: 'hero' },
-      { id: 1, key: 'message', title: '인사말', previewSectionId: 'greeting' },
-      { id: 2, key: 'hero', title: '대표 이미지', previewSectionId: 'hero' },
-      { id: 3, key: 'couple', title: '신랑 · 신부', previewSectionId: 'couple' },
-      { id: 4, key: 'gallery', title: '갤러리', previewSectionId: 'gallery' },
-      { id: 5, key: 'location', title: '위치 안내', previewSectionId: 'location' },
-      { id: 6, key: 'accounts', title: '계좌 정보', previewSectionId: 'accounts' },
-      { id: 7, key: 'rsvp', title: '참석 여부', previewSectionId: 'rsvp' },
-      { id: 8, key: 'music', title: '음악 설정', previewSectionId: 'music' },
-      { id: 9, key: 'share', title: '공유 설정', previewSectionId: 'share' },
+      { id: 0, key: 'setup', title: t('editor.section.basicInfo'), previewSectionId: 'hero' },
+      { id: 1, key: 'message', title: t('editor.section.greeting'), previewSectionId: 'greeting' },
+      { id: 2, key: 'hero', title: t('editor.section.hero'), previewSectionId: 'hero' },
+      { id: 3, key: 'couple', title: t('editor.section.couple'), previewSectionId: 'couple' },
+      { id: 4, key: 'gallery', title: t('editor.section.gallery'), previewSectionId: 'gallery' },
+      { id: 5, key: 'location', title: t('editor.section.location'), previewSectionId: 'location' },
+      { id: 6, key: 'accounts', title: t('editor.section.accounts'), previewSectionId: 'accounts' },
+      { id: 7, key: 'rsvp', title: t('editor.section.rsvp'), previewSectionId: 'rsvp' },
+      { id: 8, key: 'music', title: t('editor.section.music'), previewSectionId: 'music' },
+      { id: 9, key: 'share', title: t('editor.section.sharing'), previewSectionId: 'share' },
     ];
   }
 
   if (conceptType === 'FUNERAL') {
     return [
-      { id: 0, key: 'setup', title: '기본 정보', previewSectionId: 'hero' },
-      { id: 1, key: 'message', title: '부고문', previewSectionId: 'greeting' },
-      { id: 2, key: 'hero', title: '대표 이미지', previewSectionId: 'hero' },
-      { id: 3, key: 'couple', title: '고인 정보', previewSectionId: 'deceased' },
-      { id: 4, key: 'schedule', title: '장례 일정', previewSectionId: 'schedule' },
-      { id: 5, key: 'location', title: '위치 안내', previewSectionId: 'location' },
-      { id: 6, key: 'accounts', title: '계좌 정보', previewSectionId: 'accounts' },
-      { id: 7, key: 'rsvp', title: '참석 여부', previewSectionId: 'rsvp' },
-      { id: 8, key: 'music', title: '음악 설정', previewSectionId: 'music' },
-      { id: 9, key: 'share', title: '공유 설정', previewSectionId: 'share' },
+      { id: 0, key: 'setup', title: t('editor.section.basicInfo'), previewSectionId: 'hero' },
+      { id: 1, key: 'message', title: t('editor.section.memorialMessage'), previewSectionId: 'greeting' },
+      { id: 2, key: 'hero', title: t('editor.section.hero'), previewSectionId: 'hero' },
+      { id: 3, key: 'couple', title: t('editor.section.deceased'), previewSectionId: 'deceased' },
+      { id: 4, key: 'schedule', title: t('editor.section.schedule'), previewSectionId: 'schedule' },
+      { id: 5, key: 'location', title: t('editor.section.location'), previewSectionId: 'location' },
+      { id: 6, key: 'accounts', title: t('editor.section.accounts'), previewSectionId: 'accounts' },
+      { id: 7, key: 'rsvp', title: t('editor.section.rsvp'), previewSectionId: 'rsvp' },
+      { id: 8, key: 'music', title: t('editor.section.music'), previewSectionId: 'music' },
+      { id: 9, key: 'share', title: t('editor.section.sharing'), previewSectionId: 'share' },
     ];
   }
 
   if (conceptType === 'ORGANIZATION') {
     return [
-      { id: 0, key: 'organization', title: '기관 브랜딩', previewSectionId: 'organization' },
-      { id: 1, key: 'setup', title: '기본 정보', previewSectionId: 'basic' },
-      { id: 2, key: 'message', title: '행사 소개', previewSectionId: 'greeting' },
-      { id: 3, key: 'hero', title: '대표 이미지', previewSectionId: 'hero' },
-      { id: 4, key: 'gallery', title: '갤러리', previewSectionId: 'gallery' },
-      { id: 5, key: 'location', title: '위치 안내', previewSectionId: 'location' },
-      { id: 6, key: 'accounts', title: '참가비·계좌 정보', previewSectionId: 'accounts' },
-      { id: 7, key: 'rsvp', title: '참석 여부', previewSectionId: 'rsvp' },
-      { id: 8, key: 'music', title: '음악 설정', previewSectionId: 'music' },
-      { id: 9, key: 'share', title: '공유 설정', previewSectionId: 'share' },
+      { id: 0, key: 'organization', title: t('editor.section.branding'), previewSectionId: 'organization' },
+      { id: 1, key: 'setup', title: t('editor.section.basicInfo'), previewSectionId: 'basic' },
+      { id: 2, key: 'message', title: t('editor.section.introduction'), previewSectionId: 'greeting' },
+      { id: 3, key: 'hero', title: t('editor.section.hero'), previewSectionId: 'hero' },
+      { id: 4, key: 'gallery', title: t('editor.section.gallery'), previewSectionId: 'gallery' },
+      { id: 5, key: 'location', title: t('editor.section.location'), previewSectionId: 'location' },
+      { id: 6, key: 'accounts', title: t('editor.section.payment'), previewSectionId: 'accounts' },
+      { id: 7, key: 'rsvp', title: t('editor.section.rsvp'), previewSectionId: 'rsvp' },
+      { id: 8, key: 'music', title: t('editor.section.music'), previewSectionId: 'music' },
+      { id: 9, key: 'share', title: t('editor.section.sharing'), previewSectionId: 'share' },
     ];
   }
 
-  // GENERAL — 9 steps (일정 입력은 setup/기본 정보 SSOT)
   return [
-    { id: 0, key: 'setup', title: '기본 정보', previewSectionId: 'basic' },
-    { id: 1, key: 'message', title: '행사 소개', previewSectionId: 'greeting' },
-    { id: 2, key: 'hero', title: '대표 이미지', previewSectionId: 'hero' },
-    { id: 3, key: 'gallery', title: '갤러리', previewSectionId: 'gallery' },
-    { id: 4, key: 'location', title: '위치 안내', previewSectionId: 'location' },
-    { id: 5, key: 'accounts', title: '참가비·계좌 정보', previewSectionId: 'accounts' },
-    { id: 6, key: 'rsvp', title: '참석 여부', previewSectionId: 'rsvp' },
-    { id: 7, key: 'music', title: '음악 설정', previewSectionId: 'music' },
-    { id: 8, key: 'share', title: '공유 설정', previewSectionId: 'share' },
+    { id: 0, key: 'setup', title: t('editor.section.basicInfo'), previewSectionId: 'basic' },
+    { id: 1, key: 'message', title: t('editor.section.introduction'), previewSectionId: 'greeting' },
+    { id: 2, key: 'hero', title: t('editor.section.hero'), previewSectionId: 'hero' },
+    { id: 3, key: 'gallery', title: t('editor.section.gallery'), previewSectionId: 'gallery' },
+    { id: 4, key: 'location', title: t('editor.section.location'), previewSectionId: 'location' },
+    { id: 5, key: 'accounts', title: t('editor.section.payment'), previewSectionId: 'accounts' },
+    { id: 6, key: 'rsvp', title: t('editor.section.rsvp'), previewSectionId: 'rsvp' },
+    { id: 7, key: 'music', title: t('editor.section.music'), previewSectionId: 'music' },
+    { id: 8, key: 'share', title: t('editor.section.sharing'), previewSectionId: 'share' },
   ];
 }

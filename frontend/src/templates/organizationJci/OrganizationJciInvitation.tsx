@@ -26,18 +26,17 @@ import {
 import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
 import { resolveOrganizationLogoForSurface } from '@/src/templates/shared/organizationLogoSurfaces';
 import { ORGANIZATION_JCI_THEME } from './organizationJciTheme';
-import { languageFromLocale, resolveInvitationLocale } from '@/src/i18n/productLocales';
-import { translate } from '@/src/i18n';
+import { invitationT } from '@/src/i18n/invitationT';
 import './organizationJciChrome.css';
 import styles from './OrganizationJciInvitation.module.css';
 
 type Fact = { label: string; value: string };
 
-function buildFacts(date: string, venue: string, detail: string): Fact[] {
+function buildFacts(date: string, venue: string, detail: string, locale: string): Fact[] {
   return [
-    { label: 'DATE', value: date },
-    { label: 'PLACE', value: venue },
-    { label: 'INFO', value: detail },
+    { label: invitationT(locale, 'invitation.common.date'), value: date },
+    { label: invitationT(locale, 'invitation.common.place'), value: venue },
+    { label: invitationT(locale, 'invitation.common.info'), value: detail },
   ].filter((fact) => Boolean(fact.value));
 }
 
@@ -45,11 +44,8 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
-  const invitationLocale = resolveInvitationLocale(
-    (data as { locale?: string; language?: string }).locale ||
-      (data as { language?: string }).language
-  );
-  const defaultTitle = translate(languageFromLocale(invitationLocale), 'invitation.defaults.inviteTitle');
+  const t = (key: string) => invitationT(model.locale, key);
+  const defaultTitle = t('invitation.defaults.inviteTitle');
   const organization = normalizeOrganizationBranding(
     (data as { organization?: unknown }).organization
   );
@@ -60,7 +56,7 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
   const orgName = organization.name || '';
   const orgEnglish = organization.englishName || '';
   const orgEnglishFull = organization.englishFullName || orgEnglish;
-  const facts = buildFacts(model.dateText, model.venueName, model.venueDetail);
+  const facts = buildFacts(model.dateText, model.venueName, model.venueDetail, model.locale);
   const showHeroMedia = Boolean(model.heroImage) || flags.showEmptyPlaceholder;
 
   return (
@@ -95,7 +91,7 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
               {orgName ? <p className={styles.orgName}>{orgName}</p> : null}
               {orgEnglish ? <p className={styles.orgEnglish}>{orgEnglish}</p> : null}
               {!orgName && !orgEnglish && flags.showEmptyPlaceholder ? (
-                <p className={styles.placeholder}>기관명을 입력해 주세요</p>
+                <p className={styles.placeholder}>{t('invitation.placeholder.orgName')}</p>
               ) : null}
             </div>
           </div>
@@ -110,7 +106,7 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
               src={model.heroImage || null}
               alt=""
               loading="eager"
-              fallback={<div className={styles.heroPlaceholder}>대표 이미지를 추가해 주세요</div>}
+              fallback={<div className={styles.heroPlaceholder}>{t('invitation.placeholder.hero')}</div>}
             />
           </figure>
         </InvitationReveal>
@@ -140,7 +136,7 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
                 ))}
               </dl>
             ) : (
-              <p className={styles.placeholder}>행사 일정과 장소를 입력해 주세요</p>
+              <p className={styles.placeholder}>{t('invitation.placeholder.eventSchedule')}</p>
             )}
           </InvitationReveal>
         </section>
@@ -151,7 +147,7 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
           <span className={styles.copyRipple} aria-hidden />
           <InvitationReveal variant="fade">
             <div className={styles.copyInner}>
-              <h2 className={styles.sectionTitle}>안내 말씀</h2>
+              <h2 className={styles.sectionTitle}>{t('invitation.section.notice')}</h2>
               {model.hasGreeting ? (
                 model.greetingLines.map((line, index) => (
                   <p key={`greeting-${index}`} className={styles.copyLine}>
@@ -159,7 +155,7 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
                   </p>
                 ))
               ) : (
-                <p className={styles.placeholder}>안내 문구를 입력해 주세요</p>
+                <p className={styles.placeholder}>{t('invitation.placeholder.notice')}</p>
               )}
             </div>
           </InvitationReveal>
@@ -168,8 +164,8 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
 
       <section className={styles.schedule} data-section-id="schedule" data-preview-section="schedule">
         <InvitationReveal variant="fade">
-          <h2 className={styles.sectionTitle}>행사 일정</h2>
-          <p className={styles.scheduleDate}>{model.dateText || '일정을 입력해 주세요'}</p>
+          <h2 className={styles.sectionTitle}>{t('invitation.section.eventSchedule')}</h2>
+          <p className={styles.scheduleDate}>{model.dateText || t('invitation.placeholder.schedule')}</p>
         </InvitationReveal>
         <InvitationReveal variant="fade" delayMs={100}>
           <TemplateDateGrid
@@ -194,21 +190,21 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
           visualTemplateId="ORGANIZATION_02_JCI"
           items={model.gallery.items}
           displayMode={model.gallery.displayMode}
-          sectionLabel="갤러리"
+          sectionLabel={t('invitation.section.gallery')}
           labelClassName={styles.sectionTitle}
           lockBodyScroll={flags.isPublic}
           tone="general"
         />
       ) : flags.showEmptyPlaceholder ? (
         <section className={styles.gallery} data-section-id="gallery" data-preview-section="gallery">
-          <p className={styles.placeholder}>갤러리 이미지를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.gallery')}</p>
         </section>
       ) : null}
 
       {model.hasLocation || flags.showEmptyPlaceholder ? (
         <section className={styles.location} data-section-id="location" data-preview-section="location">
           <LocationMapSection
-            sectionTitle="오시는 길"
+            sectionTitle={t('invitation.defaults.directions')}
             title={model.venueName}
             address={model.address}
             detailAddress={model.detailAddress || undefined}
@@ -222,9 +218,9 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
             mapImage={data.mapImage}
             tone="light"
             previewMode={flags.previewMode}
-            transportTitle="교통 안내"
+            transportTitle={t('invitation.defaults.directions')}
             transportInfo={model.transportInfo}
-            parkingTitle="주차 안내"
+            parkingTitle={t('invitation.defaults.parking')}
             parkingInfo={model.parkingInfo}
           />
         </section>
@@ -243,7 +239,7 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
           data-section-id="accounts"
           data-preview-section="accounts"
         >
-          <p className={styles.placeholder}>계좌 정보를 추가해 주세요</p>
+          <p className={styles.placeholder}>{t('invitation.placeholder.accounts')}</p>
         </section>
       ) : null}
 

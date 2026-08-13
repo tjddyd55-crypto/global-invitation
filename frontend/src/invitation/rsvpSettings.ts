@@ -3,6 +3,8 @@
  * 화면별 개별 필드 직접 참조 금지.
  */
 
+import { invitationT } from '@/src/i18n/invitationT';
+import { resolveInvitationLocale } from '@/src/i18n/productLocales';
 import { getConceptPresentationConfig } from './conceptPresentationConfig';
 import { resolveInvitationRsvpEnabled } from './schemas';
 
@@ -13,13 +15,20 @@ export type InvitationRsvpSettings = {
   description: string;
 };
 
-const DEFAULT_SECTION_TITLE = '참석 여부';
-const DEFAULT_DESCRIPTION = '참석 가능 여부를 알려주세요.';
-const DEFAULT_BUTTON_BY_CONCEPT: Record<string, string> = {
-  WEDDING: '참석 여부 알리기',
-  GENERAL: '참석 여부 확인',
-  FUNERAL: '참석 여부 알리기',
-};
+function defaultRsvpCopy(locale: string, conceptType: string) {
+  const resolved = resolveInvitationLocale(locale);
+  const buttonKey =
+    conceptType === 'WEDDING'
+      ? 'rsvp.button.wedding'
+      : conceptType === 'FUNERAL'
+        ? 'rsvp.button.funeral'
+        : 'rsvp.button.general';
+  return {
+    sectionTitle: invitationT(resolved, 'rsvp.form.title'),
+    description: invitationT(resolved, 'invitation.defaults.rsvpPrompt'),
+    buttonLabel: invitationT(resolved, buttonKey),
+  };
+}
 
 const MAX_BUTTON_LABEL_LENGTH = 30;
 
@@ -55,15 +64,17 @@ export function getInvitationRsvpSettings(
     conceptType ||
     'GENERAL';
   const conceptAllows = getConceptPresentationConfig(resolvedConcept).rsvp;
-  const defaultButton =
-    DEFAULT_BUTTON_BY_CONCEPT[resolvedConcept] || DEFAULT_BUTTON_BY_CONCEPT.GENERAL;
+  const localeSource = isRecord(data)
+    ? String(data.locale || data.language || '')
+    : '';
+  const defaults = defaultRsvpCopy(localeSource, resolvedConcept);
 
   if (!isRecord(data)) {
     return {
       enabled: false,
-      buttonLabel: defaultButton,
-      sectionTitle: DEFAULT_SECTION_TITLE,
-      description: DEFAULT_DESCRIPTION,
+      buttonLabel: defaults.buttonLabel,
+      sectionTitle: defaults.sectionTitle,
+      description: defaults.description,
     };
   }
 
@@ -79,14 +90,14 @@ export function getInvitationRsvpSettings(
     data.rsvpButtonText
   );
   const sectionTitle =
-    readString(nested?.sectionTitle, data.rsvpTitle, data.attendanceTitle) || DEFAULT_SECTION_TITLE;
+    readString(nested?.sectionTitle, data.rsvpTitle, data.attendanceTitle) || defaults.sectionTitle;
   const description =
     readString(nested?.description, data.rsvpDescription, data.attendanceDescription) ||
-    DEFAULT_DESCRIPTION;
+    defaults.description;
 
   return {
     enabled: Boolean(conceptAllows && enabledRaw),
-    buttonLabel: clampRsvpButtonLabel(buttonRaw, defaultButton),
+    buttonLabel: clampRsvpButtonLabel(buttonRaw, defaults.buttonLabel),
     sectionTitle,
     description,
   };

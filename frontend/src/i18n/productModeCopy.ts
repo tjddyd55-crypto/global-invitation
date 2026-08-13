@@ -1,5 +1,9 @@
 /** Locale Product Mode copy — ko-KR / en-US. mn keeps parity only (not a 1st-phase product locale). */
 
+import { EDITOR_COPY_EN, EDITOR_COPY_KO } from './product/editorCopy';
+import { INVITATION_COPY_EN, INVITATION_COPY_KO } from './product/invitationCopy';
+import { RSVP_COPY_EN, RSVP_COPY_KO } from './product/rsvpCopy';
+
 export const PRODUCT_MODE_KO = {
   'marketing.nav.logout': '로그아웃',
   'marketing.nav.serviceIntro': '서비스 소개',
@@ -197,6 +201,9 @@ export const PRODUCT_MODE_KO = {
   'invitation.common.place': '장소',
   'invitation.common.info': '정보',
   'invitation.rsvp.previewHint': '미리보기입니다. 공개 초대장에서는 이 버튼으로 참석 여부를 제출합니다.',
+  ...EDITOR_COPY_KO,
+  ...INVITATION_COPY_KO,
+  ...RSVP_COPY_KO,
   'template.WEDDING_01_CLASSIC.name': '클래식',
   'template.WEDDING_01_CLASSIC.description': '정석적인 웨딩 초대장 레이아웃으로 모든 정보를 차분하게 전달합니다',
   'template.WEDDING_04_EDITORIAL.name': '모던 에디토리얼',
@@ -417,6 +424,9 @@ export const PRODUCT_MODE_EN = {
   'invitation.common.place': 'Venue',
   'invitation.common.info': 'Details',
   'invitation.rsvp.previewHint': 'This is a preview. Guests submit RSVP on the published invitation.',
+  ...EDITOR_COPY_EN,
+  ...INVITATION_COPY_EN,
+  ...RSVP_COPY_EN,
   'template.WEDDING_01_CLASSIC.name': 'Classic',
   'template.WEDDING_01_CLASSIC.description': 'A timeless wedding layout that presents every detail with calm clarity',
   'template.WEDDING_04_EDITORIAL.name': 'Modern Editorial',
