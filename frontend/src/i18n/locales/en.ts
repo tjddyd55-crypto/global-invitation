@@ -1,4 +1,5 @@
 import type { LocaleDictionary } from '../types';
+import { PRODUCT_MODE_EN } from '../productModeCopy';
 
 const en: LocaleDictionary = {
   create: 'Create Invitation',
@@ -290,6 +291,7 @@ const en: LocaleDictionary = {
   'template.BRIGHT_PARTY.description': 'Bright and vibrant party style',
   'template.ELEGANT_WEDDING.name': 'Elegant Wedding',
   'template.ELEGANT_WEDDING.description': 'Elegant wedding style',
+  ...PRODUCT_MODE_EN,
 };
 
 export default en;

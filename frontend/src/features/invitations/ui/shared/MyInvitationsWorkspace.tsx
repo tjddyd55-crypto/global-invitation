@@ -13,6 +13,8 @@ import {
   type InvitationManagementStatus,
 } from '@/src/features/invitations/model/invitationManagementStatus';
 import ConfirmDialog from '@/src/ui/shared/ConfirmDialog';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { interpolate } from '@/src/i18n';
 import MyInvitationsStatusTabs from './MyInvitationsStatusTabs';
 import MyInvitationManageCard from './MyInvitationManageCard';
 import styles from './MyInvitationsWorkspace.module.css';
@@ -25,14 +27,17 @@ type MyInvitationsWorkspaceProps = {
   commentsHrefFor?: (id: string) => string;
 };
 
-const EMPTY_COPY: Record<InvitationManagementStatus, { title: string; hint?: string; showCreate?: boolean }> = {
+const EMPTY_COPY_KEYS: Record<
+  InvitationManagementStatus,
+  { title: string; hint?: string; showCreate?: boolean }
+> = {
   EDITING: {
-    title: '수정 중인 초대장이 없습니다.',
-    hint: '새 초대장을 만들어 보세요.',
+    title: 'myInvitations.empty.editing.title',
+    hint: 'myInvitations.empty.editing.hint',
     showCreate: true,
   },
-  SHARING: { title: '현재 공유 중인 초대장이 없습니다.' },
-  EXPIRED: { title: '기간이 종료된 초대장이 없습니다.' },
+  SHARING: { title: 'myInvitations.empty.sharing.title' },
+  EXPIRED: { title: 'myInvitations.empty.expired.title' },
 };
 
 export default function MyInvitationsWorkspace({
@@ -42,6 +47,7 @@ export default function MyInvitationsWorkspace({
   rsvpHrefFor = (id) => `/my-invitations/${id}/rsvp`,
   commentsHrefFor = (id) => `/my-invitations/${id}/comments`,
 }: MyInvitationsWorkspaceProps) {
+  const { t } = useI18n();
   const { items, status, reload, removeItem } = useMyInvitations();
   const [tab, setTab] = useState<InvitationManagementStatus>('EDITING');
   const deleteFlow = useInvitationDeleteFlow(removeItem);
@@ -51,9 +57,9 @@ export default function MyInvitationsWorkspace({
   return (
     <section className={styles.screen} data-layout={layout} data-testid="my-invitations-workspace">
       <header className={styles.header}>
-        <h1>내 초대장</h1>
+        <h1>{t('myInvitations.title')}</h1>
         <Link href={createHref} className={styles.newButton} data-testid="create-invitation">
-          ＋ 새로 만들기
+          {t('myInvitations.new')}
         </Link>
       </header>
       {status === 'loading' && (
@@ -64,9 +70,9 @@ export default function MyInvitationsWorkspace({
       )}
       {status === 'error' && (
         <div className={styles.errorBox}>
-          목록을 불러오지 못했습니다. 네트워크 상태를 확인해 주세요.
+          {t('myInvitations.loadError')}
           <button type="button" className={styles.retryButton} onClick={() => void reload()}>
-            다시 시도
+            {t('myInvitations.retry')}
           </button>
         </div>
       )}
@@ -92,10 +98,12 @@ export default function MyInvitationsWorkspace({
       <ConfirmDialog
         open={Boolean(deleteFlow.pendingDelete)}
         busy={deleteFlow.deleteBusy}
-        title={`‘${invitationDisplayTitle(deleteFlow.pendingDelete?.title)}’ 초대장을 삭제할까요?`}
-        description="삭제한 초대장은 복구할 수 없습니다."
-        confirmLabel="삭제"
-        cancelLabel="취소"
+        title={interpolate(t('myInvitations.delete.title'), {
+          title: invitationDisplayTitle(deleteFlow.pendingDelete?.title, t('myInvitations.untitled')),
+        })}
+        description={t('myInvitations.delete.desc')}
+        confirmLabel={t('myInvitations.delete.confirm')}
+        cancelLabel={t('myInvitations.delete.cancel')}
         variant="danger"
         testId="invitation-delete-dialog"
         onCancel={deleteFlow.cancelDelete}
@@ -160,14 +168,15 @@ function TabEmptyState({
   status: InvitationManagementStatus;
   createHref: string;
 }) {
-  const copy = EMPTY_COPY[status];
+  const { t } = useI18n();
+  const copy = EMPTY_COPY_KEYS[status];
   return (
     <div className={styles.emptyBox} data-testid={`invitation-empty-${status.toLowerCase()}`}>
-      <p>{copy.title}</p>
-      {copy.hint ? <p className={styles.emptyHint}>{copy.hint}</p> : null}
+      <p>{t(copy.title)}</p>
+      {copy.hint ? <p className={styles.emptyHint}>{t(copy.hint)}</p> : null}
       {copy.showCreate ? (
         <Link href={createHref} className={styles.emptyCta}>
-          ＋ 새로 만들기
+          {t('myInvitations.new')}
         </Link>
       ) : null}
     </div>

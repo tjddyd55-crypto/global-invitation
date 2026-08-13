@@ -17,6 +17,7 @@ import {
   VISUAL_TEMPLATE_RESUME_PATH,
 } from '@/src/features/templates/model/pendingVisualTemplate';
 import { fetchCurrentUser } from '@/src/shared/auth';
+import { useI18n } from '@/src/contexts/I18nContext';
 import styles from './VisualTemplateCatalog.module.css';
 
 type ConceptFilter = 'WEDDING' | 'GENERAL' | 'ORGANIZATION';
@@ -28,6 +29,7 @@ function resolveConcept(raw: string | null): ConceptFilter | null {
 
 export default function VisualTemplateCatalog() {
   const router = useRouter();
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const concept = resolveConcept(searchParams.get('concept'));
   const { creatingConcept, error, start } = useCreateInvitation();
@@ -65,9 +67,9 @@ export default function VisualTemplateCatalog() {
   if (!concept) {
     return (
       <section className={styles.screen} data-testid="visual-template-catalog">
-        <p className={styles.error}>초대장 종류를 먼저 선택해 주세요.</p>
+        <p className={styles.error}>{t('create.templates.needConcept')}</p>
         <Link href="/create/concept" className={styles.linkBtn}>
-          종류 선택으로
+          {t('create.templates.chooseConcept')}
         </Link>
       </section>
     );
@@ -77,16 +79,15 @@ export default function VisualTemplateCatalog() {
     <section className={styles.screen} data-testid="visual-template-catalog">
       <header className={styles.header}>
         <Link href="/create/concept" className={styles.back}>
-          ← 뒤로
+          {t('create.templates.back')}
         </Link>
-        <h1 className={styles.title}>템플릿을 골라 보세요</h1>
+        <h1 className={styles.title}>{t('create.templates.title')}</h1>
         <p className={styles.desc}>
           {concept === 'WEDDING'
-            ? '결혼식'
+            ? t('create.templates.descWedding')
             : concept === 'ORGANIZATION'
-              ? '기업·단체 행사'
-              : '일반 행사'}
-          에 맞는 디자인을 미리 보고 결정할 수 있습니다.
+              ? t('create.templates.descOrganization')
+              : t('create.templates.descGeneral')}
         </p>
       </header>
 
@@ -104,8 +105,8 @@ export default function VisualTemplateCatalog() {
               />
             </div>
             <div className={styles.body}>
-              <h2 className={styles.name}>{def.name}</h2>
-              <p className={styles.description}>{def.description}</p>
+              <h2 className={styles.name}>{t(`template.${def.id}.name`) || def.name}</h2>
+              <p className={styles.description}>{t(`template.${def.id}.description`) || def.description}</p>
               <p className={styles.tags}>
                 {def.styleTags.map((tag) => (
                   <span key={tag}>#{tag}</span>
@@ -117,7 +118,7 @@ export default function VisualTemplateCatalog() {
                   className={styles.secondary}
                   data-testid={`template-preview-${def.id}`}
                 >
-                  미리보기
+                  {t('create.templates.preview')}
                 </Link>
                 <button
                   type="button"
@@ -127,8 +128,8 @@ export default function VisualTemplateCatalog() {
                   data-testid={`template-create-${def.id}`}
                 >
                   {busyId === def.id || creatingConcept === def.conceptType
-                    ? '생성 중...'
-                    : '이 템플릿으로 만들기'}
+                    ? t('create.templates.creating')
+                    : t('create.templates.useThis')}
                 </button>
               </div>
             </div>

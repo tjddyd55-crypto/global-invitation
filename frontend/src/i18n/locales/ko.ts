@@ -1,4 +1,5 @@
 import type { LocaleDictionary } from '../types';
+import { PRODUCT_MODE_KO } from '../productModeCopy';
 
 const ko: LocaleDictionary = {
   create: '초대장 만들기',
@@ -97,9 +98,9 @@ const ko: LocaleDictionary = {
   'marketing.nav.login': '로그인',
   'marketing.nav.openMenu': '메뉴 열기',
   'marketing.nav.closeMenu': '메뉴 닫기',
-  'marketing.nav.pricing': '가격표',
+  'marketing.nav.pricing': '요금 안내',
   'marketing.nav.about': '서비스 소개',
-  'marketing.nav.contact': '문의',
+  'marketing.nav.contact': '고객센터',
   'marketing.nav.integrity': '무결성 체크',
   'marketing.nav.internal': 'Internal',
   'marketing.dev.entry': 'Dev',
@@ -290,6 +291,7 @@ const ko: LocaleDictionary = {
   'template.BRIGHT_PARTY.description': '밝고 화사한 파티 스타일',
   'template.ELEGANT_WEDDING.name': 'Elegant Wedding',
   'template.ELEGANT_WEDDING.description': '우아한 웨딩 스타일',
+  ...PRODUCT_MODE_KO,
 };
 
 export default ko;

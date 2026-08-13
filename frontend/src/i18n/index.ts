@@ -1,7 +1,19 @@
 export { I18N_KEYS } from './keys';
 export { LOCALES } from './locales';
-export { getInitialLanguage, LANGUAGE_STORAGE_KEY } from './language';
-export { translate } from './t';
+export { getInitialLanguage, getInitialProductLocale, LANGUAGE_STORAGE_KEY } from './language';
+export {
+  DEFAULT_PRODUCT_LOCALE,
+  LOCALE_PRODUCTS,
+  LOCALE_STORAGE_KEY,
+  PRODUCT_LOCALE_IDS,
+  PRODUCT_LOCALE_OPTIONS,
+  getPersistedServiceLocale,
+  persistServiceLocale,
+  resolveInvitationLocale,
+  resolveServiceLocale,
+  type ProductLocaleId,
+} from './productLocales';
+export { interpolate, translate } from './t';
 export {
   SUPPORTED_LANGUAGES,
   type I18nKey,

@@ -29,6 +29,106 @@ export type ConceptOption = {
  * Concept catalog SSOT — create picker + home category cards.
  * Keep Wedding / Funeral / General / Organization in this one list.
  */
+export type ConceptCopyKeys = {
+  badge: string;
+  label: string;
+  description: string;
+  homeTitle: string;
+  homeDescription: string;
+  fieldsSummary: string;
+  features: string[];
+};
+
+export const CONCEPT_COPY_KEYS: Record<ConceptType, ConceptCopyKeys> = {
+  WEDDING: {
+    badge: 'concept.wedding.badge',
+    label: 'concept.wedding.startLabel',
+    description: 'concept.wedding.description',
+    homeTitle: 'concept.wedding.homeTitle',
+    homeDescription: 'concept.wedding.homeDescription',
+    fieldsSummary: 'concept.wedding.fieldsSummary',
+    features: [
+      'concept.wedding.feature.couple',
+      'concept.wedding.feature.venue',
+      'concept.wedding.feature.gallery',
+      'concept.wedding.feature.accounts',
+      'concept.wedding.feature.rsvp',
+      'concept.wedding.feature.guestbook',
+    ],
+  },
+  FUNERAL: {
+    badge: 'concept.funeral.badge',
+    label: 'concept.funeral.startLabel',
+    description: 'concept.funeral.description',
+    homeTitle: 'concept.funeral.homeTitle',
+    homeDescription: 'concept.funeral.homeDescription',
+    fieldsSummary: 'concept.funeral.fieldsSummary',
+    features: [
+      'concept.funeral.feature.deceased',
+      'concept.funeral.feature.schedule',
+      'concept.funeral.feature.venue',
+      'concept.funeral.feature.accounts',
+      'concept.funeral.feature.messages',
+      'concept.funeral.feature.guestbook',
+    ],
+  },
+  GENERAL: {
+    badge: 'concept.general.badge',
+    label: 'concept.general.startLabel',
+    description: 'concept.general.description',
+    homeTitle: 'concept.general.homeTitle',
+    homeDescription: 'concept.general.homeDescription',
+    fieldsSummary: 'concept.general.fieldsSummary',
+    features: [
+      'concept.general.feature.intro',
+      'concept.general.feature.schedule',
+      'concept.general.feature.venue',
+      'concept.general.feature.gallery',
+      'concept.general.feature.fee',
+      'concept.general.feature.rsvp',
+      'concept.general.feature.guestbook',
+    ],
+  },
+  ORGANIZATION: {
+    badge: 'concept.organization.badge',
+    label: 'concept.organization.startLabel',
+    description: 'concept.organization.description',
+    homeTitle: 'concept.organization.homeTitle',
+    homeDescription: 'concept.organization.homeDescription',
+    fieldsSummary: 'concept.organization.fieldsSummary',
+    features: [
+      'concept.organization.feature.branding',
+      'concept.organization.feature.intro',
+      'concept.organization.feature.schedule',
+      'concept.organization.feature.gallery',
+      'concept.organization.feature.fee',
+      'concept.organization.feature.rsvp',
+      'concept.organization.feature.host',
+    ],
+  },
+};
+
+export function localizeConceptOption(
+  option: ConceptOption,
+  t: (key: string) => string
+): ConceptOption {
+  const keys = CONCEPT_COPY_KEYS[option.value];
+  return {
+    ...option,
+    badge: t(keys.badge),
+    label: t(keys.label),
+    description: t(keys.description),
+    homeTitle: t(keys.homeTitle),
+    homeDescription: t(keys.homeDescription),
+    fieldsSummary: t(keys.fieldsSummary),
+    features: keys.features.map((key) => t(key)),
+  };
+}
+
+export function localizeConceptOptions(t: (key: string) => string): ConceptOption[] {
+  return CONCEPT_OPTIONS.map((option) => localizeConceptOption(option, t));
+}
+
 export const CONCEPT_OPTIONS: ConceptOption[] = [
   {
     value: 'WEDDING',

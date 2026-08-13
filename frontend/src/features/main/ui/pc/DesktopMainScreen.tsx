@@ -14,19 +14,24 @@ import {
 import { listMainConceptCards } from '@/src/features/main/model/mainConceptCards';
 import HomeInvitationPreviewFrame from '@/src/features/main/ui/shared/HomeInvitationPreviewFrame';
 import HomeInvitationExamplesSection from '@/src/features/main/ui/shared/HomeInvitationExamplesSection';
+import { useI18n } from '@/src/contexts/I18nContext';
 import styles from './DesktopMainScreen.module.css';
-
-const TRUST = ['이메일 인증 하나로 시작', '비밀번호 필요 없음', '게스트 앱 설치 불필요'];
 
 /**
  * Figma Make DesktopMainScreen — MCP 소스 구조/카피 SSOT.
  */
 export default function DesktopMainScreen() {
   const { status } = useAuth();
+  const { t } = useI18n();
   const ctaDisabled = status === 'loading';
   const authStatus = status === 'loading' ? 'unauthenticated' : status;
   const createHref = getCreateInvitationEntryPath(authStatus);
-  const conceptCards = listMainConceptCards();
+  const conceptCards = listMainConceptCards(t);
+  const trustItems = [
+    t('marketing.home.trustEmail'),
+    t('marketing.home.trustPassword'),
+    t('marketing.home.trustGuest'),
+  ];
 
   return (
     <div className={styles.page} data-testid="desktop-main-screen">
@@ -37,16 +42,14 @@ export default function DesktopMainScreen() {
           <div className={styles.heroCopy}>
             <span className={styles.eyebrow}>
               <SparklesIcon size={14} />
-              디지털 초대장
+              {t('marketing.home.eyebrow')}
             </span>
             <h1 className={styles.heroTitle}>
-              소중한 순간을
+              {t('marketing.home.titleLine1')}
               <br />
-              가장 쉽게 전하세요
+              {t('marketing.home.titleLine2')}
             </h1>
-            <p className={styles.heroDesc}>
-              결혼식, 부고장, 일반 행사, 기업·단체 초대장을 이메일 인증 후 간편하게 만들고 공유할 수 있습니다.
-            </p>
+            <p className={styles.heroDesc}>{t('marketing.home.desc')}</p>
             <div className={styles.heroActions}>
               <Link
                 href={ctaDisabled ? '#' : createHref}
@@ -57,15 +60,15 @@ export default function DesktopMainScreen() {
                   if (ctaDisabled) event.preventDefault();
                 }}
               >
-                초대장 만들기
+                {t('marketing.nav.createInvitation')}
                 <ArrowRightIcon size={18} />
               </Link>
               <Link href="#examples" className={styles.secondaryCta}>
-                완성 예시 보기
+                {t('marketing.home.ctaExamples')}
               </Link>
             </div>
             <ul className={styles.trustRow}>
-              {TRUST.map((item) => (
+              {trustItems.map((item) => (
                 <li key={item} className={styles.trustItem}>
                   <span className={styles.trustCheck}>
                     <CheckIcon size={11} />
@@ -90,8 +93,8 @@ export default function DesktopMainScreen() {
 
       <section className={styles.concepts} id="service-intro" data-testid="main-concept-cards">
         <div className={styles.conceptsHead}>
-          <p className={styles.conceptsEyebrow}>초대장 종류</p>
-          <h2 className={styles.conceptsTitle}>어떤 초대장이 필요하세요?</h2>
+          <p className={styles.conceptsEyebrow}>{t('marketing.home.conceptsEyebrow')}</p>
+          <h2 className={styles.conceptsTitle}>{t('marketing.home.conceptsTitle')}</h2>
         </div>
         <div className={styles.conceptGrid}>
           {conceptCards.map((card) => {

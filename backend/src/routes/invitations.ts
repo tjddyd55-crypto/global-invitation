@@ -7,6 +7,7 @@ import { getAuthUser, getGuestToken } from '../lib/auth';
 import { collectInvitationCleanupR2Keys } from '../storage/mediaCleanup';
 import { hasPaidEntitlement } from '../lib/payments/service';
 import { resolveInvitationDeleteAuth } from '../lib/invitations/resolveInvitationDeleteAuth';
+import { normalizeInvitationLocale, withInvitationLocaleSnapshot } from '../lib/invitationLocale';
 
 const router = Router();
 const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
@@ -248,7 +249,7 @@ async function createInvitationRecord(params: {
       data: params.data,
       dataJson: params.data,
       countryCode: params.countryCode || 'GLOBAL',
-      language: params.language || 'en',
+      language: normalizeInvitationLocale(params.language),
       userId: params.userId || null,
       guestToken: params.guestToken || null,
     },
@@ -534,11 +535,17 @@ router.post('/', async (req, res) => {
     const explicitVisual =
       normalizeText(req.body?.visualTemplateId) ||
       (typeof baseData.visualTemplateId === 'string' ? baseData.visualTemplateId : undefined);
-    const dataWithConcept: Prisma.InputJsonValue = {
-      ...applyVisualTemplateToDataJson(baseData, conceptType, explicitVisual),
-      templateType: 'FULL',
-      ...(conceptType ? { conceptType } : {}),
-    };
+    const invitationLocale = normalizeInvitationLocale(
+      normalizeText(req.body?.locale) || normalizeText(req.body?.language)
+    );
+    const dataWithConcept = withInvitationLocaleSnapshot(
+      {
+        ...applyVisualTemplateToDataJson(baseData, conceptType, explicitVisual),
+        templateType: 'FULL',
+        ...(conceptType ? { conceptType } : {}),
+      },
+      invitationLocale
+    ) as Prisma.InputJsonValue;
 
     const invitation = await createInvitationRecord({
       templateId: resolvedTemplate?.id || null,
@@ -549,7 +556,7 @@ router.post('/', async (req, res) => {
       guestToken: null,
       data: dataWithConcept,
       countryCode: normalizeText(req.body?.countryCode) || 'GLOBAL',
-      language: normalizeText(req.body?.language) || 'ko',
+      language: invitationLocale,
     });
 
     return res.status(201).json({

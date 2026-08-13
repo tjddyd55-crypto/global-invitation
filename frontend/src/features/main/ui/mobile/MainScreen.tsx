@@ -9,15 +9,17 @@ import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import { ArrowRightIcon } from '@/src/ui/icons/MarketingIcons';
 import { listMainConceptCards } from '@/src/features/main/model/mainConceptCards';
 import HomeInvitationExamplesSection from '@/src/features/main/ui/shared/HomeInvitationExamplesSection';
+import { useI18n } from '@/src/contexts/I18nContext';
 import styles from './MainScreen.module.css';
 
 /** Figma Make MainScreen — MCP 소스 카피/구조 */
 export default function MainScreen() {
   const { status } = useAuth();
+  const { t } = useI18n();
   const ctaDisabled = status === 'loading';
   const authStatus = status === 'loading' ? 'unauthenticated' : status;
   const createHref = getCreateInvitationEntryPath(authStatus);
-  const conceptCards = listMainConceptCards();
+  const conceptCards = listMainConceptCards(t);
 
   return (
     <div className={styles.page} data-testid="mobile-main-screen" data-auth-state={status}>
@@ -25,15 +27,13 @@ export default function MainScreen() {
 
       <div className={styles.heroPad}>
         <div className={styles.heroCard}>
-          <span className={styles.eyebrow}>✦ 디지털 초대장</span>
+          <span className={styles.eyebrow}>✦ {t('marketing.home.eyebrow')}</span>
           <h1 className={styles.title}>
-            소중한 순간을
+            {t('marketing.home.titleLine1')}
             <br />
-            가장 쉽게 전하세요
+            {t('marketing.home.titleLine2')}
           </h1>
-          <p className={styles.desc}>
-            결혼식, 부고장, 일반 행사, 기업·단체 초대장을 이메일 인증 후 간편하게 만들고 공유할 수 있습니다.
-          </p>
+          <p className={styles.desc}>{t('marketing.home.desc')}</p>
           <Link
             href={ctaDisabled ? '#' : createHref}
             className={styles.primaryCta}
@@ -43,11 +43,11 @@ export default function MainScreen() {
               if (ctaDisabled) event.preventDefault();
             }}
           >
-            초대장 만들기
+            {t('marketing.nav.createInvitation')}
             <ArrowRightIcon size={18} />
           </Link>
           <Link href="#examples" className={styles.secondaryCta}>
-            완성 예시 보기
+            {t('marketing.home.ctaExamples')}
           </Link>
         </div>
       </div>
@@ -55,7 +55,7 @@ export default function MainScreen() {
       <HomeInvitationExamplesSection layout="mobile" />
 
       <div className={styles.conceptsPad} id="service-intro">
-        <p className={styles.conceptsLabel}>초대장 종류</p>
+        <p className={styles.conceptsLabel}>{t('marketing.home.conceptsEyebrow')}</p>
         <div className={styles.conceptList} data-testid="main-concept-cards">
           {conceptCards.map((card) => {
             const Icon = card.Icon;

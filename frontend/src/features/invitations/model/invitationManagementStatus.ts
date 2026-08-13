@@ -5,10 +5,11 @@ export type InvitationManagementStatus = 'EDITING' | 'SHARING' | 'EXPIRED';
 export const INVITATION_MANAGEMENT_TABS: Array<{
   id: InvitationManagementStatus;
   label: string;
+  labelKey: string;
 }> = [
-  { id: 'EDITING', label: '수정중' },
-  { id: 'SHARING', label: '공유중' },
-  { id: 'EXPIRED', label: '기간종료' },
+  { id: 'EDITING', label: '수정중', labelKey: 'myInvitations.tab.editing' },
+  { id: 'SHARING', label: '공유중', labelKey: 'myInvitations.tab.sharing' },
+  { id: 'EXPIRED', label: '기간종료', labelKey: 'myInvitations.tab.expired' },
 ];
 
 export type InvitationManagementGroups = {
@@ -61,9 +62,12 @@ export function countInvitationsByManagementStatus(
   };
 }
 
-export function invitationDisplayTitle(title: string | null | undefined): string {
+export function invitationDisplayTitle(
+  title: string | null | undefined,
+  untitled = '제목 없음'
+): string {
   const trimmed = title?.trim();
-  return trimmed || '제목 없음';
+  return trimmed || untitled;
 }
 
 export function formatInvitationDotDate(iso: string | null | undefined): string {
@@ -78,12 +82,15 @@ export function formatInvitationDotDate(iso: string | null | undefined): string 
 
 export function invitationCardMeta(
   item: InvitationSummary,
-  status: InvitationManagementStatus
+  status: InvitationManagementStatus,
+  copy?: { published: string; updated: string }
 ): string {
+  const publishedLabel = copy?.published ?? '발행';
+  const updatedLabel = copy?.updated ?? '최근 수정';
   if (status === 'SHARING') {
     const published = formatInvitationDotDate(item.publishedAt || item.updatedAt);
-    return published ? `${published} 발행` : '';
+    return published ? `${published} ${publishedLabel}` : '';
   }
   const updated = formatInvitationDotDate(item.updatedAt);
-  return updated ? `최근 수정 ${updated}` : '';
+  return updated ? `${updatedLabel} ${updated}` : '';
 }

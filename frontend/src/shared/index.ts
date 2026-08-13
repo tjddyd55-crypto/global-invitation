@@ -6,3 +6,4 @@ export * from './api';
 export * from './billing';
 export * from './platform';
 export * from './hooks';
+export * from './locale';

@@ -1,3 +1,6 @@
+import { languageFromLocale, resolveInvitationLocale } from '@/src/i18n/productLocales';
+import { translate } from '@/src/i18n/t';
+
 const LANGUAGE_LOCALE_MAP: Record<string, string> = {
   ko: 'ko-KR',
   en: 'en-US',
@@ -41,14 +44,19 @@ export function formatDateTime(locale: string, date: Date): string {
 
 /**
  * 에디터 "최근 저장" 라벨 — 서버/클라이언트 동일 문자열 보장.
- * locale·timezone 고정 (ko-KR / Asia/Seoul).
+ * timezone 고정 (Asia/Seoul). locale 은 invitation/service locale.
  */
-export function formatEditorSavedAtLabel(iso: string | null | undefined): string {
-  if (!iso) return '아직 저장되지 않음';
+export function formatEditorSavedAtLabel(
+  iso: string | null | undefined,
+  localeInput: string = 'ko-KR'
+): string {
+  const locale = resolveInvitationLocale(localeInput);
+  const language = languageFromLocale(locale);
+  if (!iso) return translate(language, 'editor.saved.none');
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '아직 저장되지 않음';
+  if (Number.isNaN(date.getTime())) return translate(language, 'editor.saved.none');
 
-  const formatted = new Intl.DateTimeFormat('ko-KR', {
+  const formatted = new Intl.DateTimeFormat(locale, {
     timeZone: 'Asia/Seoul',
     year: 'numeric',
     month: 'numeric',
@@ -59,5 +67,5 @@ export function formatEditorSavedAtLabel(iso: string | null | undefined): string
     hour12: true,
   }).format(date);
 
-  return `최근 저장: ${formatted}`;
+  return `${translate(language, 'editor.saved.prefix')}: ${formatted}`;
 }

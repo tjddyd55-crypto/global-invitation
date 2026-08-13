@@ -6,10 +6,11 @@ import RequireAuth from '@/src/features/auth/ui/shared/RequireAuth';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
 import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
 import {
-  CONCEPT_OPTIONS,
+  localizeConceptOptions,
   type ConceptType,
   useCreateInvitation,
 } from '@/src/features/templates/model/useCreateInvitation';
+import { useI18n } from '@/src/contexts/I18nContext';
 import { ArrowRightIcon, CheckIcon } from '@/src/ui/icons/MarketingIcons';
 import styles from './DesktopConceptSelectionScreen.module.css';
 
@@ -20,8 +21,10 @@ const CONCEPT_CREATE_PATH = '/create/concept';
  * RequireAuth + useCreateInvitation 비즈니스 로직은 유지한다.
  */
 export default function DesktopConceptSelectionScreen() {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<ConceptType | null>(null);
   const { creatingConcept, error, start } = useCreateInvitation();
+  const concepts = localizeConceptOptions(t);
 
   return (
     <RequireAuth nextPath={CONCEPT_CREATE_PATH}>
@@ -34,14 +37,14 @@ export default function DesktopConceptSelectionScreen() {
 
         <main className={styles.main}>
           <header className={styles.header}>
-            <h1 className={styles.title}>어떤 초대장을 만들까요?</h1>
-            <p className={styles.desc}>초대장 종류를 먼저 선택하면 그에 맞는 입력 항목으로 시작합니다.</p>
+            <h1 className={styles.title}>{t('concept.picker.title')}</h1>
+            <p className={styles.desc}>{t('concept.picker.desc')}</p>
           </header>
 
           {error && <div className={styles.errorBox}>{error}</div>}
 
-          <div className={styles.grid} role="radiogroup" aria-label="초대장 컨셉">
-            {CONCEPT_OPTIONS.map((concept) => {
+          <div className={styles.grid} role="radiogroup" aria-label={t('concept.picker.aria')}>
+            {concepts.map((concept) => {
               const isSelected = selected === concept.value;
               const Icon = concept.Icon;
               return (
@@ -111,7 +114,7 @@ export default function DesktopConceptSelectionScreen() {
               disabled={!selected || Boolean(creatingConcept)}
               data-testid="concept-start-cta"
             >
-              {creatingConcept ? '생성 중...' : '선택하고 시작하기'}
+              {creatingConcept ? t('concept.picker.creating') : t('concept.picker.cta')}
               <ArrowRightIcon size={18} />
             </button>
           </div>

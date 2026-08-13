@@ -4,6 +4,7 @@
  * renderer 가 날짜 문자열을 직접 조립하거나 ISO 원문(`2026-10-17T14:00:00`)을
  * 그대로 출력하지 않도록, 표시용 포맷을 여기서만 만든다.
  */
+import { resolveInvitationLocale, type ProductLocaleId } from '@/src/i18n/productLocales';
 import {
   getInvitationScheduleCalendarModel,
   SCHEDULE_WEEKDAY_LABELS_KO,
@@ -52,23 +53,51 @@ function formatTimeKo(date: Date): string {
   return minutes === 0 ? `${meridiem} ${hour12}시` : `${meridiem} ${hour12}시 ${minutes}분`;
 }
 
-export function getInvitationScheduleDisplay(data: {
-  weddingDate?: Date | string | null;
-  eventDate?: string | null;
-  weddingDateTime?: string | null;
-}): InvitationScheduleDisplay | null {
+function formatTimeEn(date: Date): string {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  if (hours === 0 && minutes === 0) return '';
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: minutes === 0 ? undefined : '2-digit',
+  }).format(date);
+}
+
+function formatFullForLocale(date: Date, locale: ProductLocaleId, timeText: string): string {
+  if (locale === 'en-US') {
+    const dateText = new Intl.DateTimeFormat('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }).format(date);
+    return timeText ? `${dateText} · ${timeText}` : dateText;
+  }
+  const weekdayKo = SCHEDULE_WEEKDAY_LABELS_KO[date.getDay()];
+  const fullBase = `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${weekdayKo}요일`;
+  return timeText ? `${fullBase} ${timeText}` : fullBase;
+}
+
+export function getInvitationScheduleDisplay(
+  data: {
+    weddingDate?: Date | string | null;
+    eventDate?: string | null;
+    weddingDateTime?: string | null;
+  },
+  localeInput?: string | null
+): InvitationScheduleDisplay | null {
   const model = getInvitationScheduleCalendarModel(data);
   if (!model) return null;
 
+  const locale = resolveInvitationLocale(localeInput);
   const date = model.eventDate;
   const month = model.monthIndex + 1;
   const day = model.highlightDay;
   const weekdayKo = SCHEDULE_WEEKDAY_LABELS_KO[date.getDay()];
   const weekdayEn = WEEKDAY_LABELS_EN[date.getDay()];
-  const timeText = formatTimeKo(date);
+  const timeText = locale === 'en-US' ? formatTimeEn(date) : formatTimeKo(date);
   const monthPadded = String(month).padStart(2, '0');
   const dayPadded = String(day).padStart(2, '0');
-  const fullBase = `${model.year}년 ${month}월 ${day}일 ${weekdayKo}요일`;
 
   return {
     year: model.year,
@@ -81,8 +110,11 @@ export function getInvitationScheduleDisplay(data: {
     weekdayEn,
     timeText,
     monthDayKo: `${month}월 ${day}일`,
-    full: timeText ? `${fullBase} ${timeText}` : fullBase,
-    compact: `${model.year}. ${monthPadded}. ${dayPadded} ${weekdayEn}`,
+    full: formatFullForLocale(date, locale, timeText),
+    compact:
+      locale === 'en-US'
+        ? new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(date)
+        : `${model.year}. ${monthPadded}. ${dayPadded} ${weekdayEn}`,
   };
 }
 

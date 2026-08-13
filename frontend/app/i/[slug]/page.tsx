@@ -25,11 +25,22 @@ import publicInvitationMobile from '@/src/styles/publicInvitationMobile.module.c
 import { resolveInvitationConceptType } from '@/src/invitation/schemas';
 import { getInvitationRsvpSettings } from '@/src/invitation/rsvpSettings';
 import SafeCreatorRenderer from '@/src/templates/creator/SafeCreatorRenderer';
+import { htmlLangFromLocale, resolveInvitationLocale } from '@/src/i18n/productLocales';
 
 function resolveSafeSlug(value: unknown): string {
   if (typeof value === 'string') return value;
   if (Array.isArray(value)) return typeof value[0] === 'string' ? value[0] : '';
   return '';
+}
+
+function readInvitationLocaleSource(invitation: Invitation | null): string | undefined {
+  if (!invitation) return undefined;
+  const data = invitation.dataJson;
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const locale = (data as { locale?: unknown }).locale;
+    if (typeof locale === 'string' && locale.trim()) return locale;
+  }
+  return invitation.language;
 }
 
 export default function PublicShareInvitationPage() {
@@ -106,7 +117,22 @@ export default function PublicShareInvitationPage() {
     trackInvitationView(invitation.slug);
   }, [invitation?.slug, loading]);
 
-  const runtimeData = useMemo(() => invitation?.dataJson ?? invitation?.data ?? null, [invitation]);
+  const invitationLocale = resolveInvitationLocale(readInvitationLocaleSource(invitation));
+
+  useEffect(() => {
+    if (!invitation) return;
+    const previous = document.documentElement.lang;
+    document.documentElement.lang = htmlLangFromLocale(invitationLocale);
+    return () => {
+      document.documentElement.lang = previous;
+    };
+  }, [invitation, invitationLocale]);
+
+  const runtimeData = useMemo(() => {
+    const raw = invitation?.dataJson ?? invitation?.data ?? null;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw;
+    return { ...(raw as Record<string, unknown>), locale: invitationLocale, language: invitationLocale };
+  }, [invitation, invitationLocale]);
   const playableMusic = useMemo(
     () =>
       resolvePlayableInvitationMusic(runtimeData, (key) => {
@@ -169,7 +195,12 @@ export default function PublicShareInvitationPage() {
     <div className={publicInvitationMobile.pageRoot} data-testid="public-route-root">
       <div className={publicInvitationMobile.layout}>
         <div className={publicInvitationMobile.inviteColumn} data-testid="desktop-invitation-column">
-          <div className={publicInvitationMobile.shell} data-testid="public-invitation-shell">
+          <div
+            className={publicInvitationMobile.shell}
+            data-testid="public-invitation-shell"
+            data-invitation-locale={invitationLocale}
+            lang={htmlLangFromLocale(invitationLocale)}
+          >
             {isCreatorTemplate && hasStudioConfig && FallbackTemplate ? (
               <SafeCreatorRenderer
                 creatorRenderer={Template}

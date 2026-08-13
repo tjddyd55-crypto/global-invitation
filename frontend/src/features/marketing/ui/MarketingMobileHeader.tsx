@@ -10,6 +10,8 @@ import {
   getMyInvitationsEntryPath,
 } from '@/src/shared/auth/authEntryPaths';
 import LogoutConfirmDialog from '@/src/features/auth/ui/shared/LogoutConfirmDialog';
+import LanguageSelector from '@/src/components/LanguageSelector';
+import { useI18n } from '@/src/contexts/I18nContext';
 import { SparklesIcon } from '@/src/ui/icons/MarketingIcons';
 import styles from './MarketingMobileHeader.module.css';
 
@@ -19,6 +21,7 @@ import styles from './MarketingMobileHeader.module.css';
  */
 export default function MarketingMobileHeader() {
   const router = useRouter();
+  const { t } = useI18n();
   const { status, signOut } = useAuth();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -40,20 +43,20 @@ export default function MarketingMobileHeader() {
   return (
     <>
       <nav className={styles.nav} data-testid="marketing-mobile-header" data-auth-state={status}>
-        <Link href="/" className={styles.brand} aria-label="Invite 홈으로">
+        <Link href="/" className={styles.brand} aria-label={t('marketing.brandName')}>
           <SparklesIcon size={18} />
           <span>Invite</span>
         </Link>
         <div className={styles.navActions}>
           {status === 'unauthenticated' && (
             <Link href={loginHref} className={styles.loginLink} data-testid="mobile-login-button">
-              로그인
+              {t('marketing.nav.login')}
             </Link>
           )}
           {status === 'authenticated' && (
             <>
               <Link href={myInvitationsHref} className={styles.myLink} data-testid="mobile-my-invitations">
-                내 초대장
+                {t('marketing.nav.myInvitations')}
               </Link>
               <button
                 type="button"
@@ -61,10 +64,11 @@ export default function MarketingMobileHeader() {
                 onClick={() => setConfirmOpen(true)}
                 data-testid="mobile-logout-button"
               >
-                로그아웃
+                {t('marketing.nav.logout')}
               </button>
             </>
           )}
+          <LanguageSelector />
         </div>
       </nav>
       <LogoutConfirmDialog

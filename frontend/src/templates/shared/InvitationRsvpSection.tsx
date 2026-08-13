@@ -3,6 +3,8 @@
 
 import { useState } from 'react';
 import RSVPForm from '@/src/components/rsvp/RSVPForm';
+import { languageFromLocale, resolveInvitationLocale } from '@/src/i18n/productLocales';
+import { translate } from '@/src/i18n';
 import {
   getInvitationRsvpSettings,
   type InvitationRsvpSettings,
@@ -30,6 +32,10 @@ export default function InvitationRsvpSection({
 }: InvitationRsvpSectionProps) {
   const settings = getInvitationRsvpSettings(data, conceptType);
   const [formOpen, setFormOpen] = useState(false);
+  const invitationLocale = resolveInvitationLocale(
+    data && typeof data === 'object' ? (data as { locale?: string; language?: string }).locale || (data as { language?: string }).language : undefined
+  );
+  const t = (key: string) => translate(languageFromLocale(invitationLocale), key);
 
   if (!settings.enabled) {
     return null;
@@ -62,11 +68,11 @@ export default function InvitationRsvpSection({
           {canSubmit ? (
             <RSVPForm invitationSlug={invitationSlug} />
           ) : (
-            <PreviewRsvpFormPlaceholder settings={settings} onClose={() => setFormOpen(false)} />
+            <PreviewRsvpFormPlaceholder settings={settings} onClose={() => setFormOpen(false)} t={t} />
           )}
           {canSubmit ? (
             <button type="button" className={styles.closeForm} onClick={() => setFormOpen(false)}>
-              닫기
+              {t('close')}
             </button>
           ) : null}
         </div>
@@ -78,17 +84,18 @@ export default function InvitationRsvpSection({
 function PreviewRsvpFormPlaceholder({
   settings,
   onClose,
+  t,
 }: {
   settings: InvitationRsvpSettings;
   onClose: () => void;
+  t: (key: string) => string;
 }) {
   return (
     <div className={styles.previewBox} data-testid="invitation-rsvp-preview-placeholder">
-      <p className={styles.previewHint}>미리보기입니다. 공개 초대장에서는 이 버튼으로 참석 여부를 제출합니다.</p>
-      <p className={styles.previewLabel}>버튼 문구</p>
+      <p className={styles.previewHint}>{t('invitation.rsvp.previewHint')}</p>
       <div className={styles.previewCta}>{settings.buttonLabel}</div>
       <button type="button" className={styles.closeForm} onClick={onClose}>
-        닫기
+        {t('close')}
       </button>
     </div>
   );

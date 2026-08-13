@@ -7,6 +7,7 @@ import {
   type InvitationManagementCounts,
   type InvitationManagementStatus,
 } from '@/src/features/invitations/model/invitationManagementStatus';
+import { useI18n } from '@/src/contexts/I18nContext';
 import styles from './MyInvitationsWorkspace.module.css';
 
 type MyInvitationsStatusTabsProps = {
@@ -20,6 +21,7 @@ export default function MyInvitationsStatusTabs({
   counts,
   onSelect,
 }: MyInvitationsStatusTabsProps) {
+  const { t } = useI18n();
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const currentIndex = INVITATION_MANAGEMENT_TABS.findIndex((tab) => tab.id === selected);
     if (event.key === 'ArrowRight') {
@@ -41,7 +43,7 @@ export default function MyInvitationsStatusTabs({
     <div
       className={styles.tabList}
       role="tablist"
-      aria-label="초대장 상태"
+      aria-label={t('myInvitations.aria.tabs')}
       onKeyDown={handleKeyDown}
       data-testid="invitation-status-tabs"
     >
@@ -61,7 +63,7 @@ export default function MyInvitationsStatusTabs({
             data-testid={`invitation-tab-${tab.id.toLowerCase()}`}
             data-count={counts[tab.id]}
           >
-            <span>{tab.label}</span>
+            <span>{t(tab.labelKey)}</span>
             <span className={styles.tabCount}>{counts[tab.id]}</span>
           </button>
         );

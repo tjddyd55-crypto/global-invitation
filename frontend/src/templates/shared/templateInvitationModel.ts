@@ -20,6 +20,8 @@ import {
 } from '@/src/invitation/scheduleDisplay';
 import type { WeddingInvitationData } from '@/src/invitation/schemas';
 import type { InvitationRenderMode } from '@/src/templates/visualTemplate/visualTemplateRegistry';
+import { languageFromLocale, resolveInvitationLocale } from '@/src/i18n/productLocales';
+import { translate } from '@/src/i18n';
 
 /** 6종 renderer 공통 props (VisualTemplateRendererProps 와 구조 호환) */
 export type VisualTemplateProps = {
@@ -187,13 +189,22 @@ function resolveConceptType(data: WeddingInvitationData): InvitationConceptType 
   return 'GENERAL';
 }
 
+function readDataLocale(data: WeddingInvitationData): string | undefined {
+  const record = data as WeddingInvitationData & { locale?: string; language?: string };
+  return record.locale || record.language;
+}
+
 export function buildTemplateInvitationModel(data: WeddingInvitationData): TemplateInvitationModel {
   const conceptType = resolveConceptType(data);
-  const scheduleDisplay = getInvitationScheduleDisplay({
-    weddingDate: data.weddingDate ?? null,
-    eventDate: data.eventDate ?? null,
-    weddingDateTime: data.weddingDateTime ?? null,
-  });
+  const invitationLocale = resolveInvitationLocale(readDataLocale(data));
+  const scheduleDisplay = getInvitationScheduleDisplay(
+    {
+      weddingDate: data.weddingDate ?? null,
+      eventDate: data.eventDate ?? null,
+      weddingDateTime: data.weddingDateTime ?? null,
+    },
+    invitationLocale
+  );
   const { groom, bride } = buildCouple(data);
   const venueName = text(data.locationText) || text(data.venueName);
   const address = text(data.address) || venueName;
@@ -201,7 +212,11 @@ export function buildTemplateInvitationModel(data: WeddingInvitationData): Templ
 
   return {
     conceptType,
-    title: text(data.title) || text(data.heroTitle) || text(data.coupleNames),
+    title:
+      text(data.title) ||
+      text(data.heroTitle) ||
+      text(data.coupleNames) ||
+      translate(languageFromLocale(invitationLocale), 'invitation.defaults.inviteTitle'),
     subtitle: text(data.subtitle) || text(data.heroSubtitle) || text(data.introQuote),
     greetingLines,
     hasGreeting: greetingLines.length > 0,

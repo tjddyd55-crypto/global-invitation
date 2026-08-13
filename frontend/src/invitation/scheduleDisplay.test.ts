@@ -9,6 +9,13 @@ import {
   toDisplayScheduleLines,
 } from './scheduleDisplay';
 
+test('en-US locale formats a natural English date', () => {
+  const display = getInvitationScheduleDisplay({ eventDate: '2026-08-13T19:00:00' }, 'en-US');
+  assert.ok(display);
+  assert.match(display.full, /August 13, 2026/i);
+  assert.match(display.full, /7:00\s?PM|7\s?PM/i);
+});
+
 test('ISO 일시는 한국어 문장으로 변환된다', () => {
   const display = getInvitationScheduleDisplay({ eventDate: '2026-10-17T14:00:00' });
   assert.ok(display);

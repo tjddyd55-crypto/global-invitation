@@ -10,6 +10,7 @@ import {
   resolveInvitationManagementStatus,
   type InvitationManagementStatus,
 } from '@/src/features/invitations/model/invitationManagementStatus';
+import { useI18n } from '@/src/contexts/I18nContext';
 import styles from './MyInvitationsWorkspace.module.css';
 
 type MenuItem = {
@@ -30,10 +31,10 @@ type MyInvitationManageCardProps = {
   onCopyShare?: () => void;
 };
 
-const STATUS_LABEL: Record<InvitationManagementStatus, string> = {
-  EDITING: '수정중',
-  SHARING: '공유중',
-  EXPIRED: '기간종료',
+const STATUS_LABEL_KEYS: Record<InvitationManagementStatus, string> = {
+  EDITING: 'myInvitations.tab.editing',
+  SHARING: 'myInvitations.tab.sharing',
+  EXPIRED: 'myInvitations.tab.expired',
 };
 
 export default function MyInvitationManageCard({
@@ -45,8 +46,9 @@ export default function MyInvitationManageCard({
   onDelete,
   onCopyShare,
 }: MyInvitationManageCardProps) {
+  const { t } = useI18n();
   const status = resolveInvitationManagementStatus(item);
-  const title = invitationDisplayTitle(item.title);
+  const title = invitationDisplayTitle(item.title, t('myInvitations.untitled'));
   const compact = layout === 'mobile' && status !== 'EDITING';
   const inlineActions = buildInlineActions({
     status,
@@ -57,6 +59,7 @@ export default function MyInvitationManageCard({
     shareSlug: item.shareSlug,
     onCopyShare,
     onDelete,
+    t,
   });
   const menuItems = buildMenuItems({
     status,
@@ -66,6 +69,7 @@ export default function MyInvitationManageCard({
     shareSlug: item.shareSlug,
     onCopyShare,
     onDelete,
+    t,
   });
 
   return (
@@ -73,8 +77,13 @@ export default function MyInvitationManageCard({
       <div className={styles.cardMain}>
         <h2 className={styles.cardTitle}>{title}</h2>
         <div className={styles.cardMeta}>
-          <span className={styles.badge}>{STATUS_LABEL[status]}</span>
-          <span>{invitationCardMeta(item, status)}</span>
+          <span className={styles.badge}>{t(STATUS_LABEL_KEYS[status])}</span>
+          <span>
+            {invitationCardMeta(item, status, {
+              published: t('myInvitations.meta.published'),
+              updated: t('myInvitations.meta.updated'),
+            })}
+          </span>
         </div>
       </div>
       <div className={styles.cardActions}>
@@ -110,19 +119,30 @@ function buildInlineActions(params: {
   shareSlug?: string | null;
   onCopyShare?: () => void;
   onDelete: () => void;
+  t: (key: string) => string;
 }): MenuItem[] {
-  const editLabel = params.status === 'EXPIRED' ? '보기' : '수정';
+  const editLabel =
+    params.status === 'EXPIRED' ? params.t('myInvitations.action.view') : params.t('myInvitations.action.edit');
   const actions: MenuItem[] = [{ label: editLabel, href: params.editorHref }];
   if (params.status === 'EDITING') {
-    actions.push({ label: '삭제', onClick: params.onDelete, danger: true, testId: 'invitation-delete' });
+    actions.push({
+      label: params.t('myInvitations.action.delete'),
+      onClick: params.onDelete,
+      danger: true,
+      testId: 'invitation-delete',
+    });
     return actions;
   }
   if (!params.compact && params.status === 'SHARING') {
     if (params.shareSlug && params.onCopyShare) {
-      actions.push({ label: '공유 링크', onClick: params.onCopyShare, testId: 'invitation-copy-share' });
+      actions.push({
+        label: params.t('myInvitations.action.shareLink'),
+        onClick: params.onCopyShare,
+        testId: 'invitation-copy-share',
+      });
     }
-    actions.push({ label: '참석 관리', href: params.rsvpHref });
-    actions.push({ label: '댓글 관리', href: params.commentsHref });
+    actions.push({ label: params.t('myInvitations.action.rsvp'), href: params.rsvpHref });
+    actions.push({ label: params.t('myInvitations.action.comments'), href: params.commentsHref });
   }
   return actions;
 }
@@ -135,21 +155,32 @@ function buildMenuItems(params: {
   shareSlug?: string | null;
   onCopyShare?: () => void;
   onDelete: () => void;
+  t: (key: string) => string;
 }): MenuItem[] {
   if (params.status === 'EDITING') return [];
   const items: MenuItem[] = [];
   if (params.compact) {
     if (params.shareSlug && params.onCopyShare && params.status === 'SHARING') {
-      items.push({ label: '공유 링크', onClick: params.onCopyShare, testId: 'invitation-copy-share' });
+      items.push({
+        label: params.t('myInvitations.action.shareLink'),
+        onClick: params.onCopyShare,
+        testId: 'invitation-copy-share',
+      });
     }
-    items.push({ label: '참석 관리', href: params.rsvpHref });
-    items.push({ label: '댓글 관리', href: params.commentsHref });
+    items.push({ label: params.t('myInvitations.action.rsvp'), href: params.rsvpHref });
+    items.push({ label: params.t('myInvitations.action.comments'), href: params.commentsHref });
   }
-  items.push({ label: '삭제', onClick: params.onDelete, danger: true, testId: 'invitation-delete' });
+  items.push({
+    label: params.t('myInvitations.action.delete'),
+    onClick: params.onDelete,
+    danger: true,
+    testId: 'invitation-delete',
+  });
   return items;
 }
 
 function CardMenu({ items }: { items: MenuItem[] }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
   return (
@@ -157,7 +188,7 @@ function CardMenu({ items }: { items: MenuItem[] }) {
       <button
         type="button"
         className={styles.menuButton}
-        aria-label="더보기"
+        aria-label={t('myInvitations.action.more')}
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}
         data-testid="invitation-card-menu"

@@ -420,8 +420,6 @@ export default function WeddingEditor({
         onSaveAndExit={onSaveAndExit ? handleSaveAndExit : undefined}
         onPublish={onPublish ? handlePublish : undefined}
         onPreview={shell === 'mobile' ? () => setFullscreenPreviewOpen(true) : undefined}
-        language={state.setup.language}
-        onLanguageChange={(nextLanguage) => handleSetupChange({ language: nextLanguage })}
         shell={shell}
       />
 

@@ -1,4 +1,5 @@
 import type { LocaleDictionary } from '../types';
+import { PRODUCT_MODE_MN } from '../productModeCopy';
 
 const mn: LocaleDictionary = {
   create: 'Урилга үүсгэх',
@@ -290,6 +291,7 @@ const mn: LocaleDictionary = {
   'template.BRIGHT_PARTY.description': 'Гэрэлтэй, гэрэлтэй баярын хэв маяг',
   'template.ELEGANT_WEDDING.name': 'Elegant Wedding',
   'template.ELEGANT_WEDDING.description': 'Гоёмсог гэрлэлтийн хэв маяг',
+  ...PRODUCT_MODE_MN,
 };
 
 export default mn;

@@ -52,6 +52,9 @@ export type CreateInvitationInput = {
   visualTemplateId?: string;
   /** Optional initial dataJson merge (Organization create defaults). */
   data?: Record<string, unknown>;
+  /** Product locale snapshot — `ko-KR` | `en-US`. */
+  locale?: string;
+  language?: string;
 };
 
 /** 인증된 사용자만 신규 초대장을 생성한다. guestToken 기반 생성은 사용하지 않는다. */
@@ -75,6 +78,8 @@ export async function createInvitation(
         body: JSON.stringify({
           templateKey: input.templateKey || 'invitation_full',
           conceptType: input.conceptType,
+          locale: input.locale || input.language,
+          language: input.language || input.locale,
           ...(input.visualTemplateId ? { visualTemplateId: input.visualTemplateId } : {}),
           ...(input.data ? { data: input.data } : {}),
         }),

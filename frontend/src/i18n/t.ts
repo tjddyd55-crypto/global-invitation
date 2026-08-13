@@ -9,3 +9,9 @@ function getValue(dictionary: LocaleDictionary, key: I18nKey | string): string |
 export function translate(language: Language, key: I18nKey | string): string {
   return getValue(LOCALES[language], key) ?? key;
 }
+
+export function interpolate(template: string, vars: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, name: string) =>
+    vars[name] == null ? `{${name}}` : String(vars[name])
+  );
+}

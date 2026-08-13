@@ -26,6 +26,8 @@ import {
 import VisualTemplateGallery from '@/src/templates/visualGallery/VisualTemplateGallery';
 import { resolveOrganizationLogoForSurface } from '@/src/templates/shared/organizationLogoSurfaces';
 import { ORGANIZATION_JCI_THEME } from './organizationJciTheme';
+import { languageFromLocale, resolveInvitationLocale } from '@/src/i18n/productLocales';
+import { translate } from '@/src/i18n';
 import './organizationJciChrome.css';
 import styles from './OrganizationJciInvitation.module.css';
 
@@ -43,6 +45,11 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
   const { data, invitationSlug = '' } = props;
   const model = buildTemplateInvitationModel(data);
   const flags = resolveTemplateRenderFlags(props);
+  const invitationLocale = resolveInvitationLocale(
+    (data as { locale?: string; language?: string }).locale ||
+      (data as { language?: string }).language
+  );
+  const defaultTitle = translate(languageFromLocale(invitationLocale), 'invitation.defaults.inviteTitle');
   const organization = normalizeOrganizationBranding(
     (data as { organization?: unknown }).organization
   );
@@ -113,7 +120,7 @@ export default function OrganizationJciInvitation(props: VisualTemplateProps) {
         <InvitationReveal variant="fade" delayMs={60}>
           <p className={styles.eyebrow}>OFFICIAL INVITATION</p>
           <h1 className={styles.title}>
-            {model.title || (flags.showEmptyPlaceholder ? '행사에 초대합니다' : '')}
+            {model.title || (flags.showEmptyPlaceholder ? defaultTitle : '')}
           </h1>
           {model.subtitle ? <p className={styles.subtitle}>{model.subtitle}</p> : null}
           <span className={styles.rule} aria-hidden />

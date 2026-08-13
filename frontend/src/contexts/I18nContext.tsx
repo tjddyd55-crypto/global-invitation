@@ -1,9 +1,19 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { getInitialLanguage, LANGUAGE_STORAGE_KEY, translate, type Language } from '../i18n';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { translate, type Language } from '../i18n';
+import {
+  getPersistedServiceLocale,
+  htmlLangFromLocale,
+  languageFromLocale,
+  localeFromLanguage,
+  persistServiceLocale,
+  type ProductLocaleId,
+} from '../i18n/productLocales';
 
 interface I18nContextType {
+  locale: ProductLocaleId;
+  setLocale: (locale: ProductLocaleId) => void;
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
@@ -12,29 +22,34 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('en');
+  const [locale, setLocaleState] = useState<ProductLocaleId>('ko-KR');
 
-  // Load language on mount (user choice -> browser -> fallback)
   useEffect(() => {
-    const initialLanguage = getInitialLanguage();
-    setLanguageState(initialLanguage);
+    const next = getPersistedServiceLocale();
+    setLocaleState(next);
+    persistServiceLocale(next);
+    document.documentElement.lang = htmlLangFromLocale(next);
   }, []);
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    try {
-      localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
-    } catch {
-      // localStorage unavailable; ignore
+  const applyLocale = (next: ProductLocaleId) => {
+    setLocaleState(next);
+    persistServiceLocale(next);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = htmlLangFromLocale(next);
     }
   };
 
-  const t = (key: string): string => {
-    return translate(language, key);
+  const setLanguage = (lang: Language) => {
+    applyLocale(localeFromLanguage(lang));
   };
 
+  const language = languageFromLocale(locale);
+  const t = useMemo(() => {
+    return (key: string): string => translate(language, key);
+  }, [language]);
+
   return (
-    <I18nContext.Provider value={{ language, setLanguage, t }}>
+    <I18nContext.Provider value={{ locale, setLocale: applyLocale, language, setLanguage, t }}>
       {children}
     </I18nContext.Provider>
   );
@@ -46,4 +61,8 @@ export function useI18n() {
     throw new Error('useI18n must be used within an I18nProvider');
   }
   return context;
+}
+
+export function useTranslations() {
+  return useI18n().t;
 }

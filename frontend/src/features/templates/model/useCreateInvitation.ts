@@ -7,6 +7,7 @@ import { buildOrganizationCreateData } from '@/src/invitation/buildOrganizationC
 import type { VisualTemplateId } from '@/src/templates/visualTemplate/ids';
 import { isVisualTemplateId } from '@/src/templates/visualTemplate/ids';
 import { fetchCurrentUser } from '@/src/shared/auth';
+import { useI18n } from '@/src/contexts/I18nContext';
 import { sanitizeVisualTemplateIdForSave } from '@/src/templates/visualTemplate/resolveVisualTemplateId';
 import {
   clearPendingVisualTemplate,
@@ -16,7 +17,11 @@ import {
 import { isVisualTemplateConceptType } from '@/src/invitation/conceptTypes';
 import type { ConceptType } from './conceptOptions';
 
-export { CONCEPT_OPTIONS, type ConceptType } from './conceptOptions';
+export {
+  CONCEPT_OPTIONS,
+  localizeConceptOptions,
+  type ConceptType,
+} from './conceptOptions';
 
 const CONCEPT_CREATE_NEXT_PATH = '/create/concept';
 
@@ -29,6 +34,7 @@ export interface UseCreateInvitationResult {
 
 export function useCreateInvitation(): UseCreateInvitationResult {
   const router = useRouter();
+  const { locale, t } = useI18n();
   const [creatingConcept, setCreating] = useState<ConceptType | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,13 +78,15 @@ export function useCreateInvitation(): UseCreateInvitationResult {
         const created = await createInvitation({
           templateKey: 'invitation_full',
           conceptType: concept,
+          locale,
+          language: locale,
           ...(sanitized ? { visualTemplateId: sanitized } : {}),
-          ...(organizationData ? { data: organizationData } : {}),
+          ...(organizationData ? { data: { ...organizationData, locale } } : { data: { locale } }),
         });
         clearPendingVisualTemplate();
         router.push(`/editor/${created.id}?concept=${concept}`);
       } catch (err) {
-        const message = err instanceof Error ? err.message : '초대장 생성에 실패했습니다.';
+        const message = err instanceof Error ? err.message : t('createFailed');
         if (message.includes('401') || message.toUpperCase().includes('UNAUTHORIZED')) {
           if (visualTemplateId && isVisualTemplateConceptType(concept)) {
             savePendingVisualTemplate({
@@ -97,7 +105,7 @@ export function useCreateInvitation(): UseCreateInvitationResult {
         setCreating(null);
       }
     },
-    [creatingConcept, router]
+    [creatingConcept, locale, router, t]
   );
 
   return { creatingConcept, error, start };

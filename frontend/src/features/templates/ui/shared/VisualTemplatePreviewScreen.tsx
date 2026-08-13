@@ -14,6 +14,7 @@ import {
   VISUAL_TEMPLATE_RESUME_PATH,
 } from '@/src/features/templates/model/pendingVisualTemplate';
 import { fetchCurrentUser } from '@/src/shared/auth';
+import { useI18n } from '@/src/contexts/I18nContext';
 import { getMusicByKey } from '@/src/constants/music';
 import { resolvePlayableInvitationMusic } from '@/src/invitation/invitationMusic';
 import InvitationMusicPlayer from '@/src/features/invitation/ui/InvitationMusicPlayer';
@@ -24,8 +25,12 @@ type Props = {
 };
 
 export default function VisualTemplatePreviewScreen({ visualTemplateId }: Props) {
+  const { locale, t } = useI18n();
   const def = getVisualTemplateDefinition(visualTemplateId);
-  const fixture = getVisualTemplatePreviewFixture(visualTemplateId);
+  const fixture = useMemo(
+    () => ({ ...getVisualTemplatePreviewFixture(visualTemplateId), locale }),
+    [visualTemplateId, locale]
+  );
   const { start, creatingConcept } = useCreateInvitation();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -64,11 +69,11 @@ export default function VisualTemplatePreviewScreen({ visualTemplateId }: Props)
     <div className={styles.page} data-testid="visual-template-preview">
       <header className={styles.bar}>
         <Link href={catalogHref} className={styles.back}>
-          ← 뒤로
+          {t('create.templates.back')}
         </Link>
         <div className={styles.meta}>
-          <strong>{def.name}</strong>
-          <span>샘플 미리보기</span>
+          <strong>{t(`template.${def.id}.name`) === `template.${def.id}.name` ? def.name : t(`template.${def.id}.name`)}</strong>
+          <span>{t('create.templates.samplePreview')}</span>
         </div>
       </header>
 

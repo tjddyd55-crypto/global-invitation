@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
 import MarketingSiteHeader from '@/src/features/marketing/ui/MarketingSiteHeader';
@@ -11,110 +10,105 @@ import {
   getInvitationDiscountCents,
   INVITATION_PRICING,
 } from '@/src/shared/pricing/invitationPricing';
+import { useI18n } from '@/src/contexts/I18nContext';
+import { interpolate } from '@/src/i18n';
 import styles from './PricingPage.module.css';
 
-const FEATURES = [
-  '모든 현재 템플릿 사용',
-  '사진 · 갤러리',
-  '로고 · 브랜드',
-  '일정',
-  '지도',
-  '계좌 · 참가비',
-  'RSVP',
-  '공개 링크',
-  '결제 후 자유롭게 수정',
+const FEATURE_KEYS = [
+  'pricing.feature.templates',
+  'pricing.feature.gallery',
+  'pricing.feature.logo',
+  'pricing.feature.schedule',
+  'pricing.feature.map',
+  'pricing.feature.accounts',
+  'pricing.feature.rsvp',
+  'pricing.feature.link',
+  'pricing.feature.edit',
 ] as const;
 
-const STEPS = [
-  '무료로 만들기',
-  '완성본 미리보기',
-  '결제 후 발행',
-  '링크 공유',
+const STEP_KEYS = [
+  'pricing.step.create',
+  'pricing.step.preview',
+  'pricing.step.publish',
+  'pricing.step.share',
 ] as const;
 
-const FAQS = [
-  {
-    q: '결제 전에도 미리볼 수 있나요?',
-    a: '네. 초대장 제작과 Editor/Template Preview는 무료입니다. 실제 외부 발행 직전에만 결제합니다.',
-  },
-  {
-    q: '수정할 때 다시 결제하나요?',
-    a: '같은 초대장은 추가 결제가 없습니다. 결제 후에도 자유롭게 수정할 수 있습니다.',
-  },
-  {
-    q: '새 초대장을 만들면?',
-    a: '새 invitation마다 한 번씩 결제가 필요합니다.',
-  },
+const FAQ_KEYS = [
+  { q: 'pricing.faq.preview.q', a: 'pricing.faq.preview.a' },
+  { q: 'pricing.faq.edit.q', a: 'pricing.faq.edit.a' },
+  { q: 'pricing.faq.new.q', a: 'pricing.faq.new.a' },
 ] as const;
 
-/**
- * SaaS Pricing — Figma 07_PRICING_CONTACT 기준.
- * 결제 CTA 없음. 만들기 플로우로만 연결.
- */
 export default function PricingPage() {
   const { status } = useAuth();
+  const { t } = useI18n();
   const createHref = getCreateInvitationEntryPath(status === 'loading' ? 'unauthenticated' : status);
   const list = formatUsdFromCents(INVITATION_PRICING.listPriceCents);
   const sale = formatUsdFromCents(INVITATION_PRICING.salePriceCents);
   const discount = formatUsdFromCents(getInvitationDiscountCents());
+  const leadLines = t('pricing.heroLead').split('\n');
 
   return (
     <div className={styles.page} data-testid="pricing-page">
       <MarketingSiteHeader />
       <main className={styles.main}>
         <header className={styles.hero}>
-          <h1 className={styles.heroTitle}>필요한 만큼만 결제하세요</h1>
+          <h1 className={styles.heroTitle}>{t('pricing.heroTitle')}</h1>
           <p className={styles.heroLead}>
-            초대장은 무료로 만들고 미리볼 수 있습니다.
-            <br />
-            실제 발행할 때 초대장 1개당 한 번만 결제합니다.
+            {leadLines[0]}
+            {leadLines[1] ? (
+              <>
+                <br />
+                {leadLines[1]}
+              </>
+            ) : null}
           </p>
         </header>
 
         <section className={styles.card} aria-labelledby="pricing-main-title">
-          <span className={styles.badge}>오픈 특별가</span>
+          <span className={styles.badge}>{t('pricing.badge')}</span>
           <h2 id="pricing-main-title" className={styles.srOnly}>
-            초대장 발행 요금
+            {t('pricing.heroTitle')}
           </h2>
           <div className={styles.priceBlock}>
-            <span className={styles.listPrice} aria-label={`정상가 ${list}`}>
+            <span className={styles.listPrice} aria-label={interpolate(t('pricing.listAria'), { price: list })}>
               {list}
             </span>
-            <span className={styles.salePrice} aria-label={`오픈 특별가 ${sale}`}>
+            <span className={styles.salePrice} aria-label={interpolate(t('pricing.saleAria'), { price: sale })}>
               {sale}
             </span>
           </div>
-          <p className={styles.unit}>초대장 1개 · 1회 결제 · {INVITATION_PRICING.currency}</p>
-          <p className={styles.note}>
-            정상가 대비 {discount} 할인. 결제 후에도 같은 초대장은 자유롭게 수정할 수 있습니다.
+          <p className={styles.unit}>
+            {interpolate(t('pricing.unit'), { currency: INVITATION_PRICING.currency })}
           </p>
+          <p className={styles.note}>{interpolate(t('pricing.note'), { discount })}</p>
           <Link href={createHref} className={styles.cta} data-testid="pricing-create-cta">
-            무료로 초대장 만들기
+            {t('pricing.cta')}
           </Link>
         </section>
 
         <section className={styles.section} aria-labelledby="pricing-features">
           <h2 id="pricing-features" className={styles.sectionTitle}>
-            포함 기능
+            {t('pricing.featuresTitle')}
           </h2>
           <ul className={styles.featureList}>
-            {FEATURES.map((item) => (
-              <li key={item}>{item}</li>
+            {FEATURE_KEYS.map((key) => (
+              <li key={key}>{t(key)}</li>
             ))}
           </ul>
         </section>
 
         <section className={styles.section} aria-labelledby="pricing-steps">
           <h2 id="pricing-steps" className={styles.sectionTitle}>
-            이용 방법
+            {t('pricing.stepsTitle')}
           </h2>
           <ol className={styles.steps}>
-            {STEPS.map((label, index) => (
-              <li key={label}>
+            {STEP_KEYS.map((key, index) => (
+              <li key={key}>
                 <span className={styles.stepNum} aria-hidden>
                   {index + 1}
                 </span>
-                <span>{label}</span>
+                <span>{t(key)}</span>
               </li>
             ))}
           </ol>
@@ -122,13 +116,13 @@ export default function PricingPage() {
 
         <section className={styles.section} aria-labelledby="pricing-faq">
           <h2 id="pricing-faq" className={styles.sectionTitle}>
-            자주 묻는 질문
+            {t('pricing.faqTitle')}
           </h2>
           <div className={styles.faqList}>
-            {FAQS.map((item) => (
+            {FAQ_KEYS.map((item) => (
               <article key={item.q} className={styles.faqItem}>
-                <h3 className={styles.faqQ}>{item.q}</h3>
-                <p className={styles.faqA}>{item.a}</p>
+                <h3 className={styles.faqQ}>{t(item.q)}</h3>
+                <p className={styles.faqA}>{t(item.a)}</p>
               </article>
             ))}
           </div>
