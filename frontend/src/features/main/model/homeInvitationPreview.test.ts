@@ -15,9 +15,22 @@ test('home examples SSOT covers all four concepts', () => {
     examples.map((item) => item.concept),
     ['WEDDING', 'FUNERAL', 'GENERAL', 'ORGANIZATION']
   );
+  assert.equal(examples.length, 4);
   assert.equal(examples[0]?.visualTemplateId, 'WEDDING_05_GARDEN');
-  assert.equal(examples[2]?.visualTemplateId, 'GENERAL_06_CULTURE');
+  assert.equal(examples[2]?.visualTemplateId, 'GENERAL_05_FESTIVE');
+  assert.equal(examples[2]?.href, '/templates/GENERAL_05_FESTIVE/preview');
+  assert.equal(examples[2]?.label, '일반 행사');
   assert.equal(examples[3]?.visualTemplateId, 'ORGANIZATION_02_JCI');
+});
+
+test('general home example uses festive fixture without map or gallery weight', () => {
+  const data = getHomeInvitationExampleData('general');
+  assert.ok(isWeddingInvitationData(data));
+  assert.equal(data.conceptType, 'GENERAL');
+  assert.equal(data.visualTemplateId, 'GENERAL_05_FESTIVE');
+  assert.ok(data.heroImage);
+  assert.equal(data.galleryImages?.length, 0);
+  assert.equal(data.mapLat, undefined);
 });
 
 test('home preview reuses Garden fixture without map or gallery weight', () => {

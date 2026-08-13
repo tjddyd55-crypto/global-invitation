@@ -18,7 +18,7 @@ export type HomeInvitationExample = {
 export const HOME_PREVIEW_TEMPLATE_ID: VisualTemplateId = 'WEDDING_05_GARDEN';
 export const HOME_PREVIEW_PATH = `/templates/${HOME_PREVIEW_TEMPLATE_ID}/preview`;
 
-const GENERAL_PREVIEW_TEMPLATE_ID: VisualTemplateId = 'GENERAL_06_CULTURE';
+const GENERAL_PREVIEW_TEMPLATE_ID: VisualTemplateId = 'GENERAL_05_FESTIVE';
 const ORGANIZATION_PREVIEW_TEMPLATE_ID: VisualTemplateId = 'ORGANIZATION_02_JCI';
 
 export const HOME_INVITATION_EXAMPLES: HomeInvitationExample[] = [

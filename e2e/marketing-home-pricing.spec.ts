@@ -83,6 +83,14 @@ test.describe('marketing header and home categories', () => {
       page.getByTestId('home-example-funeral').getByTestId('public-invitation-document')
     ).toBeVisible({ timeout: 60_000 });
     await expect(
+      page.getByTestId('home-example-general').getByTestId('public-invitation-document')
+    ).toHaveAttribute('data-visual-template', 'GENERAL_05_FESTIVE');
+    await expect(page.getByTestId('home-example-general').locator('a')).toHaveAttribute(
+      'href',
+      '/templates/GENERAL_05_FESTIVE/preview'
+    );
+    await expect(page.locator('a[href="/templates/GENERAL_06_CULTURE/preview"]')).toHaveCount(0);
+    await expect(
       page.getByTestId('home-example-organization').getByTestId('public-invitation-document')
     ).toHaveAttribute('data-visual-template', 'ORGANIZATION_02_JCI');
     await expect(page.getByTestId('hero-create-cta')).toBeVisible();
@@ -121,7 +129,7 @@ test.describe('marketing header and home categories', () => {
       ).toBeVisible();
       await expect(
         page.getByTestId('home-example-general').getByTestId('public-invitation-document')
-      ).toBeVisible();
+      ).toHaveAttribute('data-visual-template', 'GENERAL_05_FESTIVE');
       await expect(
         page.getByTestId('home-example-organization').getByTestId('public-invitation-document')
       ).toHaveAttribute('data-visual-template', 'ORGANIZATION_02_JCI');
