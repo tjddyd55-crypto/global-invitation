@@ -16,6 +16,7 @@ import { funeralEditorReducer } from './state/funeralEditor.reducer';
 import type { FuneralEditorState } from './state/funeralEditor.types';
 import EditorHeader from '@/src/editors/shared/EditorHeader';
 import UnifiedStepperNav, { type UnifiedStepItem } from '@/src/editors/shared/UnifiedStepperNav';
+import { useEditorShell } from '@/src/editors/shared/useEditorShell';
 import { InvitationLocaleProvider } from '@/src/i18n/InvitationLocaleContext';
 import { invitationT } from '@/src/i18n/invitationT';
 import type { ProductLocaleId } from '@/src/i18n/productLocales';
@@ -50,6 +51,7 @@ export default function FuneralEditor({
   const [state, dispatch] = useReducer(funeralEditorReducer, initialState);
   const [currentStep, setCurrentStep] = useState(0);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const shell = useEditorShell();
   const t = (key: string) => invitationT(locale, key);
   const stepItems: UnifiedStepItem[] = useMemo(
     () => [
@@ -79,9 +81,112 @@ export default function FuneralEditor({
     await onPublish(state);
   };
 
+  const stepContent = (
+    <>
+      {currentStep === 0 && (
+        <Step0Basic
+          deceasedName={state.deceasedName}
+          birthDate={state.birthDate}
+          deathDate={state.deathDate}
+          onChange={(payload) =>
+            dispatch({
+              type: 'SET_BASIC',
+              payload: {
+                deceasedName: payload.deceasedName ?? state.deceasedName,
+                birthDate: payload.birthDate ?? state.birthDate,
+                deathDate: payload.deathDate ?? state.deathDate,
+                heroImage: state.heroImage,
+              },
+            })
+          }
+        />
+      )}
+      {currentStep === 1 && (
+        <Step1Message
+          message={state.message}
+          onChange={(message) => dispatch({ type: 'SET_MESSAGE', payload: { message } })}
+        />
+      )}
+      {currentStep === 2 && (
+        <Step2HeroImage
+          heroImage={state.heroImage}
+          onChange={(heroImage) =>
+            dispatch({
+              type: 'SET_BASIC',
+              payload: {
+                deceasedName: state.deceasedName,
+                birthDate: state.birthDate,
+                deathDate: state.deathDate,
+                heroImage,
+              },
+            })
+          }
+        />
+      )}
+      {currentStep === 3 && (
+        <Step2Family
+          chiefMourner={state.chiefMourner}
+          familyMembers={state.familyMembers}
+          onChange={(payload) =>
+            dispatch({
+              type: 'SET_FAMILY',
+              payload: {
+                chiefMourner: payload.chiefMourner ?? state.chiefMourner,
+                familyMembers: payload.familyMembers ?? state.familyMembers,
+              },
+            })
+          }
+        />
+      )}
+      {currentStep === 4 && (
+        <Step3Schedule
+          schedule={state.schedule}
+          onChange={(schedule) => dispatch({ type: 'SET_SCHEDULE', payload: schedule })}
+        />
+      )}
+      {currentStep === 5 && (
+        <Step4Hall
+          funeralHall={state.funeralHall}
+          contact={state.contact}
+          onHallChange={(hall) => dispatch({ type: 'SET_HALL', payload: hall })}
+          onContactChange={(contact) => dispatch({ type: 'SET_CONTACT', payload: contact })}
+        />
+      )}
+      {currentStep === 6 && <Step6AccountInfo />}
+      {currentStep === 7 && <Step7Attendance />}
+      {currentStep === 8 && <Step8ShareSettings />}
+    </>
+  );
+
+  if (shell === null) {
+    return (
+      <InvitationLocaleProvider locale={locale}>
+        <div className={styles.editorPage} data-testid="funeral-editor-root" data-editor-shell="pending">
+          <div
+            data-testid="viewport-shell-fallback"
+            style={{
+              minHeight: '40vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#6B7280',
+              fontSize: 14,
+            }}
+          >
+            {t('editor.ready')}
+          </div>
+        </div>
+      </InvitationLocaleProvider>
+    );
+  }
+
   return (
     <InvitationLocaleProvider locale={locale}>
-      <div className={styles.editorPage} data-testid="funeral-editor-root">
+      <div
+        className={`${styles.editorPage} ${shell === 'mobile' ? styles.editorPageMobile : ''}`}
+        data-testid="funeral-editor-root"
+        data-editor-shell={shell}
+      >
         <EditorHeader
           title={t('editor.header.titleFuneral')}
           conceptLabel={t('editor.concept.funeral')}
@@ -91,23 +196,16 @@ export default function FuneralEditor({
           saveError={saveError}
           saving={saving}
           publishing={publishing}
+          locale={locale}
+          shell={shell}
           onSave={onSave ? handleSave : undefined}
           onSaveAndExit={onSaveAndExit ? handleSaveAndExit : undefined}
           onPublish={onPublish ? handlePublish : undefined}
         />
 
-        <div className={styles.editorLayout}>
-          <aside className={styles.navColumn}>
-            <UnifiedStepperNav
-              steps={stepItems}
-              currentStep={currentStep}
-              onStepSelect={setCurrentStep}
-              orientation="vertical"
-            />
-          </aside>
-
-          <main className={styles.formColumn}>
-            <div className={styles.mobileStepper}>
+        {shell === 'mobile' ? (
+          <div className={styles.mobileEditorLayout} data-testid="mobile-editor-layout">
+            <div className={styles.mobileStepper} data-testid="mobile-editor-stepper">
               <UnifiedStepperNav
                 steps={stepItems}
                 currentStep={currentStep}
@@ -115,97 +213,42 @@ export default function FuneralEditor({
                 orientation="horizontal"
               />
             </div>
+            <main className={styles.mobileFormColumn} data-testid="mobile-editor-form">
+              <div className={styles.sectionStack}>{stepContent}</div>
+            </main>
+          </div>
+        ) : (
+          <div className={styles.editorLayout} data-testid="desktop-editor-layout">
+            <aside className={styles.navColumn}>
+              <UnifiedStepperNav
+                steps={stepItems}
+                currentStep={currentStep}
+                onStepSelect={setCurrentStep}
+                orientation="vertical"
+              />
+            </aside>
 
-            <div className={styles.sectionStack}>
-              {currentStep === 0 && (
-                <Step0Basic
-                  deceasedName={state.deceasedName}
-                  birthDate={state.birthDate}
-                  deathDate={state.deathDate}
-                  onChange={(payload) =>
-                    dispatch({
-                      type: 'SET_BASIC',
-                      payload: {
-                        deceasedName: payload.deceasedName ?? state.deceasedName,
-                        birthDate: payload.birthDate ?? state.birthDate,
-                        deathDate: payload.deathDate ?? state.deathDate,
-                        heroImage: state.heroImage,
-                      },
-                    })
-                  }
-                />
-              )}
-              {currentStep === 1 && (
-                <Step1Message
-                  message={state.message}
-                  onChange={(message) => dispatch({ type: 'SET_MESSAGE', payload: { message } })}
-                />
-              )}
-              {currentStep === 2 && (
-                <Step2HeroImage
-                  heroImage={state.heroImage}
-                  onChange={(heroImage) =>
-                    dispatch({
-                      type: 'SET_BASIC',
-                      payload: {
-                        deceasedName: state.deceasedName,
-                        birthDate: state.birthDate,
-                        deathDate: state.deathDate,
-                        heroImage,
-                      },
-                    })
-                  }
-                />
-              )}
-              {currentStep === 3 && (
-                <Step2Family
-                  chiefMourner={state.chiefMourner}
-                  familyMembers={state.familyMembers}
-                  onChange={(payload) =>
-                    dispatch({
-                      type: 'SET_FAMILY',
-                      payload: {
-                        chiefMourner: payload.chiefMourner ?? state.chiefMourner,
-                        familyMembers: payload.familyMembers ?? state.familyMembers,
-                      },
-                    })
-                  }
-                />
-              )}
-              {currentStep === 4 && (
-                <Step3Schedule
-                  schedule={state.schedule}
-                  onChange={(schedule) => dispatch({ type: 'SET_SCHEDULE', payload: schedule })}
-                />
-              )}
-              {currentStep === 5 && (
-                <Step4Hall
-                  funeralHall={state.funeralHall}
-                  contact={state.contact}
-                  onHallChange={(hall) => dispatch({ type: 'SET_HALL', payload: hall })}
-                  onContactChange={(contact) => dispatch({ type: 'SET_CONTACT', payload: contact })}
-                />
-              )}
-              {currentStep === 6 && <Step6AccountInfo />}
-              {currentStep === 7 && <Step7Attendance />}
-              {currentStep === 8 && <Step8ShareSettings />}
-            </div>
-          </main>
+            <main className={styles.formColumn}>
+              <div className={styles.sectionStack}>{stepContent}</div>
+            </main>
 
-          <aside className={styles.previewColumn}>
-            <div className={styles.previewFrameWrap}>
-              <PreviewPanel data={state} />
-            </div>
-          </aside>
-        </div>
+            <aside className={styles.previewColumn}>
+              <div className={styles.previewFrameWrap}>
+                <PreviewPanel data={state} />
+              </div>
+            </aside>
+          </div>
+        )}
 
-        <button
-          type="button"
-          className={styles.previewFloatingButton}
-          onClick={() => setMobilePreviewOpen(true)}
-        >
-          {t('editor.action.preview')}
-        </button>
+        {shell === 'mobile' && (
+          <button
+            type="button"
+            className={styles.previewFloatingButton}
+            onClick={() => setMobilePreviewOpen(true)}
+          >
+            {t('editor.action.preview')}
+          </button>
+        )}
 
         {mobilePreviewOpen && (
           <div className={styles.previewOverlay}>

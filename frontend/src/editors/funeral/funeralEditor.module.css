@@ -4,6 +4,80 @@
   color: var(--gi-text);
 }
 
+/* Mobile shell (<1024): match WeddingEditor mobile constraints — contain step nav scroll. */
+.editorPageMobile {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  display: block;
+  background: var(--gi-bg);
+}
+
+.mobileEditorLayout {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 calc(72px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.editorPageMobile .mobileStepper {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 8px 0 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  box-sizing: border-box;
+}
+
+.mobileFormColumn {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 20px 16px;
+  padding-bottom: 100px;
+  position: static;
+  transform: none;
+  box-sizing: border-box;
+}
+
+.editorPageMobile .stepSection {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.editorPageMobile .sectionStack {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.editorPageMobile .fieldGrid {
+  grid-template-columns: 1fr;
+}
+
+.editorPageMobile input,
+.editorPageMobile select,
+.editorPageMobile textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 .editorHeader {
   display: flex;
   justify-content: space-between;
@@ -365,6 +439,7 @@
   padding: 1rem;
 }
 
+/* Desktop-only tweaks. Mobile layout is DOM-split via useEditorShell (<1024). */
 @media (max-width: 1200px) {
   .editorLayout {
     grid-template-columns: 180px minmax(0, 1fr) 320px;
@@ -379,37 +454,7 @@
   }
 }
 
-@media (max-width: 960px) {
-  .editorHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .editorLayout {
-    grid-template-columns: 1fr;
-    padding: 1rem 0 5rem;
-  }
-
-  .navColumn {
-    display: none;
-  }
-
-  .mobileStepper {
-    display: block;
-  }
-
-  .previewColumn {
-    display: none;
-  }
-
-  .fieldGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .mobileNav {
-    display: none;
-  }
-
+@media (max-width: 1023px) {
   .previewFloatingButton {
     right: 16px;
     bottom: 16px;
