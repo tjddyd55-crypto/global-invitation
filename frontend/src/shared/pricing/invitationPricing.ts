@@ -17,6 +17,11 @@ export function formatUsdFromCents(cents: number): string {
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
 }
 
+/** Checkout/confirmation display — always include currency code. */
+export function formatUsdAmountLabel(cents: number): string {
+  return `${formatUsdFromCents(cents)} USD`;
+}
+
 export function getInvitationDiscountCents(): number {
   return INVITATION_PRICING.listPriceCents - INVITATION_PRICING.salePriceCents;
 }

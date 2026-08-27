@@ -109,16 +109,18 @@ function isAdminApiPath(req: Request): boolean {
   return url === '/api/admin' || url.startsWith('/api/admin/');
 }
 
-// Health check endpoint (email diagnostics: secret 값 미포함)
+// Health check endpoint (email/payment diagnostics: secret 값 미포함)
 app.get('/health', async (req, res) => {
   try {
     const { getEmailDiagnostics } = await import('./lib/mailer');
+    const { getPaymentDiagnostics } = await import('./lib/payments/provider');
     // Test database connection
     await prisma.$queryRaw`SELECT 1`;
     res.status(200).json({
       status: 'ok',
       database: 'connected',
       email: getEmailDiagnostics(),
+      payment: getPaymentDiagnostics(),
       build: getBackendBuildIdentity(),
     });
   } catch (error) {

@@ -12,6 +12,7 @@ import {
   getPaymentOrderName,
   getTossClientKey,
   getTossSecretKey,
+  getTossVariantKey,
   mapTossPaymentStatus,
   resolvePaymentProvider,
   resolveTossChargeAmount,
@@ -79,9 +80,21 @@ export function getExpectedProviderCurrency(payment: InvitationPayment): string 
   return payment.currency.toUpperCase();
 }
 
+const PENDING_REUSE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function buildCheckoutUrls(invitationId: string): { successUrl: string; failUrl: string } {
+  const frontend = getFrontendBaseUrl();
+  return {
+    successUrl: `${frontend}/invitations/${invitationId}/payment/success`,
+    failUrl: `${frontend}/invitations/${invitationId}/payment/fail`,
+  };
+}
+
 export async function preparePaymentAttempt(input: {
   invitationId: string;
   userId?: string | null;
+  /** Product Mode locale for Toss orderName (ko-KR / en-US). */
+  locale?: string | null;
 }): Promise<PreparePaymentResult> {
   const existingPaid = await findPaidPayment(input.invitationId);
   if (existingPaid) {
@@ -95,13 +108,16 @@ export async function preparePaymentAttempt(input: {
   }
 
   let clientKey: string | null = null;
+  let variantKey: string | null = null;
   if (provider === 'toss_payments') {
     clientKey = getTossClientKey();
+    variantKey = getTossVariantKey();
     if (!clientKey) {
       return {
         ok: false,
-        code: 'MISSING_TOSS_KEYS',
-        message: 'NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY (or TOSS_PAYMENTS_CLIENT_KEY) is required',
+        code: 'FOREIGN_MID_NOT_CONFIGURED',
+        message:
+          'Toss USD foreign-payment MID is not configured. Set NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY (and TOSS_PAYMENTS_SECRET_KEY). Domestic KRW is not a silent fallback.',
       };
     }
     try {
@@ -110,13 +126,65 @@ export async function preparePaymentAttempt(input: {
     } catch (error) {
       return {
         ok: false,
-        code: 'MISSING_TOSS_KEYS',
-        message: error instanceof Error ? error.message : 'Toss key validation failed',
+        code: 'FOREIGN_MID_NOT_CONFIGURED',
+        message: error instanceof Error ? error.message : 'Toss USD MID key validation failed',
       };
     }
   }
 
   const pricing = getInvitationPricingSnapshot();
+  const { successUrl, failUrl } = buildCheckoutUrls(input.invitationId);
+  const orderName = getPaymentOrderName(input.locale);
+  const paymentChannel = charge.channel;
+
+  // Reuse a recent PENDING attempt to avoid infinite orders on double-click / multi-tab.
+  const reusable = await prisma.invitationPayment.findFirst({
+    where: {
+      invitationId: input.invitationId,
+      provider,
+      status: InvitationPaymentStatus.PENDING,
+      providerOrderId: { not: null },
+      createdAt: { gte: new Date(Date.now() - PENDING_REUSE_WINDOW_MS) },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (reusable?.providerOrderId) {
+    const expectedAmount = getExpectedProviderAmount(reusable);
+    const expectedCurrency = getExpectedProviderCurrency(reusable);
+    const amountMatches =
+      expectedAmount === charge.amount.value && expectedCurrency === charge.amount.currency;
+
+    if (amountMatches) {
+      console.info('[payments] prepare reused pending', {
+        invitationId: input.invitationId,
+        paymentAttemptId: reusable.id,
+        orderId: reusable.providerOrderId,
+        provider,
+        paymentChannel,
+        userId: input.userId || null,
+      });
+
+      return {
+        ok: true,
+        alreadyPaid: false,
+        paymentId: reusable.id,
+        orderId: reusable.providerOrderId,
+        provider,
+        paymentChannel,
+        orderName,
+        domainCurrency: pricing.currency,
+        productAmountMinor: pricing.chargedAmountCents,
+        domainChargedAmountCents: pricing.chargedAmountCents,
+        amount: charge.amount,
+        successUrl,
+        failUrl,
+        clientKey,
+        variantKey,
+      };
+    }
+  }
+
   const attempt = await prisma.invitationPayment.create({
     data: {
       invitationId: input.invitationId,
@@ -131,14 +199,14 @@ export async function preparePaymentAttempt(input: {
   });
 
   const orderId = buildOrderId(attempt.id);
-  const frontend = getFrontendBaseUrl();
-  const successUrl = `${frontend}/invitations/${input.invitationId}/payment/success`;
-  const failUrl = `${frontend}/invitations/${input.invitationId}/payment/fail`;
 
   const meta = {
     phase: 'prepared',
+    paymentChannel,
     tossAmount: charge.amount.value,
     tossCurrency: charge.amount.currency,
+    productAmountMinor: pricing.chargedAmountCents,
+    productCurrency: pricing.currency,
   };
 
   await prisma.invitationPayment.update({
@@ -155,6 +223,7 @@ export async function preparePaymentAttempt(input: {
     paymentAttemptId: attempt.id,
     orderId,
     provider,
+    paymentChannel,
     userId: input.userId || null,
   });
 
@@ -164,13 +233,16 @@ export async function preparePaymentAttempt(input: {
     paymentId: attempt.id,
     orderId,
     provider,
-    orderName: getPaymentOrderName(),
+    paymentChannel,
+    orderName,
     domainCurrency: pricing.currency,
+    productAmountMinor: pricing.chargedAmountCents,
     domainChargedAmountCents: pricing.chargedAmountCents,
     amount: charge.amount,
     successUrl,
     failUrl,
     clientKey,
+    variantKey,
   };
 }
 

@@ -1,14 +1,15 @@
 'use client';
-/* eslint-disable i18next/no-literal-string */
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
+import { useI18n } from '@/src/contexts/I18nContext';
 import styles from './PaymentPage.module.css';
 
 type Props = { invitationId: string };
 
 export default function PaymentFailPage({ invitationId }: Props) {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const code = searchParams.get('code') || '';
   const canceled = code === 'PAY_PROCESS_CANCELED';
@@ -19,15 +20,17 @@ export default function PaymentFailPage({ invitationId }: Props) {
       <main className={styles.main}>
         <div className={styles.stateBlock} role={canceled ? 'status' : 'alert'}>
           <h1 className={styles.stateTitle}>
-            {canceled ? '결제가 취소되었습니다' : '결제를 완료하지 못했습니다'}
+            {canceled ? t('checkout.canceled.title') : t('checkout.failed.title')}
           </h1>
-          <p className={styles.stateBody}>작성한 초대장은 그대로 저장되어 있습니다.</p>
+          <p className={styles.stateBody}>
+            {canceled ? t('checkout.canceled.body') : t('checkout.failed.body')}
+          </p>
           <div className={styles.actions}>
             <Link className={styles.primary} href={`/invitations/${invitationId}/payment`}>
-              다시 결제하기
+              {t('checkout.cta.retry')}
             </Link>
             <Link className={styles.secondary} href={`/editor/${invitationId}`}>
-              편집으로 돌아가기
+              {t('checkout.cta.backEditor')}
             </Link>
           </div>
         </div>

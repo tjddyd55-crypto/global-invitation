@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildOrderId,
+  getPaymentOrderName,
+  getPrimaryPaymentChannel,
   mapTossPaymentStatus,
   resolvePaymentProvider,
   resolveTossChargeAmount,
+  toInternationalUsdChargeAmount,
 } from './provider';
 import { INVITATION_PRICING } from '../pricing/invitationPricing';
 
@@ -12,6 +15,22 @@ test('invitation pricing SSOT remains USD 30/10', () => {
   assert.equal(INVITATION_PRICING.currency, 'USD');
   assert.equal(INVITATION_PRICING.listPriceCents, 3000);
   assert.equal(INVITATION_PRICING.salePriceCents, 1000);
+});
+
+test('primary payment channel is INTERNATIONAL_USD', () => {
+  assert.equal(getPrimaryPaymentChannel(), 'INTERNATIONAL_USD');
+});
+
+test('USD product minor maps to Toss major units without FX', () => {
+  assert.deepEqual(toInternationalUsdChargeAmount(1000), { currency: 'USD', value: 10 });
+  assert.deepEqual(toInternationalUsdChargeAmount(3000), { currency: 'USD', value: 30 });
+  assert.throws(() => toInternationalUsdChargeAmount(1050), /USD_AMOUNT_MUST_BE_WHOLE_DOLLARS/);
+});
+
+test('payment orderName is global-first English by default', () => {
+  assert.equal(getPaymentOrderName('ko-KR'), '온라인 초대장 공개 이용권');
+  assert.equal(getPaymentOrderName('en-US'), 'Invitation Publishing Access');
+  assert.equal(getPaymentOrderName(null), 'Invitation Publishing Access');
 });
 
 test('mock provider is rejected in production', () => {
@@ -40,16 +59,18 @@ test('stripe provider is disabled', () => {
   }
 });
 
-test('toss CARD without explicit KRW settlement is unsupported for USD product', () => {
+test('toss prepare charge is USD international with no KRW settlement', () => {
   const prevCurrency = process.env.TOSS_PAYMENTS_SETTLEMENT_CURRENCY;
   const prevAmount = process.env.TOSS_PAYMENTS_SETTLEMENT_AMOUNT;
   delete process.env.TOSS_PAYMENTS_SETTLEMENT_CURRENCY;
   delete process.env.TOSS_PAYMENTS_SETTLEMENT_AMOUNT;
   try {
     const result = resolveTossChargeAmount('toss_payments');
-    assert.equal(result.ok, false);
-    if (!result.ok) {
-      assert.equal(result.code, 'UNSUPPORTED_CURRENCY');
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      assert.equal(result.channel, 'INTERNATIONAL_USD');
+      assert.equal(result.amount.currency, 'USD');
+      assert.equal(result.amount.value, 10);
     }
   } finally {
     process.env.TOSS_PAYMENTS_SETTLEMENT_CURRENCY = prevCurrency;
@@ -57,17 +78,16 @@ test('toss CARD without explicit KRW settlement is unsupported for USD product',
   }
 });
 
-test('explicit KRW settlement is used without FX conversion', () => {
+test('legacy KRW settlement env is refused (no silent fallback)', () => {
   const prevCurrency = process.env.TOSS_PAYMENTS_SETTLEMENT_CURRENCY;
   const prevAmount = process.env.TOSS_PAYMENTS_SETTLEMENT_AMOUNT;
   process.env.TOSS_PAYMENTS_SETTLEMENT_CURRENCY = 'KRW';
   process.env.TOSS_PAYMENTS_SETTLEMENT_AMOUNT = '10000';
   try {
     const result = resolveTossChargeAmount('toss_payments');
-    assert.equal(result.ok, true);
-    if (result.ok) {
-      assert.equal(result.amount.currency, 'KRW');
-      assert.equal(result.amount.value, 10000);
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.code, 'DOMESTIC_KRW_DISABLED');
     }
   } finally {
     process.env.TOSS_PAYMENTS_SETTLEMENT_CURRENCY = prevCurrency;

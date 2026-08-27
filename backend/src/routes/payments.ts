@@ -122,16 +122,18 @@ router.post('/invitations/:id/payment/prepare', async (req, res) => {
     }
 
     const invitation = access.invitation!;
+    const locale = normalizeText(req.body?.locale) || null;
     const result = await preparePaymentAttempt({
       invitationId: invitation.id,
       userId: access.user?.id || invitation.userId,
+      locale,
     });
 
     if (!result.ok) {
       const status =
-        result.code === 'UNSUPPORTED_CURRENCY'
+        result.code === 'UNSUPPORTED_CURRENCY' || result.code === 'DOMESTIC_KRW_DISABLED'
           ? 422
-          : result.code === 'MISSING_TOSS_KEYS'
+          : result.code === 'MISSING_TOSS_KEYS' || result.code === 'FOREIGN_MID_NOT_CONFIGURED'
             ? 503
             : 502;
       return res.status(status).json({ error: result.code, message: result.message });
@@ -148,13 +150,16 @@ router.post('/invitations/:id/payment/prepare', async (req, res) => {
       paymentId: result.paymentId,
       orderId: result.orderId,
       provider: result.provider,
+      paymentChannel: result.paymentChannel,
       orderName: result.orderName,
       amount: result.amount,
+      productAmountMinor: result.productAmountMinor,
       domainCurrency: result.domainCurrency,
       domainChargedAmountCents: result.domainChargedAmountCents,
       successUrl: result.successUrl,
       failUrl: result.failUrl,
       clientKey: result.clientKey,
+      variantKey: result.variantKey,
       pricing: getInvitationPricingSnapshot(),
     });
   } catch (error) {

@@ -1,10 +1,10 @@
 'use client';
-/* eslint-disable i18next/no-literal-string */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
+import { useI18n } from '@/src/contexts/I18nContext';
 import { publishInvitationById } from '@/src/lib/api';
 import {
   fetchInvitationPaymentStatus,
@@ -17,6 +17,7 @@ import {
   requestTossPaymentWindow,
 } from '@/src/shared/payments/tossPaymentClient';
 import {
+  formatUsdAmountLabel,
   formatUsdFromCents,
   INVITATION_PRICING,
 } from '@/src/shared/pricing/invitationPricing';
@@ -31,6 +32,7 @@ type UiPhase =
   | 'failed'
   | 'canceled'
   | 'already_paid'
+  | 'unavailable'
   | 'error';
 
 type PaymentPageProps = {
@@ -41,6 +43,7 @@ const MAX_POLLS = 20;
 const POLL_MS = 1500;
 
 export default function PaymentPage({ invitationId }: PaymentPageProps) {
+  const { t, language } = useI18n();
   const searchParams = useSearchParams();
   const [phase, setPhase] = useState<UiPhase>('loading');
   const [summary, setSummary] = useState<InvitationPaymentSummaryResponse | null>(null);
@@ -50,11 +53,12 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
   const pollRef = useRef(0);
   const startedCheckout = useRef(false);
 
-  const list = formatUsdFromCents(INVITATION_PRICING.listPriceCents);
-  const sale = formatUsdFromCents(INVITATION_PRICING.salePriceCents);
+  const list = formatUsdAmountLabel(INVITATION_PRICING.listPriceCents);
+  const sale = formatUsdAmountLabel(INVITATION_PRICING.salePriceCents);
   const discount = formatUsdFromCents(
     INVITATION_PRICING.listPriceCents - INVITATION_PRICING.salePriceCents
   );
+  const productLocale = language === 'en' ? 'en-US' : 'ko-KR';
 
   const publishAfterPaid = useCallback(async () => {
     const published = await publishInvitationById(invitationId);
@@ -149,12 +153,12 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
     startedCheckout.current = true;
     setBusy(true);
     try {
-      const prepared = await prepareInvitationPayment(invitationId);
+      const prepared = await prepareInvitationPayment(invitationId, { locale: productLocale });
       if (prepared.provider === 'mock') {
         redirectMockPaymentSuccess(prepared);
         return;
       }
-      await requestTossPaymentWindow(prepared);
+      await requestTossPaymentWindow(prepared, { locale: productLocale });
     } catch (error) {
       startedCheckout.current = false;
       setBusy(false);
@@ -162,8 +166,14 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
         setPhase('already_paid');
         return;
       }
-      if (error instanceof Error && error.message === 'UNSUPPORTED_CURRENCY') {
-        setPhase('failed');
+      if (
+        error instanceof Error &&
+        (error.message === 'FOREIGN_MID_NOT_CONFIGURED' ||
+          error.message === 'MISSING_TOSS_KEYS' ||
+          error.message === 'DOMESTIC_KRW_DISABLED' ||
+          error.message === 'UNSUPPORTED_CURRENCY')
+      ) {
+        setPhase('unavailable');
         return;
       }
       setPhase('failed');
@@ -175,14 +185,14 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
     const url = `${window.location.origin}/i/${shareSlug}`;
     try {
       await navigator.clipboard.writeText(url);
-      setCopyNotice('링크가 복사되었습니다');
+      setCopyNotice(t('checkout.copy.done'));
       window.setTimeout(() => setCopyNotice(null), 2000);
     } catch {
-      setCopyNotice('복사에 실패했습니다');
+      setCopyNotice(t('checkout.copy.fail'));
     }
   };
 
-  const title = summary?.title?.trim() || '초대장';
+  const title = summary?.title?.trim() || t('checkout.invitationFallback');
   const publicHref = shareSlug ? `/i/${shareSlug}` : null;
 
   return (
@@ -191,55 +201,55 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
       <main className={styles.main}>
         {phase === 'loading' ? (
           <p className={styles.headerDesc} role="status">
-            불러오는 중…
+            {t('checkout.loading')}
           </p>
         ) : null}
 
         {phase === 'error' ? (
           <div className={styles.stateBlock}>
-            <h1 className={styles.stateTitle}>초대장을 불러오지 못했습니다</h1>
-            <p className={styles.stateBody}>권한이 없거나 초대장이 없습니다.</p>
+            <h1 className={styles.stateTitle}>{t('checkout.error.title')}</h1>
+            <p className={styles.stateBody}>{t('checkout.error.body')}</p>
             <Link className={styles.primary} href="/my-invitations">
-              내 초대장으로
+              {t('checkout.cta.myInvitations')}
             </Link>
           </div>
         ) : null}
 
         {phase === 'default' ? (
           <>
-            <h1 className={styles.headerTitle}>초대장 발행하기</h1>
-            <p className={styles.headerDesc}>결제가 완료되면 공개 링크가 활성화됩니다.</p>
+            <h1 className={styles.headerTitle}>{t('checkout.title')}</h1>
+            <p className={styles.headerDesc}>{t('checkout.lead')}</p>
 
-            <section className={styles.card} aria-label="초대장 요약">
+            <section className={styles.card} aria-label={t('checkout.summaryAria')}>
               <h2 className={styles.summaryTitle}>{title}</h2>
               <p className={styles.summaryMeta}>{summary?.templateKey}</p>
             </section>
 
-            <section className={styles.card} aria-label="결제 금액">
+            <section className={styles.card} aria-label={t('checkout.priceAria')}>
               <div className={styles.priceRow}>
-                <span className={styles.muted}>정상가</span>
-                <span aria-label={`정상가 ${list}`}>{list}</span>
+                <span className={styles.muted}>{t('checkout.listPrice')}</span>
+                <span aria-label={`${t('checkout.listPrice')} ${list}`}>{list}</span>
               </div>
               <div className={styles.priceRow}>
-                <span className={styles.discount}>오픈 할인</span>
-                <span className={styles.discount} aria-label={`오픈 할인 -${discount}`}>
+                <span className={styles.discount}>{t('checkout.launchPrice')}</span>
+                <span className={styles.discount} aria-label={`${t('checkout.launchPrice')} -${discount}`}>
                   -{discount}
                 </span>
               </div>
               <div className={styles.priceRowTotal}>
-                <span>결제금액</span>
-                <span aria-label={`결제금액 ${sale}`}>{sale}</span>
+                <span>{t('checkout.due')}</span>
+                <span aria-label={`${t('checkout.due')} ${sale}`}>{sale}</span>
               </div>
             </section>
 
-            <section className={styles.card} aria-label="혜택">
+            <section className={styles.card} aria-label={t('checkout.benefitsAria')}>
               <ul className={styles.benefits}>
-                <li>이 초대장을 공개할 수 있습니다.</li>
-                <li>결제 후에도 자유롭게 수정할 수 있습니다.</li>
-                <li>같은 초대장은 추가 결제가 없습니다.</li>
+                <li>{t('checkout.benefit.publish')}</li>
+                <li>{t('checkout.benefit.edit')}</li>
+                <li>{t('checkout.benefit.once')}</li>
               </ul>
               <p className={styles.muted} style={{ marginTop: 12, marginBottom: 0, fontSize: '0.8125rem' }}>
-                안전한 결제는 토스페이먼츠를 통해 처리됩니다.
+                {t('checkout.providerNote')}
               </p>
             </section>
 
@@ -253,7 +263,7 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
                   data-testid="payment-checkout-cta"
                   onClick={() => void handleCheckout()}
                 >
-                  {sale} 결제하고 발행하기
+                  {`${sale} · ${t('checkout.cta.payPublish')}`}
                 </button>
               </div>
             </div>
@@ -262,30 +272,26 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
 
         {phase === 'processing' ? (
           <div className={styles.stateBlock} role="status" aria-live="polite">
-            <h1 className={styles.stateTitle}>결제 처리 중…</h1>
-            <p className={styles.stateBody}>
-              결제를 확인하고 있습니다. 잠시만 기다려 주세요.
-              <br />
-              새로고침해도 결제 상태는 서버에서 복구됩니다.
-            </p>
+            <h1 className={styles.stateTitle}>{t('checkout.confirming.title')}</h1>
+            <p className={styles.stateBody}>{t('checkout.confirming.body')}</p>
             <button type="button" className={styles.primary} disabled>
-              결제 처리 중…
+              {t('checkout.confirming.button')}
             </button>
           </div>
         ) : null}
 
         {phase === 'success' ? (
           <div className={styles.stateBlock} role="status" aria-live="polite">
-            <h1 className={styles.stateTitle}>결제가 완료되었습니다</h1>
-            <p className={styles.stateBody}>초대장이 발행되었습니다.</p>
+            <h1 className={styles.stateTitle}>{t('checkout.success.title')}</h1>
+            <p className={styles.stateBody}>{t('checkout.success.body')}</p>
             <div className={styles.actions}>
               {publicHref ? (
                 <Link className={styles.primary} href={publicHref} data-testid="payment-view-invitation">
-                  초대장 보기
+                  {t('checkout.cta.view')}
                 </Link>
               ) : null}
               <button type="button" className={styles.secondary} onClick={() => void handleCopyLink()}>
-                링크 복사
+                {t('checkout.cta.copy')}
               </button>
               {copyNotice ? <p className={styles.muted}>{copyNotice}</p> : null}
             </div>
@@ -294,8 +300,8 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
 
         {phase === 'failed' ? (
           <div className={styles.stateBlock} role="alert">
-            <h1 className={styles.stateTitle}>결제를 완료하지 못했습니다</h1>
-            <p className={styles.stateBody}>작성한 초대장은 그대로 저장되어 있습니다.</p>
+            <h1 className={styles.stateTitle}>{t('checkout.failed.title')}</h1>
+            <p className={styles.stateBody}>{t('checkout.failed.body')}</p>
             <div className={styles.actions}>
               <button
                 type="button"
@@ -305,10 +311,10 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
                   setPhase('default');
                 }}
               >
-                다시 결제하기
+                {t('checkout.cta.retry')}
               </button>
               <Link className={styles.secondary} href={`/editor/${invitationId}`}>
-                초대장으로 돌아가기
+                {t('checkout.cta.backEditor')}
               </Link>
             </div>
           </div>
@@ -316,8 +322,8 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
 
         {phase === 'canceled' ? (
           <div className={styles.stateBlock} role="status">
-            <h1 className={styles.stateTitle}>결제가 취소되었습니다</h1>
-            <p className={styles.stateBody}>작성한 초대장은 그대로 저장되어 있습니다.</p>
+            <h1 className={styles.stateTitle}>{t('checkout.canceled.title')}</h1>
+            <p className={styles.stateBody}>{t('checkout.canceled.body')}</p>
             <div className={styles.actions}>
               <button
                 type="button"
@@ -327,10 +333,22 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
                   setPhase('default');
                 }}
               >
-                다시 결제하기
+                {t('checkout.cta.retry')}
               </button>
               <Link className={styles.secondary} href={`/editor/${invitationId}`}>
-                편집으로 돌아가기
+                {t('checkout.cta.backEditor')}
+              </Link>
+            </div>
+          </div>
+        ) : null}
+
+        {phase === 'unavailable' ? (
+          <div className={styles.stateBlock} role="status">
+            <h1 className={styles.stateTitle}>{t('checkout.unavailable.title')}</h1>
+            <p className={styles.stateBody}>{t('checkout.unavailable.body')}</p>
+            <div className={styles.actions}>
+              <Link className={styles.secondary} href={`/editor/${invitationId}`}>
+                {t('checkout.cta.backEditor')}
               </Link>
             </div>
           </div>
@@ -338,16 +356,16 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
 
         {phase === 'already_paid' ? (
           <div className={styles.stateBlock} role="status">
-            <h1 className={styles.stateTitle}>이 초대장은 이미 결제되었습니다</h1>
+            <h1 className={styles.stateTitle}>{t('checkout.alreadyPaid.title')}</h1>
             <p className={styles.stateBody}>
               {summary?.isPublished
-                ? '공개 링크를 확인하거나 초대장을 수정할 수 있습니다.'
-                : '결제는 완료되었습니다. 발행을 완료해 주세요.'}
+                ? t('checkout.alreadyPaid.published')
+                : t('checkout.alreadyPaid.unpublished')}
             </p>
             <div className={styles.actions}>
               {summary?.isPublished && publicHref ? (
                 <Link className={styles.primary} href={publicHref}>
-                  초대장 보기
+                  {t('checkout.cta.view')}
                 </Link>
               ) : (
                 <button
@@ -358,16 +376,16 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
                     void publishAfterPaid().catch(() => setPhase('failed'));
                   }}
                 >
-                  발행 완료하기
+                  {t('checkout.cta.finishPublish')}
                 </button>
               )}
               {publicHref ? (
                 <button type="button" className={styles.secondary} onClick={() => void handleCopyLink()}>
-                  링크 복사
+                  {t('checkout.cta.copy')}
                 </button>
               ) : null}
               <Link className={styles.secondary} href={`/editor/${invitationId}`}>
-                초대장 수정하기
+                {t('checkout.cta.edit')}
               </Link>
               {copyNotice ? <p className={styles.muted}>{copyNotice}</p> : null}
             </div>
@@ -375,7 +393,7 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
         ) : null}
 
         <p className={styles.headerDesc} style={{ marginTop: 28 }}>
-          문의:{' '}
+          {t('checkout.supportPrefix')}{' '}
           <a href={supportMailtoHref()}>{SUPPORT_EMAIL}</a>
         </p>
       </main>

@@ -1,10 +1,10 @@
 'use client';
-/* eslint-disable i18next/no-literal-string */
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
+import { useI18n } from '@/src/contexts/I18nContext';
 import { publishInvitationById } from '@/src/lib/api';
 import {
   confirmInvitationPayment,
@@ -19,6 +19,7 @@ type Props = { invitationId: string };
  * Always confirm on backend, then publish.
  */
 export default function PaymentSuccessPage({ invitationId }: Props) {
+  const { t } = useI18n();
   const searchParams = useSearchParams();
   const [phase, setPhase] = useState<'processing' | 'success' | 'failed'>('processing');
   const [shareSlug, setShareSlug] = useState<string | null>(null);
@@ -76,9 +77,9 @@ export default function PaymentSuccessPage({ invitationId }: Props) {
     if (!shareSlug) return;
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/i/${shareSlug}`);
-      setCopyNotice('링크가 복사되었습니다');
+      setCopyNotice(t('checkout.copy.done'));
     } catch {
-      setCopyNotice('복사에 실패했습니다');
+      setCopyNotice(t('checkout.copy.fail'));
     }
   };
 
@@ -88,30 +89,26 @@ export default function PaymentSuccessPage({ invitationId }: Props) {
       <main className={styles.main}>
         {phase === 'processing' ? (
           <div className={styles.stateBlock} role="status" aria-live="polite">
-            <h1 className={styles.stateTitle}>결제 처리 중…</h1>
-            <p className={styles.stateBody}>
-              결제를 확인하고 있습니다. 잠시만 기다려 주세요.
-              <br />
-              새로고침해도 서버 상태로 복구됩니다.
-            </p>
+            <h1 className={styles.stateTitle}>{t('checkout.confirming.title')}</h1>
+            <p className={styles.stateBody}>{t('checkout.confirming.body')}</p>
             <button type="button" className={styles.primary} disabled>
-              결제 처리 중…
+              {t('checkout.confirming.button')}
             </button>
           </div>
         ) : null}
 
         {phase === 'success' ? (
           <div className={styles.stateBlock} role="status" aria-live="polite">
-            <h1 className={styles.stateTitle}>결제가 완료되었습니다</h1>
-            <p className={styles.stateBody}>초대장이 발행되었습니다.</p>
+            <h1 className={styles.stateTitle}>{t('checkout.success.title')}</h1>
+            <p className={styles.stateBody}>{t('checkout.success.body')}</p>
             <div className={styles.actions}>
               {shareSlug ? (
                 <Link className={styles.primary} href={`/i/${shareSlug}`}>
-                  초대장 보기
+                  {t('checkout.cta.view')}
                 </Link>
               ) : null}
               <button type="button" className={styles.secondary} onClick={() => void handleCopy()}>
-                링크 복사
+                {t('checkout.cta.copy')}
               </button>
               {copyNotice ? <p className={styles.muted}>{copyNotice}</p> : null}
             </div>
@@ -120,14 +117,14 @@ export default function PaymentSuccessPage({ invitationId }: Props) {
 
         {phase === 'failed' ? (
           <div className={styles.stateBlock} role="alert">
-            <h1 className={styles.stateTitle}>결제를 완료하지 못했습니다</h1>
-            <p className={styles.stateBody}>작성한 초대장은 그대로 저장되어 있습니다.</p>
+            <h1 className={styles.stateTitle}>{t('checkout.failed.title')}</h1>
+            <p className={styles.stateBody}>{t('checkout.failed.body')}</p>
             <div className={styles.actions}>
               <Link className={styles.primary} href={`/invitations/${invitationId}/payment`}>
-                다시 결제하기
+                {t('checkout.cta.retry')}
               </Link>
               <Link className={styles.secondary} href={`/editor/${invitationId}`}>
-                초대장으로 돌아가기
+                {t('checkout.cta.backEditor')}
               </Link>
             </div>
           </div>

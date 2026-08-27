@@ -29,13 +29,16 @@ export type PreparePaymentResponse = {
   paymentId: string;
   orderId: string;
   provider: 'mock' | 'toss_payments';
+  paymentChannel?: 'INTERNATIONAL_USD' | 'DOMESTIC_KRW';
   orderName: string;
   amount: { value: number; currency: string };
+  productAmountMinor?: number;
   domainCurrency: string;
   domainChargedAmountCents: number;
   successUrl: string;
   failUrl: string;
   clientKey: string | null;
+  variantKey?: string | null;
 };
 
 export type PaymentStatusResponse = {
@@ -74,7 +77,10 @@ export async function fetchInvitationPaymentSummary(
   return response.json();
 }
 
-export async function prepareInvitationPayment(invitationId: string): Promise<PreparePaymentResponse> {
+export async function prepareInvitationPayment(
+  invitationId: string,
+  opts?: { locale?: string | null }
+): Promise<PreparePaymentResponse> {
   const response = await fetch(
     buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}/payment/prepare`),
     buildRequestInit({
@@ -83,7 +89,7 @@ export async function prepareInvitationPayment(invitationId: string): Promise<Pr
         'Content-Type': 'application/json',
         ...buildAuthHeaders(),
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ locale: opts?.locale || undefined }),
     })
   );
   if (response.status === 409) {

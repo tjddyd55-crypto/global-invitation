@@ -4,28 +4,47 @@
 import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk';
 import type { PreparePaymentResponse } from '@/src/shared/payments/invitationPaymentApi';
 
+function resolveCheckoutLanguage(locale?: string | null): 'en' | 'ko' {
+  const normalized = (locale || '').toLowerCase();
+  return normalized.startsWith('ko') ? 'ko' : 'en';
+}
+
 /**
- * Toss Payments JS SDK v2 — payment window (CARD / 통합결제창).
- * Official docs: 일반결제 currency is KRW only.
+ * Toss Payments JS SDK v2 — INTERNATIONAL_USD primary checkout.
+ * Requires Toss 외화결제 (USD) MID. Domestic KRW CARD is not a silent fallback.
+ * @see https://docs.tosspayments.com/guides/v2/learn/foreign-payment
  * @see https://docs.tosspayments.com/sdk/v2/js
  */
-export async function requestTossPaymentWindow(prepared: PreparePaymentResponse): Promise<void> {
+export async function requestTossPaymentWindow(
+  prepared: PreparePaymentResponse,
+  opts?: { locale?: string | null }
+): Promise<void> {
   if (!prepared.clientKey) {
-    throw new Error('MISSING_CLIENT_KEY');
+    throw new Error('FOREIGN_MID_NOT_CONFIGURED');
   }
 
-  if (prepared.amount.currency !== 'KRW') {
+  if (prepared.paymentChannel && prepared.paymentChannel !== 'INTERNATIONAL_USD') {
+    throw new Error('DOMESTIC_KRW_DISABLED');
+  }
+
+  if (prepared.amount.currency !== 'USD') {
     throw new Error('UNSUPPORTED_CURRENCY');
   }
 
   const tossPayments = await loadTossPayments(prepared.clientKey);
-  const payment = tossPayments.payment({ customerKey: ANONYMOUS });
+  const paymentOptions: { customerKey: typeof ANONYMOUS; variantKey?: string } = {
+    customerKey: ANONYMOUS,
+  };
+  if (prepared.variantKey) {
+    paymentOptions.variantKey = prepared.variantKey;
+  }
+  const payment = tossPayments.payment(paymentOptions);
 
-  // SDK overloads end with FOREIGN_EASY_PAY; pin CARD+KRW for 일반 통합결제창.
+  // USD 외화결제 MID + international card window (Visa/MC/JCB/AMEX/UnionPay per contract).
   const request = {
     method: 'CARD' as const,
     amount: {
-      currency: 'KRW' as const,
+      currency: 'USD' as const,
       value: prepared.amount.value,
     },
     orderId: prepared.orderId,
@@ -35,13 +54,13 @@ export async function requestTossPaymentWindow(prepared: PreparePaymentResponse)
     card: {
       flowMode: 'DEFAULT' as const,
       useInternationalCardOnly: true,
-      language: 'EN' as const,
-      showEstimatedAmount: true,
+      language: resolveCheckoutLanguage(opts?.locale),
     },
   };
 
   await payment.requestPayment(request);
 }
+
 /** Development mock: emulate Toss success redirect without SDK. */
 export function redirectMockPaymentSuccess(prepared: PreparePaymentResponse): void {
   const url = new URL(prepared.successUrl);
