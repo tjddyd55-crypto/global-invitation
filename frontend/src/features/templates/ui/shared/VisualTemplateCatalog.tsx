@@ -27,7 +27,7 @@ import styles from './VisualTemplateCatalog.module.css';
 type ConceptFilter = 'WEDDING' | 'GENERAL' | 'ORGANIZATION';
 
 type CatalogCard = {
-  id: VisualTemplateId;
+  id: string;
   conceptType: ConceptFilter;
   name: string;
   description: string;
@@ -36,6 +36,7 @@ type CatalogCard = {
   featured: boolean;
   isNew: boolean;
   premium: boolean;
+  sourceType?: string;
 };
 
 function resolveConcept(raw: string | null): ConceptFilter | null {
@@ -43,19 +44,21 @@ function resolveConcept(raw: string | null): ConceptFilter | null {
   return null;
 }
 
-function toCard(item: PublicVisualCatalogItem): CatalogCard | null {
-  if (!isVisualTemplateId(item.templateKey)) return null;
-  const def = getVisualTemplateDefinition(item.templateKey);
+function toCard(item: PublicVisualCatalogItem): CatalogCard {
+  const def = isVisualTemplateId(item.templateKey)
+    ? getVisualTemplateDefinition(item.templateKey)
+    : null;
   return {
     id: item.templateKey,
     conceptType: item.concept as ConceptFilter,
-    name: item.displayName || def.name,
-    description: item.description || def.description,
-    thumbnailAsset: item.thumbnailUrl || def.thumbnailAsset,
-    styleTags: def.styleTags,
+    name: item.displayName || def?.name || item.templateKey,
+    description: item.description || def?.description || '',
+    thumbnailAsset: item.thumbnailUrl || def?.thumbnailAsset || '',
+    styleTags: def?.styleTags || [],
     featured: item.featured,
     isNew: item.new,
     premium: item.premium,
+    sourceType: item.sourceType,
   };
 }
 
@@ -82,7 +85,7 @@ export default function VisualTemplateCatalog() {
     void fetchPublicVisualCatalog({ concept, locale })
       .then((items) => {
         if (!mounted) return;
-        setTemplates(items.map(toCard).filter((x): x is CatalogCard => Boolean(x)));
+        setTemplates(items.map(toCard));
       })
       .catch((err) => {
         if (!mounted) return;

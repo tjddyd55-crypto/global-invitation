@@ -1,0 +1,21 @@
+.root {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mediaFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  background: #e8e4da;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.mediaImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

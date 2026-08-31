@@ -71,8 +71,10 @@ export function useCreateInvitation(): UseCreateInvitationResult {
           : undefined;
 
         const organizationData =
-          concept === 'ORGANIZATION' && sanitized && isVisualTemplateId(sanitized)
-            ? buildOrganizationCreateData(sanitized as VisualTemplateId)
+          concept === 'ORGANIZATION' && sanitized
+            ? buildOrganizationCreateData(
+                (isVisualTemplateId(sanitized) ? sanitized : 'ORGANIZATION_01_OFFICIAL') as VisualTemplateId
+              )
             : undefined;
 
         const created = await createInvitation({
