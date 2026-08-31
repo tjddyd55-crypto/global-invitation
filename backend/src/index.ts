@@ -26,8 +26,11 @@ import testPublishedInvitationRouter from './routes/testPublishedInvitation';
 import notificationsRouter from './routes/notifications';
 import paymentsRouter from './routes/payments';
 import adminOpsRouter from './routes/adminOps';
+import adminVisualTemplatesRouter from './routes/adminVisualTemplates';
+import visualCatalogRouter from './routes/visualCatalog';
 import { ensurePricingBootstrap } from './lib/pricing/invitationPricing';
 import { ensureSystemConfigBootstrap } from './lib/ops/systemConfig';
+import { syncVisualTemplateCatalogFromRegistry } from './lib/visualTemplates/catalogService';
 import { startCleanupWorker } from './workers/cleanupWorker';
 import { attachGuestSession } from './middleware/guestSessionMiddleware';
 import { guestRateLimit } from './middleware/guestRateLimit';
@@ -140,6 +143,7 @@ app.get('/api/build-identity', (_req, res) => {
 app.use('/api/admin', adminAuthRouter);
 app.use('/api/admin', adminMusicRouter);
 app.use('/api/admin', adminOpsRouter);
+app.use('/api/admin', adminVisualTemplatesRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin', adminTemplateSubmissionsRouter);
 app.use('/api/admin/super', adminSuperRouter);
@@ -168,6 +172,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/creator', templateSubmissionsRouter);
 app.use('/api/templates', templateRegistryRouter);
+app.use('/api/templates', visualCatalogRouter);
 app.use('/api/rsvp', rsvpRouter);
 app.use('/api/media', mediaRouter);
 app.use('/api/music-library', musicLibraryRouter);
@@ -182,8 +187,12 @@ app.listen(PORT, () => {
     const email = getEmailDiagnostics();
     console.info('[startup] email diagnostics', email);
   });
-  void Promise.all([ensurePricingBootstrap(), ensureSystemConfigBootstrap()]).catch((error) => {
-    console.warn('[startup] ops bootstrap skipped', {
+  void Promise.all([
+    ensurePricingBootstrap(),
+    ensureSystemConfigBootstrap(),
+    syncVisualTemplateCatalogFromRegistry(),
+  ]).catch((error) => {
+    console.warn('[startup] ops/catalog bootstrap skipped', {
       code: error instanceof Error ? error.message : 'UNKNOWN',
     });
   });

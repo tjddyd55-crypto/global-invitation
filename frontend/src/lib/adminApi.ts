@@ -480,6 +480,109 @@ export async function listAdminOpsAudit(limit = 50) {
   );
 }
 
+export type AdminVisualTemplateRow = {
+  id: string;
+  templateKey: string;
+  concept: string;
+  displayNameKo: string;
+  displayNameEn: string;
+  descriptionKo: string;
+  descriptionEn: string;
+  sourceType: string;
+  status: string;
+  isVisible: boolean;
+  isFeatured: boolean;
+  isNew: boolean;
+  isPremium: boolean;
+  sortOrder: number;
+  thumbnailUrl: string | null;
+  previewUrl: string | null;
+  activeVersion: number | null;
+  activeVersionId: string | null;
+  registryOk: boolean;
+  usage: { total: number; draft: number; published: number };
+  updatedAt: string;
+};
+
+export type AdminVisualCatalogDrift = {
+  registryTemplateCount: number;
+  catalogEntryCount: number;
+  activeVisibleCount: number;
+  registryMissingCount: number;
+  dbOrphanCount: number;
+  missingInDb: string[];
+  orphanInDb: string[];
+};
+
+export async function listAdminVisualTemplates(filters: {
+  concept?: string;
+  status?: string;
+  source?: string;
+  visible?: string;
+  featured?: string;
+  new?: string;
+  q?: string;
+} = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const query = params.toString();
+  return adminApiJson<{ templates: AdminVisualTemplateRow[]; drift: AdminVisualCatalogDrift }>(
+    `/api/admin/visual-templates${query ? `?${query}` : ''}`
+  );
+}
+
+export async function getAdminVisualTemplate(idOrKey: string) {
+  return adminApiJson<{ template: Record<string, unknown> }>(
+    `/api/admin/visual-templates/${encodeURIComponent(idOrKey)}`
+  );
+}
+
+export async function patchAdminVisualTemplate(
+  idOrKey: string,
+  payload: Record<string, unknown>
+) {
+  return adminApiJson<{ template: Record<string, unknown> }>(
+    `/api/admin/visual-templates/${encodeURIComponent(idOrKey)}`,
+    { method: 'PATCH', body: JSON.stringify(payload) }
+  );
+}
+
+export async function reorderAdminVisualTemplates(
+  order: Array<{ id?: string; templateKey?: string }>
+) {
+  return adminApiJson<{ ok: true }>('/api/admin/visual-templates/reorder', {
+    method: 'POST',
+    body: JSON.stringify({ order }),
+  });
+}
+
+export async function archiveAdminVisualTemplate(idOrKey: string) {
+  return adminApiJson<{ template: Record<string, unknown> }>(
+    `/api/admin/visual-templates/${encodeURIComponent(idOrKey)}/archive`,
+    { method: 'POST', body: '{}' }
+  );
+}
+
+export async function activateAdminVisualTemplate(idOrKey: string) {
+  return adminApiJson<{ template: Record<string, unknown> }>(
+    `/api/admin/visual-templates/${encodeURIComponent(idOrKey)}/activate`,
+    { method: 'POST', body: '{}' }
+  );
+}
+
+export async function syncAdminVisualTemplates(dryRun = false) {
+  return adminApiJson<Record<string, unknown>>('/api/admin/visual-templates/sync', {
+    method: 'POST',
+    body: JSON.stringify({ dryRun }),
+  });
+}
+
+export async function getAdminVisualTemplateDrift() {
+  return adminApiJson<AdminVisualCatalogDrift>('/api/admin/visual-templates/drift');
+}
+
 export async function listAdminMusic(filters: AdminMusicFilters = {}) {
   const params = new URLSearchParams();
   if (filters.search?.trim()) params.set('search', filters.search.trim());

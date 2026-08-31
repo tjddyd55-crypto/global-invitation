@@ -17,6 +17,7 @@ const ADMIN_NAV_ITEMS = [
   { href: '/admin/users', label: 'Users' },
   { href: '/admin/payments', label: 'Payments' },
   { href: '/admin/music', label: '음악 라이브러리' },
+  { href: '/admin/visual-templates', label: 'Visual Templates' },
   { href: '/admin/templates', label: 'Template Management' },
   { href: '/admin/template-submissions', label: 'Template Submissions' },
   { href: '/admin/system', label: 'System' },

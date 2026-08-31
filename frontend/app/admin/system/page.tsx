@@ -7,7 +7,9 @@ import {
   listAdminOpsAudit,
   updateAdminOpsSystem,
   getAdminSession,
+  getAdminVisualTemplateDrift,
   type AdminSession,
+  type AdminVisualCatalogDrift,
 } from '@/src/lib/adminApi';
 import styles from '@/src/components/admin/AdminShell.module.css';
 
@@ -15,6 +17,7 @@ export default function AdminSystemPage() {
   const [session, setSession] = useState<AdminSession | null>(null);
   const [system, setSystem] = useState<Record<string, unknown> | null>(null);
   const [logs, setLogs] = useState<Array<Record<string, unknown>>>([]);
+  const [drift, setDrift] = useState<AdminVisualCatalogDrift | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +31,9 @@ export default function AdminSystemPage() {
       .catch((err) => setError(err instanceof Error ? err.message : 'System load failed'));
     void listAdminOpsAudit(50)
       .then((res) => setLogs(res.logs))
+      .catch(() => undefined);
+    void getAdminVisualTemplateDrift()
+      .then(setDrift)
       .catch(() => undefined);
   }, []);
 
@@ -117,6 +123,26 @@ export default function AdminSystemPage() {
           </select>
         </label>
       </section>
+
+      {drift && (
+        <section className={styles.section}>
+          <h2 className={styles.pageTitle}>Visual Template Catalog Drift</h2>
+          <div className={styles.grid}>
+            {[
+              ['Registry', drift.registryTemplateCount],
+              ['Catalog DB', drift.catalogEntryCount],
+              ['Active+Visible', drift.activeVisibleCount],
+              ['Missing in DB', drift.registryMissingCount],
+              ['Orphan in DB', drift.dbOrphanCount],
+            ].map(([label, value]) => (
+              <article key={String(label)} className={styles.card}>
+                <div className={styles.metricLabel}>{label}</div>
+                <p className={styles.metricValue}>{value}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className={styles.section}>
         <h2 className={styles.pageTitle}>Audit Log</h2>
