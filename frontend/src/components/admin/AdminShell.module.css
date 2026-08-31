@@ -57,6 +57,21 @@
 .brand {
   font-size: 1.1rem;
   font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.envBadge {
+  display: inline-flex;
+  align-self: flex-start;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #065f46;
+  color: #ecfdf5;
 }
 
 .nav {
@@ -203,6 +218,27 @@
   cursor: pointer;
   text-decoration: none;
   font-size: 0.92rem;
+}
+
+.primaryButton {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.92rem;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font: inherit;
+  background: #fff;
+  margin: 6px 0 12px;
 }
 
 .secondaryButton {

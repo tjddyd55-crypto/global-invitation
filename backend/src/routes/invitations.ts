@@ -11,6 +11,7 @@ import {
   parseCreateInvitationLocale,
   stripLegacyDataJsonLocale,
 } from '../lib/invitationLocale';
+import { getSystemRuntimeSettings } from '../lib/ops/systemConfig';
 
 const router = Router();
 const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
@@ -520,6 +521,11 @@ router.post('/', async (req, res) => {
       return res.status(401).json({ error: 'UNAUTHORIZED' });
     }
 
+    const system = await getSystemRuntimeSettings();
+    if (!system.invitationCreationEnabled) {
+      return res.status(503).json({ error: 'INVITATION_CREATION_DISABLED' });
+    }
+
     const resolvedTemplate = await resolveTemplateReference(
       req.body?.templateId ?? req.body?.templateSlug ?? req.body?.template
     );
@@ -712,6 +718,11 @@ router.post('/:id/publish', async (req, res) => {
     if (!paid) {
       console.info('[publish] payment required', { invitationId: invitation.id, userId: user?.id || null });
       return res.status(402).json({ error: 'PAYMENT_REQUIRED' });
+    }
+
+    const system = await getSystemRuntimeSettings();
+    if (!system.publishingEnabled) {
+      return res.status(503).json({ error: 'PUBLISHING_DISABLED' });
     }
 
     const shareSlug = invitation.shareSlug || (await createUniqueShareSlug());

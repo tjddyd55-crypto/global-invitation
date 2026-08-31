@@ -53,11 +53,11 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
   const pollRef = useRef(0);
   const startedCheckout = useRef(false);
 
-  const list = formatUsdAmountLabel(INVITATION_PRICING.listPriceCents);
-  const sale = formatUsdAmountLabel(INVITATION_PRICING.salePriceCents);
-  const discount = formatUsdFromCents(
-    INVITATION_PRICING.listPriceCents - INVITATION_PRICING.salePriceCents
-  );
+  const listCents = summary?.pricing.listPriceCents ?? INVITATION_PRICING.listPriceCents;
+  const saleCents = summary?.pricing.salePriceCents ?? INVITATION_PRICING.salePriceCents;
+  const list = formatUsdAmountLabel(listCents);
+  const sale = formatUsdAmountLabel(saleCents);
+  const discount = formatUsdFromCents(listCents - saleCents);
   const productLocale = language === 'en' ? 'en-US' : 'ko-KR';
 
   const publishAfterPaid = useCallback(async () => {

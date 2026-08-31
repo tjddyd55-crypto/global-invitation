@@ -1,4 +1,7 @@
 import { INVITATION_PRICING } from '../pricing/invitationPricing';
+import { resolveTossCredentialsForRuntime } from '../ops/paymentProviderConfig';
+import { getSystemRuntimeSettings, resolveRuntimeAppEnvironment } from '../ops/systemConfig';
+import { isAdminSettingsEncryptionConfigured } from '../security/adminSettingsCrypto';
 import type { PaymentChannel, PaymentProviderName, TossChargeAmount } from './types';
 
 function resolveNodeEnv(): string {
@@ -24,7 +27,6 @@ export function resolvePaymentProvider(): PaymentProviderName {
     throw new Error('PAYMENT_PROVIDER=stripe is disabled; use toss_payments or mock');
   }
 
-  // development default without explicit provider: mock
   if (nodeEnv !== 'production') {
     return 'mock';
   }
@@ -45,6 +47,7 @@ export function getFrontendBaseUrl(): string {
   ).replace(/\/$/, '');
 }
 
+/** Env-only secret (fallback). Prefer resolveTossRuntimeKeys(). */
 export function getTossSecretKey(): string {
   const secret = process.env.TOSS_PAYMENTS_SECRET_KEY?.trim() || '';
   if (!secret) {
@@ -53,6 +56,7 @@ export function getTossSecretKey(): string {
   return secret;
 }
 
+/** Env-only client key (fallback). Prefer resolveTossRuntimeKeys(). */
 export function getTossClientKey(): string {
   return (
     process.env.TOSS_PAYMENTS_CLIENT_KEY?.trim() ||
@@ -61,13 +65,29 @@ export function getTossClientKey(): string {
   );
 }
 
-/** Optional Toss admin variantKey for 외화결제 MID (payment window / widgets). */
 export function getTossVariantKey(): string | null {
   const value =
     process.env.TOSS_PAYMENTS_VARIANT_KEY?.trim() ||
     process.env.NEXT_PUBLIC_TOSS_PAYMENTS_VARIANT_KEY?.trim() ||
     '';
   return value || null;
+}
+
+export async function resolveTossRuntimeKeys(): Promise<
+  | { ok: true; clientKey: string; secretKey: string; variantKey: string | null; source: 'db' | 'env' }
+  | { ok: false; code: string; message: string }
+> {
+  const resolved = await resolveTossCredentialsForRuntime();
+  if (!resolved.ok) {
+    return resolved;
+  }
+  return {
+    ok: true,
+    clientKey: resolved.credentials.clientKey,
+    secretKey: resolved.credentials.secretKey,
+    variantKey: resolved.credentials.variantKey,
+    source: resolved.credentials.source,
+  };
 }
 
 /**
@@ -97,16 +117,12 @@ export function assertTossKeySafety(clientKey: string, secretKey: string): void 
 /**
  * Domain minor units (USD cents) → Toss provider charge amount.
  * Product SSOT stays USD cents. Toss USD 외화결제 uses major currency units (e.g. $10 → 10).
- * Never invent FX / KRW settlement here.
- *
- * @see https://docs.tosspayments.com/guides/v2/learn/foreign-payment
  */
 export function toInternationalUsdChargeAmount(productAmountMinor: number): TossChargeAmount {
   if (!Number.isInteger(productAmountMinor) || productAmountMinor <= 0) {
     throw new Error('INVALID_PRODUCT_AMOUNT');
   }
   if (productAmountMinor % 100 !== 0) {
-    // Toss USD major-unit integer; fractional cents need explicit product decision.
     throw new Error('USD_AMOUNT_MUST_BE_WHOLE_DOLLARS');
   }
   return {
@@ -117,11 +133,12 @@ export function toInternationalUsdChargeAmount(productAmountMinor: number): Toss
 
 /**
  * Resolve provider charge for the active payment channel.
- *
- * PRIMARY: INTERNATIONAL_USD — Product USD → Charge USD (same currency, no FX).
- * SECONDARY DOMESTIC_KRW: not enabled; never silent-fallback from missing USD MID.
+ * Pass productAmountMinor from pricing resolver (DB or code default).
  */
-export function resolveTossChargeAmount(provider: PaymentProviderName):
+export function resolveTossChargeAmount(
+  provider: PaymentProviderName,
+  productAmountMinor: number = INVITATION_PRICING.salePriceCents
+):
   | { ok: true; amount: TossChargeAmount; channel: PaymentChannel }
   | {
       ok: false;
@@ -142,11 +159,10 @@ export function resolveTossChargeAmount(provider: PaymentProviderName):
     return {
       ok: true,
       channel,
-      amount: toInternationalUsdChargeAmount(INVITATION_PRICING.salePriceCents),
+      amount: toInternationalUsdChargeAmount(productAmountMinor),
     };
   }
 
-  // Explicitly refuse any legacy KRW settlement env as a product charge path.
   const settlementCurrency = (process.env.TOSS_PAYMENTS_SETTLEMENT_CURRENCY || '').trim().toUpperCase();
   if (settlementCurrency === 'KRW') {
     return {
@@ -162,7 +178,7 @@ export function resolveTossChargeAmount(provider: PaymentProviderName):
     return {
       ok: true,
       channel,
-      amount: toInternationalUsdChargeAmount(INVITATION_PRICING.salePriceCents),
+      amount: toInternationalUsdChargeAmount(productAmountMinor),
     };
   } catch (error) {
     return {
@@ -174,12 +190,10 @@ export function resolveTossChargeAmount(provider: PaymentProviderName):
 }
 
 export function buildOrderId(paymentAttemptId: string): string {
-  // Toss: 6–64 chars, [A-Za-z0-9-_=]
   const compact = paymentAttemptId.replace(/-/g, '');
   return `gi_${compact}`.slice(0, 64);
 }
 
-/** Toss checkout orderName — short, no PII. Global-first default = EN. */
 export function getPaymentOrderName(locale?: string | null): string {
   const normalized = (locale || '').toLowerCase();
   if (normalized.startsWith('ko')) {
@@ -189,45 +203,57 @@ export function getPaymentOrderName(locale?: string | null): string {
 }
 
 /** Safe readiness snapshot for /health — never includes key values. */
-export function getPaymentDiagnostics(): {
+export async function getPaymentDiagnostics(): Promise<{
   provider: PaymentProviderName | 'unconfigured' | 'error';
   mode: PaymentChannel;
   currency: 'USD';
+  runtimeEnvironment: string;
+  activePaymentEnvironment: 'TEST' | 'LIVE';
+  pricingConfigured: boolean;
+  encryptionConfigured: boolean;
   tossClientKeyConfigured: boolean;
   tossSecretKeyConfigured: boolean;
   tossVariantKeyConfigured: boolean;
+  paymentConfigSource: 'db' | 'env' | 'none';
   domesticKrwEnabled: false;
   mockAllowed: boolean;
-} {
+  paymentsEnabled: boolean;
+}> {
   const nodeEnv = resolveNodeEnv();
   const mockAllowed = nodeEnv !== 'production';
-  const tossClientKeyConfigured = Boolean(getTossClientKey());
-  const tossSecretKeyConfigured = Boolean(process.env.TOSS_PAYMENTS_SECRET_KEY?.trim());
-  const tossVariantKeyConfigured = Boolean(getTossVariantKey());
+  const system = await getSystemRuntimeSettings();
+  const keys = await resolveTossRuntimeKeys();
+  const tossClientKeyConfigured = keys.ok ? Boolean(keys.clientKey) : Boolean(getTossClientKey());
+  const tossSecretKeyConfigured = keys.ok
+    ? Boolean(keys.secretKey)
+    : Boolean(process.env.TOSS_PAYMENTS_SECRET_KEY?.trim());
+  const tossVariantKeyConfigured = keys.ok
+    ? Boolean(keys.variantKey)
+    : Boolean(getTossVariantKey());
 
+  let provider: PaymentProviderName | 'unconfigured' | 'error' = 'unconfigured';
   try {
-    return {
-      provider: resolvePaymentProvider(),
-      mode: getPrimaryPaymentChannel(),
-      currency: 'USD',
-      tossClientKeyConfigured,
-      tossSecretKeyConfigured,
-      tossVariantKeyConfigured,
-      domesticKrwEnabled: false,
-      mockAllowed,
-    };
+    provider = resolvePaymentProvider();
   } catch {
-    return {
-      provider: 'error',
-      mode: getPrimaryPaymentChannel(),
-      currency: 'USD',
-      tossClientKeyConfigured,
-      tossSecretKeyConfigured,
-      tossVariantKeyConfigured,
-      domesticKrwEnabled: false,
-      mockAllowed,
-    };
+    provider = 'error';
   }
+
+  return {
+    provider,
+    mode: getPrimaryPaymentChannel(),
+    currency: 'USD',
+    runtimeEnvironment: resolveRuntimeAppEnvironment(),
+    activePaymentEnvironment: system.activePaymentEnvironment,
+    pricingConfigured: true,
+    encryptionConfigured: isAdminSettingsEncryptionConfigured(),
+    tossClientKeyConfigured,
+    tossSecretKeyConfigured,
+    tossVariantKeyConfigured,
+    paymentConfigSource: keys.ok ? keys.source : 'none',
+    domesticKrwEnabled: false,
+    mockAllowed,
+    paymentsEnabled: system.paymentsEnabled,
+  };
 }
 
 export function mapTossPaymentStatus(

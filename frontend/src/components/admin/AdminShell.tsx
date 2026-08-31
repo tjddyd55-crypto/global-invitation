@@ -13,11 +13,12 @@ type AdminShellProps = {
 
 const ADMIN_NAV_ITEMS = [
   { href: '/admin/dashboard', label: 'Dashboard' },
+  { href: '/admin/invitations', label: 'Invitations' },
+  { href: '/admin/users', label: 'Users' },
+  { href: '/admin/payments', label: 'Payments' },
   { href: '/admin/music', label: '음악 라이브러리' },
   { href: '/admin/templates', label: 'Template Management' },
   { href: '/admin/template-submissions', label: 'Template Submissions' },
-  { href: '/admin/users', label: 'Users' },
-  { href: '/admin/payments', label: 'Payments' },
   { href: '/admin/system', label: 'System' },
 ];
 
@@ -102,7 +103,10 @@ export default function AdminShell({ children }: AdminShellProps) {
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        <div className={styles.brand}>Global Invitation Admin</div>
+        <div className={styles.brand}>
+          Global Invitation Admin
+          <span className={styles.envBadge}>DEVELOPMENT</span>
+        </div>
         <nav className={styles.nav}>
           {navItems.map((item) => (
             <Link

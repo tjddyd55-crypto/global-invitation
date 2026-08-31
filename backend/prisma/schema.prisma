@@ -667,3 +667,63 @@ model InvitationMusicTrack {
   @@index([isActive, isArchived, createdAt])
   @@map("invitation_music_tracks")
 }
+
+/// Admin-managed invitation publish pricing (USD). Runtime: DB → code default.
+model InvitationPricingConfig {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  currency        String    @default("USD")
+  listPriceMinor  Int       @map("list_price_minor")
+  salePriceMinor  Int       @map("sale_price_minor")
+  promoEnabled    Boolean   @default(true) @map("promo_enabled")
+  promoStartsAt   DateTime? @map("promo_starts_at") @db.Timestamptz(6)
+  promoEndsAt     DateTime? @map("promo_ends_at") @db.Timestamptz(6)
+  enabled         Boolean   @default(true)
+  updatedBy       String?   @map("updated_by")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([enabled, updatedAt])
+  @@map("invitation_pricing_configs")
+}
+
+enum PaymentProviderEnvironment {
+  TEST
+  LIVE
+}
+
+/// Admin-managed Toss credentials. Secrets encrypted at rest (AES-256-GCM).
+model PaymentProviderConfig {
+  id                     String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider               String                     @default("toss_payments")
+  environment            PaymentProviderEnvironment
+  enabled                Boolean                    @default(false)
+  encryptedClientKey     String?                    @map("encrypted_client_key")
+  encryptedSecretKey     String?                    @map("encrypted_secret_key")
+  encryptedVariantKey    String?                    @map("encrypted_variant_key")
+  clientKeyFingerprint   String?                    @map("client_key_fingerprint")
+  secretKeyFingerprint   String?                    @map("secret_key_fingerprint")
+  variantKeyFingerprint  String?                    @map("variant_key_fingerprint")
+  updatedBy              String?                    @map("updated_by")
+  createdAt              DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([provider, environment])
+  @@map("payment_provider_configs")
+}
+
+/// Singleton operational feature flags (id = "default").
+model SystemRuntimeConfig {
+  id                         String   @id @default("default")
+  paymentsEnabled            Boolean  @default(true) @map("payments_enabled")
+  publishingEnabled          Boolean  @default(true) @map("publishing_enabled")
+  invitationCreationEnabled  Boolean  @default(true) @map("invitation_creation_enabled")
+  signupsEnabled             Boolean  @default(true) @map("signups_enabled")
+  supportEmail               String?  @map("support_email")
+  /// TEST | LIVE — development defaults to TEST; LIVE charge blocked outside production.
+  activePaymentEnvironment   String   @default("TEST") @map("active_payment_environment")
+  updatedBy                  String?  @map("updated_by")
+  createdAt                  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("system_runtime_configs")
+}

@@ -112,7 +112,7 @@ router.post('/', async (req, res) => {
       },
     });
 
-    const pricing = getInvitationPricingSnapshot();
+    const pricing = await getInvitationPricingSnapshot();
     await prisma.invitationPayment.create({
       data: {
         invitationId: invitation.id,

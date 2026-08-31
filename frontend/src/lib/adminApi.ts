@@ -73,6 +73,41 @@ export type AdminDashboardSummary = {
   };
 };
 
+export type AdminOpsDashboard = AdminDashboardSummary & {
+  runtimeEnvironment: string;
+  metrics: {
+    totalUsers: number;
+    usersToday: number;
+    usersMonth: number;
+    totalInvitations: number;
+    draftCount: number;
+    publishedCount: number;
+    invitationsToday: number;
+    invitationsMonth: number;
+    paidCount: number;
+    paidToday: number;
+    paidMonth: number;
+    revenueTodayMinor: number;
+    revenueMonthMinor: number;
+    failedPayments: number;
+    currentSalePriceMinor: number;
+    currentListPriceMinor: number;
+    currency: string;
+  };
+  payment: Record<string, unknown>;
+  system: {
+    paymentsEnabled: boolean;
+    publishingEnabled: boolean;
+    activePaymentEnvironment: string;
+  };
+  recent: {
+    payments: Array<Record<string, unknown>>;
+    invitations: Array<Record<string, unknown>>;
+    users: Array<Record<string, unknown>>;
+    audit: Array<Record<string, unknown>>;
+  };
+};
+
 export type AdminMusicCategory = 'COMMON' | 'WEDDING' | 'FUNERAL' | 'GENERAL';
 
 export type AdminMusicTrack = {
@@ -335,6 +370,114 @@ export async function getAdminSession() {
 
 export async function getAdminDashboardSummary() {
   return adminApiJson<AdminDashboardSummary>('/api/admin/dashboard');
+}
+
+export async function getAdminOpsDashboard() {
+  return adminApiJson<AdminOpsDashboard>('/api/admin/ops/dashboard');
+}
+
+export async function listAdminOpsUsers(q?: string) {
+  const params = new URLSearchParams();
+  if (q?.trim()) params.set('q', q.trim());
+  const query = params.toString();
+  return adminApiJson<{ users: Array<Record<string, unknown>> }>(
+    `/api/admin/ops/users${query ? `?${query}` : ''}`
+  );
+}
+
+export async function getAdminOpsUser(id: string) {
+  return adminApiJson<Record<string, unknown>>(`/api/admin/ops/users/${id}`);
+}
+
+export async function listAdminOpsInvitations(filters: Record<string, string> = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v) params.set(k, v);
+  });
+  const query = params.toString();
+  return adminApiJson<{ invitations: Array<Record<string, unknown>> }>(
+    `/api/admin/ops/invitations${query ? `?${query}` : ''}`
+  );
+}
+
+export async function getAdminOpsInvitation(id: string) {
+  return adminApiJson<Record<string, unknown>>(`/api/admin/ops/invitations/${id}`);
+}
+
+export async function listAdminOpsPayments(filters: Record<string, string> = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v) params.set(k, v);
+  });
+  const query = params.toString();
+  return adminApiJson<{ payments: Array<Record<string, unknown>> }>(
+    `/api/admin/ops/payments${query ? `?${query}` : ''}`
+  );
+}
+
+export async function getAdminOpsPayment(id: string) {
+  return adminApiJson<Record<string, unknown>>(`/api/admin/ops/payments/${id}`);
+}
+
+export async function getAdminOpsPricing() {
+  return adminApiJson<{
+    currency: string;
+    listPriceMinor: number;
+    salePriceMinor: number;
+    effectivePriceMinor: number;
+    promoEnabled: boolean;
+    promoStartsAt: string | null;
+    promoEndsAt: string | null;
+    source: string;
+  }>('/api/admin/ops/payments/pricing');
+}
+
+export async function updateAdminOpsPricing(payload: {
+  listPriceMinor: number;
+  salePriceMinor: number;
+  promoEnabled: boolean;
+  promoStartsAt?: string | null;
+  promoEndsAt?: string | null;
+}) {
+  return adminApiJson<Record<string, unknown>>('/api/admin/ops/payments/pricing', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getAdminOpsProviderConfig() {
+  return adminApiJson<Record<string, unknown>>('/api/admin/ops/payments/provider-config');
+}
+
+export async function updateAdminOpsProviderConfig(payload: Record<string, unknown>) {
+  return adminApiJson<Record<string, unknown>>('/api/admin/ops/payments/provider-config', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function testAdminOpsProviderConfig(environment: 'TEST' | 'LIVE') {
+  return adminApiJson<Record<string, unknown>>('/api/admin/ops/payments/provider-config/test', {
+    method: 'POST',
+    body: JSON.stringify({ environment }),
+  });
+}
+
+export async function getAdminOpsSystem() {
+  return adminApiJson<Record<string, unknown>>('/api/admin/ops/system');
+}
+
+export async function updateAdminOpsSystem(payload: Record<string, unknown>) {
+  return adminApiJson<Record<string, unknown>>('/api/admin/ops/system', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function listAdminOpsAudit(limit = 50) {
+  return adminApiJson<{ logs: Array<Record<string, unknown>> }>(
+    `/api/admin/ops/audit?limit=${limit}`
+  );
 }
 
 export async function listAdminMusic(filters: AdminMusicFilters = {}) {

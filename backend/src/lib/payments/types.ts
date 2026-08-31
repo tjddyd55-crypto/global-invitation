@@ -51,7 +51,10 @@ export type PreparePaymentResult =
         | 'DOMESTIC_KRW_DISABLED'
         | 'MISSING_TOSS_KEYS'
         | 'PREPARE_FAILED'
-        | 'INVALID_PROVIDER';
+        | 'INVALID_PROVIDER'
+        | 'PAYMENTS_DISABLED'
+        | 'LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT'
+        | 'PAYMENT_PROVIDER_CONFIG_INVALID';
       message: string;
     };
 

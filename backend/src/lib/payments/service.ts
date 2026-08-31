@@ -5,17 +5,16 @@ import {
 } from '@prisma/client';
 import prisma from '../prisma';
 import { getInvitationPricingSnapshot } from '../pricing/invitationPricing';
+import { getSystemRuntimeSettings } from '../ops/systemConfig';
 import {
   assertTossKeySafety,
   buildOrderId,
   getFrontendBaseUrl,
   getPaymentOrderName,
-  getTossClientKey,
-  getTossSecretKey,
-  getTossVariantKey,
   mapTossPaymentStatus,
   resolvePaymentProvider,
   resolveTossChargeAmount,
+  resolveTossRuntimeKeys,
 } from './provider';
 import { confirmTossPayment, getTossPaymentByKey } from './tossClient';
 import type { ConfirmPaymentInput, PreparePaymentResult } from './types';
@@ -36,7 +35,7 @@ export async function hasPaidEntitlement(invitationId: string): Promise<boolean>
 }
 
 export async function getPaymentSummaryForInvitation(invitationId: string) {
-  const pricing = getInvitationPricingSnapshot();
+  const pricing = await getInvitationPricingSnapshot();
   const paid = await findPaidPayment(invitationId);
   const latest = await prisma.invitationPayment.findFirst({
     where: { invitationId },
@@ -101,8 +100,18 @@ export async function preparePaymentAttempt(input: {
     return { ok: true, alreadyPaid: true, paymentId: existingPaid.id };
   }
 
+  const system = await getSystemRuntimeSettings();
+  if (!system.paymentsEnabled) {
+    return {
+      ok: false,
+      code: 'PAYMENTS_DISABLED',
+      message: 'Payments are temporarily disabled by system settings.',
+    };
+  }
+
+  const pricing = await getInvitationPricingSnapshot();
   const provider = resolvePaymentProvider();
-  const charge = resolveTossChargeAmount(provider);
+  const charge = resolveTossChargeAmount(provider, pricing.chargedAmountCents);
   if (!charge.ok) {
     return { ok: false, code: charge.code, message: charge.message };
   }
@@ -110,19 +119,20 @@ export async function preparePaymentAttempt(input: {
   let clientKey: string | null = null;
   let variantKey: string | null = null;
   if (provider === 'toss_payments') {
-    clientKey = getTossClientKey();
-    variantKey = getTossVariantKey();
-    if (!clientKey) {
+    const keys = await resolveTossRuntimeKeys();
+    if (!keys.ok) {
       return {
         ok: false,
-        code: 'FOREIGN_MID_NOT_CONFIGURED',
-        message:
-          'Toss USD foreign-payment MID is not configured. Set NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY (and TOSS_PAYMENTS_SECRET_KEY). Domestic KRW is not a silent fallback.',
+        code: keys.code === 'LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT'
+          ? keys.code
+          : 'FOREIGN_MID_NOT_CONFIGURED',
+        message: keys.message,
       };
     }
+    clientKey = keys.clientKey;
+    variantKey = keys.variantKey;
     try {
-      const secret = getTossSecretKey();
-      assertTossKeySafety(clientKey, secret);
+      assertTossKeySafety(keys.clientKey, keys.secretKey);
     } catch (error) {
       return {
         ok: false,
@@ -132,7 +142,6 @@ export async function preparePaymentAttempt(input: {
     }
   }
 
-  const pricing = getInvitationPricingSnapshot();
   const { successUrl, failUrl } = buildCheckoutUrls(input.invitationId);
   const orderName = getPaymentOrderName(input.locale);
   const paymentChannel = charge.channel;
@@ -207,6 +216,8 @@ export async function preparePaymentAttempt(input: {
     tossCurrency: charge.amount.currency,
     productAmountMinor: pricing.chargedAmountCents,
     productCurrency: pricing.currency,
+    pricingConfigId: pricing.pricingConfigId ?? null,
+    pricingSource: pricing.source,
   };
 
   await prisma.invitationPayment.update({

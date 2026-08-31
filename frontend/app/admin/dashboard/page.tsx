@@ -2,50 +2,37 @@
 /* eslint-disable i18next/no-literal-string */
 
 import { useEffect, useState } from 'react';
-import { getAdminDashboardSummary, type AdminDashboardSummary } from '@/src/lib/adminApi';
+import Link from 'next/link';
+import { getAdminOpsDashboard, type AdminOpsDashboard } from '@/src/lib/adminApi';
 import styles from '@/src/components/admin/AdminShell.module.css';
 
-const DASHBOARD_METRICS: Array<{
-  key: keyof Pick<
-    AdminDashboardSummary,
-    'totalTemplates' | 'activeTemplates' | 'totalInvitationsCreated' | 'invitationsCreatedToday'
-  >;
-  label: string;
-}> = [
-  { key: 'totalTemplates', label: '총 템플릿 수' },
-  { key: 'activeTemplates', label: '활성 템플릿 수' },
-  { key: 'totalInvitationsCreated', label: '총 초대장 생성 수' },
-  { key: 'invitationsCreatedToday', label: '오늘 생성 초대장' },
-];
+function money(minor: number, currency = 'USD') {
+  return `$${(minor / 100).toFixed(2)} ${currency}`;
+}
 
 export default function AdminDashboardPage() {
-  const [summary, setSummary] = useState<AdminDashboardSummary | null>(null);
+  const [data, setData] = useState<AdminOpsDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function load() {
-      try {
-        const nextSummary = await getAdminDashboardSummary();
-        if (!isMounted) return;
-        setSummary(nextSummary);
-      } catch (loadError) {
-        if (!isMounted) return;
-        setError(loadError instanceof Error ? loadError.message : '대시보드를 불러오지 못했습니다.');
-      }
-    }
-
-    void load();
-
+    let mounted = true;
+    void getAdminOpsDashboard()
+      .then((next) => {
+        if (mounted) setData(next);
+      })
+      .catch((err) => {
+        if (mounted) setError(err instanceof Error ? err.message : 'Dashboard load failed');
+      });
     return () => {
-      isMounted = false;
+      mounted = false;
     };
   }, []);
 
-  if (!summary && !error) {
+  if (!data && !error) {
     return <div className={styles.loading}>대시보드 데이터를 불러오는 중입니다...</div>;
   }
+
+  const m = data?.metrics;
 
   return (
     <>
@@ -53,50 +40,125 @@ export default function AdminDashboardPage() {
         <div>
           <h1 className={styles.pageTitle}>Admin Dashboard</h1>
           <p className={styles.pageDescription}>
-            템플릿 운영 현황과 초대장 생성 지표를 한 곳에서 확인합니다.
+            운영 지표 · Runtime: {data?.runtimeEnvironment || '—'} · Payment env:{' '}
+            {data?.system?.activePaymentEnvironment || '—'}
           </p>
         </div>
       </div>
 
       {error && <p className={styles.error}>{error}</p>}
 
-      {summary && (
+      {m && (
         <>
           <section className={styles.grid}>
-            {DASHBOARD_METRICS.map((metric) => (
-              <article key={metric.key} className={styles.card}>
-                <div className={styles.metricLabel}>{metric.label}</div>
-                <p className={styles.metricValue}>{summary[metric.key]}</p>
+            {[
+              ['전체 회원', m.totalUsers],
+              ['오늘 신규 회원', m.usersToday],
+              ['이번 달 신규 회원', m.usersMonth],
+              ['전체 초대장', m.totalInvitations],
+              ['DRAFT', m.draftCount],
+              ['PUBLISHED', m.publishedCount],
+              ['오늘 생성', m.invitationsToday],
+              ['이번 달 생성', m.invitationsMonth],
+              ['PAID 건수', m.paidCount],
+              ['오늘 매출', money(m.revenueTodayMinor, m.currency)],
+              ['이번 달 매출', money(m.revenueMonthMinor, m.currency)],
+              ['결제 실패', m.failedPayments],
+              ['판매가', money(m.currentSalePriceMinor, m.currency)],
+              ['정상가', money(m.currentListPriceMinor, m.currency)],
+            ].map(([label, value]) => (
+              <article key={String(label)} className={styles.card}>
+                <div className={styles.metricLabel}>{label}</div>
+                <p className={styles.metricValue}>{value}</p>
               </article>
             ))}
           </section>
 
           <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <div>
-                <h2 className={styles.pageTitle}>수익 요약</h2>
-                <p className={styles.pageDescription}>현재 등록된 활성 템플릿 기준 예상 수익 구조입니다.</p>
-              </div>
+            <h2 className={styles.pageTitle}>Payment Runtime</h2>
+            <pre className={styles.pageDescription} style={{ whiteSpace: 'pre-wrap' }}>
+              {JSON.stringify(data.payment, null, 2)}
+            </pre>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.pageTitle}>최근 결제</h2>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Amount</th>
+                    <th>Invitation</th>
+                    <th>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recent.payments.map((p) => (
+                    <tr key={String(p.id)}>
+                      <td>{String(p.status)}</td>
+                      <td>{money(Number(p.chargedAmount || 0), String(p.currency || 'USD'))}</td>
+                      <td>
+                        <Link href={`/admin/invitations/${p.invitationId}`}>
+                          {String(p.invitationTitle || p.invitationId)}
+                        </Link>
+                      </td>
+                      <td>{String(p.createdAt || '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.pageTitle}>최근 초대장</h2>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Status</th>
+                    <th>Paid</th>
+                    <th>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recent.invitations.map((inv) => (
+                    <tr key={String(inv.id)}>
+                      <td>
+                        <Link href={`/admin/invitations/${inv.id}`}>{String(inv.title || inv.id)}</Link>
+                      </td>
+                      <td>{String(inv.status)}</td>
+                      <td>{inv.isPaid ? 'Y' : 'N'}</td>
+                      <td>{String(inv.createdAt || '')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.pageTitle}>최근 회원 / Audit</h2>
             <div className={styles.grid}>
               <article className={styles.card}>
-                <div className={styles.metricLabel}>총 템플릿 가격 합계</div>
-                <p className={styles.metricValue}>${summary.revenueSummary.totalTemplatePrice.toFixed(2)}</p>
+                <ul>
+                  {data.recent.users.map((u) => (
+                    <li key={String(u.id)}>
+                      <Link href={`/admin/users/${u.id}`}>{String(u.email || u.id)}</Link>
+                    </li>
+                  ))}
+                </ul>
               </article>
               <article className={styles.card}>
-                <div className={styles.metricLabel}>제작자 예상 수익</div>
-                <p className={styles.metricValue}>${summary.revenueSummary.totalCreatorEarnings.toFixed(2)}</p>
-              </article>
-              <article className={styles.card}>
-                <div className={styles.metricLabel}>플랫폼 예상 수익</div>
-                <p className={styles.metricValue}>${summary.revenueSummary.totalPlatformEarnings.toFixed(2)}</p>
-              </article>
-              <article className={styles.card}>
-                <div className={styles.metricLabel}>Marketplace 구성</div>
-                <p className={styles.metricValue}>
-                  {summary.systemTemplates} / {summary.creatorTemplates}
-                </p>
-                <p className={styles.helperText}>SYSTEM / CREATOR TEMPLATE</p>
+                <ul>
+                  {data.recent.audit.map((a) => (
+                    <li key={String(a.id)}>
+                      {String(a.action)} · {String(a.adminId)} · {String(a.createdAt)}
+                    </li>
+                  ))}
+                </ul>
               </article>
             </div>
           </section>

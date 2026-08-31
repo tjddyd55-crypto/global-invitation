@@ -1,13 +1,12 @@
-/* eslint-disable i18next/no-literal-string */
-import styles from '@/src/components/admin/AdminShell.module.css';
+'use client';
 
-export default function AdminPaymentsPage() {
+import { Suspense } from 'react';
+import AdminPaymentsPage from './PaymentsClient';
+
+export default function Page() {
   return (
-    <section className={styles.section}>
-      <h1 className={styles.pageTitle}>Payments</h1>
-      <p className={styles.pageDescription}>
-        결제/정산 관리 영역입니다. 이후 creator payout, settlement history를 연결할 수 있습니다.
-      </p>
-    </section>
+    <Suspense fallback={<div>Loading payments…</div>}>
+      <AdminPaymentsPage />
+    </Suspense>
   );
 }

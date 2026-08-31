@@ -16,14 +16,56 @@ import {
   reconcileTossPaymentByKey,
   recordWebhookEvent,
 } from '../lib/payments/service';
-import { resolvePaymentProvider } from '../lib/payments/provider';
+import { resolvePaymentProvider, getPrimaryPaymentChannel, resolveTossRuntimeKeys } from '../lib/payments/provider';
 import { getInvitationPricingSnapshot } from '../lib/pricing/invitationPricing';
+import { getSystemRuntimeSettings } from '../lib/ops/systemConfig';
 
 const router = Router();
 
 function normalizeText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
+
+/** Public payment config for checkout UI — never includes secrets. */
+router.get('/payments/public-config', async (_req, res) => {
+  try {
+    const [pricing, system, keys] = await Promise.all([
+      getInvitationPricingSnapshot(),
+      getSystemRuntimeSettings(),
+      resolveTossRuntimeKeys(),
+    ]);
+
+    let provider: string = 'mock';
+    try {
+      provider = resolvePaymentProvider();
+    } catch {
+      provider = 'unconfigured';
+    }
+
+    const clientKey = keys.ok ? keys.clientKey : '';
+    const configured =
+      provider === 'mock'
+        ? true
+        : Boolean(keys.ok && keys.clientKey && keys.secretKey);
+
+    return res.status(200).json({
+      provider,
+      environment: system.activePaymentEnvironment,
+      clientKey: provider === 'toss_payments' ? clientKey || null : null,
+      currency: 'USD',
+      paymentChannel: getPrimaryPaymentChannel(),
+      listPriceMinor: pricing.listPriceCents,
+      effectivePriceMinor: pricing.chargedAmountCents,
+      promoEnabled: Boolean(pricing.promotionCode),
+      paymentsEnabled: system.paymentsEnabled,
+      configured,
+      foreignMidContractRequired: provider === 'toss_payments',
+    });
+  } catch (error) {
+    console.error('[payments] public-config failed', error);
+    return res.status(500).json({ error: 'PUBLIC_CONFIG_FAILED' });
+  }
+});
 
 async function findInvitationByIdentifier(identifier: string) {
   const byId = await prisma.invitation.findFirst({
@@ -83,7 +125,7 @@ router.get('/invitations/:id/payment', async (req, res) => {
 
     const invitation = access.invitation!;
     const summary = await getPaymentSummaryForInvitation(invitation.id);
-    const pricing = getInvitationPricingSnapshot();
+    const pricing = await getInvitationPricingSnapshot();
 
     return res.status(200).json({
       invitationId: invitation.id,
@@ -160,7 +202,7 @@ router.post('/invitations/:id/payment/prepare', async (req, res) => {
       failUrl: result.failUrl,
       clientKey: result.clientKey,
       variantKey: result.variantKey,
-      pricing: getInvitationPricingSnapshot(),
+      pricing: await getInvitationPricingSnapshot(),
     });
   } catch (error) {
     console.error('[payments] prepare failed', error);

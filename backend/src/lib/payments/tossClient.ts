@@ -1,4 +1,4 @@
-import { getTossSecretKey } from './provider';
+import { resolveTossRuntimeKeys, getTossSecretKey } from './provider';
 
 const TOSS_API_BASE = 'https://api.tosspayments.com';
 
@@ -17,6 +17,12 @@ function buildBasicAuthHeader(secretKey: string): string {
   return `Basic ${Buffer.from(`${secretKey}:`, 'utf8').toString('base64')}`;
 }
 
+async function resolveSecretKey(): Promise<string> {
+  const keys = await resolveTossRuntimeKeys();
+  if (keys.ok) return keys.secretKey;
+  return getTossSecretKey();
+}
+
 async function tossFetch<T>(
   path: string,
   init: {
@@ -25,7 +31,18 @@ async function tossFetch<T>(
     idempotencyKey?: string;
   }
 ): Promise<{ ok: true; data: T } | { ok: false; status: number; code?: string; message: string }> {
-  const secretKey = getTossSecretKey();
+  let secretKey: string;
+  try {
+    secretKey = await resolveSecretKey();
+  } catch (error) {
+    return {
+      ok: false,
+      status: 503,
+      code: 'FOREIGN_MID_NOT_CONFIGURED',
+      message: error instanceof Error ? error.message : 'Toss secret not configured',
+    };
+  }
+
   const headers: Record<string, string> = {
     Authorization: buildBasicAuthHeader(secretKey),
     'Content-Type': 'application/json',
@@ -98,4 +115,39 @@ export async function getTossPaymentByKey(
     return { ok: false, code: result.code || 'TOSS_QUERY_FAILED', message: result.message };
   }
   return { ok: true, payment: result.data };
+}
+
+/** Non-charge credential probe — auth check without creating a charge. */
+export async function probeTossCredentials(secretKey: string): Promise<{
+  ok: boolean;
+  code: string;
+  message: string;
+}> {
+  try {
+    const response = await fetch(`${TOSS_API_BASE}/v1/payments/gi_connection_probe_invalid`, {
+      method: 'GET',
+      headers: {
+        Authorization: buildBasicAuthHeader(secretKey),
+      },
+    });
+    if (response.status === 401 || response.status === 403) {
+      return {
+        ok: false,
+        code: 'TOSS_AUTH_FAILED',
+        message: 'Toss rejected the secret key (unauthorized).',
+      };
+    }
+    return {
+      ok: true,
+      code: 'CREDENTIALS_ACCEPTED',
+      message:
+        'Credentials appear valid for Toss API auth. USD foreign MID / overseas card contract must still be confirmed in Toss console.',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      code: 'TOSS_CONNECTION_FAILED',
+      message: error instanceof Error ? error.message : 'Toss connection failed',
+    };
+  }
 }

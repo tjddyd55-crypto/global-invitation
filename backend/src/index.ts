@@ -25,6 +25,9 @@ import testLoginRouter from './routes/testLogin';
 import testPublishedInvitationRouter from './routes/testPublishedInvitation';
 import notificationsRouter from './routes/notifications';
 import paymentsRouter from './routes/payments';
+import adminOpsRouter from './routes/adminOps';
+import { ensurePricingBootstrap } from './lib/pricing/invitationPricing';
+import { ensureSystemConfigBootstrap } from './lib/ops/systemConfig';
 import { startCleanupWorker } from './workers/cleanupWorker';
 import { attachGuestSession } from './middleware/guestSessionMiddleware';
 import { guestRateLimit } from './middleware/guestRateLimit';
@@ -120,7 +123,7 @@ app.get('/health', async (req, res) => {
       status: 'ok',
       database: 'connected',
       email: getEmailDiagnostics(),
-      payment: getPaymentDiagnostics(),
+      payment: await getPaymentDiagnostics(),
       build: getBackendBuildIdentity(),
     });
   } catch (error) {
@@ -136,6 +139,7 @@ app.get('/api/build-identity', (_req, res) => {
 // Admin routes before guest middleware — admin auth must not mint guest tokens.
 app.use('/api/admin', adminAuthRouter);
 app.use('/api/admin', adminMusicRouter);
+app.use('/api/admin', adminOpsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin', adminTemplateSubmissionsRouter);
 app.use('/api/admin/super', adminSuperRouter);
@@ -177,6 +181,11 @@ app.listen(PORT, () => {
   void import('./lib/mailer').then(({ getEmailDiagnostics }) => {
     const email = getEmailDiagnostics();
     console.info('[startup] email diagnostics', email);
+  });
+  void Promise.all([ensurePricingBootstrap(), ensureSystemConfigBootstrap()]).catch((error) => {
+    console.warn('[startup] ops bootstrap skipped', {
+      code: error instanceof Error ? error.message : 'UNKNOWN',
+    });
   });
   startCleanupWorker();
   // Defer QA stub cleanup so a probe/ESM failure cannot take down boot.
