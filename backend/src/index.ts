@@ -27,6 +27,7 @@ import notificationsRouter from './routes/notifications';
 import paymentsRouter from './routes/payments';
 import adminOpsRouter from './routes/adminOps';
 import adminVisualTemplatesRouter from './routes/adminVisualTemplates';
+import adminFigmaRouter from './routes/adminFigma';
 import visualCatalogRouter from './routes/visualCatalog';
 import { ensurePricingBootstrap } from './lib/pricing/invitationPricing';
 import { ensureSystemConfigBootstrap } from './lib/ops/systemConfig';
@@ -143,6 +144,7 @@ app.get('/api/build-identity', (_req, res) => {
 app.use('/api/admin', adminAuthRouter);
 app.use('/api/admin', adminMusicRouter);
 app.use('/api/admin', adminOpsRouter);
+app.use('/api/admin', adminFigmaRouter);
 app.use('/api/admin', adminVisualTemplatesRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin', adminTemplateSubmissionsRouter);

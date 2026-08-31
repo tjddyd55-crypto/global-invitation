@@ -39,17 +39,27 @@ export function isVisualTemplateId(value: unknown): value is VisualTemplateId {
 
 /**
  * Returns sanitized id to store, or undefined to omit the field.
+ * CODE keys use allowlist. FIGMA catalog keys (uppercase_underscore) allowed when concept matches prefix.
  */
 export function sanitizeVisualTemplateIdForSave(
   visualTemplateId: unknown,
   conceptType: unknown
-): VisualTemplateId | undefined {
+): string | undefined {
   if (conceptType !== 'WEDDING' && conceptType !== 'GENERAL' && conceptType !== 'ORGANIZATION') {
     return undefined;
   }
-  if (!isVisualTemplateId(visualTemplateId)) return undefined;
-  if (VISUAL_TEMPLATE_CONCEPT[visualTemplateId] !== conceptType) return undefined;
-  return visualTemplateId;
+  if (typeof visualTemplateId !== 'string' || !visualTemplateId.trim()) return undefined;
+  const id = visualTemplateId.trim();
+  if (isVisualTemplateId(id)) {
+    if (VISUAL_TEMPLATE_CONCEPT[id] !== conceptType) return undefined;
+    return id;
+  }
+  // FIGMA / future catalog keys: CONCEPT_NN_NAME
+  const prefix = `${conceptType}_`;
+  if (id.startsWith(prefix) && /^[A-Z0-9_]+$/.test(id)) {
+    return id;
+  }
+  return undefined;
 }
 
 /**

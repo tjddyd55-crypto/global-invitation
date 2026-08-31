@@ -140,6 +140,12 @@ export default function AdminVisualTemplatesPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <Link className={styles.secondaryButton} href="/admin/visual-templates/new">
+            New design request
+          </Link>
+          <Link className={styles.secondaryButton} href="/admin/visual-templates/import">
+            Figma Import
+          </Link>
           <button
             type="button"
             className={styles.secondaryButton}

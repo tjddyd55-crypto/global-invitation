@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   activateAdminVisualTemplate,
   archiveAdminVisualTemplate,
+  adminApiJson,
   getAdminSession,
   getAdminVisualTemplate,
   patchAdminVisualTemplate,
@@ -72,11 +73,38 @@ export default function AdminVisualTemplateDetailPage() {
     }
   }
 
+  async function qaReady(versionId: string) {
+    try {
+      await adminApiJson(
+        `/api/admin/visual-templates/${encodeURIComponent(String(template?.id))}/versions/${encodeURIComponent(versionId)}/qa-ready`,
+        { method: 'POST', body: '{}' }
+      );
+      setStatusMsg('Marked QA_READY');
+      await load();
+    } catch (err) {
+      setStatusMsg(err instanceof Error ? err.message : 'QA ready failed');
+    }
+  }
+
+  async function activateVersion(versionId: string) {
+    try {
+      await adminApiJson(
+        `/api/admin/visual-templates/${encodeURIComponent(String(template?.id))}/versions/${encodeURIComponent(versionId)}/activate`,
+        { method: 'POST', body: '{}' }
+      );
+      setStatusMsg('Version activated (isVisible=false by default)');
+      await load();
+    } catch (err) {
+      setStatusMsg(err instanceof Error ? err.message : 'Activate failed');
+    }
+  }
+
   if (!template && !error) {
     return <div className={styles.loading}>Loading…</div>;
   }
 
   const versions = Array.isArray(template?.versions) ? (template?.versions as Array<Record<string, unknown>>) : [];
+  const isFigma = String(template?.sourceType || '') === 'FIGMA_DEFINITION';
 
   return (
     <>
@@ -176,6 +204,7 @@ export default function AdminVisualTemplateDetailPage() {
                 <th>Status</th>
                 <th>Created</th>
                 <th>Activated</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -186,6 +215,30 @@ export default function AdminVisualTemplateDetailPage() {
                   <td>{String(v.status)}</td>
                   <td>{String(v.createdAt || '')}</td>
                   <td>{String(v.activatedAt || '—')}</td>
+                  <td>
+                    {isFigma ? (
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          type="button"
+                          className={styles.secondaryButton}
+                          onClick={() => void qaReady(String(v.id))}
+                        >
+                          QA Ready
+                        </button>
+                        {isSuper ? (
+                          <button
+                            type="button"
+                            className={styles.primaryButton}
+                            onClick={() => void activateVersion(String(v.id))}
+                          >
+                            Activate
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

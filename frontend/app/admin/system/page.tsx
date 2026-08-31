@@ -8,6 +8,7 @@ import {
   updateAdminOpsSystem,
   getAdminSession,
   getAdminVisualTemplateDrift,
+  adminApiJson,
   type AdminSession,
   type AdminVisualCatalogDrift,
 } from '@/src/lib/adminApi';
@@ -18,6 +19,8 @@ export default function AdminSystemPage() {
   const [system, setSystem] = useState<Record<string, unknown> | null>(null);
   const [logs, setLogs] = useState<Array<Record<string, unknown>>>([]);
   const [drift, setDrift] = useState<AdminVisualCatalogDrift | null>(null);
+  const [figma, setFigma] = useState<Record<string, unknown> | null>(null);
+  const [figmaToken, setFigmaToken] = useState('');
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +37,9 @@ export default function AdminSystemPage() {
       .catch(() => undefined);
     void getAdminVisualTemplateDrift()
       .then(setDrift)
+      .catch(() => undefined);
+    void adminApiJson<Record<string, unknown>>('/api/admin/figma/config')
+      .then(setFigma)
       .catch(() => undefined);
   }, []);
 
@@ -143,6 +149,57 @@ export default function AdminSystemPage() {
           </div>
         </section>
       )}
+
+      <section className={styles.section}>
+        <h2 className={styles.pageTitle}>Figma Integration</h2>
+        <p className={styles.pageDescription}>
+          configured={String(figma?.configured)} · source={String(figma?.source)} · encryption=
+          {String(figma?.encryptionConfigured)} · masked={String(figma?.tokenMasked || '—')}
+        </p>
+        <label>
+          Access token (SUPER_ADMIN, encrypted DB)
+          <input
+            className={styles.input}
+            type="password"
+            value={figmaToken}
+            disabled={!isSuper}
+            onChange={(e) => setFigmaToken(e.target.value)}
+            placeholder="figd_…"
+          />
+        </label>
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button
+            type="button"
+            className={styles.primaryButton}
+            disabled={!isSuper}
+            onClick={() =>
+              void adminApiJson('/api/admin/figma/config', {
+                method: 'PUT',
+                body: JSON.stringify({ accessToken: figmaToken }),
+              })
+                .then((view) => {
+                  setFigma(view as Record<string, unknown>);
+                  setFigmaToken('');
+                  setStatusMsg('Figma token saved');
+                })
+                .catch((err) => setStatusMsg(err instanceof Error ? err.message : 'Save failed'))
+            }
+          >
+            Save token
+          </button>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() =>
+              void adminApiJson('/api/admin/figma/test', { method: 'POST', body: '{}' })
+                .then((res) => setStatusMsg(`Figma: ${JSON.stringify(res)}`))
+                .catch((err) => setStatusMsg(err instanceof Error ? err.message : 'Test failed'))
+            }
+          >
+            연결 확인
+          </button>
+        </div>
+      </section>
 
       <section className={styles.section}>
         <h2 className={styles.pageTitle}>Audit Log</h2>
