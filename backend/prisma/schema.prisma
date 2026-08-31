@@ -120,6 +120,8 @@ model Invitation {
   locationText String?         @map("location_text") // 장소 정보
   message     String?          // 초대장 메시지
   templateKey String           @default("basic") @map("template_key")
+  /// Optional snapshot of VisualTemplateVersion at create time (nullable for legacy).
+  visualTemplateVersionId String? @map("visual_template_version_id") @db.Uuid
   musicKey    String?          @map("music_key")
   countryCode String           @default("GLOBAL") @map("country_code")
   language    String           @default("en")
@@ -666,6 +668,76 @@ model InvitationMusicTrack {
   @@index([category, isActive, isArchived, sortOrder])
   @@index([isActive, isArchived, createdAt])
   @@map("invitation_music_tracks")
+}
+
+enum VisualTemplateCatalogStatus {
+  DRAFT
+  QA_READY
+  ACTIVE
+  HIDDEN
+  ARCHIVED
+}
+
+enum VisualTemplateSourceType {
+  CODE
+  FIGMA_DEFINITION
+}
+
+enum VisualTemplateVersionStatus {
+  DRAFT
+  QA_READY
+  ACTIVE
+  ARCHIVED
+}
+
+/// Operational catalog for user-facing CODE/FIGMA visual skins (not marketplace Template).
+model VisualTemplateCatalogEntry {
+  id              String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  templateKey     String                       @unique @map("template_key")
+  concept         String
+  displayNameKo   String                       @map("display_name_ko")
+  displayNameEn   String                       @map("display_name_en")
+  descriptionKo   String                       @default("") @map("description_ko")
+  descriptionEn   String                       @default("") @map("description_en")
+  sourceType      VisualTemplateSourceType     @default(CODE) @map("source_type")
+  status          VisualTemplateCatalogStatus  @default(ACTIVE)
+  isVisible       Boolean                      @default(true) @map("is_visible")
+  isFeatured      Boolean                      @default(false) @map("is_featured")
+  isNew           Boolean                      @default(false) @map("is_new")
+  isPremium       Boolean                      @default(false) @map("is_premium")
+  sortOrder       Int                          @default(0) @map("sort_order")
+  thumbnailUrl    String?                      @map("thumbnail_url")
+  previewUrl      String?                      @map("preview_url")
+  activeVersionId String?                      @unique @map("active_version_id") @db.Uuid
+  createdAt       DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  versions      VisualTemplateVersion[] @relation("CatalogVersions")
+  activeVersion VisualTemplateVersion?  @relation("CatalogActiveVersion", fields: [activeVersionId], references: [id], onDelete: SetNull)
+
+  @@index([concept, status, isVisible, sortOrder])
+  @@index([status, isVisible])
+  @@map("visual_template_catalog_entries")
+}
+
+model VisualTemplateVersion {
+  id                 String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  catalogEntryId     String                       @map("catalog_entry_id") @db.Uuid
+  version            Int
+  sourceType         VisualTemplateSourceType     @default(CODE) @map("source_type")
+  status             VisualTemplateVersionStatus  @default(ACTIVE)
+  definitionJson     Json?                        @map("definition_json") @db.JsonB
+  sourceMetadataJson Json?                        @map("source_metadata_json") @db.JsonB
+  createdAt          DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  activatedAt        DateTime?                    @map("activated_at") @db.Timestamptz(6)
+  archivedAt         DateTime?                    @map("archived_at") @db.Timestamptz(6)
+
+  catalogEntry VisualTemplateCatalogEntry  @relation("CatalogVersions", fields: [catalogEntryId], references: [id], onDelete: Cascade)
+  activeFor    VisualTemplateCatalogEntry? @relation("CatalogActiveVersion")
+
+  @@unique([catalogEntryId, version])
+  @@index([catalogEntryId, status])
+  @@map("visual_template_versions")
 }
 
 /// Admin-managed invitation publish pricing (USD). Runtime: DB → code default.

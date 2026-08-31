@@ -29,6 +29,8 @@
     "invitation:media:lifecycle-fixtures": "tsx scripts/lifecycle-temp-media-fixtures.ts",
     "test:temp-media": "tsx --test src/lib/tempInvitationMedia/tempInvitationMedia.test.ts",
     "test:payments": "tsx --test src/lib/payments/pricing.provider.test.ts src/lib/ops/adminOps.crypto.test.ts",
+    "admin:sync-visual-templates": "tsx scripts/sync-visual-template-catalog.ts",
+    "test:visual-catalog": "tsx --test src/lib/visualTemplates/catalogService.test.ts",
     "audit:invitation-payment-entitlements": "tsx scripts/audit-invitation-payment-entitlements.ts",
     "music:publish-jci-organization": "tsx scripts/publish-jci-organization-music.ts"
   },
