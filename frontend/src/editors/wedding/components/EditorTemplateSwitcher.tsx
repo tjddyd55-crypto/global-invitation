@@ -1,15 +1,17 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import { useInvitationT } from '@/src/i18n/InvitationLocaleContext';
 import {
   getVisualTemplateDefinition,
-  listActiveVisualTemplates,
 } from '@/src/templates/visualTemplate/visualTemplateRegistry';
 import { resolveVisualTemplateId } from '@/src/templates/visualTemplate/resolveVisualTemplateId';
 import type { VisualTemplateId } from '@/src/templates/visualTemplate/ids';
+import { isVisualTemplateId } from '@/src/templates/visualTemplate/ids';
+import { fetchPublicVisualCatalog } from '@/src/features/templates/model/fetchPublicVisualCatalog';
+import { useI18n } from '@/src/contexts/I18nContext';
 import styles from './EditorTemplateSwitcher.module.css';
 
 type Props = {
@@ -26,17 +28,33 @@ function isSwitchableConcept(
 
 export default function EditorTemplateSwitcher({ conceptType, visualTemplateId, onChange }: Props) {
   const { t } = useInvitationT();
+  const { locale } = useI18n();
   const [open, setOpen] = useState(false);
   const [confirmId, setConfirmId] = useState<VisualTemplateId | null>(null);
+  const [catalogIds, setCatalogIds] = useState<VisualTemplateId[]>([]);
 
-  const options = useMemo(() => {
-    if (!isSwitchableConcept(conceptType)) return [];
-    return listActiveVisualTemplates(conceptType);
-  }, [conceptType]);
-
-  if (!isSwitchableConcept(conceptType)) {
-    return null;
-  }
+  useEffect(() => {
+    if (!isSwitchableConcept(conceptType)) {
+      setCatalogIds([]);
+      return;
+    }
+    let mounted = true;
+    void fetchPublicVisualCatalog({ concept: conceptType, locale })
+      .then((items) => {
+        if (!mounted) return;
+        setCatalogIds(
+          items
+            .map((i) => i.templateKey)
+            .filter((id): id is VisualTemplateId => isVisualTemplateId(id))
+        );
+      })
+      .catch(() => {
+        if (mounted) setCatalogIds([]);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [conceptType, locale]);
 
   const resolved =
     resolveVisualTemplateId({ conceptType, visualTemplateId }, conceptType) ??
@@ -45,6 +63,21 @@ export default function EditorTemplateSwitcher({ conceptType, visualTemplateId, 
       : conceptType === 'ORGANIZATION'
         ? 'ORGANIZATION_01_OFFICIAL'
         : 'GENERAL_01_CLASSIC');
+
+  const options = useMemo(() => {
+    if (!isSwitchableConcept(conceptType)) return [];
+    const ids = new Set(catalogIds);
+    // Keep current template selectable even if admin hid it (existing invitation safety).
+    ids.add(resolved);
+    return Array.from(ids)
+      .map((id) => getVisualTemplateDefinition(id))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }, [catalogIds, conceptType, resolved]);
+
+  if (!isSwitchableConcept(conceptType)) {
+    return null;
+  }
+
   const current = getVisualTemplateDefinition(resolved);
 
   return (

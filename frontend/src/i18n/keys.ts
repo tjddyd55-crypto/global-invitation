@@ -427,6 +427,8 @@ export const I18N_KEYS = {
     templatesNeedConcept: 'create.templates.needConcept',
     templatesChooseConcept: 'create.templates.chooseConcept',
     templatesSamplePreview: 'create.templates.samplePreview',
+    templatesLoading: 'create.templates.loading',
+    templatesLoadFailed: 'create.templates.loadFailed',
     myInvitationsTitle: 'myInvitations.title',
     myInvitationsNew: 'myInvitations.new',
     myInvitationsTabEditing: 'myInvitations.tab.editing',

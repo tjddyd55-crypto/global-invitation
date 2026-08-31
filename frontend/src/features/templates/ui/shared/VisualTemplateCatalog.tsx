@@ -1,12 +1,12 @@
 ﻿'use client';
 /* eslint-disable i18next/no-literal-string */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ImageWithFallback from '@/src/components/media/ImageWithFallback';
 import {
-  listActiveVisualTemplates,
+  getVisualTemplateDefinition,
   type VisualTemplateDefinition,
 } from '@/src/templates/visualTemplate/visualTemplateRegistry';
 import type { VisualTemplateId } from '@/src/templates/visualTemplate/ids';
@@ -18,30 +18,87 @@ import {
 } from '@/src/features/templates/model/pendingVisualTemplate';
 import { fetchCurrentUser } from '@/src/shared/auth';
 import { useI18n } from '@/src/contexts/I18nContext';
+import {
+  fetchPublicVisualCatalog,
+  type PublicVisualCatalogItem,
+} from '@/src/features/templates/model/fetchPublicVisualCatalog';
 import styles from './VisualTemplateCatalog.module.css';
 
 type ConceptFilter = 'WEDDING' | 'GENERAL' | 'ORGANIZATION';
+
+type CatalogCard = {
+  id: VisualTemplateId;
+  conceptType: ConceptFilter;
+  name: string;
+  description: string;
+  thumbnailAsset: string;
+  styleTags: string[];
+  featured: boolean;
+  isNew: boolean;
+  premium: boolean;
+};
 
 function resolveConcept(raw: string | null): ConceptFilter | null {
   if (raw === 'WEDDING' || raw === 'GENERAL' || raw === 'ORGANIZATION') return raw;
   return null;
 }
 
+function toCard(item: PublicVisualCatalogItem): CatalogCard | null {
+  if (!isVisualTemplateId(item.templateKey)) return null;
+  const def = getVisualTemplateDefinition(item.templateKey);
+  return {
+    id: item.templateKey,
+    conceptType: item.concept as ConceptFilter,
+    name: item.displayName || def.name,
+    description: item.description || def.description,
+    thumbnailAsset: item.thumbnailUrl || def.thumbnailAsset,
+    styleTags: def.styleTags,
+    featured: item.featured,
+    isNew: item.new,
+    premium: item.premium,
+  };
+}
+
 export default function VisualTemplateCatalog() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const searchParams = useSearchParams();
   const concept = resolveConcept(searchParams.get('concept'));
   const { creatingConcept, error, start } = useCreateInvitation();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<CatalogCard[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const templates = useMemo(
-    () => (concept ? listActiveVisualTemplates(concept) : []),
-    [concept]
-  );
+  useEffect(() => {
+    if (!concept) {
+      setTemplates([]);
+      setLoading(false);
+      return;
+    }
+    let mounted = true;
+    setLoading(true);
+    setLoadError(null);
+    void fetchPublicVisualCatalog({ concept, locale })
+      .then((items) => {
+        if (!mounted) return;
+        setTemplates(items.map(toCard).filter((x): x is CatalogCard => Boolean(x)));
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setLoadError(err instanceof Error ? err.message : t('create.templates.loadFailed'));
+        setTemplates([]);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [concept, locale, t]);
 
   const handleCreate = useCallback(
-    async (def: VisualTemplateDefinition) => {
+    async (def: CatalogCard) => {
       setBusyId(def.id);
       try {
         const user = await fetchCurrentUser({ useCache: false });
@@ -92,6 +149,8 @@ export default function VisualTemplateCatalog() {
       </header>
 
       {error ? <p className={styles.error}>{error}</p> : null}
+      {loadError ? <p className={styles.error}>{loadError}</p> : null}
+      {loading ? <p className={styles.desc}>{t('create.templates.loading')}</p> : null}
 
       <ul className={styles.grid}>
         {templates.map((def) => (
@@ -105,7 +164,11 @@ export default function VisualTemplateCatalog() {
               />
             </div>
             <div className={styles.body}>
-              <h2 className={styles.name}>{t(`template.${def.id}.name`) || def.name}</h2>
+              <h2 className={styles.name}>
+                {t(`template.${def.id}.name`) || def.name}
+                {def.featured ? <span className={styles.badge}> Featured</span> : null}
+                {def.isNew ? <span className={styles.badge}> NEW</span> : null}
+              </h2>
               <p className={styles.description}>{t(`template.${def.id}.description`) || def.description}</p>
               <p className={styles.tags}>
                 {def.styleTags.map((tag) => (
@@ -148,3 +211,6 @@ export function assertCatalogTemplateId(raw: string | null | undefined): VisualT
 export function conceptForTemplateId(id: VisualTemplateId): ConceptFilter {
   return VISUAL_TEMPLATE_CONCEPT[id];
 }
+
+/** @deprecated Prefer operational catalog; kept for type imports */
+export type { VisualTemplateDefinition };

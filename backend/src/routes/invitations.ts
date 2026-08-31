@@ -12,6 +12,7 @@ import {
   stripLegacyDataJsonLocale,
 } from '../lib/invitationLocale';
 import { getSystemRuntimeSettings } from '../lib/ops/systemConfig';
+import { assertVisualTemplateSelectable } from '../lib/visualTemplates/catalogService';
 
 const router = Router();
 const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
@@ -228,6 +229,7 @@ function toPublicInvitation(row: {
 async function createInvitationRecord(params: {
   templateId?: string | null;
   templateKey: string;
+  visualTemplateVersionId?: string | null;
   ownerType: 'USER' | 'GUEST';
   ownerId: string;
   userId?: string | null;
@@ -255,6 +257,7 @@ async function createInvitationRecord(params: {
       canShare: false,
       templateKey: params.templateKey || 'basic',
       templateId: params.templateId || null,
+      visualTemplateVersionId: params.visualTemplateVersionId || null,
       data: params.data,
       dataJson: params.data,
       countryCode: params.countryCode || 'GLOBAL',
@@ -557,8 +560,36 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'INVALID_LOCALE' });
     }
     const invitationLocale = parsedLocale.locale;
+    const dataWithVisual = applyVisualTemplateToDataJson(baseData, conceptType, explicitVisual);
+    const selectedVisualId =
+      typeof dataWithVisual.visualTemplateId === 'string'
+        ? dataWithVisual.visualTemplateId
+        : null;
+
+    let visualTemplateVersionId: string | null = null;
+    if (
+      conceptType === 'WEDDING' ||
+      conceptType === 'GENERAL' ||
+      conceptType === 'ORGANIZATION'
+    ) {
+      if (!selectedVisualId) {
+        return res.status(400).json({ error: 'VISUAL_TEMPLATE_REQUIRED' });
+      }
+      if (explicitVisual && explicitVisual !== selectedVisualId) {
+        return res.status(400).json({ error: 'VISUAL_TEMPLATE_INVALID' });
+      }
+      const selectable = await assertVisualTemplateSelectable({
+        templateKey: selectedVisualId,
+        concept: conceptType,
+      });
+      if (!selectable.ok) {
+        return res.status(400).json({ error: selectable.code });
+      }
+      visualTemplateVersionId = selectable.versionId;
+    }
+
     const dataWithConcept = stripLegacyDataJsonLocale({
-      ...applyVisualTemplateToDataJson(baseData, conceptType, explicitVisual),
+      ...dataWithVisual,
       templateType: 'FULL',
       ...(conceptType ? { conceptType } : {}),
     }) as Prisma.InputJsonValue;
@@ -566,6 +597,7 @@ router.post('/', async (req, res) => {
     const invitation = await createInvitationRecord({
       templateId: resolvedTemplate?.id || null,
       templateKey,
+      visualTemplateVersionId,
       ownerType: 'USER',
       ownerId: user.id,
       userId: user.id,
