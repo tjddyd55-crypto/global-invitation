@@ -783,6 +783,18 @@ model PaymentProviderConfig {
   @@map("payment_provider_configs")
 }
 
+/// Singleton Figma REST API credentials (encrypted). Not Cursor MCP.
+model FigmaIntegrationConfig {
+  id                    String   @id @default("default")
+  encryptedAccessToken  String?  @map("encrypted_access_token")
+  tokenFingerprint      String?  @map("token_fingerprint")
+  updatedBy             String?  @map("updated_by")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("figma_integration_configs")
+}
+
 /// Singleton operational feature flags (id = "default").
 model SystemRuntimeConfig {
   id                         String   @id @default("default")

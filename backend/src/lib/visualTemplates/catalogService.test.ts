@@ -41,6 +41,28 @@ test('public catalog requires ACTIVE + visible + registry', () => {
   assert.equal(
     isPublicCatalogEligible({
       status: 'ACTIVE',
+      isVisible: true,
+      sourceType: 'FIGMA_DEFINITION',
+      templateKey: 'WEDDING_07_ROMANTIC_GARDEN',
+      registryHas,
+      hasValidActiveDefinition: true,
+    }),
+    true
+  );
+  assert.equal(
+    isPublicCatalogEligible({
+      status: 'ACTIVE',
+      isVisible: true,
+      sourceType: 'FIGMA_DEFINITION',
+      templateKey: 'WEDDING_07_ROMANTIC_GARDEN',
+      registryHas,
+      hasValidActiveDefinition: false,
+    }),
+    false
+  );
+  assert.equal(
+    isPublicCatalogEligible({
+      status: 'ACTIVE',
       isVisible: false,
       sourceType: 'CODE',
       templateKey: 'WEDDING_05_GARDEN',

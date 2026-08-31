@@ -10,6 +10,7 @@ import {
   listCodeRegistryKeys,
 } from './codeRegistrySeed';
 import { isPublicCatalogEligible, isCreateSelectableStatus } from './catalogPolicy';
+import { validateTemplateDefinition } from './definition/validate';
 
 export type VisualCatalogSyncReport = {
   registryCount: number;
@@ -226,6 +227,14 @@ export async function listPublicVisualCatalog(input?: {
 
   const items: PublicVisualCatalogItem[] = [];
   for (const row of rows) {
+    let hasValidActiveDefinition = false;
+    if (row.sourceType === VisualTemplateSourceType.FIGMA_DEFINITION && row.activeVersion) {
+      const validated = validateTemplateDefinition(row.activeVersion.definitionJson, {
+        expectedTemplateKey: row.templateKey,
+      });
+      hasValidActiveDefinition =
+        validated.ok && row.activeVersion.status === 'ACTIVE';
+    }
     if (
       !isPublicCatalogEligible({
         status: row.status,
@@ -233,6 +242,7 @@ export async function listPublicVisualCatalog(input?: {
         sourceType: row.sourceType,
         templateKey: row.templateKey,
         registryHas: isCodeRegistryKey,
+        hasValidActiveDefinition,
       })
     ) {
       continue;
@@ -263,10 +273,6 @@ export async function assertVisualTemplateSelectable(input: {
   templateKey: string;
   concept: string;
 }): Promise<{ ok: true; versionId: string | null } | { ok: false; code: string }> {
-  if (!isCodeRegistryKey(input.templateKey)) {
-    return { ok: false, code: 'VISUAL_TEMPLATE_NOT_IN_REGISTRY' };
-  }
-
   const entry = await prisma.visualTemplateCatalogEntry.findUnique({
     where: { templateKey: input.templateKey },
     include: { activeVersion: true },
@@ -284,5 +290,25 @@ export async function assertVisualTemplateSelectable(input: {
   });
   if (!statusCheck.ok) return statusCheck;
 
-  return { ok: true, versionId: entry.activeVersionId };
+  if (entry.sourceType === VisualTemplateSourceType.CODE) {
+    if (!isCodeRegistryKey(input.templateKey)) {
+      return { ok: false, code: 'VISUAL_TEMPLATE_NOT_IN_REGISTRY' };
+    }
+    return { ok: true, versionId: entry.activeVersionId };
+  }
+
+  if (entry.sourceType === VisualTemplateSourceType.FIGMA_DEFINITION) {
+    if (!entry.activeVersion || entry.activeVersion.status !== 'ACTIVE') {
+      return { ok: false, code: 'VISUAL_TEMPLATE_VERSION_MISSING' };
+    }
+    const validated = validateTemplateDefinition(entry.activeVersion.definitionJson, {
+      expectedTemplateKey: input.templateKey,
+    });
+    if (!validated.ok) {
+      return { ok: false, code: 'VISUAL_TEMPLATE_DEFINITION_INVALID' };
+    }
+    return { ok: true, versionId: entry.activeVersionId };
+  }
+
+  return { ok: false, code: 'VISUAL_TEMPLATE_SOURCE_UNSUPPORTED' };
 }

@@ -1,21 +1,26 @@
 import { VisualTemplateCatalogStatus } from '@prisma/client';
 
-/** Public catalog row eligibility (DB policy ∩ registry). */
+/** Public catalog row eligibility (sourceType-aware). */
 export function isPublicCatalogEligible(input: {
   status: VisualTemplateCatalogStatus | string;
   isVisible: boolean;
   sourceType: string;
   templateKey: string;
   registryHas: (key: string) => boolean;
+  /** FIGMA: active version with valid definition */
+  hasValidActiveDefinition?: boolean;
 }): boolean {
   if (input.status !== VisualTemplateCatalogStatus.ACTIVE && input.status !== 'ACTIVE') {
     return false;
   }
   if (!input.isVisible) return false;
-  if (input.sourceType === 'CODE' && !input.registryHas(input.templateKey)) {
-    return false;
+  if (input.sourceType === 'CODE') {
+    return input.registryHas(input.templateKey);
   }
-  return true;
+  if (input.sourceType === 'FIGMA_DEFINITION') {
+    return Boolean(input.hasValidActiveDefinition);
+  }
+  return false;
 }
 
 export function isCreateSelectableStatus(input: {
