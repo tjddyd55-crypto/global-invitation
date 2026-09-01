@@ -32,8 +32,8 @@ export default function AdminTemplateSubmissionsPage() {
     <>
       <div className={styles.topbar}>
         <div>
-          <h1 className={styles.pageTitle}>Template Submissions</h1>
-          <p className={styles.pageDescription}>Creator 제출 템플릿을 검토하고 승인/반려를 진행합니다.</p>
+          <h1 className={styles.pageTitle}>크리에이터 템플릿 신청</h1>
+          <p className={styles.pageDescription}>크리에이터가 제출한 템플릿을 검토하고 승인/반려합니다.</p>
         </div>
       </div>
 

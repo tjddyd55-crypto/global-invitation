@@ -29,8 +29,8 @@ export default function AdminUsersPage() {
     <>
       <div className={styles.topbar}>
         <div>
-          <h1 className={styles.pageTitle}>Users</h1>
-          <p className={styles.pageDescription}>회원 조회 (read-only). 비밀번호/OTP 열람 없음.</p>
+          <h1 className={styles.pageTitle}>회원 관리</h1>
+          <p className={styles.pageDescription}>회원 조회 (읽기 전용). 비밀번호/OTP 열람 없음.</p>
         </div>
       </div>
       {error && <p className={styles.error}>{error}</p>}
@@ -45,7 +45,7 @@ export default function AdminUsersPage() {
           className={styles.input}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="email 또는 user id"
+          placeholder="이메일 또는 회원 ID 검색"
         />
         <button type="submit" className={styles.primaryButton}>
           검색
@@ -55,11 +55,11 @@ export default function AdminUsersPage() {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Email</th>
-              <th>Invitations</th>
-              <th>Published</th>
-              <th>Paid</th>
-              <th>Joined</th>
+              <th>이메일</th>
+              <th>초대장 수</th>
+              <th>공개 초대장</th>
+              <th>결제 건수</th>
+              <th>가입일</th>
             </tr>
           </thead>
           <tbody>

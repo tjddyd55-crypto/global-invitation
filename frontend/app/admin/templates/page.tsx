@@ -189,7 +189,7 @@ export default function AdminTemplatesPage() {
     <>
       <div className={styles.topbar}>
         <div>
-          <h1 className={styles.pageTitle}>Template Management</h1>
+          <h1 className={styles.pageTitle}>마켓플레이스 템플릿 관리</h1>
           <p className={styles.pageDescription}>
             템플릿 메타데이터, 가격, 제작자 수익, 활성 상태를 운영합니다.
           </p>

@@ -3,6 +3,12 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import AdminPageHeader from '@/src/features/admin/AdminPageHeader';
+import {
+  formatCatalogStatus,
+  formatConceptLabel,
+  formatSourceType,
+} from '@/src/features/admin/adminDisplay';
 import {
   activateAdminVisualTemplate,
   archiveAdminVisualTemplate,
@@ -132,32 +138,34 @@ export default function AdminVisualTemplatesPage() {
 
   return (
     <>
-      <div className={styles.topbar}>
-        <div>
-          <h1 className={styles.pageTitle}>Visual Templates</h1>
-          <p className={styles.pageDescription}>
-            CODE Registry ∩ DB 운영 카탈로그 · marketplace Template(`/admin/templates`)와 별축
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Link className={styles.secondaryButton} href="/admin/visual-templates/new">
-            New design request
-          </Link>
-          <Link className={styles.secondaryButton} href="/admin/visual-templates/import">
-            Figma Import
-          </Link>
-          <button
-            type="button"
-            className={styles.secondaryButton}
-            onClick={() => void syncAdminVisualTemplates(false).then(load)}
-          >
-            Sync from registry
-          </button>
-          <button type="button" className={styles.primaryButton} onClick={() => void load()}>
-            Refresh
-          </button>
-        </div>
-      </div>
+      <AdminPageHeader
+        breadcrumb={[
+          { label: '관리자', href: '/admin/dashboard' },
+          { label: '비주얼 템플릿' },
+        ]}
+        title="비주얼 템플릿"
+        description="사용자에게 노출할 초대장 디자인과 버전을 관리합니다. 마켓플레이스 템플릿(/admin/templates)과 별도입니다."
+        actions={
+          <>
+            <Link className={styles.primaryButton} href="/admin/visual-templates/new">
+              새 템플릿 만들기
+            </Link>
+            <Link className={styles.secondaryButton} href="/admin/visual-templates/import">
+              Figma 가져오기
+            </Link>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => void syncAdminVisualTemplates(false).then(load)}
+            >
+              Registry 동기화
+            </button>
+            <button type="button" className={styles.secondaryButton} onClick={() => void load()}>
+              새로고침
+            </button>
+          </>
+        }
+      />
 
       {error && <p className={styles.error}>{error}</p>}
       {statusMsg && <p className={styles.pageDescription}>{statusMsg}</p>}
@@ -206,7 +214,7 @@ export default function AdminVisualTemplatesPage() {
           ))}
           <input
             className={styles.input}
-            placeholder="Search key / name"
+            placeholder="템플릿 ID / 이름 검색"
             value={filters.q}
             onChange={(e) => setFilters((prev) => ({ ...prev, q: e.target.value }))}
           />
@@ -220,20 +228,20 @@ export default function AdminVisualTemplatesPage() {
               <thead>
                 <tr>
                   <th></th>
-                  <th>Thumb</th>
-                  <th>Key</th>
-                  <th>Name</th>
-                  <th>Concept</th>
-                  <th>Src</th>
-                  <th>Ver</th>
-                  <th>Status</th>
-                  <th>Vis</th>
-                  <th>Feat</th>
-                  <th>New</th>
-                  <th>Prem</th>
-                  <th>Sort</th>
-                  <th>Usage</th>
-                  <th>Updated</th>
+                  <th>미리보기</th>
+                  <th>템플릿 ID</th>
+                  <th>템플릿명</th>
+                  <th>종류</th>
+                  <th>소스</th>
+                  <th>버전</th>
+                  <th>상태</th>
+                  <th>노출</th>
+                  <th>추천</th>
+                  <th>NEW</th>
+                  <th>프리미엄</th>
+                  <th>순서</th>
+                  <th>사용 수</th>
+                  <th>수정일</th>
                   <th></th>
                 </tr>
               </thead>
@@ -263,8 +271,8 @@ export default function AdminVisualTemplatesPage() {
                       ) : null}
                     </td>
                     <td>{row.displayNameKo}</td>
-                    <td>{row.concept}</td>
-                    <td>{row.sourceType}</td>
+                    <td>{formatConceptLabel(row.concept)}</td>
+                    <td>{formatSourceType(row.sourceType)}</td>
                     <td>{row.activeVersion ?? '—'}</td>
                     <td>
                       <select
@@ -274,7 +282,7 @@ export default function AdminVisualTemplatesPage() {
                       >
                         {['DRAFT', 'QA_READY', 'ACTIVE', 'HIDDEN', 'ARCHIVED'].map((s) => (
                           <option key={s} value={s} disabled={s === 'ARCHIVED' && !isSuper}>
-                            {s}
+                            {formatCatalogStatus(s)}
                           </option>
                         ))}
                       </select>
@@ -308,7 +316,7 @@ export default function AdminVisualTemplatesPage() {
                     <td>{new Date(row.updatedAt).toLocaleString()}</td>
                     <td>
                       <Link href={`/templates/${row.templateKey}/preview`} target="_blank">
-                        Preview
+                        미리보기
                       </Link>
                       {isSuper ? (
                         row.status === 'ARCHIVED' ? (
@@ -321,7 +329,7 @@ export default function AdminVisualTemplatesPage() {
                               )
                             }
                           >
-                            Activate
+                            활성화
                           </button>
                         ) : (
                           <button
@@ -333,7 +341,7 @@ export default function AdminVisualTemplatesPage() {
                               )
                             }
                           >
-                            Archive
+                            보관
                           </button>
                         )
                       ) : null}
