@@ -129,8 +129,30 @@ export function formatAuditAction(action: string): string {
     figma_config_clear: 'Figma 설정 삭제',
     pricing_update: '가격 설정 변경',
     provider_config_update: 'Toss 설정 변경',
+    toss_test_config_update: 'Toss TEST 설정 변경',
+    toss_live_config_update: 'Toss LIVE 설정 변경',
+    system_settings_update: '시스템 설정 변경',
+    invitation_archive: '초대장 보관(삭제)',
+    invitation_status_update: '초대장 상태 변경',
+    user_deactivate: '회원 비활성화',
   };
   return map[action] || action;
+}
+
+export function formatInvitationListTitle(title: unknown, id: unknown): string {
+  const rawTitle = typeof title === 'string' ? title.trim() : '';
+  if (rawTitle) return rawTitle;
+  const idText = typeof id === 'string' ? id : '';
+  if (!idText) return '제목 없음';
+  return `초대장 ${idText.slice(0, 8)}…`;
+}
+
+export function parseUsdInput(value: string): number | null {
+  const normalized = value.trim();
+  if (!/^\d+(\.\d{0,2})?$/.test(normalized)) return null;
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return Math.round(parsed * 100);
 }
 
 export function formatRuntimeEnv(env: string | undefined): string {

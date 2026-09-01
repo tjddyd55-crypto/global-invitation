@@ -115,11 +115,15 @@ router.post('/login', async (req, res) => {
         nickname: true,
         role: true,
         passwordHash: true,
+        deactivatedAt: true,
       },
     });
 
     if (!user) {
       return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
+    }
+    if (user.deactivatedAt) {
+      return res.status(403).json({ error: 'ACCOUNT_DEACTIVATED' });
     }
     if (!user.passwordHash) {
       return res.status(400).json({ error: 'PASSWORD_LOGIN_NOT_AVAILABLE' });

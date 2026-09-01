@@ -507,6 +507,30 @@ export async function listAdminOpsAudit(limit = 50) {
   );
 }
 
+export async function archiveAdminOpsInvitation(invitationId: string) {
+  return adminApiJson<{ success: true; id: string; archived?: boolean; alreadyArchived?: boolean }>(
+    `/api/admin/ops/invitations/${encodeURIComponent(invitationId)}/archive`,
+    { method: 'POST', body: '{}' }
+  );
+}
+
+export async function updateAdminOpsInvitationStatus(
+  invitationId: string,
+  status: 'DRAFT' | 'PUBLISHED' | 'SHARED'
+) {
+  return adminApiJson<{ success: true; invitation: Record<string, unknown> }>(
+    `/api/admin/ops/invitations/${encodeURIComponent(invitationId)}/status`,
+    { method: 'PATCH', body: JSON.stringify({ status }) }
+  );
+}
+
+export async function deactivateAdminOpsUser(userId: string) {
+  return adminApiJson<{ success: true; id: string; deactivatedAt?: string; alreadyDeactivated?: boolean }>(
+    `/api/admin/ops/users/${encodeURIComponent(userId)}/deactivate`,
+    { method: 'POST', body: '{}' }
+  );
+}
+
 export type AdminVisualTemplateRow = {
   id: string;
   templateKey: string;

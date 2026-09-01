@@ -14,6 +14,7 @@ import {
   ADMIN_QUICK_ACTIONS,
   formatAuditAction,
   formatConfigured,
+  formatInvitationListTitle,
   formatInvitationStatus,
   formatMoneyUsd,
   formatPaymentChannel,
@@ -21,6 +22,8 @@ import {
   formatRuntimeEnv,
 } from '@/src/features/admin/adminDisplay';
 import styles from '@/src/components/admin/AdminShell.module.css';
+import { AdminButton } from '@/src/components/admin/ui';
+import ui from '@/src/components/admin/ui/adminUi.module.css';
 
 function money(minor: number, currency = 'USD') {
   return `$${(minor / 100).toFixed(2)} ${currency}`;
@@ -152,11 +155,15 @@ export default function AdminDashboardPage() {
             <div className={styles.sectionHeader}>
               <h2 className={styles.pageTitle}>빠른 작업</h2>
             </div>
-            <div className={styles.quickActions}>
-              {ADMIN_QUICK_ACTIONS.map((action) => (
-                <Link key={action.href} href={action.href} className={styles.secondaryButton}>
+            <div className={ui.buttonGroup}>
+              {ADMIN_QUICK_ACTIONS.map((action, index) => (
+                <AdminButton
+                  key={action.href}
+                  href={action.href}
+                  variant={index === 0 ? 'primary' : 'secondary'}
+                >
                   {action.label}
-                </Link>
+                </AdminButton>
               ))}
             </div>
           </section>
@@ -165,9 +172,9 @@ export default function AdminDashboardPage() {
             <article className={styles.section}>
               <div className={styles.sectionHeader}>
                 <h2 className={styles.pageTitle}>결제 시스템 상태</h2>
-                <Link href="/admin/payments?tab=toss" className={styles.secondaryButton}>
+                <AdminButton href="/admin/payments?tab=toss" variant="secondary" size="sm">
                   결제 설정으로 이동
-                </Link>
+                </AdminButton>
               </div>
               <div className={styles.statusGrid}>
                 <StatusRow label="결제 Provider" value={String(payment.provider || '—')} />
@@ -207,13 +214,13 @@ export default function AdminDashboardPage() {
                   value={payment.mockAllowed ? '허용' : '비허용'}
                 />
               </div>
-              <button
+              <AdminButton
                 type="button"
-                className={styles.accordionSummary}
+                variant="link"
                 onClick={() => setShowDiagnostics((prev) => !prev)}
               >
                 {showDiagnostics ? '상세 진단 정보 숨기기' : '상세 진단 정보 보기'}
-              </button>
+              </AdminButton>
               {showDiagnostics ? (
                 <pre className={styles.pageDescription} style={{ whiteSpace: 'pre-wrap' }}>
                   {JSON.stringify(data?.payment, null, 2)}
@@ -224,9 +231,9 @@ export default function AdminDashboardPage() {
             <article className={styles.section}>
               <div className={styles.sectionHeader}>
                 <h2 className={styles.pageTitle}>Figma 연동 상태</h2>
-                <Link href="/admin/system?tab=figma" className={styles.secondaryButton}>
+                <AdminButton href="/admin/system?tab=figma" variant="secondary" size="sm">
                   Figma 설정
-                </Link>
+                </AdminButton>
               </div>
               <div className={styles.statusGrid}>
                 <StatusRow
@@ -246,13 +253,13 @@ export default function AdminDashboardPage() {
                   href="/admin/visual-templates"
                 />
               </div>
-              <div className={styles.quickActions} style={{ marginTop: 16 }}>
-                <Link href="/admin/visual-templates/new" className={styles.secondaryButton}>
+              <div className={ui.buttonGroup} style={{ marginTop: 16 }}>
+                <AdminButton href="/admin/visual-templates/new" variant="secondary">
                   새 템플릿 만들기
-                </Link>
-                <Link href="/admin/visual-templates/import" className={styles.secondaryButton}>
+                </AdminButton>
+                <AdminButton href="/admin/visual-templates/import" variant="secondary">
                   Figma 가져오기
-                </Link>
+                </AdminButton>
               </div>
             </article>
           </section>
@@ -303,7 +310,9 @@ export default function AdminDashboardPage() {
                   {data.recent.invitations.map((inv) => (
                     <tr key={String(inv.id)}>
                       <td>
-                        <Link href={`/admin/invitations/${inv.id}`}>{String(inv.title || inv.id)}</Link>
+                        <Link href={`/admin/invitations/${inv.id}`}>
+                          {formatInvitationListTitle(inv.title, inv.id)}
+                        </Link>
                       </td>
                       <td>{formatInvitationStatus(String(inv.status))}</td>
                       <td>{inv.isPaid ? '결제 완료' : '미결제'}</td>

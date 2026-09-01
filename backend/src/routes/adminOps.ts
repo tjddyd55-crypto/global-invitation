@@ -270,7 +270,7 @@ router.get('/ops/users', async (req, res) => {
       where,
       orderBy: { createdAt: 'desc' },
       take,
-      select: { id: true, email: true, createdAt: true, role: true },
+      select: { id: true, email: true, createdAt: true, role: true, deactivatedAt: true },
     });
 
     const enriched = await Promise.all(
@@ -289,6 +289,7 @@ router.get('/ops/users', async (req, res) => {
           email: u.email,
           role: u.role,
           createdAt: u.createdAt.toISOString(),
+          deactivatedAt: u.deactivatedAt?.toISOString() ?? null,
           invitationCount,
           publishedCount,
           paidCount,
@@ -307,7 +308,7 @@ router.get('/ops/users/:id', async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
-      select: { id: true, email: true, createdAt: true, role: true },
+      select: { id: true, email: true, createdAt: true, role: true, deactivatedAt: true },
     });
     if (!user) return res.status(404).json({ error: 'NOT_FOUND' });
 
@@ -340,6 +341,7 @@ router.get('/ops/users/:id', async (req, res) => {
         email: user.email,
         role: user.role,
         createdAt: user.createdAt.toISOString(),
+        deactivatedAt: user.deactivatedAt?.toISOString() ?? null,
       },
       invitations: invitations.map((inv) => ({
         ...inv,
@@ -514,6 +516,152 @@ router.get('/ops/invitations/:id', async (req, res) => {
   } catch (error) {
     console.error('[admin/ops] invitation detail failed', error);
     return res.status(500).json({ error: 'INVITATION_DETAIL_FAILED' });
+  }
+});
+
+router.post('/ops/invitations/:id/archive', async (req, res) => {
+  const session = sessionOf(res);
+  try {
+    const invitation = await prisma.invitation.findFirst({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        title: true,
+        isDeleted: true,
+        isPaid: true,
+        status: true,
+      },
+    });
+    if (!invitation) {
+      return res.status(404).json({ error: 'NOT_FOUND' });
+    }
+    if (invitation.isDeleted) {
+      return res.status(200).json({ success: true, alreadyArchived: true, id: invitation.id });
+    }
+
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        isDeleted: true,
+        isPublished: false,
+        status: InvitationStatus.DRAFT,
+      },
+    });
+
+    await logAdminAction({
+      adminId: session.adminId || session.email,
+      action: 'invitation_archive',
+      targetType: 'invitation',
+      targetId: invitation.id,
+      payload: {
+        actorRole: session.role,
+        isPaid: invitation.isPaid,
+        previousStatus: invitation.status,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      id: invitation.id,
+      archived: true,
+      paidPreserved: invitation.isPaid,
+    });
+  } catch (error) {
+    console.error('[admin/ops] invitation archive failed', error);
+    return res.status(500).json({ error: 'INVITATION_ARCHIVE_FAILED' });
+  }
+});
+
+router.patch('/ops/invitations/:id/status', async (req, res) => {
+  const session = sessionOf(res);
+  try {
+    const nextStatusRaw = typeof req.body?.status === 'string' ? req.body.status.trim() : '';
+    if (!Object.values(InvitationStatus).includes(nextStatusRaw as InvitationStatus)) {
+      return res.status(400).json({ error: 'INVALID_STATUS' });
+    }
+    const nextStatus = nextStatusRaw as InvitationStatus;
+
+    const invitation = await prisma.invitation.findFirst({
+      where: { id: req.params.id, isDeleted: false },
+      select: { id: true, status: true, isPublished: true },
+    });
+    if (!invitation) {
+      return res.status(404).json({ error: 'NOT_FOUND' });
+    }
+
+    const updated = await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        status: nextStatus,
+        isPublished: nextStatus === InvitationStatus.PUBLISHED,
+      },
+      select: { id: true, status: true, isPublished: true },
+    });
+
+    await logAdminAction({
+      adminId: session.adminId || session.email,
+      action: 'invitation_status_update',
+      targetType: 'invitation',
+      targetId: invitation.id,
+      payload: {
+        actorRole: session.role,
+        before: invitation.status,
+        after: updated.status,
+      },
+    });
+
+    return res.status(200).json({ success: true, invitation: updated });
+  } catch (error) {
+    console.error('[admin/ops] invitation status update failed', error);
+    return res.status(500).json({ error: 'INVITATION_STATUS_UPDATE_FAILED' });
+  }
+});
+
+router.post('/ops/users/:id/deactivate', async (req, res) => {
+  const session = sessionOf(res);
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, email: true, role: true, deactivatedAt: true },
+    });
+    if (!user) {
+      return res.status(404).json({ error: 'NOT_FOUND' });
+    }
+    if (user.role === 'ADMIN') {
+      return res.status(403).json({ error: 'ADMIN_USER_PROTECTED' });
+    }
+    if (user.deactivatedAt) {
+      return res.status(200).json({ success: true, alreadyDeactivated: true, id: user.id });
+    }
+
+    const deactivatedAt = new Date();
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: user.id },
+        data: { deactivatedAt },
+      }),
+      prisma.authSession.deleteMany({ where: { userId: user.id } }),
+    ]);
+
+    await logAdminAction({
+      adminId: session.adminId || session.email,
+      action: 'user_deactivate',
+      targetType: 'user',
+      targetId: user.id,
+      payload: {
+        actorRole: session.role,
+        email: user.email,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      id: user.id,
+      deactivatedAt: deactivatedAt.toISOString(),
+    });
+  } catch (error) {
+    console.error('[admin/ops] user deactivate failed', error);
+    return res.status(500).json({ error: 'USER_DEACTIVATE_FAILED' });
   }
 });
 

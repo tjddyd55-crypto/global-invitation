@@ -1,0 +1,271 @@
+.buttonBase {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.buttonBase:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.buttonBase:disabled,
+.buttonDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.sizeSm {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.8125rem;
+}
+
+.sizeMd {
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.variantPrimary {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.variantPrimary:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.variantSecondary {
+  background: #fff;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+.variantSecondary:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.variantGhost {
+  background: transparent;
+  color: #374151;
+  border-color: transparent;
+}
+
+.variantGhost:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.variantDanger {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+.variantDanger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.variantLink {
+  background: transparent;
+  color: #2563eb;
+  border-color: transparent;
+  padding-left: 0;
+  padding-right: 0;
+  min-height: auto;
+}
+
+.variantLink:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.helper {
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.control {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 0.875rem;
+  background: #fff;
+  color: #111827;
+}
+
+.control:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.control:disabled,
+.controlReadOnly {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tab {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tabActive {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.tab:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.formStack {
+  display: grid;
+  gap: 16px;
+  max-width: 560px;
+}
+
+.feedbackSuccess {
+  color: #047857;
+  font-size: 0.875rem;
+}
+
+.feedbackError {
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+.feedbackInfo {
+  color: #1d4ed8;
+  font-size: 0.875rem;
+}
+
+.permissionNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+  font-size: 0.875rem;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+}
+
+.modalTitle {
+  margin: 0 0 8px;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.modalDescription {
+  margin: 0 0 20px;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

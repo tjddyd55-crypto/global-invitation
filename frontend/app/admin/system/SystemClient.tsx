@@ -20,6 +20,16 @@ import {
   type AdminSession,
   type AdminVisualCatalogDrift,
 } from '@/src/lib/adminApi';
+import {
+  AdminButton,
+  AdminFeedback,
+  AdminField,
+  AdminInput,
+  AdminPermissionNotice,
+  AdminSelect,
+  AdminTabs,
+} from '@/src/components/admin/ui';
+import ui from '@/src/components/admin/ui/adminUi.module.css';
 import styles from '@/src/components/admin/AdminShell.module.css';
 
 export type AdminSystemTab = 'runtime' | 'figma' | 'audit';
@@ -39,6 +49,8 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
   const [figmaToken, setFigmaToken] = useState('');
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [savingFigma, setSavingFigma] = useState(false);
 
   const isSuper = session?.role === 'SUPER_ADMIN';
   const settings = (system?.settings || {}) as Record<string, unknown>;
@@ -55,7 +67,10 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
   );
 
   useEffect(() => {
-    void getAdminSession().then(setSession).catch(() => setSession(null));
+    void getAdminSession()
+      .then(setSession)
+      .catch(() => setSession(null))
+      .finally(() => setSessionReady(true));
     void getAdminOpsSystem()
       .then(setSystem)
       .catch((err) => setError(err instanceof Error ? err.message : '시스템 설정 로드 실패'));
@@ -106,21 +121,12 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
         {String(system?.currency || 'USD')}
       </p>
 
-      <div className={styles.section} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={tab === t.id ? styles.primaryButton : styles.secondaryButton}
-            onClick={() => selectTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className={styles.section} style={{ paddingBottom: 12 }}>
+        <AdminTabs tabs={tabs} active={tab} onChange={selectTab} />
       </div>
 
-      {error && <p className={styles.error}>{error}</p>}
-      {statusMsg && <p className={styles.pageDescription}>{statusMsg}</p>}
+      {error ? <AdminFeedback tone="error" message={error} /> : null}
+      {statusMsg ? <AdminFeedback tone="info" message={statusMsg} /> : null}
 
       {tab === 'runtime' && (
         <section className={styles.section}>
@@ -214,55 +220,75 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
               필요합니다.
             </p>
           ) : null}
-          {!encryptionConfigured ? (
-            <p className={styles.error}>
-              암호화 키가 설정되지 않아 토큰을 저장할 수 없습니다. Railway Backend 환경변수{' '}
-              <strong>ADMIN_SETTINGS_ENCRYPTION_KEY</strong> 설정이 필요합니다.
-            </p>
+          {sessionReady && !isSuper ? (
+            <AdminPermissionNotice message="Figma Token 저장은 SUPER_ADMIN 권한에서만 가능합니다." />
           ) : null}
-          <label>
-            Figma Access Token (SUPER_ADMIN, encrypted DB)
-            <input
-              className={styles.input}
-              type="password"
-              value={figmaToken}
-              disabled={!isSuper || !encryptionConfigured}
-              onChange={(e) => setFigmaToken(e.target.value)}
-              placeholder="figd_…"
+          {!encryptionConfigured ? (
+            <AdminFeedback
+              tone="error"
+              message="암호화 키가 설정되지 않았습니다. Token 저장은 ADMIN_SETTINGS_ENCRYPTION_KEY 설정 후 가능합니다. 입력은 가능하며 저장 시 안내가 표시됩니다."
             />
-          </label>
-          <p className={styles.helperText}>기존 값을 변경하지 않으려면 입력하지 마세요.</p>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button
-              type="button"
-              className={styles.primaryButton}
-              disabled={!isSuper || !encryptionConfigured}
-              onClick={() =>
-                void adminApiJson('/api/admin/figma/config', {
-                  method: 'PUT',
-                  body: JSON.stringify({ accessToken: figmaToken }),
-                })
-                  .then((view) => {
-                    setFigma(view as Record<string, unknown>);
-                    setFigmaToken('');
-                    setStatusMsg('Figma 토큰이 저장되었습니다.');
+          ) : null}
+          <div className={ui.formStack}>
+            <AdminField
+              label="Figma Access Token"
+              helper="기존 값을 변경하지 않으려면 입력하지 마세요."
+            >
+              <AdminInput
+                type="password"
+                value={figmaToken}
+                onChange={(e) => setFigmaToken(e.target.value)}
+                placeholder="figd_…"
+                readOnly={sessionReady && !isSuper}
+              />
+            </AdminField>
+            <div className={ui.buttonGroup}>
+              <AdminButton
+                variant="primary"
+                disabled={!isSuper}
+                loading={savingFigma}
+                onClick={() => {
+                  if (!isSuper) {
+                    setStatusMsg('SUPER_ADMIN 권한이 필요합니다.');
+                    return;
+                  }
+                  if (figmaToken.trim() && !encryptionConfigured) {
+                    setStatusMsg(
+                      '암호화 설정이 없어 Token을 저장할 수 없습니다. Railway Backend의 ADMIN_SETTINGS_ENCRYPTION_KEY 설정을 확인해 주세요.'
+                    );
+                    return;
+                  }
+                  setSavingFigma(true);
+                  void adminApiJson('/api/admin/figma/config', {
+                    method: 'PUT',
+                    body: JSON.stringify({ accessToken: figmaToken }),
                   })
-                  .catch((err) => setStatusMsg(err instanceof Error ? err.message : '저장 실패'))
-              }
-            >
-              저장
-            </button>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={() =>
-                void adminApiJson('/api/admin/figma/test', { method: 'POST', body: '{}' })
-                  .then((res) => setStatusMsg(`Figma 연결 확인: ${JSON.stringify(res)}`))
-                  .catch((err) => setStatusMsg(err instanceof Error ? err.message : '연결 확인 실패'))
-              }
-            >
-              연결 확인
-            </button>
+                    .then((view) => {
+                      setFigma(view as Record<string, unknown>);
+                      setFigmaToken('');
+                      setStatusMsg('Figma 토큰이 저장되었습니다.');
+                    })
+                    .catch((err) =>
+                      setStatusMsg(err instanceof Error ? err.message : '저장 실패')
+                    )
+                    .finally(() => setSavingFigma(false));
+                }}
+              >
+                저장
+              </AdminButton>
+              <AdminButton
+                variant="secondary"
+                onClick={() =>
+                  void adminApiJson('/api/admin/figma/test', { method: 'POST', body: '{}' })
+                    .then((res) => setStatusMsg(`Figma 연결 확인: ${JSON.stringify(res)}`))
+                    .catch((err) =>
+                      setStatusMsg(err instanceof Error ? err.message : '연결 확인 실패')
+                    )
+                }
+              >
+                연결 확인
+              </AdminButton>
+            </div>
           </div>
         </section>
       )}
