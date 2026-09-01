@@ -316,12 +316,31 @@ export function getAdminSession(req: Request): AdminSession | null {
   return deserializeSessionJwt(token, jwtSecret);
 }
 
+function maskOrigin(origin: string | undefined): string | undefined {
+  if (!origin) return undefined;
+  try {
+    const url = new URL(origin);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return '[invalid-origin]';
+  }
+}
+
+function adminCookieDiagnostics(req: Request) {
+  const cookieHeader = req.headers.cookie;
+  const hasCookieHeader = Boolean(cookieHeader?.trim());
+  const hasAdminSession = Boolean(parseCookieValue(req, ADMIN_SESSION_COOKIE));
+  return {
+    hasAdminSession,
+    cookieHeaderPresent: hasCookieHeader,
+    origin: maskOrigin(typeof req.headers.origin === 'string' ? req.headers.origin : undefined),
+  };
+}
+
 export function requireAdminSession(req: Request, res: Response, next: NextFunction) {
   const session = getAdminSession(req);
   if (!session || (session.role !== 'ADMIN' && session.role !== 'SUPER_ADMIN')) {
-    console.log('admin cookie diagnostics', {
-      hasAdminSession: Boolean(parseCookieValue(req, ADMIN_SESSION_COOKIE)),
-    });
+    console.log('admin cookie diagnostics', adminCookieDiagnostics(req));
     return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
   }
 
@@ -332,9 +351,7 @@ export function requireAdminSession(req: Request, res: Response, next: NextFunct
 export function requireSuperAdminSession(req: Request, res: Response, next: NextFunction) {
   const session = getAdminSession(req);
   if (!session) {
-    console.log('admin cookie diagnostics', {
-      hasAdminSession: Boolean(parseCookieValue(req, ADMIN_SESSION_COOKIE)),
-    });
+    console.log('admin cookie diagnostics', adminCookieDiagnostics(req));
     return res.status(401).json({ error: 'ADMIN_AUTH_REQUIRED' });
   }
   if (session.role !== 'SUPER_ADMIN') {

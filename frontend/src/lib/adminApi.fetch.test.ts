@@ -1,10 +1,11 @@
 /**
- * Unit: adminApiFetch always sends credentials:include to absolute backend URL.
+ * Unit: adminApiFetch always sends credentials:include.
+ * Server (Node): absolute backend URL. Browser: same-origin admin proxy path.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-test('adminApiFetch forces credentials include and absolute backend URL', async () => {
+test('adminApiFetch forces credentials include and absolute backend URL on server', async () => {
   process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL = 'https://backend-development-c9a4.up.railway.app';
 
   const calls: Array<{ url: string; init: RequestInit }> = [];
@@ -18,7 +19,6 @@ test('adminApiFetch forces credentials include and absolute backend URL', async 
   }) as typeof fetch;
 
   try {
-    // Dynamic import after env is set so getAdminApiBaseUrl sees the value.
     const { adminApiFetch } = await import('./adminApi');
     await adminApiFetch('/api/admin/me', {
       method: 'GET',
@@ -33,6 +33,33 @@ test('adminApiFetch forces credentials include and absolute backend URL', async 
     assert.equal(calls[0].init.credentials, 'include');
   } finally {
     globalThis.fetch = originalFetch;
+    delete process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL;
+  }
+});
+
+test('buildAdminApiUrl uses same-origin path in browser', async () => {
+  process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL = 'https://backend-development-c9a4.up.railway.app';
+
+  const originalWindow = globalThis.window;
+  Object.defineProperty(globalThis, 'window', {
+    value: {},
+    configurable: true,
+    writable: true,
+  });
+
+  try {
+    const { buildAdminApiUrl } = await import('./adminApi');
+    assert.equal(buildAdminApiUrl('/api/admin/me'), '/api/admin/me');
+  } finally {
+    if (originalWindow === undefined) {
+      delete (globalThis as { window?: unknown }).window;
+    } else {
+      Object.defineProperty(globalThis, 'window', {
+        value: originalWindow,
+        configurable: true,
+        writable: true,
+      });
+    }
     delete process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL;
   }
 });

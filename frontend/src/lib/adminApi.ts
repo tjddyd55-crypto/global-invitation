@@ -11,13 +11,16 @@ function isAbsoluteHttpUrl(value: string): boolean {
 }
 
 /**
- * Admin API must use an absolute backend origin (never same-origin `/api/...` on the Next host).
+ * Admin API base URL.
  *
- * Railway frontend: set
- *   NEXT_PUBLIC_ADMIN_API_BASE_URL=https://backend-production-xxxx.up.railway.app
- * Local: set NEXT_PUBLIC_ADMIN_API_BASE_URL or NEXT_PUBLIC_API_BASE_URL to e.g. http://localhost:3001
+ * Browser: same-origin `/api/admin/*` (Next.js rewrite → backend) so session cookies stay first-party.
+ * Server/SSR: absolute backend origin when configured.
  */
 export function getAdminApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    return '';
+  }
+
   const dedicated = process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.trim();
   if (dedicated) {
     const normalized = normalizeApiBaseUrl(dedicated);
@@ -27,7 +30,7 @@ export function getAdminApiBaseUrl(): string {
     if (!adminApiBaseDebugLogged) {
       adminApiBaseDebugLogged = true;
       // eslint-disable-next-line no-console -- intentional deploy/debug aid for admin routing
-      console.log('ADMIN API BASE:', normalized);
+      console.log('ADMIN API BASE (server):', normalized);
     }
     return normalized;
   }
@@ -38,7 +41,7 @@ export function getAdminApiBaseUrl(): string {
     if (!adminApiBaseDebugLogged) {
       adminApiBaseDebugLogged = true;
       // eslint-disable-next-line no-console -- intentional deploy/debug aid for admin routing
-      console.log('ADMIN API BASE:', normalized);
+      console.log('ADMIN API BASE (server):', normalized);
     }
     return normalized;
   }
@@ -46,11 +49,11 @@ export function getAdminApiBaseUrl(): string {
   throw new Error(ADMIN_API_BASE_URL_ERROR);
 }
 
-/** Always returns an absolute URL; all admin fetches must use this (never raw `/api/admin/...`). */
+/** Always returns a fetchable URL; browser uses same-origin admin proxy paths. */
 export function buildAdminApiUrl(path: string): string {
   const base = getAdminApiBaseUrl();
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${base}${normalizedPath}`;
+  return base ? `${base}${normalizedPath}` : normalizedPath;
 }
 
 export type AdminRole = 'ADMIN' | 'SUPER_ADMIN';
@@ -311,7 +314,8 @@ async function parseJsonOrThrow<T>(response: Response): Promise<T> {
 }
 
 /**
- * Admin API SSOT — always credentials:include against absolute Backend origin.
+ * Admin API SSOT — always credentials:include.
+ * Browser: same-origin `/api/admin/*` via Next.js rewrite. Server: absolute backend origin.
  * Do not use the user auth client or bare fetch for /api/admin/*.
  */
 export async function adminApiFetch(path: string, init: RequestInit = {}): Promise<Response> {
@@ -319,10 +323,10 @@ export async function adminApiFetch(path: string, init: RequestInit = {}): Promi
   return fetch(buildAdminApiUrl(path), {
     ...rest,
     cache: 'no-store',
-    credentials: 'include',
     headers: {
       ...(incomingHeaders || {}),
     },
+    credentials: 'include',
   });
 }
 

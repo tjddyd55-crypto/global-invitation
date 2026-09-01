@@ -27,11 +27,40 @@ try {
   /* optional env at build time */
 }
 
+function resolveAdminApiProxyTarget() {
+  const raw =
+    process.env.ADMIN_API_PROXY_TARGET?.trim() ||
+    process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_BACKEND_URL?.trim() ||
+    ''
+  if (!raw) return null
+  try {
+    const url = new URL(raw)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
+    return url.origin
+  } catch {
+    return null
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   images: {
     remotePatterns,
+  },
+  async rewrites() {
+    const backendOrigin = resolveAdminApiProxyTarget()
+    if (!backendOrigin) {
+      return []
+    }
+    return [
+      {
+        source: '/api/admin/:path*',
+        destination: `${backendOrigin}/api/admin/:path*`,
+      },
+    ]
   },
   webpack: (config) => {
     config.resolve.alias = {
