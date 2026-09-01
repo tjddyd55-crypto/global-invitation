@@ -1,4 +1,5 @@
 import { getApiBaseUrl, normalizeApiBaseUrl } from '@/src/lib/apiBase';
+import { AdminLoginError } from '@/src/features/admin/adminLoginMessages';
 import type { SupportedTemplateKey, TemplateDefinition } from '@/src/templates/registry';
 
 export const ADMIN_API_BASE_URL_ERROR = 'ADMIN API BASE URL NOT SET';
@@ -351,10 +352,32 @@ export function buildAdminRequestInit(init?: RequestInit): RequestInit {
 }
 
 export async function loginAdmin(adminId: string, password: string) {
-  return adminApiJson<{ success: true; role: AdminRole; email: string }>('/api/admin/login', {
+  const response = await adminApiFetch('/api/admin/login', {
     method: 'POST',
     body: JSON.stringify({ adminId, email: adminId, password }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
   });
+
+  if (response.ok) {
+    return response.json() as Promise<{ success: true; role: AdminRole; email: string }>;
+  }
+
+  let payload: { error?: string; retryAfterSeconds?: number } = {};
+  try {
+    payload = (await response.json()) as { error?: string; retryAfterSeconds?: number };
+  } catch {
+    payload = {};
+  }
+
+  const retryHeader = response.headers.get('Retry-After');
+  const parsedHeader = retryHeader ? Number.parseInt(retryHeader, 10) : Number.NaN;
+  const retryAfterSeconds =
+    payload.retryAfterSeconds ??
+    (Number.isFinite(parsedHeader) && parsedHeader > 0 ? parsedHeader : undefined);
+
+  throw new AdminLoginError(payload.error || 'ADMIN_LOGIN_FAILED', response.status, retryAfterSeconds);
 }
 
 export async function logoutAdmin() {

@@ -1,4 +1,4 @@
-import { Router, type Request } from 'express';
+import { Router, type Request, type Response } from 'express';
 import {
   clearAdminSessionCookie,
   getAdminSession,
@@ -11,11 +11,15 @@ import {
   validateSuperAdminCredentials,
 } from '../lib/adminSession';
 import { logAdminAction } from '../admin/adminAuditLog';
+import {
+  buildAdminLoginRateLimitKey,
+  checkAdminLoginRateLimit,
+  clearAdminLoginRateLimit,
+  maskAdminIdentifier,
+  recordAdminLoginFailure,
+} from '../lib/adminLoginRateLimit';
 
 const router = Router();
-const LOGIN_WINDOW_MS = 60_000;
-const LOGIN_MAX_ATTEMPTS = 5;
-const loginAttemptsByIp = new Map<string, number[]>();
 
 function normalizeAdminId(value: string): string {
   return value.trim().toLowerCase();
@@ -59,35 +63,33 @@ function resolveClientIp(req: Request): string {
   return req.ip || req.socket.remoteAddress || 'unknown';
 }
 
-function consumeLoginAttempt(ip: string): { limited: boolean; retryAfterSeconds: number } {
-  const now = Date.now();
-  const recentAttempts = (loginAttemptsByIp.get(ip) || []).filter(
-    (timestamp) => now - timestamp < LOGIN_WINDOW_MS
-  );
+function respondInvalidCredentials(
+  res: Response,
+  ip: string,
+  adminId: string,
+  rateLimitKey: string
+) {
+  const failureState = recordAdminLoginFailure(rateLimitKey);
+  console.warn('admin login failed', {
+    ip,
+    adminId: maskAdminIdentifier(adminId),
+    rateLimited: failureState.limited,
+  });
 
-  if (recentAttempts.length >= LOGIN_MAX_ATTEMPTS) {
-    const oldestAttempt = recentAttempts[0] || now;
-    const retryAfterSeconds = Math.max(
-      1,
-      Math.ceil((LOGIN_WINDOW_MS - (now - oldestAttempt)) / 1000)
-    );
-    loginAttemptsByIp.set(ip, recentAttempts);
-    return { limited: true, retryAfterSeconds };
+  if (failureState.limited) {
+    res.setHeader('Retry-After', String(failureState.retryAfterSeconds));
+    return res.status(429).json({
+      error: 'ADMIN_LOGIN_RATE_LIMITED',
+      retryAfterSeconds: failureState.retryAfterSeconds,
+    });
   }
 
-  recentAttempts.push(now);
-  loginAttemptsByIp.set(ip, recentAttempts);
-  return { limited: false, retryAfterSeconds: 0 };
+  return res.status(401).json({ error: 'ADMIN_INVALID_CREDENTIALS' });
 }
 
 router.post('/login', async (req, res) => {
   try {
     const ip = resolveClientIp(req);
-    const rateLimit = consumeLoginAttempt(ip);
-    if (rateLimit.limited) {
-      res.setHeader('Retry-After', String(rateLimit.retryAfterSeconds));
-      return res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
-    }
 
     if (!isAnyAdminPortalConfigured()) {
       return res.status(503).json({ error: 'ADMIN_NOT_CONFIGURED' });
@@ -106,12 +108,33 @@ router.post('/login', async (req, res) => {
     if (!adminEmail.trim() || !password.trim()) {
       return res.status(400).json({ error: 'ADMIN_CREDENTIALS_REQUIRED' });
     }
+
     const normalizedInputId = normalizeAdminId(adminEmail);
+    const rateLimitKey = buildAdminLoginRateLimitKey(ip, normalizedInputId);
+    const rateLimit = checkAdminLoginRateLimit(rateLimitKey);
+    if (rateLimit.limited) {
+      res.setHeader('Retry-After', String(rateLimit.retryAfterSeconds));
+      console.warn('admin login rate limited', {
+        ip,
+        adminId: maskAdminIdentifier(adminEmail),
+        retryAfterSeconds: rateLimit.retryAfterSeconds,
+      });
+      return res.status(429).json({
+        error: 'ADMIN_LOGIN_RATE_LIMITED',
+        retryAfterSeconds: rateLimit.retryAfterSeconds,
+      });
+    }
+
     const superEmailRaw = process.env.SUPER_ADMIN_EMAIL?.trim() || '';
 
     if (superEmailRaw && validateSuperAdminCredentials(adminEmail, password)) {
+      clearAdminLoginRateLimit(rateLimitKey);
       setAdminSessionCookie(res, superEmailRaw, 'SUPER_ADMIN');
-      console.log('admin login success');
+      console.log('admin login success', {
+        ip,
+        adminId: maskAdminIdentifier(superEmailRaw),
+        role: 'SUPER_ADMIN',
+      });
       await logAdminAction({
         adminId: superEmailRaw,
         action: 'super_admin_login',
@@ -133,7 +156,7 @@ router.post('/login', async (req, res) => {
     }
 
     if (!isAdminConfigured()) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return respondInvalidCredentials(res, ip, adminEmail, rateLimitKey);
     }
 
     const expectedAdminId = getResolvedAdminId();
@@ -141,11 +164,16 @@ router.post('/login', async (req, res) => {
     const acceptedAdminIds = buildAcceptedAdminIds(expectedAdminId);
 
     if (!acceptedAdminIds.has(normalizedInputId) || password.trim() !== expectedPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return respondInvalidCredentials(res, ip, adminEmail, rateLimitKey);
     }
 
+    clearAdminLoginRateLimit(rateLimitKey);
     setAdminSessionCookie(res, expectedAdminId, 'ADMIN');
-    console.log('admin login success');
+    console.log('admin login success', {
+      ip,
+      adminId: maskAdminIdentifier(expectedAdminId),
+      role: 'ADMIN',
+    });
     await logAdminAction({
       adminId: expectedAdminId,
       action: 'admin_login',
@@ -166,7 +194,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Error during admin login:', error);
-    return res.status(500).json({ error: 'FAILED_TO_LOGIN_ADMIN' });
+    return res.status(500).json({ error: 'ADMIN_LOGIN_FAILED' });
   }
 });
 

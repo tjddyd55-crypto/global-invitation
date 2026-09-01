@@ -7,6 +7,7 @@ import express from 'express';
 import cors from 'cors';
 import request from 'supertest';
 import adminAuthRouter from './adminAuth';
+import { resetAdminLoginRateLimitStore } from '../lib/adminLoginRateLimit';
 import { resolveAdminSessionCookieOptions } from '../lib/adminSession';
 import { attachGuestSession } from '../middleware/guestSessionMiddleware';
 
@@ -98,10 +99,12 @@ test('admin/me without cookie is 401', async () => {
   assert.equal(me.status, 401);
 });
 
-test('invalid admin credentials return 401', async () => {
+test('invalid admin credentials return 401 with stable error code', async () => {
+  resetAdminLoginRateLimitStore();
   process.env.ADMIN_ID = process.env.ADMIN_ID || 'admin@test.local';
   process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'test-admin-password';
   process.env.ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'test-admin-jwt-secret';
+  process.env.RAILWAY_ENVIRONMENT_NAME = 'production';
 
   const app = buildApp();
   const bad = await request(app)
@@ -109,6 +112,66 @@ test('invalid admin credentials return 401', async () => {
     .set('Origin', DEV_FRONTEND)
     .send({ adminId: 'not-an-admin', password: 'wrong-password' });
   assert.equal(bad.status, 401);
+  assert.equal(bad.body.error, 'ADMIN_INVALID_CREDENTIALS');
+});
+
+test('repeated invalid admin login returns 429 with Retry-After', async () => {
+  resetAdminLoginRateLimitStore();
+  process.env.ADMIN_ID = process.env.ADMIN_ID || 'admin@test.local';
+  process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'test-admin-password';
+  process.env.ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'test-admin-jwt-secret';
+  process.env.RAILWAY_ENVIRONMENT_NAME = 'production';
+  delete process.env.ADMIN_LOGIN_RATE_LIMIT_MAX;
+  delete process.env.ADMIN_LOGIN_RATE_LIMIT_WINDOW_SEC;
+
+  const app = buildApp();
+  let lastStatus = 0;
+  for (let i = 0; i < 6; i += 1) {
+    const res = await request(app)
+      .post('/api/admin/login')
+      .set('Origin', DEV_FRONTEND)
+      .send({ adminId: 'not-an-admin', password: 'wrong-password' });
+    lastStatus = res.status;
+    if (res.status === 429) {
+      assert.equal(res.body.error, 'ADMIN_LOGIN_RATE_LIMITED');
+      assert.ok(Number(res.headers['retry-after']) > 0);
+      assert.ok(typeof res.body.retryAfterSeconds === 'number');
+      return;
+    }
+  }
+  assert.equal(lastStatus, 429);
+});
+
+test('successful admin login clears prior failed attempts', async () => {
+  resetAdminLoginRateLimitStore();
+  process.env.ADMIN_ID = process.env.ADMIN_ID || 'admin@test.local';
+  process.env.ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'test-admin-password';
+  process.env.ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'test-admin-jwt-secret';
+  process.env.RAILWAY_ENVIRONMENT_NAME = 'production';
+
+  const app = buildApp();
+  const adminId = process.env.ADMIN_ID!;
+  const password = process.env.ADMIN_PASSWORD!;
+
+  for (let i = 0; i < 4; i += 1) {
+    const bad = await request(app)
+      .post('/api/admin/login')
+      .set('Origin', DEV_FRONTEND)
+      .send({ adminId, password: 'wrong-password' });
+    assert.equal(bad.status, 401);
+  }
+
+  const login = await request(app)
+    .post('/api/admin/login')
+    .set('Origin', DEV_FRONTEND)
+    .send({ adminId, password });
+  assert.equal(login.status, 200);
+
+  const badAfterSuccess = await request(app)
+    .post('/api/admin/login')
+    .set('Origin', DEV_FRONTEND)
+    .send({ adminId, password: 'wrong-password' });
+  assert.equal(badAfterSuccess.status, 401);
 });
 
 test('admin login path does not emit guest token header', async () => {
