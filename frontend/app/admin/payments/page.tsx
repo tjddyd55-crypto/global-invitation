@@ -1,12 +1,15 @@
-'use client';
+import PaymentsClient, { type AdminPaymentsTab } from './PaymentsClient';
 
-import { Suspense } from 'react';
-import AdminPaymentsPage from './PaymentsClient';
+function parsePaymentsTab(value?: string | string[]): AdminPaymentsTab {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw === 'pricing' || raw === 'toss') return raw;
+  return 'transactions';
+}
 
-export default function Page() {
-  return (
-    <Suspense fallback={<div>Loading payments…</div>}>
-      <AdminPaymentsPage />
-    </Suspense>
-  );
+export default function AdminPaymentsPage({
+  searchParams,
+}: {
+  searchParams?: { tab?: string | string[] };
+}) {
+  return <PaymentsClient initialTab={parsePaymentsTab(searchParams?.tab)} />;
 }

@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import AdminPageHeader from '@/src/features/admin/AdminPageHeader';
 import {
@@ -23,17 +23,15 @@ import {
 } from '@/src/lib/adminApi';
 import styles from '@/src/components/admin/AdminShell.module.css';
 
-type Tab = 'transactions' | 'pricing' | 'toss';
+export type AdminPaymentsTab = 'transactions' | 'pricing' | 'toss';
 
-function parseTab(value: string | null): Tab {
-  if (value === 'pricing' || value === 'toss') return value;
-  return 'transactions';
-}
+type AdminPaymentsPageProps = {
+  initialTab: AdminPaymentsTab;
+};
 
-export default function AdminPaymentsPage() {
-  const search = useSearchParams();
+export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps) {
   const router = useRouter();
-  const tab = parseTab(search.get('tab'));
+  const tab = initialTab;
   const [session, setSession] = useState<AdminSession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [payments, setPayments] = useState<Array<Record<string, unknown>>>([]);
@@ -90,7 +88,7 @@ export default function AdminPaymentsPage() {
       .catch(() => undefined);
   }, []);
 
-  function selectTab(next: Tab) {
+  function selectTab(next: AdminPaymentsTab) {
     router.replace(`/admin/payments?tab=${next}`, { scroll: false });
   }
 
