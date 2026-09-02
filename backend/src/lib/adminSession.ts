@@ -103,6 +103,23 @@ function resolveSuperAdminPassword(): string {
   return process.env.SUPER_ADMIN_PASSWORD?.trim() || '';
 }
 
+/** Single env-based admin credential (ADMIN_ID) is issued SUPER_ADMIN. */
+export function resolvePrimaryAdminSessionRole(): AdminRole {
+  return 'SUPER_ADMIN';
+}
+
+function isSuperAdminSessionEmail(emailNorm: string): boolean {
+  const primaryAdminId = resolveAdminId();
+  if (primaryAdminId && emailNorm === normalizeAdminId(primaryAdminId)) {
+    return true;
+  }
+  const legacySuperEmail = resolveSuperAdminEmail();
+  if (legacySuperEmail && emailNorm === normalizeAdminId(legacySuperEmail)) {
+    return true;
+  }
+  return false;
+}
+
 export function isSuperAdminConfigured(): boolean {
   const email = resolveSuperAdminEmail();
   const password = resolveSuperAdminPassword();
@@ -231,8 +248,7 @@ function deserializeSessionJwt(token: string, secret: string): AdminSession | nu
     const emailNorm = normalizeAdminId(payload.email);
 
     if (role === 'SUPER_ADMIN') {
-      const superEmail = resolveSuperAdminEmail();
-      if (!superEmail || emailNorm !== normalizeAdminId(superEmail)) {
+      if (!isSuperAdminSessionEmail(emailNorm)) {
         return null;
       }
       return {

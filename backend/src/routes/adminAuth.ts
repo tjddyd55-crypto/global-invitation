@@ -9,6 +9,7 @@ import {
   requireAdminSession,
   setAdminSessionCookie,
   validateSuperAdminCredentials,
+  resolvePrimaryAdminSessionRole,
 } from '../lib/adminSession';
 import { logAdminAction } from '../admin/adminAuditLog';
 import {
@@ -168,11 +169,12 @@ router.post('/login', async (req, res) => {
     }
 
     clearAdminLoginRateLimit(rateLimitKey);
-    setAdminSessionCookie(res, expectedAdminId, 'ADMIN');
+    const primaryRole = resolvePrimaryAdminSessionRole();
+    setAdminSessionCookie(res, expectedAdminId, primaryRole);
     console.log('admin login success', {
       ip,
       adminId: maskAdminIdentifier(expectedAdminId),
-      role: 'ADMIN',
+      role: primaryRole,
     });
     await logAdminAction({
       adminId: expectedAdminId,
@@ -182,6 +184,7 @@ router.post('/login', async (req, res) => {
       payload: {
         ip,
         userAgent: req.headers['user-agent'] || null,
+        role: primaryRole,
       },
     }).catch((error) => {
       console.warn('Failed to write admin login audit log:', error);
@@ -189,7 +192,7 @@ router.post('/login', async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      role: 'ADMIN',
+      role: primaryRole,
       email: expectedAdminId,
     });
   } catch (error) {

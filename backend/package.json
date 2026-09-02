@@ -17,7 +17,7 @@
     "db:verify": "tsx scripts/verify-tables.ts",
     "templates:migrate": "tsx scripts/migrate-template-registry-to-db.ts",
     "test:preview-code": "tsx --test src/lib/mailer.previewCode.test.ts",
-    "test:admin-session": "tsx --test src/lib/adminSession.cookie.test.ts src/routes/adminAuth.cors.test.ts",
+    "test:admin-session": "tsx --test src/lib/adminSession.cookie.test.ts src/routes/adminAuth.cors.test.ts src/routes/adminAuth.role.test.ts",
     "test:audio-probe": "tsx --test src/lib/audio/playableAudioProbe.test.ts",
     "test:r2-cleanup": "tsx --test src/lib/r2Cleanup/legacyInvitationClassification.test.ts",
     "music:archive-qa-placeholder": "tsx scripts/archive-qa-placeholder-music.ts",

@@ -88,7 +88,7 @@ test('admin login sets admin_session HttpOnly cookie and CORS credentials', asyn
 
   assert.equal(me.status, 200);
   assert.equal(typeof me.body.email, 'string');
-  assert.ok(me.body.role === 'ADMIN' || me.body.role === 'SUPER_ADMIN');
+  assert.equal(me.body.role, 'SUPER_ADMIN');
   assert.equal(me.body.password, undefined);
 });
 
