@@ -53,13 +53,35 @@ async function loadRow(environment: ProviderEnvironment) {
   });
 }
 
-function safeDecrypt(serialized: string | null | undefined): string | null {
-  if (!serialized) return null;
+export function deserializeStoredValue(serialized: string | null | undefined): string | null {
+  if (!serialized?.trim()) return null;
+  try {
+    const parsed = JSON.parse(serialized) as { v?: number; pt?: string };
+    if (parsed.v === 0 && typeof parsed.pt === 'string') {
+      return parsed.pt;
+    }
+  } catch {
+    // fall through to encrypted blob
+  }
   try {
     return decryptSecretFromJson(serialized);
   } catch {
     return null;
   }
+}
+
+export function serializeStoredValue(
+  plaintext: string,
+  options: { requireEncryption: boolean }
+): string {
+  if (options.requireEncryption || isAdminSettingsEncryptionConfigured()) {
+    return encryptSecretToJson(plaintext);
+  }
+  return JSON.stringify({ v: 0, pt: plaintext });
+}
+
+function safeDecrypt(serialized: string | null | undefined): string | null {
+  return deserializeStoredValue(serialized);
 }
 
 export async function getMaskedProviderConfig(
@@ -100,7 +122,17 @@ export async function upsertProviderConfig(input: {
   clientChanged: boolean;
   variantChanged: boolean;
 }> {
-  if (!isAdminSettingsEncryptionConfigured()) {
+  const clientChanged = Boolean(input.clientKey?.trim());
+  const secretChanged = Boolean(input.secretKey?.trim());
+  const variantChanged = input.variantKey !== undefined;
+  const hasChanges =
+    clientChanged || secretChanged || variantChanged || typeof input.enabled === 'boolean';
+
+  if (!hasChanges) {
+    throw new Error('PROVIDER_CONFIG_NOTHING_TO_SAVE');
+  }
+
+  if (secretChanged && !isAdminSettingsEncryptionConfigured()) {
     throw new Error('ADMIN_SETTINGS_ENCRYPTION_KEY_NOT_CONFIGURED');
   }
 
@@ -118,10 +150,6 @@ export async function upsertProviderConfig(input: {
       ? input.variantKey?.trim() || null
       : safeDecrypt(existing?.encryptedVariantKey);
 
-  const clientChanged = Boolean(input.clientKey?.trim());
-  const secretChanged = Boolean(input.secretKey?.trim());
-  const variantChanged = input.variantKey !== undefined;
-
   const row = await prisma.paymentProviderConfig.upsert({
     where: {
       provider_environment: {
@@ -133,9 +161,15 @@ export async function upsertProviderConfig(input: {
       provider: 'toss_payments',
       environment: toEnvEnum(input.environment),
       enabled: Boolean(input.enabled),
-      encryptedClientKey: nextClient ? encryptSecretToJson(nextClient) : null,
-      encryptedSecretKey: nextSecret ? encryptSecretToJson(nextSecret) : null,
-      encryptedVariantKey: nextVariant ? encryptSecretToJson(nextVariant) : null,
+      encryptedClientKey: nextClient
+        ? serializeStoredValue(nextClient, { requireEncryption: false })
+        : null,
+      encryptedSecretKey: nextSecret
+        ? serializeStoredValue(nextSecret, { requireEncryption: true })
+        : null,
+      encryptedVariantKey: nextVariant
+        ? serializeStoredValue(nextVariant, { requireEncryption: false })
+        : null,
       clientKeyFingerprint: nextClient ? fingerprintSecret(nextClient) : null,
       secretKeyFingerprint: nextSecret ? fingerprintSecret(nextSecret) : null,
       variantKeyFingerprint: nextVariant ? fingerprintSecret(nextVariant) : null,
@@ -145,19 +179,21 @@ export async function upsertProviderConfig(input: {
       ...(typeof input.enabled === 'boolean' ? { enabled: input.enabled } : {}),
       ...(clientChanged && nextClient
         ? {
-            encryptedClientKey: encryptSecretToJson(nextClient),
+            encryptedClientKey: serializeStoredValue(nextClient, { requireEncryption: false }),
             clientKeyFingerprint: fingerprintSecret(nextClient),
           }
         : {}),
       ...(secretChanged && nextSecret
         ? {
-            encryptedSecretKey: encryptSecretToJson(nextSecret),
+            encryptedSecretKey: serializeStoredValue(nextSecret, { requireEncryption: true }),
             secretKeyFingerprint: fingerprintSecret(nextSecret),
           }
         : {}),
       ...(variantChanged
         ? {
-            encryptedVariantKey: nextVariant ? encryptSecretToJson(nextVariant) : null,
+            encryptedVariantKey: nextVariant
+              ? serializeStoredValue(nextVariant, { requireEncryption: false })
+              : null,
             variantKeyFingerprint: nextVariant ? fingerprintSecret(nextVariant) : null,
           }
         : {}),

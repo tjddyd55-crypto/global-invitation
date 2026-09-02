@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import AdminButton from './AdminButton';
 import styles from './adminUi.module.css';
 
@@ -11,7 +12,7 @@ type AdminConfirmDialogProps = {
   cancelLabel?: string;
   variant?: 'default' | 'danger';
   loading?: boolean;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   onCancel: () => void;
 };
 
@@ -26,10 +27,15 @@ export default function AdminConfirmDialog({
   onConfirm,
   onCancel,
 }: AdminConfirmDialogProps) {
+  const handleConfirm = useCallback(() => {
+    if (loading) return;
+    void Promise.resolve(onConfirm());
+  }, [loading, onConfirm]);
+
   if (!open) return null;
 
   return (
-    <div className={styles.modalOverlay} role="presentation" onClick={onCancel}>
+    <div className={styles.modalOverlay} role="presentation" onClick={loading ? undefined : onCancel}>
       <div
         className={styles.modalCard}
         role="dialog"
@@ -42,12 +48,13 @@ export default function AdminConfirmDialog({
         </h2>
         <p className={styles.modalDescription}>{description}</p>
         <div className={styles.modalActions}>
-          <AdminButton variant="ghost" onClick={onCancel} disabled={loading}>
+          <AdminButton type="button" variant="ghost" onClick={onCancel} disabled={loading}>
             {cancelLabel}
           </AdminButton>
           <AdminButton
+            type="button"
             variant={variant === 'danger' ? 'danger' : 'primary'}
-            onClick={onConfirm}
+            onClick={handleConfirm}
             loading={loading}
           >
             {confirmLabel}

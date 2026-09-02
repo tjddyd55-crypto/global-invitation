@@ -34,6 +34,12 @@ import {
 } from '@/src/components/admin/ui';
 import styles from '@/src/components/admin/AdminShell.module.css';
 import ui from '@/src/components/admin/ui/adminUi.module.css';
+import {
+  buildTossProviderPayload,
+  mapTossProviderError,
+  validateTossSaveDraft,
+  type TossEnvironment,
+} from '@/src/features/admin/tossProviderConfig';
 
 export type AdminPaymentsTab = 'transactions' | 'pricing' | 'toss';
 
@@ -166,45 +172,51 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
     }
   }
 
-  async function saveProvider(environment: 'TEST' | 'LIVE') {
+  function getTossDraft(environment: TossEnvironment) {
+    if (environment === 'TEST') {
+      return { clientKey: testClient, secretKey: testSecret, variantKey: testVariant };
+    }
+    return { clientKey: liveClient, secretKey: liveSecret, variantKey: liveVariant };
+  }
+
+  function clearTossDraft(environment: TossEnvironment) {
+    if (environment === 'TEST') {
+      setTestClient('');
+      setTestSecret('');
+      setTestVariant('');
+      return;
+    }
+    setLiveClient('');
+    setLiveSecret('');
+    setLiveVariant('');
+  }
+
+  async function confirmTossSave() {
+    const environment = confirmProvider;
+    if (!environment) return;
+
     if (!isSuper) {
+      setConfirmProvider(null);
       notify('SUPER_ADMIN 권한에서만 Toss 설정을 변경할 수 있습니다.', 'error');
       return;
     }
 
-    const payload: Record<string, unknown> = { environment, enabled: true };
-    const secretValue = environment === 'TEST' ? testSecret.trim() : liveSecret.trim();
-    if (environment === 'TEST') {
-      if (testClient.trim()) payload.clientKey = testClient.trim();
-      if (testSecret.trim()) payload.secretKey = testSecret.trim();
-      if (testVariant.trim()) payload.variantKey = testVariant.trim();
-    } else {
-      if (liveClient.trim()) payload.clientKey = liveClient.trim();
-      if (liveSecret.trim()) payload.secretKey = liveSecret.trim();
-      if (liveVariant.trim()) payload.variantKey = liveVariant.trim();
-    }
-
-    if (secretValue && !encryptionConfigured) {
-      notify(
-        '암호화 설정이 없어 Secret Key를 저장할 수 없습니다. Railway Backend의 ADMIN_SETTINGS_ENCRYPTION_KEY 설정을 확인해 주세요.',
-        'error'
-      );
+    const draft = getTossDraft(environment);
+    const validation = validateTossSaveDraft(draft, encryptionConfigured);
+    if (!validation.ok) {
+      setConfirmProvider(null);
+      notify(validation.message, 'error');
       return;
     }
 
     setSavingProvider(environment);
     try {
-      await updateAdminOpsProviderConfig(payload);
+      await updateAdminOpsProviderConfig(buildTossProviderPayload(environment, draft));
       setProvider(await getAdminOpsProviderConfig());
-      setTestClient('');
-      setTestSecret('');
-      setTestVariant('');
-      setLiveClient('');
-      setLiveSecret('');
-      setLiveVariant('');
-      notify(`${environment} 설정이 저장되었습니다.`, 'success');
+      clearTossDraft(environment);
+      notify(`${environment} Toss Payments 설정이 저장되었습니다.`, 'success');
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Toss 설정 저장 실패', 'error');
+      notify(mapTossProviderError(err), 'error');
     } finally {
       setSavingProvider(null);
       setConfirmProvider(null);
@@ -490,7 +502,7 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
         confirmLabel="저장"
         loading={savingProvider === 'TEST'}
         onCancel={() => setConfirmProvider(null)}
-        onConfirm={() => void saveProvider('TEST')}
+        onConfirm={() => confirmTossSave()}
       />
 
       <AdminConfirmDialog
@@ -501,7 +513,7 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
         variant="danger"
         loading={savingProvider === 'LIVE'}
         onCancel={() => setConfirmProvider(null)}
-        onConfirm={() => void saveProvider('LIVE')}
+        onConfirm={() => confirmTossSave()}
       />
     </>
   );

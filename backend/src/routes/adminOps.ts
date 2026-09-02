@@ -838,6 +838,9 @@ router.put('/ops/payments/provider-config', async (req, res) => {
     if (message === 'ADMIN_SETTINGS_ENCRYPTION_KEY_NOT_CONFIGURED') {
       return res.status(503).json({ error: message });
     }
+    if (message === 'PROVIDER_CONFIG_NOTHING_TO_SAVE') {
+      return res.status(400).json({ error: message });
+    }
     console.error('[admin/ops] provider-config update failed', error);
     return res.status(500).json({ error: 'PROVIDER_CONFIG_UPDATE_FAILED' });
   }
