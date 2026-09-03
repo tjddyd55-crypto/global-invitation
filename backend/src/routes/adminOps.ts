@@ -17,6 +17,7 @@ import {
 import {
   getMaskedProviderConfig,
   upsertProviderConfig,
+  deserializeStoredValue,
   type ProviderEnvironment,
 } from '../lib/ops/paymentProviderConfig';
 import {
@@ -30,11 +31,11 @@ import {
   resolvePaymentProvider,
   resolveTossRuntimeKeys,
 } from '../lib/payments/provider';
-import { probeTossCredentials } from '../lib/payments/tossClient';
 import {
-  decryptSecretFromJson,
-  isAdminSettingsEncryptionConfigured,
-} from '../lib/security/adminSettingsCrypto';
+  detectTossKeyEnvironmentMismatch,
+  probeTossCredentials,
+} from '../lib/payments/tossClient';
+import { isAdminSettingsEncryptionConfigured } from '../lib/security/adminSettingsCrypto';
 
 const router = Router();
 
@@ -853,7 +854,12 @@ router.post('/ops/payments/provider-config/test', async (req, res) => {
   try {
     const environment = String(req.body?.environment || 'TEST').toUpperCase() as ProviderEnvironment;
     if (environment !== 'TEST' && environment !== 'LIVE') {
-      return res.status(400).json({ error: 'INVALID_ENVIRONMENT' });
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_ENVIRONMENT',
+        code: 'INVALID_ENVIRONMENT',
+        message: 'environment must be TEST or LIVE',
+      });
     }
 
     const row = await prisma.paymentProviderConfig.findUnique({
@@ -864,28 +870,65 @@ router.post('/ops/payments/provider-config/test', async (req, res) => {
         },
       },
     });
-    const secret = row?.encryptedSecretKey
-      ? decryptSecretFromJson(row.encryptedSecretKey)
-      : null;
 
-    if (!secret) {
-      const keys = await resolveTossRuntimeKeys();
-      if (!keys.ok) {
-        return res.status(503).json({
-          ok: false,
-          code: 'FOREIGN_MID_NOT_CONFIGURED',
-          message: 'No Toss secret configured for connection test.',
-        });
-      }
-      const probe = await probeTossCredentials(keys.secretKey);
-      return res.status(200).json({ ...probe, source: keys.source, environment });
+    const clientKey = deserializeStoredValue(row?.encryptedClientKey);
+    const secretKey = deserializeStoredValue(row?.encryptedSecretKey);
+
+    if (!clientKey || !secretKey) {
+      return res.status(400).json({
+        ok: false,
+        error: 'PROVIDER_CREDENTIALS_INCOMPLETE',
+        code: 'PROVIDER_CREDENTIALS_INCOMPLETE',
+        message: 'Saved Client Key and Secret Key are required before connection test.',
+        environment,
+        source: 'db',
+        clientKeyConfigured: Boolean(clientKey),
+        secretKeyConfigured: Boolean(secretKey),
+      });
     }
 
-    const probe = await probeTossCredentials(secret);
-    return res.status(200).json({ ...probe, source: 'db', environment });
+    const mismatch = detectTossKeyEnvironmentMismatch(environment, clientKey, secretKey);
+    if (mismatch) {
+      return res.status(400).json({
+        ...mismatch,
+        error: mismatch.code,
+        environment,
+        source: 'db',
+        provider: 'toss_payments',
+      });
+    }
+
+    const probe = await probeTossCredentials(secretKey);
+    const body = {
+      ...probe,
+      error: probe.ok ? undefined : probe.code,
+      environment,
+      source: 'db' as const,
+      provider: 'toss_payments' as const,
+      verification: 'toss_api_auth' as const,
+    };
+
+    if (!probe.ok) {
+      const status =
+        probe.code === 'TOSS_CREDENTIALS_INVALID'
+          ? 401
+          : probe.code === 'TOSS_API_TIMEOUT'
+            ? 504
+            : 502;
+      return res.status(status).json(body);
+    }
+
+    return res.status(200).json(body);
   } catch (error) {
-    console.error('[admin/ops] provider-config test failed', error);
-    return res.status(500).json({ error: 'PROVIDER_CONFIG_TEST_FAILED' });
+    console.error('[admin/ops] provider-config test failed', {
+      name: error instanceof Error ? error.name : 'unknown',
+    });
+    return res.status(500).json({
+      ok: false,
+      error: 'PROVIDER_CONFIG_TEST_FAILED',
+      code: 'PROVIDER_CONFIG_TEST_FAILED',
+      message: 'Connection test failed unexpectedly.',
+    });
   }
 });
 

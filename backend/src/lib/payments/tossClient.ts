@@ -117,37 +117,90 @@ export async function getTossPaymentByKey(
   return { ok: true, payment: result.data };
 }
 
-/** Non-charge credential probe — auth check without creating a charge. */
-export async function probeTossCredentials(secretKey: string): Promise<{
+const DEFAULT_PROBE_TIMEOUT_MS = 8_000;
+
+function resolveProbeTimeoutMs(): number {
+  const raw = Number(process.env.TOSS_PROBE_TIMEOUT_MS || '');
+  if (Number.isFinite(raw) && raw > 0) return raw;
+  return DEFAULT_PROBE_TIMEOUT_MS;
+}
+
+export type TossCredentialProbeResult = {
   ok: boolean;
   code: string;
   message: string;
-}> {
+};
+
+/**
+ * Non-charge credential probe — auth check against Toss API without creating a payment.
+ * Uses a deliberately invalid payment key: 401/403 = bad secret; other HTTP = auth accepted.
+ */
+export async function probeTossCredentials(secretKey: string): Promise<TossCredentialProbeResult> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), resolveProbeTimeoutMs());
   try {
     const response = await fetch(`${TOSS_API_BASE}/v1/payments/gi_connection_probe_invalid`, {
       method: 'GET',
       headers: {
         Authorization: buildBasicAuthHeader(secretKey),
       },
+      signal: controller.signal,
     });
     if (response.status === 401 || response.status === 403) {
       return {
         ok: false,
-        code: 'TOSS_AUTH_FAILED',
+        code: 'TOSS_CREDENTIALS_INVALID',
         message: 'Toss rejected the secret key (unauthorized).',
       };
     }
     return {
       ok: true,
-      code: 'CREDENTIALS_ACCEPTED',
+      code: 'TOSS_AUTH_OK',
       message:
-        'Credentials appear valid for Toss API auth. USD foreign MID / overseas card contract must still be confirmed in Toss console.',
+        'Toss API auth accepted. USD international payment capability still requires a separate TEST checkout QA.',
     };
   } catch (error) {
+    const aborted =
+      (error instanceof Error && error.name === 'AbortError') ||
+      (typeof DOMException !== 'undefined' && error instanceof DOMException && error.name === 'AbortError');
+    if (aborted) {
+      return {
+        ok: false,
+        code: 'TOSS_API_TIMEOUT',
+        message: 'Toss API connection timed out.',
+      };
+    }
     return {
       ok: false,
-      code: 'TOSS_CONNECTION_FAILED',
-      message: error instanceof Error ? error.message : 'Toss connection failed',
+      code: 'TOSS_API_UNREACHABLE',
+      message: 'Toss API is unreachable.',
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export function detectTossKeyEnvironmentMismatch(
+  environment: 'TEST' | 'LIVE',
+  clientKey: string,
+  secretKey: string
+): TossCredentialProbeResult | null {
+  const haystack = `${clientKey} ${secretKey}`.toLowerCase();
+  const looksLive = haystack.includes('live_');
+  const looksTest = haystack.includes('test_');
+  if (environment === 'TEST' && looksLive && !looksTest) {
+    return {
+      ok: false,
+      code: 'TOSS_ENVIRONMENT_MISMATCH',
+      message: 'LIVE keys were provided for the TEST environment.',
     };
   }
+  if (environment === 'LIVE' && looksTest && !looksLive) {
+    return {
+      ok: false,
+      code: 'TOSS_ENVIRONMENT_MISMATCH',
+      message: 'TEST keys were provided for the LIVE environment.',
+    };
+  }
+  return null;
 }

@@ -40,6 +40,11 @@ import {
   validateTossSaveDraft,
   type TossEnvironment,
 } from '@/src/features/admin/tossProviderConfig';
+import {
+  missingCredentialsConnectionResult,
+  normalizeTossConnectionTestResult,
+  type TossConnectionResult,
+} from '@/src/features/admin/tossConnectionTest';
 
 export type AdminPaymentsTab = 'transactions' | 'pricing' | 'toss';
 
@@ -77,6 +82,8 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
   const [statusTone, setStatusTone] = useState<'success' | 'error' | 'info'>('info');
   const [savingPricing, setSavingPricing] = useState(false);
   const [savingProvider, setSavingProvider] = useState<'TEST' | 'LIVE' | null>(null);
+  const [testingProvider, setTestingProvider] = useState<'TEST' | 'LIVE' | null>(null);
+  const [connectionResult, setConnectionResult] = useState<TossConnectionResult | null>(null);
   const [confirmPricingOpen, setConfirmPricingOpen] = useState(false);
   const [confirmProvider, setConfirmProvider] = useState<'TEST' | 'LIVE' | null>(null);
   const pricingHydratedRef = useRef(false);
@@ -214,6 +221,7 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
       await updateAdminOpsProviderConfig(buildTossProviderPayload(environment, draft));
       setProvider(await getAdminOpsProviderConfig());
       clearTossDraft(environment);
+      clearConnectionResultFor(environment);
       notify(`${environment} Toss Payments 설정이 저장되었습니다.`, 'success');
     } catch (err) {
       notify(mapTossProviderError(err), 'error');
@@ -223,14 +231,36 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
     }
   }
 
-  async function testConnection(environment: 'TEST' | 'LIVE') {
+  async function checkTossConnection(environment: TossEnvironment) {
     if (!isSuper) return;
-    try {
-      const result = await testAdminOpsProviderConfig(environment);
-      notify(`연결 확인: ${JSON.stringify(result)}`, 'info');
-    } catch (err) {
-      notify(err instanceof Error ? err.message : '연결 확인 실패', 'error');
+    if (testingProvider) return;
+
+    const view = ((environment === 'TEST' ? provider?.test : provider?.live) ||
+      {}) as Record<string, unknown>;
+    if (!view.clientKeyConfigured || !view.secretKeyConfigured) {
+      setConnectionResult(missingCredentialsConnectionResult(environment));
+      return;
     }
+
+    setTestingProvider(environment);
+    setConnectionResult(null);
+    try {
+      const { status, payload } = await testAdminOpsProviderConfig(environment);
+      setConnectionResult(normalizeTossConnectionTestResult(environment, status, payload));
+    } catch {
+      setConnectionResult(
+        normalizeTossConnectionTestResult(environment, 500, {
+          ok: false,
+          code: 'PROVIDER_CONFIG_TEST_FAILED',
+        })
+      );
+    } finally {
+      setTestingProvider(null);
+    }
+  }
+
+  function clearConnectionResultFor(environment: TossEnvironment) {
+    setConnectionResult((prev) => (prev?.environment === environment ? null : prev));
   }
 
   const testView = (provider?.test || {}) as Record<string, unknown>;
@@ -365,7 +395,9 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
                   TEST 결제 설정
                   <span className={`${styles.cardBadge} ${styles.cardBadgeTest}`}>테스트 결제</span>
                 </h3>
-                <p className={styles.helperText}>테스트 결제 검증에 사용하는 키입니다.</p>
+                <p className={styles.helperText}>
+                  테스트 결제 검증에 사용하는 키입니다. 연결 확인은 저장된 키 기준으로 수행합니다.
+                </p>
                 <p>
                   Client Key: {formatConfigured(Boolean(testView.clientKeyConfigured))} (
                   {String(testView.clientKeyMasked || '—')}) · Secret Key:{' '}
@@ -378,7 +410,10 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
                   <AdminField label="Client Key" helper="기존 값을 변경하지 않으려면 입력하지 마세요.">
                     <AdminInput
                       value={testClient}
-                      onChange={(e) => setTestClient(e.target.value)}
+                      onChange={(e) => {
+                        setTestClient(e.target.value);
+                        clearConnectionResultFor('TEST');
+                      }}
                       readOnly={sessionReady && !isSuper}
                     />
                   </AdminField>
@@ -386,21 +421,27 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
                     <AdminInput
                       type="password"
                       value={testSecret}
-                      onChange={(e) => setTestSecret(e.target.value)}
+                      onChange={(e) => {
+                        setTestSecret(e.target.value);
+                        clearConnectionResultFor('TEST');
+                      }}
                       readOnly={sessionReady && !isSuper}
                     />
                   </AdminField>
                   <AdminField label="Variant Key">
                     <AdminInput
                       value={testVariant}
-                      onChange={(e) => setTestVariant(e.target.value)}
+                      onChange={(e) => {
+                        setTestVariant(e.target.value);
+                        clearConnectionResultFor('TEST');
+                      }}
                       readOnly={sessionReady && !isSuper}
                     />
                   </AdminField>
                   <div className={ui.buttonGroup}>
                     <AdminButton
                       variant="primary"
-                      disabled={!isSuper}
+                      disabled={!isSuper || testingProvider !== null}
                       loading={savingProvider === 'TEST'}
                       onClick={() => setConfirmProvider('TEST')}
                     >
@@ -408,12 +449,19 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
                     </AdminButton>
                     <AdminButton
                       variant="secondary"
-                      disabled={!isSuper}
-                      onClick={() => void testConnection('TEST')}
+                      disabled={!isSuper || testingProvider !== null}
+                      loading={testingProvider === 'TEST'}
+                      onClick={() => void checkTossConnection('TEST')}
                     >
-                      연결 확인
+                      {testingProvider === 'TEST' ? '연결 확인 중...' : '연결 확인'}
                     </AdminButton>
                   </div>
+                  {connectionResult?.environment === 'TEST' ? (
+                    <AdminFeedback
+                      tone={connectionResult.type === 'success' ? 'success' : 'error'}
+                      message={connectionResult.message}
+                    />
+                  ) : null}
                 </div>
               </article>
 
@@ -422,7 +470,9 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
                   LIVE 결제 설정
                   <span className={`${styles.cardBadge} ${styles.cardBadgeLive}`}>실제 결제 키</span>
                 </h3>
-                <p className={styles.helperText}>실제 결제가 발생하는 운영 키입니다.</p>
+                <p className={styles.helperText}>
+                  실제 결제가 발생하는 운영 키입니다. 연결 확인은 저장된 키 기준으로 수행하며, 실제 결제는 생성하지 않습니다.
+                </p>
                 {isDevelopment ? (
                   <AdminFeedback
                     tone="error"
@@ -441,7 +491,10 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
                   <AdminField label="Client Key">
                     <AdminInput
                       value={liveClient}
-                      onChange={(e) => setLiveClient(e.target.value)}
+                      onChange={(e) => {
+                        setLiveClient(e.target.value);
+                        clearConnectionResultFor('LIVE');
+                      }}
                       readOnly={sessionReady && !isSuper}
                     />
                   </AdminField>
@@ -449,21 +502,27 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
                     <AdminInput
                       type="password"
                       value={liveSecret}
-                      onChange={(e) => setLiveSecret(e.target.value)}
+                      onChange={(e) => {
+                        setLiveSecret(e.target.value);
+                        clearConnectionResultFor('LIVE');
+                      }}
                       readOnly={sessionReady && !isSuper}
                     />
                   </AdminField>
                   <AdminField label="Variant Key">
                     <AdminInput
                       value={liveVariant}
-                      onChange={(e) => setLiveVariant(e.target.value)}
+                      onChange={(e) => {
+                        setLiveVariant(e.target.value);
+                        clearConnectionResultFor('LIVE');
+                      }}
                       readOnly={sessionReady && !isSuper}
                     />
                   </AdminField>
                   <div className={ui.buttonGroup}>
                     <AdminButton
                       variant="primary"
-                      disabled={!isSuper}
+                      disabled={!isSuper || testingProvider !== null}
                       loading={savingProvider === 'LIVE'}
                       onClick={() => setConfirmProvider('LIVE')}
                     >
@@ -471,12 +530,19 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
                     </AdminButton>
                     <AdminButton
                       variant="secondary"
-                      disabled={!isSuper}
-                      onClick={() => void testConnection('LIVE')}
+                      disabled={!isSuper || testingProvider !== null}
+                      loading={testingProvider === 'LIVE'}
+                      onClick={() => void checkTossConnection('LIVE')}
                     >
-                      연결 확인
+                      {testingProvider === 'LIVE' ? '연결 확인 중...' : '연결 확인'}
                     </AdminButton>
                   </div>
+                  {connectionResult?.environment === 'LIVE' ? (
+                    <AdminFeedback
+                      tone={connectionResult.type === 'success' ? 'success' : 'error'}
+                      message={connectionResult.message}
+                    />
+                  ) : null}
                 </div>
               </article>
               <p className={styles.helperText}>{String(provider.foreignMidNote || '')}</p>

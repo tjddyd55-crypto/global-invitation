@@ -483,11 +483,24 @@ export async function updateAdminOpsProviderConfig(payload: Record<string, unkno
   });
 }
 
-export async function testAdminOpsProviderConfig(environment: 'TEST' | 'LIVE') {
-  return adminApiJson<Record<string, unknown>>('/api/admin/ops/payments/provider-config/test', {
+export async function testAdminOpsProviderConfig(environment: 'TEST' | 'LIVE'): Promise<{
+  status: number;
+  payload: Record<string, unknown>;
+}> {
+  const response = await adminApiFetch('/api/admin/ops/payments/provider-config/test', {
     method: 'POST',
     body: JSON.stringify({ environment }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
   });
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = (await response.json()) as Record<string, unknown>;
+  } catch {
+    payload = {};
+  }
+  return { status: response.status, payload };
 }
 
 export async function getAdminOpsSystem() {
