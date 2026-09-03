@@ -11,7 +11,8 @@ import {
   resolveFigmaAccessToken,
   upsertFigmaAccessToken,
 } from '../lib/figma/config';
-import { figmaGetMe, FigmaApiError } from '../lib/figma/client';
+import { FigmaApiError, probeFigmaCredentials } from '../lib/figma/client';
+import { FIGMA_RUNTIME_IMPORT_SCOPES } from '../lib/figma/scopes';
 import { parseFigmaFrameUrl } from '../lib/figma/urlParser';
 import {
   activateDefinitionVersion,
@@ -93,27 +94,52 @@ router.put('/figma/config', async (req, res) => {
 router.post('/figma/test', async (_req, res) => {
   try {
     const creds = await resolveFigmaAccessToken();
-    if (!creds) return res.status(503).json({ error: 'FIGMA_NOT_CONFIGURED', status: 'Unavailable' });
-    const me = await figmaGetMe(creds.token);
-    return res.status(200).json({
-      status: 'Connected',
-      source: creds.source,
-      handle: me.handle || null,
-      // never return email in logs elsewhere; OK masked here for admin
-      userId: me.id,
-    });
-  } catch (error) {
-    if (error instanceof FigmaApiError) {
-      const status =
-        error.code === 'FIGMA_UNAUTHORIZED'
-          ? 'Invalid token'
-          : error.code === 'FIGMA_RATE_LIMITED'
-            ? 'Rate limited'
-            : 'Unavailable';
-      return res.status(400).json({ error: error.code, status });
+    if (!creds) {
+      return res.status(400).json({
+        ok: false,
+        error: 'FIGMA_TOKEN_NOT_CONFIGURED',
+        code: 'FIGMA_TOKEN_NOT_CONFIGURED',
+        message: 'Figma Access Token is not configured.',
+      });
     }
-    console.error('[admin/figma] test failed', error);
-    return res.status(500).json({ error: 'FIGMA_TEST_FAILED', status: 'Unavailable' });
+
+    const probe = await probeFigmaCredentials(creds.token);
+    const body = {
+      ...probe,
+      error: probe.ok ? undefined : probe.code,
+      source: creds.source,
+      provider: 'figma_rest' as const,
+      verification: 'figma_file_api_auth' as const,
+      requiredScopes: [...FIGMA_RUNTIME_IMPORT_SCOPES],
+    };
+
+    if (!probe.ok) {
+      const status =
+        probe.code === 'FIGMA_TOKEN_INVALID'
+          ? 401
+          : probe.code === 'FIGMA_SCOPE_INSUFFICIENT' || probe.code === 'FIGMA_API_FORBIDDEN'
+            ? 403
+            : probe.code === 'FIGMA_API_TIMEOUT'
+              ? 504
+              : probe.code === 'FIGMA_API_UNREACHABLE'
+                ? 502
+                : probe.code === 'FIGMA_RATE_LIMITED'
+                  ? 429
+                  : 400;
+      return res.status(status).json(body);
+    }
+
+    return res.status(200).json(body);
+  } catch (error) {
+    console.error('[admin/figma] test failed', {
+      name: error instanceof Error ? error.name : 'unknown',
+    });
+    return res.status(500).json({
+      ok: false,
+      error: 'FIGMA_TEST_FAILED',
+      code: 'FIGMA_TEST_FAILED',
+      message: 'Connection test failed unexpectedly.',
+    });
   }
 });
 

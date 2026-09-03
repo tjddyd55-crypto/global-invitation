@@ -17,9 +17,16 @@ import {
   getAdminSession,
   getAdminVisualTemplateDrift,
   adminApiJson,
+  testAdminFigmaConnection,
   type AdminSession,
   type AdminVisualCatalogDrift,
 } from '@/src/lib/adminApi';
+import {
+  formatFigmaScopeHelper,
+  missingFigmaTokenConnectionResult,
+  normalizeFigmaConnectionTestResult,
+  type FigmaConnectionResult,
+} from '@/src/features/admin/figmaConnectionTest';
 import {
   AdminButton,
   AdminFeedback,
@@ -48,9 +55,14 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
   const [figma, setFigma] = useState<Record<string, unknown> | null>(null);
   const [figmaToken, setFigmaToken] = useState('');
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [statusTone, setStatusTone] = useState<'success' | 'error' | 'info'>('info');
   const [error, setError] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [savingFigma, setSavingFigma] = useState(false);
+  const [testingFigma, setTestingFigma] = useState(false);
+  const [figmaConnectionResult, setFigmaConnectionResult] = useState<FigmaConnectionResult | null>(
+    null
+  );
 
   const isSuper = session?.role === 'SUPER_ADMIN';
   const settings = (system?.settings || {}) as Record<string, unknown>;
@@ -87,6 +99,37 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
 
   function selectTab(next: AdminSystemTab) {
     router.replace(`/admin/system?tab=${next}`, { scroll: false });
+  }
+
+  function notify(message: string, tone: 'success' | 'error' | 'info' = 'info') {
+    setStatusMsg(message);
+    setStatusTone(tone);
+  }
+
+  async function checkFigmaConnection() {
+    if (!isSuper) return;
+    if (testingFigma) return;
+
+    if (!figma?.configured) {
+      setFigmaConnectionResult(missingFigmaTokenConnectionResult());
+      return;
+    }
+
+    setTestingFigma(true);
+    setFigmaConnectionResult(null);
+    try {
+      const { status, payload } = await testAdminFigmaConnection();
+      setFigmaConnectionResult(normalizeFigmaConnectionTestResult(status, payload));
+    } catch {
+      setFigmaConnectionResult(
+        normalizeFigmaConnectionTestResult(500, {
+          ok: false,
+          code: 'FIGMA_TEST_FAILED',
+        })
+      );
+    } finally {
+      setTestingFigma(false);
+    }
   }
 
   async function save(patch: Record<string, unknown>) {
@@ -126,7 +169,7 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
       </div>
 
       {error ? <AdminFeedback tone="error" message={error} /> : null}
-      {statusMsg ? <AdminFeedback tone="info" message={statusMsg} /> : null}
+      {statusMsg ? <AdminFeedback tone={statusTone} message={statusMsg} /> : null}
 
       {tab === 'runtime' && (
         <section className={styles.section}>
@@ -229,6 +272,18 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
               message="암호화 키가 설정되지 않았습니다. Token 저장은 ADMIN_SETTINGS_ENCRYPTION_KEY 설정 후 가능합니다. 입력은 가능하며 저장 시 안내가 표시됩니다."
             />
           ) : null}
+          <AdminField
+            label="필요한 권한"
+            helper="연결 확인은 runtime Figma REST import와 동일한 file API 기준입니다. current_user:read는 필요하지 않습니다."
+          >
+            <p className={styles.pageDescription} style={{ whiteSpace: 'pre-line', margin: 0 }}>
+              {formatFigmaScopeHelper()}
+            </p>
+          </AdminField>
+          <p className={styles.helperText}>
+            Cursor Figma MCP와 별개로, 여기서 설정하는 PAT는 Admin runtime REST API용입니다.
+            연결 확인은 DB에 저장된 토큰 기준으로 수행합니다.
+          </p>
           <div className={ui.formStack}>
             <AdminField
               label="Figma Access Token"
@@ -237,7 +292,10 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
               <AdminInput
                 type="password"
                 value={figmaToken}
-                onChange={(e) => setFigmaToken(e.target.value)}
+                onChange={(e) => {
+                  setFigmaToken(e.target.value);
+                  setFigmaConnectionResult(null);
+                }}
                 placeholder="figd_…"
                 readOnly={sessionReady && !isSuper}
               />
@@ -245,16 +303,17 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
             <div className={ui.buttonGroup}>
               <AdminButton
                 variant="primary"
-                disabled={!isSuper}
+                disabled={!isSuper || testingFigma}
                 loading={savingFigma}
                 onClick={() => {
                   if (!isSuper) {
-                    setStatusMsg('SUPER_ADMIN 권한이 필요합니다.');
+                    notify('SUPER_ADMIN 권한이 필요합니다.', 'error');
                     return;
                   }
                   if (figmaToken.trim() && !encryptionConfigured) {
-                    setStatusMsg(
-                      '암호화 설정이 없어 Token을 저장할 수 없습니다. Railway Backend의 ADMIN_SETTINGS_ENCRYPTION_KEY 설정을 확인해 주세요.'
+                    notify(
+                      '암호화 설정이 없어 Token을 저장할 수 없습니다. Railway Backend의 ADMIN_SETTINGS_ENCRYPTION_KEY 설정을 확인해 주세요.',
+                      'error'
                     );
                     return;
                   }
@@ -266,10 +325,11 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
                     .then((view) => {
                       setFigma(view as Record<string, unknown>);
                       setFigmaToken('');
-                      setStatusMsg('Figma 토큰이 저장되었습니다.');
+                      setFigmaConnectionResult(null);
+                      notify('Figma 토큰이 저장되었습니다.', 'success');
                     })
                     .catch((err) =>
-                      setStatusMsg(err instanceof Error ? err.message : '저장 실패')
+                      notify(err instanceof Error ? err.message : '저장 실패', 'error')
                     )
                     .finally(() => setSavingFigma(false));
                 }}
@@ -278,17 +338,19 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
               </AdminButton>
               <AdminButton
                 variant="secondary"
-                onClick={() =>
-                  void adminApiJson('/api/admin/figma/test', { method: 'POST', body: '{}' })
-                    .then((res) => setStatusMsg(`Figma 연결 확인: ${JSON.stringify(res)}`))
-                    .catch((err) =>
-                      setStatusMsg(err instanceof Error ? err.message : '연결 확인 실패')
-                    )
-                }
+                disabled={!isSuper || savingFigma || testingFigma}
+                loading={testingFigma}
+                onClick={() => void checkFigmaConnection()}
               >
-                연결 확인
+                {testingFigma ? '연결 확인 중...' : '연결 확인'}
               </AdminButton>
             </div>
+            {figmaConnectionResult ? (
+              <AdminFeedback
+                tone={figmaConnectionResult.type === 'success' ? 'success' : 'error'}
+                message={figmaConnectionResult.message}
+              />
+            ) : null}
           </div>
         </section>
       )}

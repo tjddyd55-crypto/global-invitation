@@ -83,9 +83,9 @@ export async function resolveFigmaAccessToken(): Promise<{
 } | null> {
   const row = await prisma.figmaIntegrationConfig.findUnique({ where: { id: CONFIG_ID } });
   const dbToken = safeDecrypt(row?.encryptedAccessToken);
-  if (dbToken) return { token: dbToken, source: 'db' };
+  if (dbToken) return { token: dbToken.trim(), source: 'db' };
   const fallback = envToken();
-  if (fallback) return { token: fallback, source: 'env' };
+  if (fallback) return { token: fallback.trim(), source: 'env' };
   return null;
 }
 

@@ -503,6 +503,26 @@ export async function testAdminOpsProviderConfig(environment: 'TEST' | 'LIVE'): 
   return { status: response.status, payload };
 }
 
+export async function testAdminFigmaConnection(): Promise<{
+  status: number;
+  payload: Record<string, unknown>;
+}> {
+  const response = await adminApiFetch('/api/admin/figma/test', {
+    method: 'POST',
+    body: '{}',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = (await response.json()) as Record<string, unknown>;
+  } catch {
+    payload = {};
+  }
+  return { status: response.status, payload };
+}
+
 export async function getAdminOpsSystem() {
   return adminApiJson<Record<string, unknown>>('/api/admin/ops/system');
 }
