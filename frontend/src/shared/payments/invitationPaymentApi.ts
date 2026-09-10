@@ -9,6 +9,11 @@ export type InvitationPaymentSummaryResponse = {
   shareSlug: string | null;
   isPublished: boolean;
   provider?: string;
+  checkout?: {
+    providerChargeReady: boolean;
+    unavailableCode: string | null;
+    message: string | null;
+  };
   pricing: {
     currency: string;
     listPriceCents: number;
@@ -22,6 +27,9 @@ export type InvitationPaymentSummaryResponse = {
     latestStatus: string | null;
     latestPaymentId: string | null;
     provider?: string | null;
+    couponCode?: string | null;
+    discountAmountCents?: number | null;
+    chargedAmountCents?: number | null;
   };
 };
 

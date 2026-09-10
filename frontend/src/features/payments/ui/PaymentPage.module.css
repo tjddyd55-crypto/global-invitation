@@ -185,6 +185,17 @@
   font-size: 0.875rem;
 }
 
+.unavailableBanner {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border-radius: var(--mk-radius-card);
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
 @media (min-width: 1024px) {
   .page {
     padding-bottom: 40px;

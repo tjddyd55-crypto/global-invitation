@@ -19,6 +19,10 @@ import {
 import { INVITATION_PRICING } from '@/src/shared/pricing/invitationPricing';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/src/shared/marketing/supportContact';
 import { settleZeroInvitationPayment } from '@/src/shared/payments/invitationCouponApi';
+import {
+  isProviderUnavailableCode,
+  restorePendingCoupon,
+} from '@/src/features/payments/model/checkoutState';
 import PaymentCheckoutPanel from './PaymentCheckoutPanel';
 import type { AppliedCoupon } from './PaymentCouponField';
 import styles from './PaymentPage.module.css';
@@ -50,6 +54,7 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
   const [shareSlug, setShareSlug] = useState<string | null>(null);
   const [copyNotice, setCopyNotice] = useState<string | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [unavailableMessage, setUnavailableMessage] = useState<string | null>(null);
   const pollRef = useRef(0);
   const startedCheckout = useRef(false);
 
@@ -67,6 +72,13 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
     const data = await fetchInvitationPaymentSummary(invitationId);
     setSummary(data);
     setShareSlug(data.shareSlug);
+    setUnavailableMessage(
+      data.checkout?.unavailableCode
+        ? data.checkout.message || t('checkout.unavailable.banner')
+        : null
+    );
+    const pendingCoupon = restorePendingCoupon(data);
+    if (pendingCoupon) setAppliedCoupon(pendingCoupon);
 
     const statusParam = searchParams.get('status');
     if (data.payment.isPaid) {
@@ -96,7 +108,7 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
       return;
     }
     setPhase('default');
-  }, [invitationId, publishAfterPaid, searchParams]);
+  }, [invitationId, publishAfterPaid, searchParams, t]);
 
   useEffect(() => {
     void loadSummary().catch(() => setPhase('error'));
@@ -171,14 +183,9 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
         setPhase('already_paid');
         return;
       }
-      if (
-        error instanceof Error &&
-        (error.message === 'FOREIGN_MID_NOT_CONFIGURED' ||
-          error.message === 'MISSING_TOSS_KEYS' ||
-          error.message === 'DOMESTIC_KRW_DISABLED' ||
-          error.message === 'UNSUPPORTED_CURRENCY')
-      ) {
-        setPhase('unavailable');
+      if (error instanceof Error && isProviderUnavailableCode(error.message)) {
+        setUnavailableMessage(t('checkout.unavailable.banner'));
+        setPhase('default');
         return;
       }
       setPhase('failed');
@@ -229,6 +236,8 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
             saleCents={saleCents}
             applied={appliedCoupon}
             busy={busy}
+            providerChargeReady={summary?.checkout?.providerChargeReady !== false}
+            unavailableMessage={unavailableMessage}
             onApplied={setAppliedCoupon}
             onRemoved={() => setAppliedCoupon(null)}
             onCheckout={() => void handleCheckout()}

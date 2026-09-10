@@ -78,13 +78,15 @@ test/live key mixing is rejected. Live keys rejected outside production.
 ## Coupons
 
 - Models: `InvitationCoupon` + `InvitationCouponUsage` (authoritative counts). Amounts are **USD cents**.
-- Codes: unique, stored `UPPERCASE` trimmed, charset `A-Z0-9-_` length 4–32.
+- Codes: unique, stored `UPPERCASE` trimmed, charset `A-Z0-9-_` length 4–32. Case-insensitive uniqueness is the normalized code.
 - Types: `PERCENT` (1–100) and `FIXED_AMOUNT` (cents; whole dollars for admin create).
 - Status: `DRAFT` / `ACTIVE` / `PAUSED` / `EXPIRED` / `ARCHIVED` (+ `startsAt` / `endsAt`).
 - Limits: `totalUsageLimit` / `perUserUsageLimit` nullable = unlimited. Count `RESERVED` + `REDEEMED` only.
 - Lifecycle: validate (no hold) → **RESERVE** on `prepare` → **REDEEMED** on PAID → **RELEASED** on fail/cancel/expire. Refund keeps **REDEEMED** (no reuse).
 - Payment snapshot (nullable for legacy rows): `couponId`, `couponCode`, discount type/value, `baseAmountCents`, `discountAmountCents`. `chargedAmount` is the **final** amount.
-- $0 (100% coupon): server `POST /api/invitations/:id/payment/settle-zero` after prepare. Client-sent $0 is rejected without a reserved coupon. Does **not** use mock payment bypass or Toss live overseas charges.
+- $0 (100% coupon): server `POST /api/invitations/:id/payment/settle-zero` after prepare. Client-sent $0 is rejected without a reserved coupon. Does **not** use mock payment bypass or Toss live overseas charges. Works even when Toss is not configured.
+- Unconfigured Production provider: prepare returns `PAYMENT_PROVIDER_NOT_CONFIGURED` (HTTP 503), never 500. UI keeps the discounted quote and disables the paid CTA.
+- Pending window 24h: honor coupon snapshot at confirm (do not re-check live ACTIVE). Expired reservations are released lazily.
 - Paid invitations: no re-pay / no coupon re-apply.
 - Public validate is rate-limited and returns only quote amounts (no catalog).
 - Admin: `/admin/payments?tab=coupons` — SUPER_ADMIN mutations. Audit: `COUPON_CREATED` / `UPDATED` / `PAUSED` / `ACTIVATED` / `ARCHIVED`.
@@ -95,3 +97,4 @@ test/live key mixing is rejected. Live keys rejected outside production.
 
 Historical `docs/02_STRIPE_POLICY.md` / Lemon checklists are legacy — **runtime provider is Toss/mock**.
 Full policy: [`TOSS_PAYMENTS_INTEGRATION.md`](./TOSS_PAYMENTS_INTEGRATION.md).
+Ops runbook: [`COUPON_OPS.md`](./COUPON_OPS.md).

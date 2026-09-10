@@ -202,6 +202,8 @@ export const PRODUCT_MODE_KO = {
   'checkout.benefit.once': '같은 초대장은 추가 결제가 없습니다.',
   'checkout.providerNote': '해외 카드(Visa / Mastercard / JCB / AMEX 등)로 안전하게 결제됩니다. 국내 KRW 결제는 별도 경로입니다.',
   'checkout.cta.payPublish': '결제하고 공개하기',
+  'checkout.cta.unavailable': '결제 준비 중',
+  'checkout.unavailable.banner': '현재 해외 결제 서비스 준비 중입니다. 쿠폰은 적용할 수 있으며, 할인 금액은 확인할 수 있습니다.',
   'checkout.cta.publishFree': '쿠폰 적용하고 공개하기',
   'checkout.coupon.aria': '쿠폰',
   'checkout.coupon.label': '쿠폰 코드',
@@ -236,7 +238,7 @@ export const PRODUCT_MODE_KO = {
   'checkout.canceled.body': '작성한 초대장은 그대로 저장되어 있습니다.',
   'checkout.unavailable.title': '결제를 아직 이용할 수 없습니다',
   'checkout.unavailable.body':
-    '해외 USD 결제(MID) 설정이 완료되지 않았습니다. 국내 KRW로 자동 전환되지 않습니다. 초안은 그대로 저장됩니다.',
+    '현재 해외 결제 서비스 준비 중입니다. 국내 KRW로 자동 전환되지 않습니다. 초안은 그대로 저장됩니다.',
   'checkout.alreadyPaid.title': '이 초대장은 이미 결제되었습니다',
   'checkout.alreadyPaid.published': '공개 링크를 확인하거나 초대장을 수정할 수 있습니다.',
   'checkout.alreadyPaid.unpublished': '결제는 완료되었습니다. 공개를 완료해 주세요.',
@@ -499,6 +501,9 @@ export const PRODUCT_MODE_EN = {
   'checkout.providerNote':
     'Pay securely by international card (Visa / Mastercard / JCB / AMEX and more, per contract). Domestic KRW is a separate future channel.',
   'checkout.cta.payPublish': 'Pay & Publish',
+  'checkout.cta.unavailable': 'Payment unavailable',
+  'checkout.unavailable.banner':
+    'International checkout is being prepared. You can still apply a coupon and see the discounted total.',
   'checkout.cta.publishFree': 'Apply coupon & publish',
   'checkout.coupon.aria': 'Coupon',
   'checkout.coupon.label': 'Coupon code',
@@ -533,7 +538,7 @@ export const PRODUCT_MODE_EN = {
   'checkout.canceled.body': 'Your draft invitation is still saved.',
   'checkout.unavailable.title': 'Payment is not available yet',
   'checkout.unavailable.body':
-    'USD international checkout is not configured. We do not fall back to domestic KRW. Your draft remains saved.',
+    'International checkout is being prepared. We do not fall back to domestic KRW. Your draft remains saved.',
   'checkout.alreadyPaid.title': 'This invitation is already paid',
   'checkout.alreadyPaid.published': 'Open the public link or keep editing.',
   'checkout.alreadyPaid.unpublished': 'Payment is done. Finish publishing when ready.',

@@ -13,6 +13,8 @@ type Props = {
   saleCents: number;
   applied: AppliedCoupon | null;
   busy: boolean;
+  providerChargeReady: boolean;
+  unavailableMessage: string | null;
   onApplied: (applied: AppliedCoupon) => void;
   onRemoved: () => void;
   onCheckout: () => void;
@@ -26,6 +28,8 @@ export default function PaymentCheckoutPanel({
   saleCents,
   applied,
   busy,
+  providerChargeReady,
+  unavailableMessage,
   onApplied,
   onRemoved,
   onCheckout,
@@ -36,8 +40,12 @@ export default function PaymentCheckoutPanel({
   const sale = formatUsdAmountLabel(saleCents);
   const discount = formatUsdFromCents(listCents - saleCents);
   const due = formatUsdAmountLabel(dueCents);
-  const ctaLabel =
-    dueCents === 0 ? `${t('checkout.cta.publishFree')}` : `${due} · ${t('checkout.cta.payPublish')}`;
+  const chargeBlocked = dueCents > 0 && !providerChargeReady;
+  const ctaLabel = chargeBlocked
+    ? t('checkout.cta.unavailable')
+    : dueCents === 0
+      ? `${t('checkout.cta.publishFree')}`
+      : `${due} · ${t('checkout.cta.payPublish')}`;
 
   return (
     <>
@@ -72,6 +80,12 @@ export default function PaymentCheckoutPanel({
         </div>
       </section>
 
+      {unavailableMessage && chargeBlocked ? (
+        <p className={styles.unavailableBanner} role="status">
+          {unavailableMessage}
+        </p>
+      ) : null}
+
       <PaymentCouponField
         invitationId={invitationId}
         applied={applied}
@@ -97,7 +111,7 @@ export default function PaymentCheckoutPanel({
             type="button"
             className={styles.primary}
             style={{ width: '100%' }}
-            disabled={busy}
+            disabled={busy || chargeBlocked}
             data-testid="payment-checkout-cta"
             onClick={onCheckout}
           >

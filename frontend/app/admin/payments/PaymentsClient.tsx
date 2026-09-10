@@ -47,6 +47,7 @@ import {
 } from '@/src/features/admin/tossConnectionTest';
 
 import CouponsPanel from '@/src/features/admin/coupons/CouponsPanel';
+import PaymentDetailCard from '@/src/features/admin/payments/PaymentDetailCard';
 
 export type AdminPaymentsTab = 'transactions' | 'pricing' | 'toss' | 'coupons';
 
@@ -63,6 +64,7 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
   const [pricingError, setPricingError] = useState<string | null>(null);
   const [providerError, setProviderError] = useState<string | null>(null);
   const [payments, setPayments] = useState<Array<Record<string, unknown>>>([]);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [pricing, setPricing] = useState<{
     listPriceMinor: number;
     salePriceMinor: number;
@@ -298,6 +300,7 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
                 <th>상태</th>
                 <th>결제금액</th>
                 <th>쿠폰</th>
+                <th>할인</th>
                 <th>주문번호</th>
                 <th>회원</th>
                 <th>초대장</th>
@@ -306,10 +309,17 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
             </thead>
             <tbody>
               {payments.map((p) => (
-                <tr key={String(p.id)}>
+                <tr
+                  key={String(p.id)}
+                  onClick={() => setSelectedPaymentId(String(p.id))}
+                  style={{ cursor: 'pointer' }}
+                >
                   <td>{formatPaymentStatus(String(p.status))}</td>
                   <td>{formatMoneyUsd(Number(p.amount || 0))}</td>
                   <td>{String(p.couponCode || '—')}</td>
+                  <td>
+                    {p.discountAmountCents == null ? '—' : formatMoneyUsd(Number(p.discountAmountCents))}
+                  </td>
                   <td>{String(p.orderId || '')}</td>
                   <td>{String(p.userEmail || p.userId || '')}</td>
                   <td>{String(p.invitationTitle || p.invitationId)}</td>
@@ -320,6 +330,7 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
           </table>
         </div>
       )}
+      {tab === 'transactions' && selectedPaymentId ? <PaymentDetailCard paymentId={selectedPaymentId} /> : null}
 
       {tab === 'pricing' && (
         <section className={styles.section}>

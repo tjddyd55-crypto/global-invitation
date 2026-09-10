@@ -8,9 +8,9 @@ import {
   assertTossKeySafety,
   buildOrderId,
   getPaymentOrderName,
-  resolvePaymentProvider,
   resolveTossChargeAmount,
   resolveTossRuntimeKeys,
+  tryResolvePaymentProvider,
 } from './provider';
 import { PENDING_REUSE_WINDOW_MS } from './constants';
 import {
@@ -20,6 +20,7 @@ import {
   sameCouponSnapshot,
   type PaymentCouponSnapshot,
 } from './couponBridge';
+import { cancelIncompatiblePendingPayments, expireStalePendingPayments } from './pendingLifecycle';
 import { findPaidPayment, getExpectedProviderAmount, getExpectedProviderCurrency } from './paymentLookup';
 import type { PaymentChannel, PaymentProviderName, PreparePaymentResult, TossChargeAmount } from './types';
 
@@ -97,34 +98,69 @@ async function prepareChargedAttempt(input: PrepareInput): Promise<PreparePaymen
   const chargedAmountCents = resolved.chargedAmountCents;
   const snapshot = resolved.snapshot;
   const isZero = chargedAmountCents === 0;
-
   if (isZero && !snapshot) {
     return { ok: false, code: 'COUPON_INVALID', message: '유효한 쿠폰 없이 0원 결제는 허용되지 않습니다.' };
   }
 
-  const provider = resolvePaymentProvider();
-  const providerCharge = isZero
-    ? ({ ok: true as const, amount: { currency: 'USD' as const, value: 0 }, channel: 'INTERNATIONAL_USD' as const })
-    : resolveTossChargeAmount(provider, chargedAmountCents);
-  if (!providerCharge.ok) {
-    return { ok: false, code: providerCharge.code, message: providerCharge.message };
-  }
+  const ready = await resolvePrepareProvider(isZero, chargedAmountCents);
+  if (!ready.ok) return ready;
 
-  const keys = await loadProviderKeys(provider, isZero);
-  if (!keys.ok) return keys;
+  await expireStalePendingPayments(input.invitationId);
+  await cancelIncompatiblePendingPayments({
+    invitationId: input.invitationId,
+    snapshot,
+    chargedAmountCents,
+  });
 
   return createOrReuseAttempt({
     input,
     pricing,
-    provider,
+    provider: ready.provider,
     chargedAmountCents,
     snapshot,
+    chargeAmount: ready.chargeAmount,
+    paymentChannel: ready.paymentChannel,
+    clientKey: ready.clientKey,
+    variantKey: ready.variantKey,
+    settlement: isZero ? 'zero_coupon' : 'provider',
+  });
+}
+
+async function resolvePrepareProvider(
+  isZero: boolean,
+  chargedAmountCents: number
+): Promise<
+  | {
+      ok: true;
+      provider: PaymentProviderName;
+      chargeAmount: TossChargeAmount;
+      paymentChannel: PaymentChannel;
+      clientKey: string | null;
+      variantKey: string | null;
+    }
+  | Extract<PreparePaymentResult, { ok: false }>
+> {
+  const providerResolved = tryResolvePaymentProvider();
+  if (!isZero && !providerResolved.ok) {
+    return { ok: false, code: providerResolved.code, message: providerResolved.message };
+  }
+  const provider = providerResolved.ok ? providerResolved.provider : 'coupon';
+  const providerCharge = isZero
+    ? { ok: true as const, amount: { currency: 'USD' as const, value: 0 }, channel: 'INTERNATIONAL_USD' as const }
+    : resolveTossChargeAmount(provider, chargedAmountCents);
+  if (!providerCharge.ok) {
+    return { ok: false, code: providerCharge.code, message: providerCharge.message };
+  }
+  const keys = await loadProviderKeys(provider, isZero);
+  if (!keys.ok) return keys;
+  return {
+    ok: true,
+    provider,
     chargeAmount: providerCharge.amount,
     paymentChannel: providerCharge.channel,
     clientKey: keys.clientKey,
     variantKey: keys.variantKey,
-    settlement: isZero ? 'zero_coupon' : 'provider',
-  });
+  };
 }
 
 async function loadProviderKeys(

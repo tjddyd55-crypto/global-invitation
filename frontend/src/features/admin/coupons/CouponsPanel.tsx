@@ -33,6 +33,7 @@ export default function CouponsPanel() {
   const [draft, setDraft] = useState<CouponDraft>(EMPTY_COUPON_DRAFT);
   const [selected, setSelected] = useState<AdminCoupon | null>(null);
   const [usages, setUsages] = useState<AdminCouponUsage[]>([]);
+  const [usageCursor, setUsageCursor] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [tone, setTone] = useState<'success' | 'error' | 'info'>('info');
   const isSuper = session?.role === 'SUPER_ADMIN';
@@ -75,8 +76,16 @@ export default function CouponsPanel() {
 
   async function handleSelect(coupon: AdminCoupon) {
     setSelected(coupon);
-    const res = await listAdminCouponUsages(coupon.id);
+    const res = await listAdminCouponUsages(coupon.id, { limit: 50 });
     setUsages(res.usages);
+    setUsageCursor(res.nextCursor);
+  }
+
+  async function handleLoadMoreUsages() {
+    if (!selected || !usageCursor) return;
+    const res = await listAdminCouponUsages(selected.id, { cursor: usageCursor, limit: 50 });
+    setUsages((prev) => [...prev, ...res.usages]);
+    setUsageCursor(res.nextCursor);
   }
 
   async function handleTransition(action: 'pause' | 'activate' | 'archive') {
@@ -132,7 +141,8 @@ export default function CouponsPanel() {
               <th>이름</th>
               <th>상태</th>
               <th>할인</th>
-              <th>사용</th>
+              <th>예약/사용</th>
+              <th>할인합계</th>
             </tr>
           </thead>
           <tbody>
@@ -147,9 +157,10 @@ export default function CouponsPanel() {
                     : formatMoneyUsd(coupon.discountValue)}
                 </td>
                 <td>
-                  {coupon.activeUsageCount}
-                  {coupon.totalUsageLimit != null ? ` / ${coupon.totalUsageLimit}` : ''}
+                  {coupon.reservedCount ?? 0} / {coupon.redeemedCount ?? coupon.activeUsageCount}
+                  {coupon.totalUsageLimit != null ? ` · 한도 ${coupon.totalUsageLimit}` : ''}
                 </td>
+                <td>{formatMoneyUsd(coupon.totalDiscountCents ?? 0)}</td>
               </tr>
             ))}
           </tbody>
@@ -214,8 +225,13 @@ export default function CouponsPanel() {
             {selected.code} · {selected.name}
           </h3>
           <p>
-            상태 {formatCouponStatus(selected.effectiveStatus)} · 활성 사용 {selected.activeUsageCount} · 전체
-            이력 {selected.totalUsageCount}
+            상태 {formatCouponStatus(selected.effectiveStatus)} · 예약 {selected.reservedCount ?? 0} ·
+            사용완료 {selected.redeemedCount ?? 0} · 할인합계{' '}
+            {formatMoneyUsd(selected.totalDiscountCents ?? 0)} · 전체 이력 {selected.totalUsageCount}
+          </p>
+          <p className={styles.pageDescription}>
+            환불된 결제의 쿠폰은 사용완료로 유지되며 재사용할 수 없습니다. 활성 쿠폰의 할인·한도·기간을
+            바꾸려면 먼저 일시중지하세요. 사용 이력이 있으면 코드 변경은 불가합니다.
           </p>
           {isSuper ? (
             <div className={ui.buttonGroup}>
@@ -252,6 +268,13 @@ export default function CouponsPanel() {
               </tbody>
             </table>
           </div>
+          {usageCursor ? (
+            <div className={ui.buttonGroup} style={{ marginTop: 12 }}>
+              <AdminButton variant="secondary" onClick={() => void handleLoadMoreUsages()}>
+                사용 이력 더 보기
+              </AdminButton>
+            </div>
+          ) : null}
         </article>
       ) : null}
     </section>

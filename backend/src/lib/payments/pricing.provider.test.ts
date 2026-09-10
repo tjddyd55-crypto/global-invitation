@@ -6,6 +6,7 @@ import {
   getPrimaryPaymentChannel,
   mapTossPaymentStatus,
   resolvePaymentProvider,
+  tryResolvePaymentProvider,
   resolveTossChargeAmount,
   toInternationalUsdChargeAmount,
 } from './provider';
@@ -46,12 +47,33 @@ test('mock provider is rejected in production', () => {
   }
 });
 
+test('production without PAYMENT_PROVIDER returns typed unconfigured result', () => {
+  const prevProvider = process.env.PAYMENT_PROVIDER;
+  const prevNodeEnv = process.env.NODE_ENV;
+  delete process.env.PAYMENT_PROVIDER;
+  process.env.NODE_ENV = 'production';
+  try {
+    const resolved = tryResolvePaymentProvider();
+    assert.equal(resolved.ok, false);
+    if (!resolved.ok) {
+      assert.equal(resolved.code, 'PAYMENT_PROVIDER_NOT_CONFIGURED');
+    }
+    assert.throws(() => resolvePaymentProvider(), /not configured/);
+  } finally {
+    process.env.PAYMENT_PROVIDER = prevProvider;
+    process.env.NODE_ENV = prevNodeEnv;
+  }
+});
+
 test('stripe provider is disabled', () => {
   const prevProvider = process.env.PAYMENT_PROVIDER;
   const prevNodeEnv = process.env.NODE_ENV;
   process.env.PAYMENT_PROVIDER = 'stripe';
   process.env.NODE_ENV = 'development';
   try {
+    const resolved = tryResolvePaymentProvider();
+    assert.equal(resolved.ok, false);
+    if (!resolved.ok) assert.equal(resolved.code, 'PAYMENT_SERVICE_NOT_AVAILABLE');
     assert.throws(() => resolvePaymentProvider(), /stripe is disabled/);
   } finally {
     process.env.PAYMENT_PROVIDER = prevProvider;

@@ -20,9 +20,12 @@ import { settleZeroCouponPayment } from '../lib/payments/settleZero';
 import { CouponError, couponErrorMessageKo, toPublicCouponError } from '../lib/coupons/errors';
 import { validateCouponForInvitation } from '../lib/coupons/service';
 import { consumeCouponValidateAttempt } from '../lib/coupons/rateLimit';
-import { resolvePaymentProvider, getPrimaryPaymentChannel, resolveTossRuntimeKeys } from '../lib/payments/provider';
+import { getPrimaryPaymentChannel, resolveTossRuntimeKeys, tryResolvePaymentProvider } from '../lib/payments/provider';
 import { getInvitationPricingSnapshot } from '../lib/pricing/invitationPricing';
 import { getSystemRuntimeSettings } from '../lib/ops/systemConfig';
+import { resolveCheckoutAvailability } from '../lib/payments/checkoutAvailability';
+import { paymentErrorHttpStatus, paymentErrorMessageKo } from '../lib/payments/errors';
+import { expireStalePendingPayments } from '../lib/payments/pendingLifecycle';
 
 const router = Router();
 
@@ -47,12 +50,8 @@ router.get('/payments/public-config', async (_req, res) => {
       resolveTossRuntimeKeys(),
     ]);
 
-    let provider: string = 'mock';
-    try {
-      provider = resolvePaymentProvider();
-    } catch {
-      provider = 'unconfigured';
-    }
+    const resolvedProvider = tryResolvePaymentProvider();
+    const provider = resolvedProvider.ok ? resolvedProvider.provider : 'unconfigured';
 
     const clientKey = keys.ok ? keys.clientKey : '';
     const configured =
@@ -136,8 +135,12 @@ router.get('/invitations/:id/payment', async (req, res) => {
     }
 
     const invitation = access.invitation!;
-    const summary = await getPaymentSummaryForInvitation(invitation.id);
-    const pricing = await getInvitationPricingSnapshot();
+    await expireStalePendingPayments(invitation.id);
+    const [summary, pricing, checkout] = await Promise.all([
+      getPaymentSummaryForInvitation(invitation.id),
+      getInvitationPricingSnapshot(),
+      resolveCheckoutAvailability(),
+    ]);
 
     return res.status(200).json({
       invitationId: invitation.id,
@@ -146,7 +149,12 @@ router.get('/invitations/:id/payment', async (req, res) => {
       status: invitation.status,
       shareSlug: invitation.shareSlug,
       isPublished: invitation.status === 'PUBLISHED',
-      provider: resolvePaymentProvider(),
+      provider: checkout.provider,
+      checkout: {
+        providerChargeReady: checkout.providerChargeReady,
+        unavailableCode: checkout.unavailableCode,
+        message: checkout.unavailableCode ? paymentErrorMessageKo(checkout.unavailableCode) : null,
+      },
       pricing: {
         currency: pricing.currency,
         listPriceCents: pricing.listPriceCents,
@@ -187,17 +195,9 @@ router.post('/invitations/:id/payment/prepare', async (req, res) => {
 
     if (!result.ok) {
       const couponFailure = result.code.startsWith('COUPON_');
-      const status =
-        result.code === 'UNSUPPORTED_CURRENCY' || result.code === 'DOMESTIC_KRW_DISABLED'
-          ? 422
-          : result.code === 'MISSING_TOSS_KEYS' || result.code === 'FOREIGN_MID_NOT_CONFIGURED'
-            ? 503
-            : couponFailure
-              ? 400
-              : 502;
-      return res.status(status).json({
+      return res.status(paymentErrorHttpStatus(result.code)).json({
         error: result.code,
-        message: couponFailure ? couponErrorMessageKo(result.code) : result.message,
+        message: couponFailure ? couponErrorMessageKo(result.code) : paymentErrorMessageKo(result.code),
       });
     }
 
@@ -227,8 +227,11 @@ router.post('/invitations/:id/payment/prepare', async (req, res) => {
       coupon: result.coupon,
     });
   } catch (error) {
-    console.error('[payments] prepare failed', error);
-    return res.status(500).json({ error: 'PREPARE_FAILED' });
+    console.error('[payments] prepare failed');
+    return res.status(503).json({
+      error: 'PAYMENT_SERVICE_NOT_AVAILABLE',
+      message: paymentErrorMessageKo('PAYMENT_SERVICE_NOT_AVAILABLE'),
+    });
   }
 });
 
@@ -243,7 +246,11 @@ router.post('/invitations/:id/payment/coupon/validate', async (req, res) => {
     }
 
     const invitation = access.invitation!;
-    const rate = consumeCouponValidateAttempt(clientIp(req), invitation.id);
+    const rate = consumeCouponValidateAttempt(
+      clientIp(req),
+      access.user?.id || invitation.userId || null,
+      invitation.id
+    );
     if (rate.limited) {
       return res.status(429).json({
         error: 'COUPON_RATE_LIMITED',
@@ -273,8 +280,8 @@ router.post('/invitations/:id/payment/coupon/validate', async (req, res) => {
       const code = toPublicCouponError(error.code);
       return res.status(error.httpStatus).json({ error: code, message: couponErrorMessageKo(code) });
     }
-    console.error('[payments] coupon validate failed', error);
-    return res.status(500).json({ error: 'COUPON_INVALID', message: couponErrorMessageKo('COUPON_INVALID') });
+    console.error('[payments] coupon validate failed');
+    return res.status(400).json({ error: 'COUPON_INVALID', message: couponErrorMessageKo('COUPON_INVALID') });
   }
 });
 
@@ -342,7 +349,10 @@ router.post('/invitations/:id/payment/confirm', async (req, res) => {
     });
 
     if (!result.ok) {
-      return res.status(400).json({ error: result.code, message: result.message });
+      return res.status(paymentErrorHttpStatus(result.code)).json({
+        error: result.code,
+        message: paymentErrorMessageKo(result.code),
+      });
     }
 
     return res.status(200).json({
@@ -354,8 +364,11 @@ router.post('/invitations/:id/payment/confirm', async (req, res) => {
       isPaid: true,
     });
   } catch (error) {
-    console.error('[payments] confirm failed', error);
-    return res.status(500).json({ error: 'CONFIRM_FAILED' });
+    console.error('[payments] confirm failed');
+    return res.status(409).json({
+      error: 'CONFIRM_FAILED',
+      message: paymentErrorMessageKo('PREPARE_FAILED'),
+    });
   }
 });
 
@@ -440,7 +453,8 @@ router.post('/payments/webhook', async (req, res) => {
 
     // Development mock webhook path (explicit header) for tests without Toss network
     const mockSecret = normalizeText(req.headers['x-mock-webhook-secret'] as string);
-    if (mockSecret && resolvePaymentProvider() === 'mock') {
+    const webhookProvider = tryResolvePaymentProvider();
+    if (mockSecret && webhookProvider.ok && webhookProvider.provider === 'mock') {
       const expected = process.env.PAYMENT_WEBHOOK_SECRET || 'dev-mock-webhook-secret';
       if (mockSecret !== expected) {
         return res.status(401).json({ error: 'INVALID_SIGNATURE' });

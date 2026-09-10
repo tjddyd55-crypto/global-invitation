@@ -73,6 +73,24 @@ Never commit secrets. Never put secrets in `NEXT_PUBLIC_*`.
 
 ---
 
+## Production activation checklist (do not execute a live charge from this doc)
+
+운영에서 `PAYMENT_PROVIDER` / Toss 가 없으면 prepare 는 **500이 아니라** `PAYMENT_PROVIDER_NOT_CONFIGURED` **HTTP 503** 이다.  
+체크아웃은 견적(쿠폰 $10→$5 포함)을 보여주고 유료 CTA 를 막는다. $0 쿠폰은 provider 없이 settle-zero.
+
+Toss 를 나중에 켜는 순서 (실제 청구 테스트는 운영 승인 후 별도):
+
+1. Railway Production `PAYMENT_PROVIDER=toss_payments` (mock 금지).
+2. Admin → 결제 관리 → Toss: **TEST** 키 저장 + 연결 확인 (청구 없음).
+3. Toss 상점관리자에서 **외화결제 MID (USD)** 계약/키 확인.
+4. Production 에서만 LIVE 키 활성화. Development 는 LIVE charge 차단.
+5. `TOSS_PAYMENTS_SETTLEMENT_CURRENCY=KRW` 를 넣지 말 것 (DOMESTIC_KRW_DISABLED).
+6. Frontend `NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY` (secret 금지) + 선택 `VARIANT_KEY`.
+7. `/health.payment` 에서 `provider=toss_payments`, key configured=true 확인.
+8. Development 에서 test MID 로 한 건 승인 후 Production LIVE 는 별도 승인.
+
+이 문서는 live charge 를 실행하지 않는다. 시크릿을 커밋하지 않는다.
+
 ## Toss merchant checklist (operator)
 
 Confirm in Toss 상점관리자 / 계약:
@@ -103,6 +121,8 @@ Confirm in Toss 상점관리자 / 계약:
 
 | Code | Meaning |
 |------|---------|
+| `PAYMENT_PROVIDER_NOT_CONFIGURED` | Production 에 provider/Toss 미설정. HTTP 503. |
+| `PAYMENT_SERVICE_NOT_AVAILABLE` | stripe/mock-in-prod 등 사용 불가. HTTP 503. |
 | `FOREIGN_MID_NOT_CONFIGURED` | USD MID keys missing / invalid |
 | `DOMESTIC_KRW_DISABLED` | KRW settlement env or domestic channel requested |
 | `UNSUPPORTED_CURRENCY` | product/provider currency mapping failed |

@@ -79,8 +79,13 @@ router.post('/ops/coupons', async (req, res) => {
 
 router.get('/ops/coupons/:id/usages', async (req, res) => {
   try {
-    const usages = await listCouponUsages(req.params.id);
-    return res.status(200).json({ usages });
+    const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined;
+    const limit = Number(req.query.limit);
+    const result = await listCouponUsages(req.params.id, {
+      cursor,
+      limit: Number.isFinite(limit) ? limit : undefined,
+    });
+    return res.status(200).json(result);
   } catch (error) {
     return handleCouponError(error, res, 'COUPON_USAGE_LIST_FAILED');
   }

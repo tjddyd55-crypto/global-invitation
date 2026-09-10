@@ -1,0 +1,76 @@
+export const PAYMENT_ERROR_CODES = {
+  PAYMENT_PROVIDER_NOT_CONFIGURED: 'PAYMENT_PROVIDER_NOT_CONFIGURED',
+  PAYMENT_SERVICE_NOT_AVAILABLE: 'PAYMENT_SERVICE_NOT_AVAILABLE',
+  FOREIGN_MID_NOT_CONFIGURED: 'FOREIGN_MID_NOT_CONFIGURED',
+  MISSING_TOSS_KEYS: 'MISSING_TOSS_KEYS',
+  PAYMENT_PROVIDER_CONFIG_INVALID: 'PAYMENT_PROVIDER_CONFIG_INVALID',
+  LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT: 'LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT',
+  PAYMENTS_DISABLED: 'PAYMENTS_DISABLED',
+  DOMESTIC_KRW_DISABLED: 'DOMESTIC_KRW_DISABLED',
+  UNSUPPORTED_CURRENCY: 'UNSUPPORTED_CURRENCY',
+  AMOUNT_MISMATCH: 'AMOUNT_MISMATCH',
+  CURRENCY_MISMATCH: 'CURRENCY_MISMATCH',
+  COUPON_SNAPSHOT_MISMATCH: 'COUPON_SNAPSHOT_MISMATCH',
+  RESERVATION_EXPIRED: 'RESERVATION_EXPIRED',
+  PREPARE_FAILED: 'PREPARE_FAILED',
+} as const;
+
+export type PaymentErrorCode = (typeof PAYMENT_ERROR_CODES)[keyof typeof PAYMENT_ERROR_CODES];
+
+const UNAVAILABLE_CODES = new Set<string>([
+  PAYMENT_ERROR_CODES.PAYMENT_PROVIDER_NOT_CONFIGURED,
+  PAYMENT_ERROR_CODES.PAYMENT_SERVICE_NOT_AVAILABLE,
+  PAYMENT_ERROR_CODES.FOREIGN_MID_NOT_CONFIGURED,
+  PAYMENT_ERROR_CODES.MISSING_TOSS_KEYS,
+  PAYMENT_ERROR_CODES.PAYMENT_PROVIDER_CONFIG_INVALID,
+  PAYMENT_ERROR_CODES.LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT,
+  PAYMENT_ERROR_CODES.PAYMENTS_DISABLED,
+]);
+
+export const PAYMENT_ERROR_MESSAGES_KO: Record<PaymentErrorCode, string> = {
+  PAYMENT_PROVIDER_NOT_CONFIGURED: '현재 해외 결제 서비스 준비 중입니다. 쿠폰은 적용해 두실 수 있습니다.',
+  PAYMENT_SERVICE_NOT_AVAILABLE: '현재 해외 결제 서비스 준비 중입니다. 잠시 후 다시 시도해 주세요.',
+  FOREIGN_MID_NOT_CONFIGURED: '현재 해외 결제 서비스 준비 중입니다. 국내 KRW로 자동 전환되지 않습니다.',
+  MISSING_TOSS_KEYS: '현재 해외 결제 서비스 준비 중입니다. 쿠폰은 적용해 두실 수 있습니다.',
+  PAYMENT_PROVIDER_CONFIG_INVALID: '현재 해외 결제 서비스 준비 중입니다. 잠시 후 다시 시도해 주세요.',
+  LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT: '개발 환경에서는 실제 결제를 진행할 수 없습니다.',
+  PAYMENTS_DISABLED: '결제가 일시적으로 중단되었습니다. 잠시 후 다시 시도해 주세요.',
+  DOMESTIC_KRW_DISABLED: '국내 KRW 결제는 지원하지 않습니다. 해외 USD 결제를 이용해 주세요.',
+  UNSUPPORTED_CURRENCY: '지원하지 않는 결제 통화입니다.',
+  AMOUNT_MISMATCH: '결제 금액이 일치하지 않습니다. 다시 시도해 주세요.',
+  CURRENCY_MISMATCH: '결제 통화가 일치하지 않습니다. 다시 시도해 주세요.',
+  COUPON_SNAPSHOT_MISMATCH: '쿠폰 결제 정보가 변경되어 결제를 완료할 수 없습니다. 다시 시도해 주세요.',
+  RESERVATION_EXPIRED: '쿠폰 예약이 만료되었습니다. 쿠폰을 다시 적용해 주세요.',
+  PREPARE_FAILED: '결제를 시작하지 못했습니다. 다시 시도해 주세요.',
+};
+
+export function isPaymentUnavailableCode(code: string): boolean {
+  return UNAVAILABLE_CODES.has(code);
+}
+
+export function paymentErrorMessageKo(code: string): string {
+  if (code in PAYMENT_ERROR_MESSAGES_KO) {
+    return PAYMENT_ERROR_MESSAGES_KO[code as PaymentErrorCode];
+  }
+  return PAYMENT_ERROR_MESSAGES_KO.PREPARE_FAILED;
+}
+
+export function paymentErrorHttpStatus(code: string): number {
+  if (code === PAYMENT_ERROR_CODES.UNSUPPORTED_CURRENCY || code === PAYMENT_ERROR_CODES.DOMESTIC_KRW_DISABLED) {
+    return 422;
+  }
+  if (isPaymentUnavailableCode(code)) return 503;
+  if (code.startsWith('COUPON_')) return 400;
+  if (
+    code === PAYMENT_ERROR_CODES.AMOUNT_MISMATCH ||
+    code === PAYMENT_ERROR_CODES.CURRENCY_MISMATCH ||
+    code === PAYMENT_ERROR_CODES.COUPON_SNAPSHOT_MISMATCH ||
+    code === PAYMENT_ERROR_CODES.RESERVATION_EXPIRED ||
+    code === 'PAYMENT_NOT_FOUND' ||
+    code === 'ATTEMPT_NOT_PENDING' ||
+    code === 'INVALID_PROVIDER'
+  ) {
+    return 409;
+  }
+  return 400;
+}

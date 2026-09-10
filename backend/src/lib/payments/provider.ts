@@ -8,30 +8,58 @@ function resolveNodeEnv(): string {
   return (process.env.NODE_ENV || 'development').toLowerCase();
 }
 
-export function resolvePaymentProvider(): PaymentProviderName {
+export type ResolvedPaymentProvider =
+  | { ok: true; provider: PaymentProviderName }
+  | {
+      ok: false;
+      code: 'PAYMENT_PROVIDER_NOT_CONFIGURED' | 'PAYMENT_SERVICE_NOT_AVAILABLE';
+      message: string;
+    };
+
+export function tryResolvePaymentProvider(): ResolvedPaymentProvider {
   const raw = (process.env.PAYMENT_PROVIDER || '').trim().toLowerCase();
   const nodeEnv = resolveNodeEnv();
 
   if (raw === 'mock') {
     if (nodeEnv === 'production') {
-      throw new Error('PAYMENT_PROVIDER=mock is forbidden in production');
+      return {
+        ok: false,
+        code: 'PAYMENT_PROVIDER_NOT_CONFIGURED',
+        message: 'PAYMENT_PROVIDER=mock is forbidden in production',
+      };
     }
-    return 'mock';
+    return { ok: true, provider: 'mock' };
   }
 
   if (raw === 'toss' || raw === 'toss_payments' || raw === 'tosspayments') {
-    return 'toss_payments';
+    return { ok: true, provider: 'toss_payments' };
   }
 
   if (raw === 'stripe') {
-    throw new Error('PAYMENT_PROVIDER=stripe is disabled; use toss_payments or mock');
+    return {
+      ok: false,
+      code: 'PAYMENT_SERVICE_NOT_AVAILABLE',
+      message: 'PAYMENT_PROVIDER=stripe is disabled; use toss_payments or mock',
+    };
   }
 
   if (nodeEnv !== 'production') {
-    return 'mock';
+    return { ok: true, provider: 'mock' };
   }
 
-  throw new Error('PAYMENT_PROVIDER is not configured (expected toss_payments)');
+  return {
+    ok: false,
+    code: 'PAYMENT_PROVIDER_NOT_CONFIGURED',
+    message: 'PAYMENT_PROVIDER is not configured (expected toss_payments)',
+  };
+}
+
+export function resolvePaymentProvider(): PaymentProviderName {
+  const resolved = tryResolvePaymentProvider();
+  if (!resolved.ok) {
+    throw new Error(resolved.message);
+  }
+  return resolved.provider;
 }
 
 /** Canonical active channel for this product: overseas USD (외화결제 MID). */

@@ -15,6 +15,9 @@ import {
   parseProviderMeta,
 } from './paymentLookup';
 import { redeemReservationForPayment, releaseReservationForPayment } from '../coupons/lifecycle';
+import { findReservedUsageForPayment } from '../coupons/service';
+import { matchCouponSnapshotAtConfirm } from './confirmSnapshot';
+import { paymentErrorMessageKo } from './errors';
 
 export { findPaidPayment, getExpectedProviderAmount, getExpectedProviderCurrency };
 export { preparePaymentAttempt } from './prepareAttempt';
@@ -222,7 +225,25 @@ export async function confirmPaymentAttempt(
 
   const expectedAmount = getExpectedProviderAmount(payment);
   if (expectedAmount === null || input.amount !== expectedAmount) {
-    return { ok: false, code: 'AMOUNT_MISMATCH', message: 'Amount does not match prepared attempt' };
+    return { ok: false, code: 'AMOUNT_MISMATCH', message: paymentErrorMessageKo('AMOUNT_MISMATCH') };
+  }
+
+  const reservedUsage = payment.couponId ? await findReservedUsageForPayment(payment.id) : null;
+  const snapshotMatch = matchCouponSnapshotAtConfirm(payment, reservedUsage);
+  if (!snapshotMatch.ok) {
+    if (snapshotMatch.code === 'RESERVATION_EXPIRED') {
+      await markPaymentStatus({
+        paymentId: payment.id,
+        status: InvitationPaymentStatus.CANCELED,
+        skipAmountCheck: true,
+        rawProviderStatus: 'reservation_expired',
+      });
+    }
+    return {
+      ok: false,
+      code: snapshotMatch.code,
+      message: paymentErrorMessageKo(snapshotMatch.code),
+    };
   }
 
   if (payment.provider === 'mock') {

@@ -1,5 +1,6 @@
 import {
   InvitationCouponStatus,
+  InvitationCouponUsageStatus,
   Prisma,
   type InvitationCoupon,
 } from '@prisma/client';
@@ -12,6 +13,7 @@ import {
 } from './adminValidation';
 import { countActiveCouponUsages, countAnyCouponUsages } from './counts';
 import { resolveEffectiveCouponStatus } from './eligibility';
+import { assertActiveCouponEditAllowed, assertCouponCodeRenameAllowed } from './adminGuards';
 
 export type CouponListFilters = {
   q?: string;
@@ -74,10 +76,17 @@ export async function createCoupon(input: AdminCouponWriteInput, actor: string) 
   }
 }
 
-export async function updateCoupon(id: string, input: AdminCouponWriteInput, actor: string) {
+export async function updateCoupon(
+  id: string,
+  input: AdminCouponWriteInput & { allowEconomicEdit?: unknown },
+  actor: string
+) {
   const existing = await prisma.invitationCoupon.findUnique({ where: { id } });
   if (!existing) throw new CouponError(COUPON_ERROR_CODES.COUPON_NOT_FOUND, 404);
   const data = normalizeAdminCouponWrite(input);
+  const usageCount = await countAnyCouponUsages(prisma, existing.id);
+  assertCouponCodeRenameAllowed(existing.code, data.code, usageCount);
+  assertActiveCouponEditAllowed(existing, data, input.allowEconomicEdit === true);
   try {
     const row = await prisma.invitationCoupon.update({
       where: { id },
@@ -122,12 +131,17 @@ function assertStatusTransition(from: InvitationCouponStatus, to: InvitationCoup
   if (!allowed.has(to)) throw new CouponError(COUPON_ERROR_CODES.COUPON_STATUS_CONFLICT);
 }
 
-export async function listCouponUsages(couponId: string) {
+export async function listCouponUsages(
+  couponId: string,
+  opts?: { cursor?: string; limit?: number }
+) {
   await getCouponById(couponId);
-  return prisma.invitationCouponUsage.findMany({
+  const take = Math.min(Math.max(opts?.limit ?? 50, 1), 100);
+  const rows = await prisma.invitationCouponUsage.findMany({
     where: { couponId },
     orderBy: { createdAt: 'desc' },
-    take: 200,
+    take: take + 1,
+    ...(opts?.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
     select: {
       id: true,
       userId: true,
@@ -146,18 +160,38 @@ export async function listCouponUsages(couponId: string) {
       expiresAt: true,
     },
   });
+  const hasMore = rows.length > take;
+  const usages = hasMore ? rows.slice(0, take) : rows;
+  return {
+    usages,
+    nextCursor: hasMore ? usages[usages.length - 1]?.id ?? null : null,
+  };
 }
 
 async function serializeCouponWithCounts(coupon: InvitationCoupon) {
-  const [activeUsageCount, totalUsageCount] = await Promise.all([
-    countActiveCouponUsages(prisma, coupon.id),
-    countAnyCouponUsages(prisma, coupon.id),
-  ]);
+  const [activeUsageCount, totalUsageCount, reservedCount, redeemedCount, discountAgg] =
+    await Promise.all([
+      countActiveCouponUsages(prisma, coupon.id),
+      countAnyCouponUsages(prisma, coupon.id),
+      prisma.invitationCouponUsage.count({
+        where: { couponId: coupon.id, status: InvitationCouponUsageStatus.RESERVED },
+      }),
+      prisma.invitationCouponUsage.count({
+        where: { couponId: coupon.id, status: InvitationCouponUsageStatus.REDEEMED },
+      }),
+      prisma.invitationCouponUsage.aggregate({
+        where: { couponId: coupon.id, status: InvitationCouponUsageStatus.REDEEMED },
+        _sum: { discountAmountCents: true },
+      }),
+    ]);
   return {
     ...coupon,
     effectiveStatus: resolveEffectiveCouponStatus(coupon),
+    reservedCount,
+    redeemedCount,
     activeUsageCount,
     totalUsageCount,
+    totalDiscountCents: discountAgg._sum.discountAmountCents ?? 0,
     canHardDelete: totalUsageCount === 0,
   };
 }

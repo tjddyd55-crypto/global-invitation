@@ -897,8 +897,11 @@ export type AdminCoupon = {
   endsAt: string | null;
   totalUsageLimit: number | null;
   perUserUsageLimit: number | null;
+  reservedCount?: number;
+  redeemedCount?: number;
   activeUsageCount: number;
   totalUsageCount: number;
+  totalDiscountCents?: number;
   canHardDelete: boolean;
   createdAt: string;
   updatedAt: string;
@@ -951,6 +954,15 @@ export async function transitionAdminCoupon(id: string, action: 'pause' | 'activ
   });
 }
 
-export async function listAdminCouponUsages(id: string) {
-  return adminApiJson<{ usages: AdminCouponUsage[] }>(`/api/admin/ops/coupons/${id}/usages`);
+export async function listAdminCouponUsages(
+  id: string,
+  opts?: { cursor?: string; limit?: number }
+) {
+  const params = new URLSearchParams();
+  if (opts?.cursor) params.set('cursor', opts.cursor);
+  if (opts?.limit) params.set('limit', String(opts.limit));
+  const query = params.toString();
+  return adminApiJson<{ usages: AdminCouponUsage[]; nextCursor: string | null }>(
+    `/api/admin/ops/coupons/${id}/usages${query ? `?${query}` : ''}`
+  );
 }

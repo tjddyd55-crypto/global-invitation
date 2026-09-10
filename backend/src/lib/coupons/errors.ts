@@ -15,6 +15,8 @@ export const COUPON_ERROR_CODES = {
   COUPON_INVALID_WINDOW: 'COUPON_INVALID_WINDOW',
   COUPON_STATUS_CONFLICT: 'COUPON_STATUS_CONFLICT',
   COUPON_RESERVE_FAILED: 'COUPON_RESERVE_FAILED',
+  COUPON_ACTIVE_EDIT_REQUIRES_PAUSE: 'COUPON_ACTIVE_EDIT_REQUIRES_PAUSE',
+  COUPON_CODE_LOCKED: 'COUPON_CODE_LOCKED',
 } as const;
 
 export type CouponErrorCode = (typeof COUPON_ERROR_CODES)[keyof typeof COUPON_ERROR_CODES];
@@ -55,6 +57,8 @@ export const COUPON_ERROR_MESSAGES_KO: Record<CouponErrorCode, string> = {
   COUPON_INVALID_WINDOW: '쿠폰 유효 기간이 올바르지 않습니다.',
   COUPON_STATUS_CONFLICT: '현재 상태에서는 이 작업을 할 수 없습니다.',
   COUPON_RESERVE_FAILED: '쿠폰을 적용하지 못했습니다. 다시 시도해 주세요.',
+  COUPON_ACTIVE_EDIT_REQUIRES_PAUSE: '활성 쿠폰의 할인·한도·기간은 일시중지 후 수정할 수 있습니다.',
+  COUPON_CODE_LOCKED: '사용 이력이 있는 쿠폰 코드는 변경할 수 없습니다.',
 };
 
 export function couponErrorMessageKo(code: string): string {
