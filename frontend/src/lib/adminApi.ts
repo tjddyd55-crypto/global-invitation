@@ -416,6 +416,13 @@ export async function getAdminOpsUser(id: string) {
   return adminApiJson<Record<string, unknown>>(`/api/admin/ops/users/${id}`);
 }
 
+export async function createAdminPasswordResetLink(userId: string) {
+  return adminApiJson<{ ok: boolean; resetUrl: string; expiresInMinutes: number }>(
+    `/api/admin/ops/users/${userId}/password-reset-link`,
+    { method: 'POST' }
+  );
+}
+
 export async function listAdminOpsInvitations(filters: Record<string, string> = {}) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {

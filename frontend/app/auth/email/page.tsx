@@ -1,21 +1,26 @@
 'use client';
 
-import { Suspense } from 'react';
-import ResponsivePlatformBoundary from '@/src/shared/platform/ResponsivePlatformBoundary';
-import RedirectIfAuthenticated from '@/src/features/auth/ui/shared/RedirectIfAuthenticated';
-import EmailStartScreen from '@/src/features/auth/ui/mobile/EmailStartScreen';
-import DesktopEmailStartScreen from '@/src/features/auth/ui/pc/DesktopEmailStartScreen';
+import { Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-/**
- * Canonical Email Start — Figma `EmailStartScreen` / `DesktopEmailStartScreen`.
- * 이미 인증된 사용자는 next 로 redirect 한다.
- */
-export default function AuthEmailPage() {
+function LegacyAuthEmailRedirectContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const next = searchParams.get('next');
+    const target = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
+    router.replace(target);
+  }, [router, searchParams]);
+
+  return null;
+}
+
+/** @deprecated 이메일 OTP 제거 — /login 으로 리다이렉트 */
+export default function LegacyAuthEmailRedirectPage() {
   return (
     <Suspense fallback={null}>
-      <RedirectIfAuthenticated>
-        <ResponsivePlatformBoundary mobile={<EmailStartScreen />} desktop={<DesktopEmailStartScreen />} />
-      </RedirectIfAuthenticated>
+      <LegacyAuthEmailRedirectContent />
     </Suspense>
   );
 }

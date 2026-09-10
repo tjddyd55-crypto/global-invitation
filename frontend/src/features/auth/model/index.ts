@@ -14,3 +14,8 @@ export { useEmailVerifyForm, OTP_CODE_LENGTH, formatRemaining } from './useEmail
 export type { UseEmailVerifyFormResult } from './useEmailVerifyForm';
 
 export { buildAdminIdCandidates, tryAdminLoginFallback } from './adminFallback';
+export { usePasswordSignupForm } from './usePasswordSignupForm';
+export type { UsePasswordSignupFormResult, SignupStep } from './usePasswordSignupForm';
+export { useForgotPasswordForm } from './useForgotPasswordForm';
+export type { UseForgotPasswordFormResult, ForgotPasswordStep } from './useForgotPasswordForm';
+export { useResetPasswordForm } from './useResetPasswordForm';

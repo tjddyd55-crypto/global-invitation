@@ -21,7 +21,7 @@ export default function DashboardScreen() {
   const { subscription } = useSubscription();
   const pathname = usePathname() ?? '';
   const prefix = resolveAppNavPrefix(pathname);
-  const loginHref = prefix === '/m' ? '/m/login' : '/auth/email';
+  const loginHref = prefix === '/m' ? '/m/login' : '/login';
   const myInvitationsHref = appPath(prefix, '/my-invitations');
   const templatesHref = appPath(prefix, '/templates');
 

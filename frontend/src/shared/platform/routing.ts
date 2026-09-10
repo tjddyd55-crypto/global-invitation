@@ -65,6 +65,11 @@ export const PUBLIC_PATH_PREFIXES: readonly string[] = [
   '/payment-info',
   '/pwa-settings',
   '/auth',
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/reset-password',
+  '/settings/account',
   '/m',
   '/pc',
 ];

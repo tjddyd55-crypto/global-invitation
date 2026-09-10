@@ -59,10 +59,10 @@ export function useCreateInvitation(): UseCreateInvitationResult {
               visualTemplateId,
               createdAt: Date.now(),
             });
-            router.replace(`/auth/email?next=${encodeURIComponent(VISUAL_TEMPLATE_RESUME_PATH)}`);
+            router.replace(`/login?next=${encodeURIComponent(VISUAL_TEMPLATE_RESUME_PATH)}`);
             return;
           }
-          router.replace(`/auth/email?next=${encodeURIComponent(CONCEPT_CREATE_NEXT_PATH)}`);
+          router.replace(`/login?next=${encodeURIComponent(CONCEPT_CREATE_NEXT_PATH)}`);
           return;
         }
 
@@ -96,10 +96,10 @@ export function useCreateInvitation(): UseCreateInvitationResult {
               visualTemplateId,
               createdAt: Date.now(),
             });
-            router.replace(`/auth/email?next=${encodeURIComponent(VISUAL_TEMPLATE_RESUME_PATH)}`);
+            router.replace(`/login?next=${encodeURIComponent(VISUAL_TEMPLATE_RESUME_PATH)}`);
             return;
           }
-          router.replace(`/auth/email?next=${encodeURIComponent(CONCEPT_CREATE_NEXT_PATH)}`);
+          router.replace(`/login?next=${encodeURIComponent(CONCEPT_CREATE_NEXT_PATH)}`);
           return;
         }
         setError(message);

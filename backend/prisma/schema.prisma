@@ -58,14 +58,19 @@ enum InvitationPaymentStatus {
 
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username  String?  @unique
   email     String?  @unique
   nickname  String?  @map("nickname")
   passwordHash String? @map("password_hash")
+  recoveryCodeHash String? @map("recovery_code_hash")
+  recoveryCodeIssuedAt DateTime? @map("recovery_code_issued_at") @db.Timestamptz(6)
+  passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamptz(6)
   role      UserRole @default(USER)
   isCreator Boolean  @default(false) @map("is_creator")
   countryCode String? @map("country_code")
   deactivatedAt DateTime? @map("deactivated_at") @db.Timestamptz(6)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   invitations         Invitation[]
   templateUsages      TemplateUsage[]   @relation("TemplateUsageUsedByUser")
@@ -81,8 +86,27 @@ model User {
   creditWallet         UserCreditWallet?
   creditTransactions   CreditTransaction[]
   notifications        Notification[]
+  passwordRecoveryTokens PasswordRecoveryToken[]
 
   @@map("users")
+}
+
+/// 비밀번호 복구/관리자 재설정 1회용 토큰. 원문은 저장하지 않는다.
+model PasswordRecoveryToken {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  tokenHash        String    @map("token_hash")
+  type             String
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt           DateTime? @map("used_at") @db.Timestamptz(6)
+  createdByAdminId String?   @map("created_by_admin_id")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, usedAt])
+  @@index([tokenHash])
+  @@map("password_recovery_tokens")
 }
 
 model Notification {

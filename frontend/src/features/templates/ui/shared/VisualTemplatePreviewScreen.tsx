@@ -54,7 +54,7 @@ export default function VisualTemplatePreviewScreen({ visualTemplateId }: Props)
           visualTemplateId: def.id,
           createdAt: Date.now(),
         });
-        router.replace(`/auth/email?next=${encodeURIComponent(VISUAL_TEMPLATE_RESUME_PATH)}`);
+        router.replace(`/login?next=${encodeURIComponent(VISUAL_TEMPLATE_RESUME_PATH)}`);
         return;
       }
       await start(def.conceptType, def.id);

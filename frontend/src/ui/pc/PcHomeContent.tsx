@@ -42,10 +42,10 @@ export default function PcHomeContent() {
             모바일 PWA 는 시청·편집용으로 따로 제공됩니다.
           </p>
           <div className={styles.ctaRow}>
-            <Link className={styles.primary} href={`/auth/email?next=${authNext}`}>
-              이메일로 시작하기
+            <Link className={styles.primary} href={`/login?next=${authNext}`}>
+              로그인
             </Link>
-            <Link className={styles.secondary} href={`/auth/email?next=${authNext}`}>
+            <Link className={styles.secondary} href={`/login?next=${authNext}`}>
               초대장 만들기
             </Link>
           </div>

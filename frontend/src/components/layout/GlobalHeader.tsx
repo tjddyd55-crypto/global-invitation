@@ -73,7 +73,7 @@ function GlobalHeaderContent() {
   const createHref = buildCreateInvitationHref(Boolean(user));
   const myInvitationsHref = user
     ? '/my-invitations'
-    : `/auth/email?next=${encodeURIComponent('/my-invitations')}`;
+    : `/login?next=${encodeURIComponent('/my-invitations')}`;
 
   const trimmedDraft = searchDraft.trim();
   const unreadNotifCount = notifications.filter((n) => !n.readAt).length;
@@ -403,7 +403,7 @@ function GlobalHeaderContent() {
       return (
         <>
           <Link href={loginHref} className={styles.authPrimary} data-testid="login-button">
-            이메일로 시작하기
+            로그인
           </Link>
         </>
       );
@@ -583,7 +583,7 @@ function GlobalHeaderContent() {
           <LanguageSelector variant="mobile" />
           {!user && (
             <Link href={loginHref} onClick={() => setMobileOpen(false)} data-testid="login-button">
-              이메일로 시작하기
+              로그인
             </Link>
           )}
           {user && (

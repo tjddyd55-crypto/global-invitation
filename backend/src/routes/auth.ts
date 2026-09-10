@@ -1,37 +1,39 @@
 import { Router, type Request } from 'express';
-import type { UserRole } from '@prisma/client';
 import prisma from '../lib/prisma';
 import {
-  buildMagicLink,
   clearAuthSessionCookie,
   createToken,
-  generateEmailVerificationCode,
   getAuthUser,
-  getEmailCodeExpiry,
-  getEmailCodeLoginPurpose,
-  getEmailCodeMaxAttempts,
-  getEmailCodeMaxRequestsPerWindow,
-  getEmailCodeResendCooldownSeconds,
-  getEmailCodeTtlMinutes,
-  getMagicLinkExpiry,
   getSessionExpiry,
-  hashEmailVerificationCode,
   isValidEmail,
   normalizeEmail,
   resolveSessionToken,
   setAuthSessionCookie,
-  timingSafeEqualHex,
   transferGuestData,
 } from '../lib/auth';
 import { hashPassword, verifyPassword } from '../lib/password';
-import { sendMagicLinkEmail, sendVerificationCodeEmail, canExposeEmailPreviewCode } from '../lib/mailer';
+import {
+  buildAuthRateLimitKey,
+  checkAuthRateLimit,
+  clearAuthRateLimit,
+  recordAuthRateLimitFailure,
+  resolveLoginRateLimitConfig,
+  resolveRecoveryRateLimitConfig,
+} from '../lib/authRateLimit';
+import {
+  ADMIN_RESET_TYPE,
+  RECOVERY_GRANT_TYPE,
+  changePasswordForUser,
+  createAdminResetToken,
+  createRecoveryGrant,
+  issueRecoveryCodeForUser,
+  resetPasswordWithRecoveryToken,
+  validatePasswordLength,
+} from '../lib/passwordRecovery';
+import { hashRecoveryCode, verifyRecoveryCode } from '../lib/recoveryCode';
+import { normalizeUsername, validateUsername } from '../lib/username';
 
 const router = Router();
-const MIN_PASSWORD_LENGTH = 8;
-const SIGNUP_ROLES: ReadonlySet<'USER' | 'CREATOR'> = new Set(['USER', 'CREATOR']);
-const LOGIN_WINDOW_MS = 60_000;
-const LOGIN_MAX_ATTEMPTS = 8;
-const loginAttemptsByKey = new Map<string, number[]>();
 
 function resolveClientIp(req: Request): string {
   const forwarded = req.headers['x-forwarded-for'];
@@ -44,73 +46,177 @@ function resolveClientIp(req: Request): string {
   return req.ip || req.socket.remoteAddress || 'unknown';
 }
 
-function consumeLoginAttempt(key: string): { limited: boolean; retryAfterSeconds: number } {
-  const now = Date.now();
-  const recentAttempts = (loginAttemptsByKey.get(key) || []).filter(
-    (timestamp) => now - timestamp < LOGIN_WINDOW_MS
-  );
-
-  if (recentAttempts.length >= LOGIN_MAX_ATTEMPTS) {
-    const oldestAttempt = recentAttempts[0] || now;
-    const retryAfterSeconds = Math.max(
-      1,
-      Math.ceil((LOGIN_WINDOW_MS - (now - oldestAttempt)) / 1000)
-    );
-    loginAttemptsByKey.set(key, recentAttempts);
-    return { limited: true, retryAfterSeconds };
-  }
-
-  recentAttempts.push(now);
-  loginAttemptsByKey.set(key, recentAttempts);
-  return { limited: false, retryAfterSeconds: 0 };
+function toSafeUser(user: {
+  id: string;
+  username: string | null;
+  email: string | null;
+  nickname: string | null;
+  role: string;
+}) {
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    nickname: user.nickname,
+    role: user.role,
+  };
 }
 
-function normalizeSignupRole(value: unknown): 'USER' | 'CREATOR' {
-  const role = typeof value === 'string' ? value.trim().toUpperCase() : '';
-  if (!role) {
-    return 'USER';
-  }
-  if (!SIGNUP_ROLES.has(role as 'USER' | 'CREATOR')) {
-    throw new Error('INVALID_SIGNUP_ROLE');
-  }
-  return role as 'USER' | 'CREATOR';
+async function createUserSession(userId: string) {
+  const sessionToken = createToken();
+  await prisma.authSession.create({
+    data: {
+      token: sessionToken,
+      userId,
+      expiresAt: getSessionExpiry(),
+    },
+  });
+  return sessionToken;
 }
 
-function normalizeNickname(value: unknown): string | null {
-  const nickname = typeof value === 'string' ? value.trim() : '';
-  if (!nickname) {
-    return null;
+type RegisterInput = {
+  username: string;
+  email: string;
+  password: string;
+  guestToken?: string;
+};
+
+async function registerUser(input: RegisterInput) {
+  const usernameError = validateUsername(input.username);
+  if (usernameError) {
+    return { status: 400 as const, body: { ok: false, error: usernameError } };
   }
-  return nickname.slice(0, 40);
+
+  if (!input.email || !isValidEmail(input.email)) {
+    return { status: 400 as const, body: { ok: false, error: 'INVALID_EMAIL' } };
+  }
+
+  if (!validatePasswordLength(input.password)) {
+    return { status: 400 as const, body: { ok: false, error: 'PASSWORD_TOO_SHORT' } };
+  }
+
+  const normalizedUsername = normalizeUsername(input.username);
+  const normalizedEmail = normalizeEmail(input.email);
+
+  const [usernameTaken, emailTaken] = await Promise.all([
+    prisma.user.findUnique({ where: { username: normalizedUsername }, select: { id: true } }),
+    prisma.user.findUnique({ where: { email: normalizedEmail }, select: { id: true } }),
+  ]);
+
+  if (usernameTaken) {
+    return { status: 409 as const, body: { ok: false, error: 'USERNAME_ALREADY_EXISTS' } };
+  }
+  if (emailTaken) {
+    return { status: 409 as const, body: { ok: false, error: 'EMAIL_ALREADY_EXISTS' } };
+  }
+
+  const passwordHash = await hashPassword(input.password);
+  const recoveryCode = await (async () => {
+    const { generateRecoveryCode } = await import('../lib/recoveryCode');
+    return generateRecoveryCode();
+  })();
+
+  const user = await prisma.user.create({
+    data: {
+      username: normalizedUsername,
+      email: normalizedEmail,
+      passwordHash,
+      recoveryCodeHash: hashRecoveryCode(recoveryCode),
+      recoveryCodeIssuedAt: new Date(),
+      passwordChangedAt: new Date(),
+      role: 'USER',
+    },
+    select: { id: true, username: true, email: true, nickname: true, role: true },
+  });
+
+  const sessionToken = await createUserSession(user.id);
+  if (input.guestToken) {
+    await transferGuestData(input.guestToken, user.id);
+  }
+
+  return {
+    status: 201 as const,
+    body: {
+      ok: true,
+      token: sessionToken,
+      user: toSafeUser(user),
+      recoveryCode,
+    },
+  };
 }
+
+router.post('/register', async (req, res) => {
+  try {
+    const username = typeof req.body?.username === 'string' ? req.body.username : '';
+    const email = typeof req.body?.email === 'string' ? req.body.email : '';
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    const guestToken =
+      typeof req.body?.guestToken === 'string' && req.body.guestToken.trim()
+        ? req.body.guestToken.trim()
+        : undefined;
+
+    const result = await registerUser({ username, email, password, guestToken });
+    if (result.status === 201) {
+      setAuthSessionCookie(res, result.body.token);
+    }
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error('Error during register:', error);
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_REGISTER' });
+  }
+});
+
+router.post('/signup', async (req, res) => {
+  try {
+    const username = typeof req.body?.username === 'string' ? req.body.username : '';
+    const email = typeof req.body?.email === 'string' ? req.body.email : '';
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    const guestToken =
+      typeof req.body?.guestToken === 'string' && req.body.guestToken.trim()
+        ? req.body.guestToken.trim()
+        : undefined;
+
+    const result = await registerUser({ username, email, password, guestToken });
+    if (result.status === 201) {
+      setAuthSessionCookie(res, result.body.token);
+    }
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error('Error during signup:', error);
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_SIGNUP' });
+  }
+});
 
 router.post('/login', async (req, res) => {
   try {
-    const email = typeof req.body?.email === 'string' ? req.body.email : '';
+    const username = typeof req.body?.username === 'string' ? req.body.username : '';
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
 
-    if (!email || !isValidEmail(email)) {
-      return res.status(400).json({ error: 'INVALID_EMAIL' });
+    if (!username.trim()) {
+      return res.status(400).json({ ok: false, error: 'USERNAME_REQUIRED' });
     }
     if (!password) {
-      return res.status(400).json({ error: 'PASSWORD_REQUIRED' });
+      return res.status(400).json({ ok: false, error: 'PASSWORD_REQUIRED' });
     }
 
-    const normalizedEmail = normalizeEmail(email);
-    const loginKey = `${resolveClientIp(req)}:${normalizedEmail}`;
-    const rateLimit = consumeLoginAttempt(loginKey);
-    if (rateLimit.limited) {
-      res.setHeader('Retry-After', String(rateLimit.retryAfterSeconds));
+    const normalizedUsername = normalizeUsername(username);
+    const loginConfig = resolveLoginRateLimitConfig();
+    const loginKey = buildAuthRateLimitKey('login', resolveClientIp(req), normalizedUsername);
+    const rateCheck = checkAuthRateLimit(loginKey, loginConfig);
+    if (rateCheck.limited) {
+      res.setHeader('Retry-After', String(rateCheck.retryAfterSeconds));
       return res.status(429).json({
+        ok: false,
         error: 'LOGIN_RATE_LIMITED',
-        retryAfterSeconds: rateLimit.retryAfterSeconds,
+        retryAfterSeconds: rateCheck.retryAfterSeconds,
       });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
+      where: { username: normalizedUsername },
       select: {
         id: true,
+        username: true,
         email: true,
         nickname: true,
         role: true,
@@ -119,245 +225,32 @@ router.post('/login', async (req, res) => {
       },
     });
 
-    if (!user) {
-      return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
+    if (!user || !user.passwordHash) {
+      recordAuthRateLimitFailure(loginKey, loginConfig);
+      return res.status(401).json({ ok: false, error: 'INVALID_CREDENTIALS' });
     }
     if (user.deactivatedAt) {
-      return res.status(403).json({ error: 'ACCOUNT_DEACTIVATED' });
-    }
-    if (!user.passwordHash) {
-      return res.status(400).json({ error: 'PASSWORD_LOGIN_NOT_AVAILABLE' });
+      return res.status(403).json({ ok: false, error: 'ACCOUNT_DEACTIVATED' });
     }
 
     const validPassword = await verifyPassword(password, user.passwordHash);
     if (!validPassword) {
-      return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
+      recordAuthRateLimitFailure(loginKey, loginConfig);
+      return res.status(401).json({ ok: false, error: 'INVALID_CREDENTIALS' });
     }
 
-    const sessionToken = createToken();
-    await prisma.authSession.create({
-      data: {
-        token: sessionToken,
-        userId: user.id,
-        expiresAt: getSessionExpiry(),
-      },
-    });
+    const sessionToken = await createUserSession(user.id);
     setAuthSessionCookie(res, sessionToken);
-    loginAttemptsByKey.delete(loginKey);
+    clearAuthRateLimit(loginKey);
 
     return res.status(200).json({
+      ok: true,
       token: sessionToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        nickname: user.nickname,
-        role: user.role,
-      },
+      user: toSafeUser(user),
     });
   } catch (error) {
     console.error('Error during login:', error);
-    return res.status(500).json({ error: 'FAILED_TO_LOGIN' });
-  }
-});
-
-router.post('/signup', async (req, res) => {
-  try {
-    const email = typeof req.body?.email === 'string' ? req.body.email : '';
-    const password = typeof req.body?.password === 'string' ? req.body.password : '';
-    const nickname = normalizeNickname(req.body?.nickname);
-    const role = normalizeSignupRole(req.body?.role);
-    const guestToken =
-      typeof req.body?.guestToken === 'string' && req.body.guestToken.trim()
-        ? req.body.guestToken.trim()
-        : undefined;
-
-    if (!email || !isValidEmail(email)) {
-      return res.status(400).json({ error: 'INVALID_EMAIL' });
-    }
-    if (!password || password.trim().length < MIN_PASSWORD_LENGTH) {
-      return res.status(400).json({ error: 'PASSWORD_TOO_SHORT' });
-    }
-
-    const normalizedEmail = normalizeEmail(email);
-    const existing = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true },
-    });
-    if (existing) {
-      return res.status(409).json({ error: 'EMAIL_ALREADY_EXISTS' });
-    }
-
-    const passwordHash = await hashPassword(password);
-    const user = await prisma.user.create({
-      data: {
-        email: normalizedEmail,
-        nickname,
-        passwordHash,
-        role: role as UserRole,
-        isCreator: role === 'CREATOR',
-      },
-      select: {
-        id: true,
-        email: true,
-        nickname: true,
-        role: true,
-      },
-    });
-
-    const sessionToken = createToken();
-    await prisma.authSession.create({
-      data: {
-        token: sessionToken,
-        userId: user.id,
-        expiresAt: getSessionExpiry(),
-      },
-    });
-    setAuthSessionCookie(res, sessionToken);
-
-    if (guestToken) {
-      await transferGuestData(guestToken, user.id);
-    }
-
-    return res.status(201).json({
-      token: sessionToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        nickname: user.nickname,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    if (error instanceof Error && error.message === 'INVALID_SIGNUP_ROLE') {
-      return res.status(400).json({ error: 'INVALID_SIGNUP_ROLE' });
-    }
-    console.error('Error creating signup user:', error);
-    return res.status(500).json({ error: 'FAILED_TO_SIGNUP' });
-  }
-});
-
-router.post('/magic-link', async (req, res) => {
-  try {
-    const { email, guestToken, draftSlug } = req.body ?? {};
-
-    if (!email || typeof email !== 'string' || !isValidEmail(email)) {
-      return res.status(400).json({ error: 'Invalid email' });
-    }
-
-    const normalizedEmail = normalizeEmail(email);
-    const user = await prisma.user.upsert({
-      where: { email: normalizedEmail },
-      create: { email: normalizedEmail },
-      update: {},
-    });
-
-    const token = createToken();
-    const expiresAt = getMagicLinkExpiry();
-    const link = buildMagicLink(token, typeof draftSlug === 'string' ? draftSlug : undefined);
-
-    const normalizedGuestToken = typeof guestToken === 'string' ? guestToken.trim() : null;
-    await prisma.magicLinkToken.create({
-      data: {
-        token,
-        email: normalizedEmail,
-        userId: user.id,
-        guestToken: normalizedGuestToken || null,
-        draftSlug: typeof draftSlug === 'string' ? draftSlug : null,
-        expiresAt,
-      },
-    });
-
-    let delivered = false;
-    try {
-      delivered = await sendMagicLinkEmail({ to: normalizedEmail, link });
-    } catch (err) {
-      console.warn('Failed to send magic link email:', err);
-    }
-
-    if (!delivered) {
-      console.info(`[auth] Magic link for ${normalizedEmail}: ${link}`);
-    }
-
-    const isDev = process.env.NODE_ENV !== 'production';
-    res.status(200).json({ success: true, previewLink: !delivered && isDev ? link : undefined });
-  } catch (error) {
-    console.error('Error creating magic link:', error);
-    res.status(500).json({ error: 'Failed to create magic link' });
-  }
-});
-
-router.post('/verify', async (req, res) => {
-  try {
-    const { token, guestToken } = req.body ?? {};
-    if (!token || typeof token !== 'string') {
-      return res.status(400).json({ error: 'Invalid token' });
-    }
-
-    const magicToken = await prisma.magicLinkToken.findUnique({
-      where: { token },
-    });
-
-    if (!magicToken) {
-      return res.status(400).json({ error: 'Token not found' });
-    }
-    if (magicToken.usedAt) {
-      return res.status(400).json({ error: 'Token already used' });
-    }
-    if (magicToken.expiresAt.getTime() < Date.now()) {
-      return res.status(400).json({ error: 'Token expired' });
-    }
-
-    const now = new Date();
-    await prisma.magicLinkToken.update({
-      where: { id: magicToken.id },
-      data: { usedAt: now },
-    });
-
-    const sessionToken = createToken();
-    const session = await prisma.authSession.create({
-      data: {
-        token: sessionToken,
-        userId: magicToken.userId,
-        expiresAt: getSessionExpiry(),
-      },
-      include: { user: true },
-    });
-    setAuthSessionCookie(res, sessionToken);
-
-    const mergeGuestToken =
-      typeof guestToken === 'string' && guestToken.trim()
-        ? guestToken.trim()
-        : magicToken.guestToken || undefined;
-
-    if (mergeGuestToken) {
-      await prisma.invitation.updateMany({
-        where: {
-          guestToken: mergeGuestToken,
-          userId: null,
-          isDeleted: false,
-        },
-        data: {
-          ownerType: 'USER',
-          ownerId: session.userId,
-          userId: session.userId,
-          guestToken: null,
-        },
-      });
-    }
-
-    res.status(200).json({
-      token: sessionToken,
-      user: {
-        id: session.user.id,
-        email: session.user.email,
-        nickname: session.user.nickname,
-        role: session.user.role,
-      },
-      redirectSlug: magicToken.draftSlug || null,
-    });
-  } catch (error) {
-    console.error('Error verifying magic link:', error);
-    res.status(500).json({ error: 'Failed to verify magic link' });
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_LOGIN' });
   }
 });
 
@@ -367,12 +260,7 @@ router.get('/me', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    res.status(200).json({
-      id: user.id,
-      email: user.email,
-      nickname: user.nickname,
-      role: user.role,
-    });
+    res.status(200).json(toSafeUser(user));
   } catch (error) {
     console.error('Error fetching current user:', error);
     res.status(500).json({ error: 'Failed to fetch user' });
@@ -419,213 +307,254 @@ router.post('/transfer-guest', async (req, res) => {
   }
 });
 
-/**
- * POST /api/auth/email/request-code
- * 작성자 이메일 OTP 발송. 비밀번호 없이 로그인/자동가입에 사용한다.
- */
-router.post('/email/request-code', async (req, res) => {
+router.post('/recovery/verify', async (req, res) => {
   try {
+    const username = typeof req.body?.username === 'string' ? req.body.username : '';
     const email = typeof req.body?.email === 'string' ? req.body.email : '';
-    if (!email || !isValidEmail(email)) {
-      return res.status(400).json({ error: 'INVALID_EMAIL', ok: false });
+    const recoveryCode =
+      typeof req.body?.recoveryCode === 'string' ? req.body.recoveryCode : '';
+
+    if (!username.trim() || !email.trim() || !recoveryCode.trim()) {
+      return res.status(400).json({ ok: false, error: 'INVALID_INPUT' });
     }
 
+    const normalizedUsername = normalizeUsername(username);
     const normalizedEmail = normalizeEmail(email);
-    const purpose = getEmailCodeLoginPurpose();
-    const now = Date.now();
-    const windowStart = new Date(now - getEmailCodeTtlMinutes() * 60 * 1000);
-    const cooldownMs = getEmailCodeResendCooldownSeconds() * 1000;
-
-    const recentCodes = await prisma.emailVerificationCode.findMany({
-      where: {
-        email: normalizedEmail,
-        purpose,
-        createdAt: { gte: windowStart },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: getEmailCodeMaxRequestsPerWindow() + 1,
-      select: { id: true, createdAt: true },
-    });
-
-    if (recentCodes.length > 0) {
-      const latestCreatedAt = recentCodes[0].createdAt.getTime();
-      const elapsed = now - latestCreatedAt;
-      if (elapsed < cooldownMs) {
-        const retryAfterSeconds = Math.max(1, Math.ceil((cooldownMs - elapsed) / 1000));
-        res.setHeader('Retry-After', String(retryAfterSeconds));
-        return res.status(429).json({
-          ok: false,
-          error: 'RESEND_COOLDOWN',
-          retryAfterSeconds,
-        });
-      }
-    }
-
-    if (recentCodes.length >= getEmailCodeMaxRequestsPerWindow()) {
+    const recoveryConfig = resolveRecoveryRateLimitConfig();
+    const recoveryKey = buildAuthRateLimitKey(
+      'recovery',
+      resolveClientIp(req),
+      normalizedUsername
+    );
+    const rateCheck = checkAuthRateLimit(recoveryKey, recoveryConfig);
+    if (rateCheck.limited) {
+      res.setHeader('Retry-After', String(rateCheck.retryAfterSeconds));
       return res.status(429).json({
         ok: false,
-        error: 'REQUEST_RATE_LIMITED',
-        retryAfterSeconds: getEmailCodeResendCooldownSeconds(),
+        error: 'RECOVERY_RATE_LIMITED',
+        retryAfterSeconds: rateCheck.retryAfterSeconds,
       });
     }
 
-    await prisma.emailVerificationCode.updateMany({
-      where: {
-        email: normalizedEmail,
-        purpose,
-        consumedAt: null,
-      },
-      data: {
-        consumedAt: new Date(),
-      },
-    });
-
-    const code = generateEmailVerificationCode();
-    const codeHash = hashEmailVerificationCode(code);
-    const expiresAt = getEmailCodeExpiry();
-
-    await prisma.emailVerificationCode.create({
-      data: {
-        email: normalizedEmail,
-        codeHash,
-        purpose,
-        expiresAt,
+    const user = await prisma.user.findUnique({
+      where: { username: normalizedUsername },
+      select: {
+        id: true,
+        email: true,
+        recoveryCodeHash: true,
+        deactivatedAt: true,
       },
     });
 
-    let delivered = false;
-    try {
-      delivered = await sendVerificationCodeEmail({
-        to: normalizedEmail,
-        code,
-        expiresMinutes: getEmailCodeTtlMinutes(),
+    const emailMatches = user?.email === normalizedEmail;
+    const codeMatches = verifyRecoveryCode(recoveryCode, user?.recoveryCodeHash);
+
+    if (!user || user.deactivatedAt || !emailMatches || !codeMatches) {
+      recordAuthRateLimitFailure(recoveryKey, recoveryConfig);
+      return res.status(400).json({
+        ok: false,
+        error: 'RECOVERY_VERIFICATION_FAILED',
       });
-    } catch (err) {
-      console.warn('Failed to send verification code email:', err);
     }
 
-    const exposePreview = canExposeEmailPreviewCode() && !delivered;
+    clearAuthRateLimit(recoveryKey);
+    const recoveryToken = await createRecoveryGrant(user.id);
+
     return res.status(200).json({
       ok: true,
-      expiresInSeconds: getEmailCodeTtlMinutes() * 60,
-      resendAfterSeconds: getEmailCodeResendCooldownSeconds(),
-      ...(exposePreview ? { previewCode: code } : {}),
+      recoveryToken,
     });
   } catch (error) {
-    console.error('Error requesting email verification code:', error);
-    return res.status(500).json({ ok: false, error: 'FAILED_TO_REQUEST_CODE' });
+    console.error('Error verifying recovery code:', error);
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_VERIFY_RECOVERY' });
   }
 });
 
-/**
- * POST /api/auth/email/verify-code
- * OTP 검증 후 기존 유저 로그인 또는 자동 계정 생성 + 세션 발급.
- */
-router.post('/email/verify-code', async (req, res) => {
+router.post('/recovery/reset', async (req, res) => {
   try {
-    const email = typeof req.body?.email === 'string' ? req.body.email : '';
-    const code = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
+    const recoveryToken =
+      typeof req.body?.recoveryToken === 'string' ? req.body.recoveryToken.trim() : '';
+    const newPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
 
-    if (!email || !isValidEmail(email)) {
-      return res.status(400).json({ ok: false, error: 'INVALID_EMAIL' });
-    }
-    if (!/^\d{6}$/.test(code)) {
-      return res.status(400).json({ ok: false, error: 'INVALID_CODE' });
+    if (!recoveryToken || !newPassword) {
+      return res.status(400).json({ ok: false, error: 'INVALID_INPUT' });
     }
 
-    const normalizedEmail = normalizeEmail(email);
-    const purpose = getEmailCodeLoginPurpose();
-
-    const record = await prisma.emailVerificationCode.findFirst({
-      where: {
-        email: normalizedEmail,
-        purpose,
-        consumedAt: null,
-      },
-      orderBy: { createdAt: 'desc' },
+    const result = await resetPasswordWithRecoveryToken({
+      token: recoveryToken,
+      newPassword,
+      expectedType: RECOVERY_GRANT_TYPE,
+      revokeOtherSessions: true,
+      rotateRecoveryCode: true,
     });
-
-    if (!record) {
-      return res.status(400).json({ ok: false, error: 'CODE_NOT_FOUND' });
-    }
-    if (record.expiresAt.getTime() < Date.now()) {
-      await prisma.emailVerificationCode.update({
-        where: { id: record.id },
-        data: { consumedAt: new Date() },
-      });
-      return res.status(400).json({ ok: false, error: 'CODE_EXPIRED' });
-    }
-    if (record.attemptCount >= getEmailCodeMaxAttempts()) {
-      await prisma.emailVerificationCode.update({
-        where: { id: record.id },
-        data: { consumedAt: new Date() },
-      });
-      return res.status(400).json({ ok: false, error: 'CODE_LOCKED' });
-    }
-
-    const expectedHash = hashEmailVerificationCode(code);
-    const matched = timingSafeEqualHex(record.codeHash, expectedHash);
-    if (!matched) {
-      const nextAttempts = record.attemptCount + 1;
-      const shouldLock = nextAttempts >= getEmailCodeMaxAttempts();
-      await prisma.emailVerificationCode.update({
-        where: { id: record.id },
-        data: {
-          attemptCount: nextAttempts,
-          ...(shouldLock ? { consumedAt: new Date() } : {}),
-        },
-      });
-      return res.status(400).json({
-        ok: false,
-        error: shouldLock ? 'CODE_LOCKED' : 'INVALID_CODE',
-        remainingAttempts: Math.max(0, getEmailCodeMaxAttempts() - nextAttempts),
-      });
-    }
-
-    await prisma.emailVerificationCode.update({
-      where: { id: record.id },
-      data: { consumedAt: new Date() },
-    });
-
-    let user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true, email: true, nickname: true, role: true },
-    });
-
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          email: normalizedEmail,
-          role: 'USER',
-        },
-        select: { id: true, email: true, nickname: true, role: true },
-      });
-    }
-
-    const sessionToken = createToken();
-    await prisma.authSession.create({
-      data: {
-        token: sessionToken,
-        userId: user.id,
-        expiresAt: getSessionExpiry(),
-      },
-    });
-    setAuthSessionCookie(res, sessionToken);
 
     return res.status(200).json({
       ok: true,
-      token: sessionToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        nickname: user.nickname,
-        role: user.role,
-      },
+      newRecoveryCode: result.newRecoveryCode,
     });
   } catch (error) {
-    console.error('Error verifying email code:', error);
-    return res.status(500).json({ ok: false, error: 'FAILED_TO_VERIFY_CODE' });
+    if (error instanceof Error) {
+      if (error.message === 'PASSWORD_TOO_SHORT') {
+        return res.status(400).json({ ok: false, error: 'PASSWORD_TOO_SHORT' });
+      }
+      if (error.message === 'INVALID_OR_EXPIRED_TOKEN') {
+        return res.status(400).json({ ok: false, error: 'INVALID_OR_EXPIRED_TOKEN' });
+      }
+    }
+    console.error('Error resetting password via recovery:', error);
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_RESET_PASSWORD' });
   }
+});
+
+router.post('/admin-reset/validate', async (req, res) => {
+  try {
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    if (!token) {
+      return res.status(400).json({ ok: false, error: 'INVALID_INPUT' });
+    }
+
+    const { hashRecoveryGrantToken } = await import('../lib/passwordRecovery');
+    const tokenHash = hashRecoveryGrantToken(token); // dynamic import avoids circular deps
+    const record = await prisma.passwordRecoveryToken.findFirst({
+      where: { tokenHash, type: ADMIN_RESET_TYPE, usedAt: null },
+      select: { expiresAt: true },
+    });
+
+    if (!record || record.expiresAt.getTime() < Date.now()) {
+      return res.status(400).json({ ok: false, error: 'INVALID_OR_EXPIRED_TOKEN' });
+    }
+
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error('Error validating admin reset token:', error);
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_VALIDATE_TOKEN' });
+  }
+});
+
+router.post('/admin-reset/reset', async (req, res) => {
+  try {
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    const newPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ ok: false, error: 'INVALID_INPUT' });
+    }
+
+    const result = await resetPasswordWithRecoveryToken({
+      token,
+      newPassword,
+      expectedType: ADMIN_RESET_TYPE,
+      revokeOtherSessions: true,
+      rotateRecoveryCode: true,
+    });
+
+    return res.status(200).json({
+      ok: true,
+      newRecoveryCode: result.newRecoveryCode,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'PASSWORD_TOO_SHORT') {
+        return res.status(400).json({ ok: false, error: 'PASSWORD_TOO_SHORT' });
+      }
+      if (error.message === 'INVALID_OR_EXPIRED_TOKEN') {
+        return res.status(400).json({ ok: false, error: 'INVALID_OR_EXPIRED_TOKEN' });
+      }
+    }
+    console.error('Error resetting password via admin link:', error);
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_RESET_PASSWORD' });
+  }
+});
+
+router.post('/change-password', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ ok: false, error: 'UNAUTHORIZED' });
+    }
+
+    const currentPassword =
+      typeof req.body?.currentPassword === 'string' ? req.body.currentPassword : '';
+    const newPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ ok: false, error: 'INVALID_INPUT' });
+    }
+
+    await changePasswordForUser({
+      userId: user.id,
+      currentPassword,
+      newPassword,
+      keepCurrentSessionToken: resolveSessionToken(req),
+    });
+
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'INVALID_CURRENT_PASSWORD') {
+        return res.status(400).json({ ok: false, error: 'INVALID_CURRENT_PASSWORD' });
+      }
+      if (error.message === 'PASSWORD_TOO_SHORT') {
+        return res.status(400).json({ ok: false, error: 'PASSWORD_TOO_SHORT' });
+      }
+    }
+    console.error('Error changing password:', error);
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_CHANGE_PASSWORD' });
+  }
+});
+
+router.post('/recovery-code/regenerate', async (req, res) => {
+  try {
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ ok: false, error: 'UNAUTHORIZED' });
+    }
+
+    const currentPassword =
+      typeof req.body?.currentPassword === 'string' ? req.body.currentPassword : '';
+    if (!currentPassword) {
+      return res.status(400).json({ ok: false, error: 'PASSWORD_REQUIRED' });
+    }
+
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { passwordHash: true },
+    });
+    if (!dbUser?.passwordHash) {
+      return res.status(400).json({ ok: false, error: 'PASSWORD_NOT_SET' });
+    }
+
+    const valid = await verifyPassword(currentPassword, dbUser.passwordHash);
+    if (!valid) {
+      return res.status(400).json({ ok: false, error: 'INVALID_CURRENT_PASSWORD' });
+    }
+
+    const recoveryCode = await issueRecoveryCodeForUser(user.id);
+    return res.status(200).json({ ok: true, recoveryCode });
+  } catch (error) {
+    console.error('Error regenerating recovery code:', error);
+    return res.status(500).json({ ok: false, error: 'FAILED_TO_REGENERATE_RECOVERY_CODE' });
+  }
+});
+
+/** @deprecated 이메일 OTP는 제거됨 */
+router.post('/email/request-code', (_req, res) => {
+  return res.status(410).json({ ok: false, error: 'EMAIL_OTP_DEPRECATED' });
+});
+
+/** @deprecated 이메일 OTP는 제거됨 */
+router.post('/email/verify-code', (_req, res) => {
+  return res.status(410).json({ ok: false, error: 'EMAIL_OTP_DEPRECATED' });
+});
+
+/** @deprecated 매직링크는 제거됨 */
+router.post('/magic-link', (_req, res) => {
+  return res.status(410).json({ ok: false, error: 'MAGIC_LINK_DEPRECATED' });
+});
+
+/** @deprecated 매직링크는 제거됨 */
+router.post('/verify', (_req, res) => {
+  return res.status(410).json({ ok: false, error: 'MAGIC_LINK_DEPRECATED' });
 });
 
 export default router;

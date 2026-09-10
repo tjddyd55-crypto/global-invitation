@@ -14,6 +14,7 @@ const NAVBAR_USER_CACHE_TTL_MS = 45_000;
 
 export type AuthUser = {
   id: string;
+  username?: string | null;
   email: string | null;
   nickname?: string | null;
   role: 'USER' | 'CREATOR' | 'ADMIN';
@@ -271,7 +272,52 @@ export async function verifyMagicLink(token: string): Promise<VerifyResponse> {
   return response.json();
 }
 
+type AuthApiError = { error?: string; ok?: boolean };
+
+async function parseAuthError(response: Response, fallback: string): Promise<never> {
+  let code: string | undefined;
+  try {
+    const payload = (await response.json()) as AuthApiError;
+    code = payload.error;
+  } catch {
+    // ignore
+  }
+  const { mapAuthErrorCode } = await import('@/src/shared/auth/authErrorMessages');
+  throw new Error(mapAuthErrorCode(code, fallback));
+}
+
+export async function registerAccount(input: {
+  username: string;
+  email: string;
+  password: string;
+}): Promise<SignupResponse & { recoveryCode: string }> {
+  const guestToken = getGuestToken();
+  const response = await fetch(buildApiUrl('/api/auth/register'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: input.username,
+      email: input.email,
+      password: input.password,
+      guestToken: guestToken || undefined,
+    }),
+  });
+
+  if (!response.ok) {
+    return parseAuthError(response, '회원가입에 실패했습니다.');
+  }
+
+  const payload = (await response.json()) as SignupResponse & {
+    recoveryCode: string;
+    ok?: boolean;
+  };
+  setStoredSession({ token: payload.token, user: payload.user });
+  return payload;
+}
+
 export async function signupWithPassword(input: {
+  username?: string;
   email: string;
   nickname?: string;
   password: string;
@@ -285,6 +331,7 @@ export async function signupWithPassword(input: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      username: input.username,
       email: input.email,
       nickname: input.nickname || undefined,
       password: input.password,
@@ -294,21 +341,14 @@ export async function signupWithPassword(input: {
   });
 
   if (!response.ok) {
-    let message = '회원가입에 실패했습니다.';
-    try {
-      const payload = (await response.json()) as { error?: string; message?: string };
-      message = payload.message || payload.error || message;
-    } catch {
-      // ignore parse failure
-    }
-    throw new Error(message);
+    return parseAuthError(response, '회원가입에 실패했습니다.');
   }
 
   return response.json();
 }
 
 export async function loginWithPassword(input: {
-  email: string;
+  username: string;
   password: string;
 }): Promise<LoginResponse> {
   const response = await fetch(buildApiUrl('/api/auth/login'), {
@@ -318,23 +358,125 @@ export async function loginWithPassword(input: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      email: input.email,
+      username: input.username,
       password: input.password,
     }),
   });
 
   if (!response.ok) {
-    let message = '로그인에 실패했습니다.';
-    try {
-      const payload = (await response.json()) as { error?: string; message?: string };
-      message = payload.message || payload.error || message;
-    } catch {
-      // ignore parse failure
-    }
-    throw new Error(message);
+    return parseAuthError(response, '로그인에 실패했습니다.');
   }
 
   return response.json();
+}
+
+export async function verifyRecoveryCredentials(input: {
+  username: string;
+  email: string;
+  recoveryCode: string;
+}): Promise<{ recoveryToken: string }> {
+  const response = await fetch(buildApiUrl('/api/auth/recovery/verify'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    return parseAuthError(response, '복구코드 확인에 실패했습니다.');
+  }
+
+  const payload = (await response.json()) as { recoveryToken: string };
+  return { recoveryToken: payload.recoveryToken };
+}
+
+export async function resetPasswordWithRecovery(input: {
+  recoveryToken: string;
+  newPassword: string;
+}): Promise<{ newRecoveryCode: string }> {
+  const response = await fetch(buildApiUrl('/api/auth/recovery/reset'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    return parseAuthError(response, '비밀번호 변경에 실패했습니다.');
+  }
+
+  const payload = (await response.json()) as { newRecoveryCode: string };
+  return { newRecoveryCode: payload.newRecoveryCode };
+}
+
+export async function validateAdminResetToken(token: string): Promise<void> {
+  const response = await fetch(buildApiUrl('/api/auth/admin-reset/validate'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+
+  if (!response.ok) {
+    return parseAuthError(response, '링크가 유효하지 않습니다.');
+  }
+}
+
+export async function resetPasswordWithAdminLink(input: {
+  token: string;
+  newPassword: string;
+}): Promise<{ newRecoveryCode: string }> {
+  const response = await fetch(buildApiUrl('/api/auth/admin-reset/reset'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    return parseAuthError(response, '비밀번호 변경에 실패했습니다.');
+  }
+
+  const payload = (await response.json()) as { newRecoveryCode: string };
+  return { newRecoveryCode: payload.newRecoveryCode };
+}
+
+export async function changeAccountPassword(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<void> {
+  const response = await fetch(buildApiUrl('/api/auth/change-password'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildAuthHeaders(),
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    return parseAuthError(response, '비밀번호 변경에 실패했습니다.');
+  }
+}
+
+export async function regenerateRecoveryCode(currentPassword: string): Promise<{ recoveryCode: string }> {
+  const response = await fetch(buildApiUrl('/api/auth/recovery-code/regenerate'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildAuthHeaders(),
+    },
+    body: JSON.stringify({ currentPassword }),
+  });
+
+  if (!response.ok) {
+    return parseAuthError(response, '복구코드 재발급에 실패했습니다.');
+  }
+
+  const payload = (await response.json()) as { recoveryCode: string };
+  return { recoveryCode: payload.recoveryCode };
 }
 
 export async function fetchCurrentUser(options?: { useCache?: boolean }): Promise<AuthUser | null> {
@@ -367,6 +509,7 @@ export async function fetchCurrentUser(options?: { useCache?: boolean }): Promis
   const payload = (await response.json()) as AuthUser;
   const user = {
     id: payload.id,
+    username: payload.username || null,
     email: payload.email,
     nickname: payload.nickname || null,
     role: payload.role || 'USER',

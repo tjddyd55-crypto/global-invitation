@@ -8,6 +8,7 @@ import {
   type AdminSession,
 } from '../lib/adminSession';
 import { logAdminAction } from '../admin/adminAuditLog';
+import { buildAdminResetUrl, createAdminResetToken } from '../lib/passwordRecovery';
 import { getTemplateStoreSummary } from '../admin/templateStore';
 import {
   getInvitationPricingSnapshot,
@@ -262,6 +263,7 @@ router.get('/ops/users', async (req, res) => {
       ? {
           OR: [
             { email: { contains: q, mode: 'insensitive' } },
+            { username: { contains: q, mode: 'insensitive' } },
             { id: q },
           ],
         }
@@ -271,7 +273,14 @@ router.get('/ops/users', async (req, res) => {
       where,
       orderBy: { createdAt: 'desc' },
       take,
-      select: { id: true, email: true, createdAt: true, role: true, deactivatedAt: true },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        createdAt: true,
+        role: true,
+        deactivatedAt: true,
+      },
     });
 
     const enriched = await Promise.all(
@@ -287,6 +296,7 @@ router.get('/ops/users', async (req, res) => {
         ]);
         return {
           id: u.id,
+          username: u.username,
           email: u.email,
           role: u.role,
           createdAt: u.createdAt.toISOString(),
@@ -309,7 +319,14 @@ router.get('/ops/users/:id', async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
-      select: { id: true, email: true, createdAt: true, role: true, deactivatedAt: true },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        createdAt: true,
+        role: true,
+        deactivatedAt: true,
+      },
     });
     if (!user) return res.status(404).json({ error: 'NOT_FOUND' });
 
@@ -339,6 +356,7 @@ router.get('/ops/users/:id', async (req, res) => {
     return res.status(200).json({
       user: {
         id: user.id,
+        username: user.username,
         email: user.email,
         role: user.role,
         createdAt: user.createdAt.toISOString(),
@@ -615,6 +633,51 @@ router.patch('/ops/invitations/:id/status', async (req, res) => {
   } catch (error) {
     console.error('[admin/ops] invitation status update failed', error);
     return res.status(500).json({ error: 'INVITATION_STATUS_UPDATE_FAILED' });
+  }
+});
+
+router.post('/ops/users/:id/password-reset-link', async (req, res) => {
+  const session = sessionOf(res);
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, email: true, username: true, role: true, deactivatedAt: true },
+    });
+    if (!user) {
+      return res.status(404).json({ error: 'NOT_FOUND' });
+    }
+    if (user.role === 'ADMIN') {
+      return res.status(403).json({ error: 'ADMIN_USER_PROTECTED' });
+    }
+    if (user.deactivatedAt) {
+      return res.status(400).json({ error: 'USER_DEACTIVATED' });
+    }
+
+    const adminId = session.adminId || session.email;
+    const { token, tokenId } = await createAdminResetToken(user.id, adminId);
+    const resetUrl = buildAdminResetUrl(token);
+
+    await logAdminAction({
+      adminId,
+      action: 'USER_PASSWORD_RESET_LINK_CREATED',
+      targetType: 'user',
+      targetId: user.id,
+      payload: {
+        actorRole: session.role,
+        tokenId,
+        username: user.username,
+        email: user.email,
+      },
+    });
+
+    return res.status(200).json({
+      ok: true,
+      resetUrl,
+      expiresInMinutes: 30,
+    });
+  } catch (error) {
+    console.error('[admin/ops] password reset link failed', error);
+    return res.status(500).json({ error: 'PASSWORD_RESET_LINK_FAILED' });
   }
 });
 

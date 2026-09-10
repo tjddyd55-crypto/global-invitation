@@ -11,25 +11,25 @@ import styles from './LoginCard.module.css';
  * - 이 컴포넌트는 UI 와 에러 표시만.
  */
 export default function LoginCard() {
-  const { email, password, submitting, error, setEmail, setPassword, submit } = useLoginForm();
+  const { username, password, submitting, error, setUsername, setPassword, submit } = useLoginForm();
 
   return (
     <div className={styles.page}>
       <div className={styles.card}>
         <h1 className={styles.title}>로그인</h1>
-        <p className={styles.subtitle}>이메일과 비밀번호로 로그인하세요.</p>
+        <p className={styles.subtitle}>아이디와 비밀번호로 로그인하세요.</p>
 
         <form className={styles.form} onSubmit={submit}>
           <label className={styles.label}>
-            이메일
+            아이디
             <input
               className={styles.input}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="아이디"
               required
-              autoComplete="email"
+              autoComplete="username"
             />
           </label>
 
@@ -54,7 +54,9 @@ export default function LoginCard() {
         </form>
 
         <p className={styles.linkLine}>
-          계정이 없나요? <Link href="/pc/signup">회원가입</Link>
+          계정이 없나요? <Link href="/signup">회원가입</Link>
+          <br />
+          <Link href="/forgot-password">비밀번호를 잊으셨나요?</Link>
         </p>
       </div>
     </div>

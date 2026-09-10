@@ -112,7 +112,7 @@ export default function VisualTemplateCatalog() {
             createdAt: Date.now(),
           });
           router.replace(
-            `/auth/email?next=${encodeURIComponent(VISUAL_TEMPLATE_RESUME_PATH)}`
+            `/login?next=${encodeURIComponent(VISUAL_TEMPLATE_RESUME_PATH)}`
           );
           return;
         }

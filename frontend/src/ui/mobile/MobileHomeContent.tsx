@@ -39,10 +39,10 @@ export default function MobileHomeContent() {
           <p>모바일에서 간편하게 초대장을 만들고, 한 번의 탭으로 공유하세요.</p>
         </div>
         <div className={styles.actionGrid}>
-          <Link href={`/auth/email?next=${authNext}`} className={styles.primary}>
-            이메일로 시작하기
+          <Link href={`/login?next=${authNext}`} className={styles.primary}>
+            로그인
           </Link>
-          <Link href={`/auth/email?next=${authNext}`} className={styles.secondary}>
+          <Link href={`/login?next=${authNext}`} className={styles.secondary}>
             초대장 만들기
           </Link>
         </div>

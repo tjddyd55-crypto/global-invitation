@@ -14,7 +14,7 @@ test('organization home card goes to organization template catalog', () => {
   );
   assert.match(
     getConceptCardEntryPath('ORGANIZATION', 'unauthenticated'),
-    /auth\/email\?next=/
+    /login\?next=/
   );
   assert.match(
     getConceptCardEntryPath('ORGANIZATION', 'unauthenticated'),

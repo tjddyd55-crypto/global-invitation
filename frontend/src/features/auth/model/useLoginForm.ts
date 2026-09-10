@@ -8,14 +8,14 @@ import {
   LOGIN_REDIRECT_STORAGE_KEY,
   resolveLoginRedirectForStorage,
 } from '@/src/lib/loginRedirect';
-import { tryAdminLoginFallback } from './adminFallback';
+import { mapAuthErrorCode } from '@/src/shared/auth/authErrorMessages';
 
 export interface UseLoginFormResult {
-  email: string;
+  username: string;
   password: string;
   submitting: boolean;
   error: string | null;
-  setEmail: (value: string) => void;
+  setUsername: (value: string) => void;
   setPassword: (value: string) => void;
   submit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }
@@ -25,10 +25,10 @@ export interface UseLoginFormResult {
  * - PC 와 모바일 UI 가 동일한 로직을 공유한다.
  * - 관리자 fallback 은 adminFallback 모듈이 담당한다 (이 훅은 관리자/일반 여부를 몰라도 됨).
  */
-export function useLoginForm(opts?: { adminRedirectPath?: string }): UseLoginFormResult {
+export function useLoginForm(): UseLoginFormResult {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,24 +50,21 @@ export function useLoginForm(opts?: { adminRedirectPath?: string }): UseLoginFor
       setSubmitting(true);
       setError(null);
       try {
-        const result = await loginWithPassword({ email: email.trim(), password });
+        const result = await loginWithPassword({ username: username.trim(), password });
         setStoredSession({ token: result.token, user: result.user });
         router.replace(consumeStoredLoginRedirect());
       } catch (loginError) {
-        const adminSucceeded = await tryAdminLoginFallback(email, password);
-        if (adminSucceeded) {
-          const redirectTo = consumeStoredLoginRedirect();
-          const fallback = opts?.adminRedirectPath ?? '/admin/templates';
-          router.replace(redirectTo === '/' ? fallback : redirectTo);
-          return;
-        }
-        setError(loginError instanceof Error ? loginError.message : '로그인에 실패했습니다.');
+        setError(
+          loginError instanceof Error
+            ? loginError.message
+            : mapAuthErrorCode(undefined, '로그인에 실패했습니다.')
+        );
       } finally {
         setSubmitting(false);
       }
     },
-    [email, password, submitting, router, opts?.adminRedirectPath],
+    [username, password, submitting, router],
   );
 
-  return { email, password, submitting, error, setEmail, setPassword, submit };
+  return { username, password, submitting, error, setUsername, setPassword, submit };
 }

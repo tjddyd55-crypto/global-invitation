@@ -42,7 +42,7 @@ export function buildLoginHref(pathnameWithOptionalSearch: string): string {
     pathnameWithOptionalSearch && pathnameWithOptionalSearch.startsWith('/')
       ? pathnameWithOptionalSearch
       : '/';
-  return `/auth/email?next=${encodeURIComponent(base)}`;
+  return `/login?next=${encodeURIComponent(base)}`;
 }
 
 /** boolean 호환 래퍼 — 내부는 getCreateInvitationEntryPath SSOT. */
