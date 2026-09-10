@@ -14,6 +14,10 @@ import {
 import { countActiveCouponUsages, countAnyCouponUsages } from './counts';
 import { resolveEffectiveCouponStatus } from './eligibility';
 import { assertActiveCouponEditAllowed, assertCouponCodeRenameAllowed } from './adminGuards';
+import {
+  assertCouponActivationAllowed,
+  assertCouponStatusTransition,
+} from './statusMachine';
 
 export type CouponListFilters = {
   q?: string;
@@ -105,7 +109,17 @@ export async function transitionCouponStatus(
 ) {
   const existing = await prisma.invitationCoupon.findUnique({ where: { id } });
   if (!existing) throw new CouponError(COUPON_ERROR_CODES.COUPON_NOT_FOUND, 404);
-  assertStatusTransition(existing.status, next);
+
+  if (existing.status === next) {
+    return serializeCouponWithCounts(existing);
+  }
+
+  assertCouponStatusTransition(existing.status, next);
+
+  if (next === InvitationCouponStatus.ACTIVE) {
+    assertCouponActivationAllowed(existing);
+  }
+
   const row = await prisma.invitationCoupon.update({
     where: { id },
     data: { status: next, updatedBy: actor },
@@ -115,20 +129,6 @@ export async function transitionCouponStatus(
 
 export async function archiveCoupon(id: string, actor: string) {
   return transitionCouponStatus(id, InvitationCouponStatus.ARCHIVED, actor);
-}
-
-function assertStatusTransition(from: InvitationCouponStatus, to: InvitationCouponStatus): void {
-  if (from === InvitationCouponStatus.ARCHIVED && to !== InvitationCouponStatus.ARCHIVED) {
-    throw new CouponError(COUPON_ERROR_CODES.COUPON_STATUS_CONFLICT);
-  }
-  const allowed = new Set<InvitationCouponStatus>([
-    InvitationCouponStatus.DRAFT,
-    InvitationCouponStatus.ACTIVE,
-    InvitationCouponStatus.PAUSED,
-    InvitationCouponStatus.EXPIRED,
-    InvitationCouponStatus.ARCHIVED,
-  ]);
-  if (!allowed.has(to)) throw new CouponError(COUPON_ERROR_CODES.COUPON_STATUS_CONFLICT);
 }
 
 export async function listCouponUsages(

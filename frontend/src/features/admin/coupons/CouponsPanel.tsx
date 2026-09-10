@@ -36,6 +36,7 @@ export default function CouponsPanel() {
   const [usageCursor, setUsageCursor] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [tone, setTone] = useState<'success' | 'error' | 'info'>('info');
+  const [transitioning, setTransitioning] = useState(false);
   const isSuper = session?.role === 'SUPER_ADMIN';
 
   useEffect(() => {
@@ -89,17 +90,90 @@ export default function CouponsPanel() {
   }
 
   async function handleTransition(action: 'pause' | 'activate' | 'archive') {
-    if (!selected) return;
+    if (!selected || transitioning) return;
+
+    if (action === 'archive') {
+      const confirmed = window.confirm(
+        '이 쿠폰을 보관하시겠습니까?\n보관 후 신규 사용은 중지됩니다.\n필요하면 다시 활성화할 수 있습니다.'
+      );
+      if (!confirmed) return;
+    }
+
+    setTransitioning(true);
+    setMessage(null);
     try {
       const res = await transitionAdminCoupon(selected.id, action);
       setSelected(res.coupon);
       setTone('success');
-      setMessage('쿠폰 상태가 변경되었습니다.');
+      setMessage(
+        action === 'activate'
+          ? '쿠폰이 활성화되었습니다.'
+          : action === 'pause'
+            ? '쿠폰이 일시중지되었습니다.'
+            : '쿠폰이 보관되었습니다.'
+      );
       await reload();
     } catch (err) {
       setTone('error');
-      setMessage(err instanceof Error ? err.message : '상태 변경 실패');
+      setMessage(
+        err instanceof Error ? err.message : '상태를 변경할 수 없습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.'
+      );
+    } finally {
+      setTransitioning(false);
     }
+  }
+
+  function renderStatusActions(coupon: AdminCoupon) {
+    const status = coupon.status;
+    const disabled = transitioning;
+
+    if (status === 'ARCHIVED') {
+      return (
+        <AdminButton variant="secondary" disabled={disabled} onClick={() => void handleTransition('activate')}>
+          활성화
+        </AdminButton>
+      );
+    }
+
+    if (status === 'PAUSED') {
+      return (
+        <>
+          <AdminButton variant="secondary" disabled={disabled} onClick={() => void handleTransition('activate')}>
+            활성화
+          </AdminButton>
+          <AdminButton variant="danger" disabled={disabled} onClick={() => void handleTransition('archive')}>
+            보관
+          </AdminButton>
+        </>
+      );
+    }
+
+    if (status === 'ACTIVE') {
+      return (
+        <>
+          <AdminButton variant="secondary" disabled={disabled} onClick={() => void handleTransition('pause')}>
+            일시중지
+          </AdminButton>
+          <AdminButton variant="danger" disabled={disabled} onClick={() => void handleTransition('archive')}>
+            보관
+          </AdminButton>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <AdminButton variant="secondary" disabled={disabled} onClick={() => void handleTransition('activate')}>
+          활성화
+        </AdminButton>
+        <AdminButton variant="secondary" disabled={disabled} onClick={() => void handleTransition('pause')}>
+          일시중지
+        </AdminButton>
+        <AdminButton variant="danger" disabled={disabled} onClick={() => void handleTransition('archive')}>
+          보관
+        </AdminButton>
+      </>
+    );
   }
 
   return (
@@ -225,7 +299,7 @@ export default function CouponsPanel() {
             {selected.code} · {selected.name}
           </h3>
           <p>
-            상태 {formatCouponStatus(selected.effectiveStatus)} · 예약 {selected.reservedCount ?? 0} ·
+            상태 {formatCouponStatus(selected.status)} · 예약 {selected.reservedCount ?? 0} ·
             사용완료 {selected.redeemedCount ?? 0} · 할인합계{' '}
             {formatMoneyUsd(selected.totalDiscountCents ?? 0)} · 전체 이력 {selected.totalUsageCount}
           </p>
@@ -233,19 +307,7 @@ export default function CouponsPanel() {
             환불된 결제의 쿠폰은 사용완료로 유지되며 재사용할 수 없습니다. 활성 쿠폰의 할인·한도·기간을
             바꾸려면 먼저 일시중지하세요. 사용 이력이 있으면 코드 변경은 불가합니다.
           </p>
-          {isSuper ? (
-            <div className={ui.buttonGroup}>
-              <AdminButton variant="secondary" onClick={() => void handleTransition('activate')}>
-                활성화
-              </AdminButton>
-              <AdminButton variant="secondary" onClick={() => void handleTransition('pause')}>
-                일시중지
-              </AdminButton>
-              <AdminButton variant="danger" onClick={() => void handleTransition('archive')}>
-                보관
-              </AdminButton>
-            </div>
-          ) : null}
+          {isSuper ? <div className={ui.buttonGroup}>{renderStatusActions(selected)}</div> : null}
           <div className={styles.tableWrap} style={{ marginTop: 16 }}>
             <table className={styles.table}>
               <thead>
