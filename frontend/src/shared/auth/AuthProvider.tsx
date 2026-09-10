@@ -14,6 +14,7 @@ import { usePathname } from 'next/navigation';
 import {
   clearStoredSession,
   fetchNavbarUser,
+  getSessionToken,
   logoutCurrentSession,
   type AuthUser,
 } from '@/src/lib/auth';
@@ -40,7 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
-  const hasBootstrappedRef = useRef(false);
+  const isInitialBootstrapRef = useRef(true);
+  const statusRef = useRef<AuthStatus>('loading');
+  statusRef.current = status;
 
   const refresh = useCallback(async () => {
     try {
@@ -54,16 +57,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (hasBootstrappedRef.current) return;
-    hasBootstrappedRef.current = true;
     // Admin portal uses /api/admin/me only — do not couple to user /api/auth/me.
     if (isAdminPortalPath(pathname)) {
       setUser(null);
       setStatus('unauthenticated');
       return;
     }
-    void refresh();
-  }, [pathname, refresh]);
+
+    let cancelled = false;
+    const bootstrap = async () => {
+      try {
+        const next = await fetchNavbarUser({ useCache: false });
+        if (cancelled) return;
+        setUser(next);
+        setStatus(next ? 'authenticated' : 'unauthenticated');
+      } catch {
+        if (cancelled) return;
+        setUser(null);
+        setStatus('unauthenticated');
+      }
+    };
+
+    if (isInitialBootstrapRef.current) {
+      isInitialBootstrapRef.current = false;
+      setStatus('loading');
+      void bootstrap();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    // Stored token can exist while context is still stale after login/signup navigation.
+    if (getSessionToken()) {
+      if (statusRef.current !== 'authenticated') {
+        setStatus('loading');
+      }
+      void bootstrap();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   const signOut = useCallback(async () => {
     await logoutCurrentSession();

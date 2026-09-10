@@ -24,6 +24,28 @@ export function buildApiUrl(path: string): string {
   return base ? `${base}${normalizedPath}` : normalizedPath;
 }
 
+function isAbsoluteHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim());
+}
+
+/**
+ * User auth API URL.
+ *
+ * Browser: same-origin `/api/auth/*` (Next.js rewrite → backend) so session cookies stay first-party.
+ * Server/SSR: absolute backend origin when configured.
+ */
+export function buildAuthApiUrl(path: string): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (typeof window !== 'undefined') {
+    return normalizedPath;
+  }
+  const base = getApiBaseUrl();
+  if (base && isAbsoluteHttpUrl(base)) {
+    return `${base}${normalizedPath}`;
+  }
+  return normalizedPath;
+}
+
 /** auth.ts 의 `guest_token_v1` 과 동일 키 — RSC 등에서 guestToken 모듈을 쓰지 않을 때용 */
 const GUEST_TOKEN_LS_KEY = 'guest_token_v1';
 

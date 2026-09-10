@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { loginWithPassword, setStoredSession } from '@/src/lib/auth';
+import { useAuth } from '@/src/shared/hooks';
 import {
   consumeStoredLoginRedirect,
   LOGIN_REDIRECT_STORAGE_KEY,
@@ -28,6 +29,7 @@ export interface UseLoginFormResult {
 export function useLoginForm(): UseLoginFormResult {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refresh } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +54,7 @@ export function useLoginForm(): UseLoginFormResult {
       try {
         const result = await loginWithPassword({ username: username.trim(), password });
         setStoredSession({ token: result.token, user: result.user });
+        await refresh();
         router.replace(consumeStoredLoginRedirect());
       } catch (loginError) {
         setError(
@@ -63,7 +66,7 @@ export function useLoginForm(): UseLoginFormResult {
         setSubmitting(false);
       }
     },
-    [username, password, submitting, router],
+    [username, password, submitting, router, refresh],
   );
 
   return { username, password, submitting, error, setUsername, setPassword, submit };

@@ -27,7 +27,7 @@ try {
   /* optional env at build time */
 }
 
-function resolveAdminApiProxyTarget() {
+function resolveBackendApiProxyTarget() {
   const raw =
     process.env.ADMIN_API_PROXY_TARGET?.trim() ||
     process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.trim() ||
@@ -51,7 +51,7 @@ const nextConfig = {
     remotePatterns,
   },
   async rewrites() {
-    const backendOrigin = resolveAdminApiProxyTarget()
+    const backendOrigin = resolveBackendApiProxyTarget()
     if (!backendOrigin) {
       return []
     }
@@ -59,6 +59,10 @@ const nextConfig = {
       {
         source: '/api/admin/:path*',
         destination: `${backendOrigin}/api/admin/:path*`,
+      },
+      {
+        source: '/api/auth/:path*',
+        destination: `${backendOrigin}/api/auth/:path*`,
       },
     ]
   },
