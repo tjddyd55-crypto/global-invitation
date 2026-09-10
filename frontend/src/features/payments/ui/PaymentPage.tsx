@@ -16,12 +16,11 @@ import {
   redirectMockPaymentSuccess,
   requestTossPaymentWindow,
 } from '@/src/shared/payments/tossPaymentClient';
-import {
-  formatUsdAmountLabel,
-  formatUsdFromCents,
-  INVITATION_PRICING,
-} from '@/src/shared/pricing/invitationPricing';
+import { INVITATION_PRICING } from '@/src/shared/pricing/invitationPricing';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/src/shared/marketing/supportContact';
+import { settleZeroInvitationPayment } from '@/src/shared/payments/invitationCouponApi';
+import PaymentCheckoutPanel from './PaymentCheckoutPanel';
+import type { AppliedCoupon } from './PaymentCouponField';
 import styles from './PaymentPage.module.css';
 
 type UiPhase =
@@ -50,14 +49,12 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
   const [busy, setBusy] = useState(false);
   const [shareSlug, setShareSlug] = useState<string | null>(null);
   const [copyNotice, setCopyNotice] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const pollRef = useRef(0);
   const startedCheckout = useRef(false);
 
   const listCents = summary?.pricing.listPriceCents ?? INVITATION_PRICING.listPriceCents;
   const saleCents = summary?.pricing.salePriceCents ?? INVITATION_PRICING.salePriceCents;
-  const list = formatUsdAmountLabel(listCents);
-  const sale = formatUsdAmountLabel(saleCents);
-  const discount = formatUsdFromCents(listCents - saleCents);
   const productLocale = language === 'en' ? 'en-US' : 'ko-KR';
 
   const publishAfterPaid = useCallback(async () => {
@@ -153,7 +150,15 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
     startedCheckout.current = true;
     setBusy(true);
     try {
-      const prepared = await prepareInvitationPayment(invitationId, { locale: productLocale });
+      const prepared = await prepareInvitationPayment(invitationId, {
+        locale: productLocale,
+        couponCode: appliedCoupon?.code || null,
+      });
+      if (prepared.settlement === 'zero_coupon' || prepared.provider === 'coupon') {
+        await settleZeroInvitationPayment(invitationId, prepared.paymentId);
+        await publishAfterPaid();
+        return;
+      }
       if (prepared.provider === 'mock') {
         redirectMockPaymentSuccess(prepared);
         return;
@@ -162,7 +167,7 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
     } catch (error) {
       startedCheckout.current = false;
       setBusy(false);
-      if (error instanceof Error && error.message === 'ALREADY_PAID') {
+      if (error instanceof Error && (error.message === 'ALREADY_PAID' || error.message === 'COUPON_ALREADY_PAID')) {
         setPhase('already_paid');
         return;
       }
@@ -216,58 +221,18 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
         ) : null}
 
         {phase === 'default' ? (
-          <>
-            <h1 className={styles.headerTitle}>{t('checkout.title')}</h1>
-            <p className={styles.headerDesc}>{t('checkout.lead')}</p>
-
-            <section className={styles.card} aria-label={t('checkout.summaryAria')}>
-              <h2 className={styles.summaryTitle}>{title}</h2>
-              <p className={styles.summaryMeta}>{summary?.templateKey}</p>
-            </section>
-
-            <section className={styles.card} aria-label={t('checkout.priceAria')}>
-              <div className={styles.priceRow}>
-                <span className={styles.muted}>{t('checkout.listPrice')}</span>
-                <span aria-label={`${t('checkout.listPrice')} ${list}`}>{list}</span>
-              </div>
-              <div className={styles.priceRow}>
-                <span className={styles.discount}>{t('checkout.launchPrice')}</span>
-                <span className={styles.discount} aria-label={`${t('checkout.launchPrice')} -${discount}`}>
-                  -{discount}
-                </span>
-              </div>
-              <div className={styles.priceRowTotal}>
-                <span>{t('checkout.due')}</span>
-                <span aria-label={`${t('checkout.due')} ${sale}`}>{sale}</span>
-              </div>
-            </section>
-
-            <section className={styles.card} aria-label={t('checkout.benefitsAria')}>
-              <ul className={styles.benefits}>
-                <li>{t('checkout.benefit.publish')}</li>
-                <li>{t('checkout.benefit.edit')}</li>
-                <li>{t('checkout.benefit.once')}</li>
-              </ul>
-              <p className={styles.muted} style={{ marginTop: 12, marginBottom: 0, fontSize: '0.8125rem' }}>
-                {t('checkout.providerNote')}
-              </p>
-            </section>
-
-            <div className={styles.stickyBar}>
-              <div className={styles.stickyInner}>
-                <button
-                  type="button"
-                  className={styles.primary}
-                  style={{ width: '100%' }}
-                  disabled={busy}
-                  data-testid="payment-checkout-cta"
-                  onClick={() => void handleCheckout()}
-                >
-                  {`${sale} · ${t('checkout.cta.payPublish')}`}
-                </button>
-              </div>
-            </div>
-          </>
+          <PaymentCheckoutPanel
+            invitationId={invitationId}
+            title={title}
+            templateKey={summary?.templateKey}
+            listCents={listCents}
+            saleCents={saleCents}
+            applied={appliedCoupon}
+            busy={busy}
+            onApplied={setAppliedCoupon}
+            onRemoved={() => setAppliedCoupon(null)}
+            onCheckout={() => void handleCheckout()}
+          />
         ) : null}
 
         {phase === 'processing' ? (

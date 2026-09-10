@@ -31,6 +31,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     label: '결제 관리',
     items: [
       { href: '/admin/payments?tab=transactions', label: '결제 내역', tab: 'transactions' },
+      { href: '/admin/payments?tab=coupons', label: '쿠폰', tab: 'coupons' },
       { href: '/admin/payments?tab=pricing', label: '가격 설정', tab: 'pricing' },
       { href: '/admin/payments?tab=toss', label: 'Toss Payments 설정', tab: 'toss' },
     ],

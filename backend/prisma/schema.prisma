@@ -56,6 +56,25 @@ enum InvitationPaymentStatus {
   REFUNDED
 }
 
+enum InvitationCouponStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+  ARCHIVED
+}
+
+enum InvitationCouponDiscountType {
+  PERCENT
+  FIXED_AMOUNT
+}
+
+enum InvitationCouponUsageStatus {
+  RESERVED
+  REDEEMED
+  RELEASED
+}
+
 model User {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   username  String?  @unique
@@ -169,6 +188,7 @@ model Invitation {
   templateUsages TemplateUsage[]
   templateClones TemplateClone[]
   payments       InvitationPayment[]
+  couponUsages   InvitationCouponUsage[]
 
   @@index([ownerId])
   @@index([guestToken])
@@ -189,6 +209,12 @@ model InvitationPayment {
   listPriceAmount    Int                      @map("list_price_amount")
   chargedAmount      Int                      @map("charged_amount")
   promotionCode      String?                  @map("promotion_code")
+  couponId           String?                  @map("coupon_id") @db.Uuid
+  couponCode         String?                  @map("coupon_code")
+  couponDiscountType InvitationCouponDiscountType? @map("coupon_discount_type")
+  couponDiscountValue Int?                    @map("coupon_discount_value")
+  baseAmountCents    Int?                     @map("base_amount_cents")
+  discountAmountCents Int?                    @map("discount_amount_cents")
   status             InvitationPaymentStatus  @default(PENDING)
   paidAt             DateTime?                @map("paid_at") @db.Timestamptz(6)
   failedAt           DateTime?                @map("failed_at") @db.Timestamptz(6)
@@ -199,12 +225,76 @@ model InvitationPayment {
   updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  coupon     InvitationCoupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponUsages InvitationCouponUsage[]
 
   @@index([invitationId, status])
   @@index([invitationId, createdAt])
+  @@index([couponId])
   @@unique([provider, providerCheckoutId])
   @@unique([provider, providerPaymentId])
   @@map("invitation_payments")
+}
+
+/// Admin-managed invitation publish coupon. Usage counts come from InvitationCouponUsage rows.
+model InvitationCoupon {
+  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code              String                       @unique
+  name              String
+  organization      String?
+  discountType      InvitationCouponDiscountType @map("discount_type")
+  /// PERCENT: 1–100. FIXED_AMOUNT: USD cents (minor units).
+  discountValue     Int                          @map("discount_value")
+  currency          String                       @default("USD")
+  status            InvitationCouponStatus       @default(DRAFT)
+  startsAt          DateTime?                    @map("starts_at") @db.Timestamptz(6)
+  endsAt            DateTime?                    @map("ends_at") @db.Timestamptz(6)
+  totalUsageLimit   Int?                         @map("total_usage_limit")
+  perUserUsageLimit Int?                         @map("per_user_usage_limit")
+  createdBy         String?                      @map("created_by")
+  updatedBy         String?                      @map("updated_by")
+  createdAt         DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  usages   InvitationCouponUsage[]
+  payments InvitationPayment[]
+
+  @@index([status, startsAt, endsAt])
+  @@index([organization])
+  @@map("invitation_coupons")
+}
+
+/// Authoritative coupon usage. RESERVED+REDEEMED count toward limits. RELEASED does not.
+model InvitationCouponUsage {
+  id                  String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  couponId            String                       @map("coupon_id") @db.Uuid
+  userId              String?                      @map("user_id") @db.Uuid
+  invitationId        String                       @map("invitation_id") @db.Uuid
+  paymentId           String?                      @map("payment_id") @db.Uuid
+  status              InvitationCouponUsageStatus  @default(RESERVED)
+  codeSnapshot        String                       @map("code_snapshot")
+  discountType        InvitationCouponDiscountType @map("discount_type")
+  discountValue       Int                          @map("discount_value")
+  baseAmountCents     Int                          @map("base_amount_cents")
+  discountAmountCents Int                          @map("discount_amount_cents")
+  finalAmountCents    Int                          @map("final_amount_cents")
+  reservedAt          DateTime                     @default(now()) @map("reserved_at") @db.Timestamptz(6)
+  redeemedAt          DateTime?                    @map("redeemed_at") @db.Timestamptz(6)
+  releasedAt          DateTime?                    @map("released_at") @db.Timestamptz(6)
+  expiresAt           DateTime?                    @map("expires_at") @db.Timestamptz(6)
+  createdAt           DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  coupon     InvitationCoupon   @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  invitation Invitation         @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  payment    InvitationPayment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([couponId, userId, status])
+  @@index([couponId, status])
+  @@index([paymentId, status])
+  @@index([invitationId, status])
+  @@index([expiresAt, status])
+  @@map("invitation_coupon_usages")
 }
 
 model PaymentWebhookEvent {

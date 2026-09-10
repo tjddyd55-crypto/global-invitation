@@ -16,6 +16,10 @@ import {
   reconcileTossPaymentByKey,
   recordWebhookEvent,
 } from '../lib/payments/service';
+import { settleZeroCouponPayment } from '../lib/payments/settleZero';
+import { CouponError, couponErrorMessageKo, toPublicCouponError } from '../lib/coupons/errors';
+import { validateCouponForInvitation } from '../lib/coupons/service';
+import { consumeCouponValidateAttempt } from '../lib/coupons/rateLimit';
 import { resolvePaymentProvider, getPrimaryPaymentChannel, resolveTossRuntimeKeys } from '../lib/payments/provider';
 import { getInvitationPricingSnapshot } from '../lib/pricing/invitationPricing';
 import { getSystemRuntimeSettings } from '../lib/ops/systemConfig';
@@ -24,6 +28,14 @@ const router = Router();
 
 function normalizeText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function clientIp(req: import('express').Request): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.trim()) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip || req.socket.remoteAddress || 'unknown';
 }
 
 /** Public payment config for checkout UI — never includes secrets. */
@@ -165,20 +177,28 @@ router.post('/invitations/:id/payment/prepare', async (req, res) => {
 
     const invitation = access.invitation!;
     const locale = normalizeText(req.body?.locale) || null;
+    const couponCode = normalizeText(req.body?.couponCode) || null;
     const result = await preparePaymentAttempt({
       invitationId: invitation.id,
       userId: access.user?.id || invitation.userId,
       locale,
+      couponCode,
     });
 
     if (!result.ok) {
+      const couponFailure = result.code.startsWith('COUPON_');
       const status =
         result.code === 'UNSUPPORTED_CURRENCY' || result.code === 'DOMESTIC_KRW_DISABLED'
           ? 422
           : result.code === 'MISSING_TOSS_KEYS' || result.code === 'FOREIGN_MID_NOT_CONFIGURED'
             ? 503
-            : 502;
-      return res.status(status).json({ error: result.code, message: result.message });
+            : couponFailure
+              ? 400
+              : 502;
+      return res.status(status).json({
+        error: result.code,
+        message: couponFailure ? couponErrorMessageKo(result.code) : result.message,
+      });
     }
 
     if (result.alreadyPaid) {
@@ -203,10 +223,94 @@ router.post('/invitations/:id/payment/prepare', async (req, res) => {
       clientKey: result.clientKey,
       variantKey: result.variantKey,
       pricing: await getInvitationPricingSnapshot(),
+      settlement: result.settlement,
+      coupon: result.coupon,
     });
   } catch (error) {
     console.error('[payments] prepare failed', error);
     return res.status(500).json({ error: 'PREPARE_FAILED' });
+  }
+});
+
+router.post('/invitations/:id/payment/coupon/validate', async (req, res) => {
+  try {
+    const identifier = normalizeText(req.params.id);
+    if (!identifier) return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
+
+    const access = await assertEditableInvitation(req, identifier);
+    if ('error' in access && access.error) {
+      return res.status(access.errorStatus).json({ error: access.error });
+    }
+
+    const invitation = access.invitation!;
+    const rate = consumeCouponValidateAttempt(clientIp(req), invitation.id);
+    if (rate.limited) {
+      return res.status(429).json({
+        error: 'COUPON_RATE_LIMITED',
+        message: couponErrorMessageKo('COUPON_RATE_LIMITED'),
+        retryAfterSeconds: rate.retryAfterSeconds,
+      });
+    }
+
+    const paid = await hasPaidEntitlement(invitation.id);
+    const quote = await validateCouponForInvitation({
+      code: req.body?.code,
+      invitationId: invitation.id,
+      userId: access.user?.id || invitation.userId,
+      alreadyPaid: paid,
+    });
+
+    return res.status(200).json({
+      ok: true,
+      currency: quote.currency,
+      listPriceCents: quote.listPriceCents,
+      salePriceCents: quote.salePriceCents,
+      discountAmountCents: quote.discountAmountCents,
+      finalAmountCents: quote.finalAmountCents,
+    });
+  } catch (error) {
+    if (error instanceof CouponError) {
+      const code = toPublicCouponError(error.code);
+      return res.status(error.httpStatus).json({ error: code, message: couponErrorMessageKo(code) });
+    }
+    console.error('[payments] coupon validate failed', error);
+    return res.status(500).json({ error: 'COUPON_INVALID', message: couponErrorMessageKo('COUPON_INVALID') });
+  }
+});
+
+router.post('/invitations/:id/payment/settle-zero', async (req, res) => {
+  try {
+    const identifier = normalizeText(req.params.id);
+    const paymentId = normalizeText(req.body?.paymentId);
+    if (!identifier || !paymentId) {
+      return res.status(400).json({ error: 'INVALID_SETTLE_PAYLOAD' });
+    }
+
+    const access = await assertEditableInvitation(req, identifier);
+    if ('error' in access && access.error) {
+      return res.status(access.errorStatus).json({ error: access.error });
+    }
+
+    const invitation = access.invitation!;
+    const result = await settleZeroCouponPayment({
+      invitationId: invitation.id,
+      paymentId,
+    });
+    if (!result.ok) {
+      return res.status(400).json({ error: result.code, message: result.message });
+    }
+    return res.status(200).json({
+      ok: true,
+      alreadyPaid: result.alreadyPaid,
+      paymentId: result.paymentId,
+      isPaid: true,
+    });
+  } catch (error) {
+    if (error instanceof CouponError) {
+      return res.status(error.httpStatus).json({ error: error.code, message: error.message });
+    }
+    console.error('[payments] settle-zero failed', error);
+    return res.status(500).json({ error: 'SETTLE_ZERO_FAILED' });
   }
 });
 

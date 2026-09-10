@@ -26,6 +26,7 @@ import testPublishedInvitationRouter from './routes/testPublishedInvitation';
 import notificationsRouter from './routes/notifications';
 import paymentsRouter from './routes/payments';
 import adminOpsRouter from './routes/adminOps';
+import adminCouponsRouter from './routes/adminCoupons';
 import adminVisualTemplatesRouter from './routes/adminVisualTemplates';
 import adminFigmaRouter from './routes/adminFigma';
 import visualCatalogRouter from './routes/visualCatalog';
@@ -144,6 +145,7 @@ app.get('/api/build-identity', (_req, res) => {
 app.use('/api/admin', adminAuthRouter);
 app.use('/api/admin', adminMusicRouter);
 app.use('/api/admin', adminOpsRouter);
+app.use('/api/admin', adminCouponsRouter);
 app.use('/api/admin', adminFigmaRouter);
 app.use('/api/admin', adminVisualTemplatesRouter);
 app.use('/api/admin', adminRouter);

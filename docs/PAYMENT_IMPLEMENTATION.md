@@ -75,6 +75,22 @@ test/live key mixing is rejected. Live keys rejected outside production.
 - General payment webhooks: **no Stripe-style HMAC**; verify by Toss Payment Query API (`GET /v1/payments/{paymentKey}`)
 - Confirm response remains first-success SSOT
 
+## Coupons
+
+- Models: `InvitationCoupon` + `InvitationCouponUsage` (authoritative counts). Amounts are **USD cents**.
+- Codes: unique, stored `UPPERCASE` trimmed, charset `A-Z0-9-_` length 4–32.
+- Types: `PERCENT` (1–100) and `FIXED_AMOUNT` (cents; whole dollars for admin create).
+- Status: `DRAFT` / `ACTIVE` / `PAUSED` / `EXPIRED` / `ARCHIVED` (+ `startsAt` / `endsAt`).
+- Limits: `totalUsageLimit` / `perUserUsageLimit` nullable = unlimited. Count `RESERVED` + `REDEEMED` only.
+- Lifecycle: validate (no hold) → **RESERVE** on `prepare` → **REDEEMED** on PAID → **RELEASED** on fail/cancel/expire. Refund keeps **REDEEMED** (no reuse).
+- Payment snapshot (nullable for legacy rows): `couponId`, `couponCode`, discount type/value, `baseAmountCents`, `discountAmountCents`. `chargedAmount` is the **final** amount.
+- $0 (100% coupon): server `POST /api/invitations/:id/payment/settle-zero` after prepare. Client-sent $0 is rejected without a reserved coupon. Does **not** use mock payment bypass or Toss live overseas charges.
+- Paid invitations: no re-pay / no coupon re-apply.
+- Public validate is rate-limited and returns only quote amounts (no catalog).
+- Admin: `/admin/payments?tab=coupons` — SUPER_ADMIN mutations. Audit: `COUPON_CREATED` / `UPDATED` / `PAUSED` / `ACTIVATED` / `ARCHIVED`.
+- Hard delete is not exposed when usage exists; archive instead.
+- Dev seed only: `npm run coupons:seed-dev` in `backend/` (`JCI50`, `DEVFREE100`). Never seed Production.
+
 ## Docs note
 
 Historical `docs/02_STRIPE_POLICY.md` / Lemon checklists are legacy — **runtime provider is Toss/mock**.

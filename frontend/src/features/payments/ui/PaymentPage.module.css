@@ -163,6 +163,28 @@
   margin: 0 auto;
 }
 
+.couponRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.couponInput {
+  flex: 1;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--mk-border);
+  border-radius: var(--mk-radius-btn);
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.couponError {
+  margin: 10px 0 0;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
 @media (min-width: 1024px) {
   .page {
     padding-bottom: 40px;

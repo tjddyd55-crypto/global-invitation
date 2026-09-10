@@ -28,7 +28,7 @@ export type InvitationPaymentSummaryResponse = {
 export type PreparePaymentResponse = {
   paymentId: string;
   orderId: string;
-  provider: 'mock' | 'toss_payments';
+  provider: 'mock' | 'toss_payments' | 'coupon';
   paymentChannel?: 'INTERNATIONAL_USD' | 'DOMESTIC_KRW';
   orderName: string;
   amount: { value: number; currency: string };
@@ -39,6 +39,8 @@ export type PreparePaymentResponse = {
   failUrl: string;
   clientKey: string | null;
   variantKey?: string | null;
+  settlement?: 'provider' | 'zero_coupon';
+  coupon?: { code: string; discountAmountCents: number; finalAmountCents: number } | null;
 };
 
 export type PaymentStatusResponse = {
@@ -79,7 +81,7 @@ export async function fetchInvitationPaymentSummary(
 
 export async function prepareInvitationPayment(
   invitationId: string,
-  opts?: { locale?: string | null }
+  opts?: { locale?: string | null; couponCode?: string | null }
 ): Promise<PreparePaymentResponse> {
   const response = await fetch(
     buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}/payment/prepare`),
@@ -89,7 +91,10 @@ export async function prepareInvitationPayment(
         'Content-Type': 'application/json',
         ...buildAuthHeaders(),
       },
-      body: JSON.stringify({ locale: opts?.locale || undefined }),
+      body: JSON.stringify({
+        locale: opts?.locale || undefined,
+        couponCode: opts?.couponCode || undefined,
+      }),
     })
   );
   if (response.status === 409) {

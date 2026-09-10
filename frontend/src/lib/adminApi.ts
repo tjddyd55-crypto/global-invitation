@@ -882,3 +882,75 @@ export async function rejectAdminTemplateSubmission(submissionId: string, payloa
       body: JSON.stringify(payload || {}),
     });
 }
+
+export type AdminCoupon = {
+  id: string;
+  code: string;
+  name: string;
+  organization: string | null;
+  discountType: 'PERCENT' | 'FIXED_AMOUNT';
+  discountValue: number;
+  currency: string;
+  status: string;
+  effectiveStatus: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  totalUsageLimit: number | null;
+  perUserUsageLimit: number | null;
+  activeUsageCount: number;
+  totalUsageCount: number;
+  canHardDelete: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminCouponUsage = {
+  id: string;
+  userId: string | null;
+  invitationId: string;
+  paymentId: string | null;
+  status: string;
+  codeSnapshot: string;
+  discountAmountCents: number;
+  finalAmountCents: number;
+  reservedAt: string;
+  redeemedAt: string | null;
+  releasedAt: string | null;
+};
+
+export async function listAdminCoupons(filters: Record<string, string> = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v) params.set(k, v);
+  });
+  const query = params.toString();
+  return adminApiJson<{ coupons: AdminCoupon[] }>(`/api/admin/ops/coupons${query ? `?${query}` : ''}`);
+}
+
+export async function getAdminCoupon(id: string) {
+  return adminApiJson<{ coupon: AdminCoupon }>(`/api/admin/ops/coupons/${id}`);
+}
+
+export async function createAdminCoupon(payload: Record<string, unknown>) {
+  return adminApiJson<{ coupon: AdminCoupon }>('/api/admin/ops/coupons', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminCoupon(id: string, payload: Record<string, unknown>) {
+  return adminApiJson<{ coupon: AdminCoupon }>(`/api/admin/ops/coupons/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function transitionAdminCoupon(id: string, action: 'pause' | 'activate' | 'archive') {
+  return adminApiJson<{ coupon: AdminCoupon }>(`/api/admin/ops/coupons/${id}/${action}`, {
+    method: 'POST',
+  });
+}
+
+export async function listAdminCouponUsages(id: string) {
+  return adminApiJson<{ usages: AdminCouponUsage[] }>(`/api/admin/ops/coupons/${id}/usages`);
+}

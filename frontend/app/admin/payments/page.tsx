@@ -2,7 +2,7 @@ import PaymentsClient, { type AdminPaymentsTab } from './PaymentsClient';
 
 function parsePaymentsTab(value?: string | string[]): AdminPaymentsTab {
   const raw = Array.isArray(value) ? value[0] : value;
-  if (raw === 'pricing' || raw === 'toss') return raw;
+  if (raw === 'pricing' || raw === 'toss' || raw === 'coupons') return raw;
   return 'transactions';
 }
 

@@ -166,9 +166,40 @@ export function formatMoneyUsd(minor: number): string {
   return `$${(minor / 100).toFixed(2)} USD`;
 }
 
+export function formatCouponStatus(status: string): string {
+  switch (String(status).toUpperCase()) {
+    case 'DRAFT':
+      return '초안';
+    case 'ACTIVE':
+      return '활성';
+    case 'PAUSED':
+      return '일시중지';
+    case 'EXPIRED':
+      return '만료';
+    case 'ARCHIVED':
+      return '보관';
+    default:
+      return status;
+  }
+}
+
+export function formatCouponUsageStatus(status: string): string {
+  switch (String(status).toUpperCase()) {
+    case 'RESERVED':
+      return '예약';
+    case 'REDEEMED':
+      return '사용완료';
+    case 'RELEASED':
+      return '해제';
+    default:
+      return status;
+  }
+}
+
 export const ADMIN_QUICK_ACTIONS = [
   { href: '/admin/visual-templates/new', label: '새 템플릿 만들기' },
   { href: '/admin/visual-templates/import', label: 'Figma 가져오기' },
+  { href: '/admin/payments?tab=coupons', label: '쿠폰' },
   { href: '/admin/payments?tab=pricing', label: '가격 설정' },
   { href: '/admin/payments?tab=toss', label: 'Toss Payments 설정' },
   { href: '/admin/music', label: '음악 관리' },

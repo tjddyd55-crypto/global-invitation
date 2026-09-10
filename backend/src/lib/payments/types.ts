@@ -2,7 +2,7 @@
  * Payment provider names (runtime).
  * Stripe is intentionally not an active provider.
  */
-export type PaymentProviderName = 'mock' | 'toss_payments';
+export type PaymentProviderName = 'mock' | 'toss_payments' | 'coupon';
 
 /**
  * INTERNATIONAL_USD — primary (Toss 외화결제 MID, overseas card / optional PayPal later).
@@ -40,6 +40,12 @@ export type PreparePaymentResult =
       failUrl: string;
       clientKey: string | null;
       variantKey: string | null;
+      settlement: 'provider' | 'zero_coupon';
+      coupon: {
+        code: string;
+        discountAmountCents: number;
+        finalAmountCents: number;
+      } | null;
     }
   | { ok: true; alreadyPaid: true; paymentId: string }
   | {
@@ -54,7 +60,15 @@ export type PreparePaymentResult =
         | 'INVALID_PROVIDER'
         | 'PAYMENTS_DISABLED'
         | 'LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT'
-        | 'PAYMENT_PROVIDER_CONFIG_INVALID';
+        | 'PAYMENT_PROVIDER_CONFIG_INVALID'
+        | 'COUPON_INVALID'
+        | 'COUPON_INACTIVE'
+        | 'COUPON_NOT_STARTED'
+        | 'COUPON_EXPIRED'
+        | 'COUPON_LIMIT_REACHED'
+        | 'COUPON_USER_LIMIT_REACHED'
+        | 'COUPON_ALREADY_PAID'
+        | 'COUPON_RESERVE_FAILED';
       message: string;
     };
 

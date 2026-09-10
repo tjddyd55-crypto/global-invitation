@@ -5,29 +5,19 @@ import {
 } from '@prisma/client';
 import prisma from '../prisma';
 import { getInvitationPricingSnapshot } from '../pricing/invitationPricing';
-import { getSystemRuntimeSettings } from '../ops/systemConfig';
-import {
-  assertTossKeySafety,
-  buildOrderId,
-  getFrontendBaseUrl,
-  getPaymentOrderName,
-  mapTossPaymentStatus,
-  resolvePaymentProvider,
-  resolveTossChargeAmount,
-  resolveTossRuntimeKeys,
-} from './provider';
+import { mapTossPaymentStatus } from './provider';
 import { confirmTossPayment, getTossPaymentByKey } from './tossClient';
-import type { ConfirmPaymentInput, PreparePaymentResult } from './types';
+import type { ConfirmPaymentInput } from './types';
+import {
+  findPaidPayment,
+  getExpectedProviderAmount,
+  getExpectedProviderCurrency,
+  parseProviderMeta,
+} from './paymentLookup';
+import { redeemReservationForPayment, releaseReservationForPayment } from '../coupons/lifecycle';
 
-export async function findPaidPayment(invitationId: string): Promise<InvitationPayment | null> {
-  return prisma.invitationPayment.findFirst({
-    where: {
-      invitationId,
-      status: InvitationPaymentStatus.PAID,
-    },
-    orderBy: { paidAt: 'desc' },
-  });
-}
+export { findPaidPayment, getExpectedProviderAmount, getExpectedProviderCurrency };
+export { preparePaymentAttempt } from './prepareAttempt';
 
 /** Publish/public entitlement: valid PAID payment row only. */
 export async function hasPaidEntitlement(invitationId: string): Promise<boolean> {
@@ -53,207 +43,9 @@ export async function getPaymentSummaryForInvitation(invitationId: string) {
     latestStatus: latest?.status ?? null,
     latestPaymentId: latest?.id ?? null,
     provider: latest?.provider ?? null,
-  };
-}
-
-function parseProviderMeta(raw: string | null): Record<string, unknown> {
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
-}
-
-export function getExpectedProviderAmount(payment: InvitationPayment): number | null {
-  const meta = parseProviderMeta(payment.rawProviderStatus);
-  if (typeof meta.tossAmount === 'number') return meta.tossAmount;
-  if (payment.provider === 'mock') return payment.chargedAmount;
-  return null;
-}
-
-export function getExpectedProviderCurrency(payment: InvitationPayment): string {
-  const meta = parseProviderMeta(payment.rawProviderStatus);
-  if (typeof meta.tossCurrency === 'string') return meta.tossCurrency.toUpperCase();
-  return payment.currency.toUpperCase();
-}
-
-const PENDING_REUSE_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-function buildCheckoutUrls(invitationId: string): { successUrl: string; failUrl: string } {
-  const frontend = getFrontendBaseUrl();
-  return {
-    successUrl: `${frontend}/invitations/${invitationId}/payment/success`,
-    failUrl: `${frontend}/invitations/${invitationId}/payment/fail`,
-  };
-}
-
-export async function preparePaymentAttempt(input: {
-  invitationId: string;
-  userId?: string | null;
-  /** Product Mode locale for Toss orderName (ko-KR / en-US). */
-  locale?: string | null;
-}): Promise<PreparePaymentResult> {
-  const existingPaid = await findPaidPayment(input.invitationId);
-  if (existingPaid) {
-    return { ok: true, alreadyPaid: true, paymentId: existingPaid.id };
-  }
-
-  const system = await getSystemRuntimeSettings();
-  if (!system.paymentsEnabled) {
-    return {
-      ok: false,
-      code: 'PAYMENTS_DISABLED',
-      message: 'Payments are temporarily disabled by system settings.',
-    };
-  }
-
-  const pricing = await getInvitationPricingSnapshot();
-  const provider = resolvePaymentProvider();
-  const charge = resolveTossChargeAmount(provider, pricing.chargedAmountCents);
-  if (!charge.ok) {
-    return { ok: false, code: charge.code, message: charge.message };
-  }
-
-  let clientKey: string | null = null;
-  let variantKey: string | null = null;
-  if (provider === 'toss_payments') {
-    const keys = await resolveTossRuntimeKeys();
-    if (!keys.ok) {
-      return {
-        ok: false,
-        code: keys.code === 'LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT'
-          ? keys.code
-          : 'FOREIGN_MID_NOT_CONFIGURED',
-        message: keys.message,
-      };
-    }
-    clientKey = keys.clientKey;
-    variantKey = keys.variantKey;
-    try {
-      assertTossKeySafety(keys.clientKey, keys.secretKey);
-    } catch (error) {
-      return {
-        ok: false,
-        code: 'FOREIGN_MID_NOT_CONFIGURED',
-        message: error instanceof Error ? error.message : 'Toss USD MID key validation failed',
-      };
-    }
-  }
-
-  const { successUrl, failUrl } = buildCheckoutUrls(input.invitationId);
-  const orderName = getPaymentOrderName(input.locale);
-  const paymentChannel = charge.channel;
-
-  // Reuse a recent PENDING attempt to avoid infinite orders on double-click / multi-tab.
-  const reusable = await prisma.invitationPayment.findFirst({
-    where: {
-      invitationId: input.invitationId,
-      provider,
-      status: InvitationPaymentStatus.PENDING,
-      providerOrderId: { not: null },
-      createdAt: { gte: new Date(Date.now() - PENDING_REUSE_WINDOW_MS) },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  if (reusable?.providerOrderId) {
-    const expectedAmount = getExpectedProviderAmount(reusable);
-    const expectedCurrency = getExpectedProviderCurrency(reusable);
-    const amountMatches =
-      expectedAmount === charge.amount.value && expectedCurrency === charge.amount.currency;
-
-    if (amountMatches) {
-      console.info('[payments] prepare reused pending', {
-        invitationId: input.invitationId,
-        paymentAttemptId: reusable.id,
-        orderId: reusable.providerOrderId,
-        provider,
-        paymentChannel,
-        userId: input.userId || null,
-      });
-
-      return {
-        ok: true,
-        alreadyPaid: false,
-        paymentId: reusable.id,
-        orderId: reusable.providerOrderId,
-        provider,
-        paymentChannel,
-        orderName,
-        domainCurrency: pricing.currency,
-        productAmountMinor: pricing.chargedAmountCents,
-        domainChargedAmountCents: pricing.chargedAmountCents,
-        amount: charge.amount,
-        successUrl,
-        failUrl,
-        clientKey,
-        variantKey,
-      };
-    }
-  }
-
-  const attempt = await prisma.invitationPayment.create({
-    data: {
-      invitationId: input.invitationId,
-      userId: input.userId || null,
-      provider,
-      currency: pricing.currency,
-      listPriceAmount: pricing.listPriceCents,
-      chargedAmount: pricing.chargedAmountCents,
-      promotionCode: pricing.promotionCode,
-      status: InvitationPaymentStatus.PENDING,
-    },
-  });
-
-  const orderId = buildOrderId(attempt.id);
-
-  const meta = {
-    phase: 'prepared',
-    paymentChannel,
-    tossAmount: charge.amount.value,
-    tossCurrency: charge.amount.currency,
-    productAmountMinor: pricing.chargedAmountCents,
-    productCurrency: pricing.currency,
-    pricingConfigId: pricing.pricingConfigId ?? null,
-    pricingSource: pricing.source,
-  };
-
-  await prisma.invitationPayment.update({
-    where: { id: attempt.id },
-    data: {
-      providerOrderId: orderId,
-      providerCheckoutId: orderId,
-      rawProviderStatus: JSON.stringify(meta),
-    },
-  });
-
-  console.info('[payments] prepare created', {
-    invitationId: input.invitationId,
-    paymentAttemptId: attempt.id,
-    orderId,
-    provider,
-    paymentChannel,
-    userId: input.userId || null,
-  });
-
-  return {
-    ok: true,
-    alreadyPaid: false,
-    paymentId: attempt.id,
-    orderId,
-    provider,
-    paymentChannel,
-    orderName,
-    domainCurrency: pricing.currency,
-    productAmountMinor: pricing.chargedAmountCents,
-    domainChargedAmountCents: pricing.chargedAmountCents,
-    amount: charge.amount,
-    successUrl,
-    failUrl,
-    clientKey,
-    variantKey,
+    couponCode: latest?.couponCode ?? null,
+    discountAmountCents: latest?.discountAmountCents ?? null,
+    chargedAmountCents: latest?.chargedAmount ?? null,
   };
 }
 
@@ -354,6 +146,8 @@ export async function markPaymentStatus(input: {
         },
       });
 
+      await redeemReservationForPayment(tx, next.id, paidAt);
+
       return next;
     });
 
@@ -377,9 +171,18 @@ export async function markPaymentStatus(input: {
   if (input.status === InvitationPaymentStatus.REFUNDED) data.refundedAt = now;
   if (input.providerPaymentId) data.providerPaymentId = input.providerPaymentId;
 
-  const updated = await prisma.invitationPayment.update({
-    where: { id: payment.id },
-    data,
+  const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const next = await tx.invitationPayment.update({
+      where: { id: payment.id },
+      data,
+    });
+    if (
+      input.status === InvitationPaymentStatus.FAILED ||
+      input.status === InvitationPaymentStatus.CANCELED
+    ) {
+      await releaseReservationForPayment(tx, next.id, now);
+    }
+    return next;
   });
 
   console.info('[payments] status transition', {

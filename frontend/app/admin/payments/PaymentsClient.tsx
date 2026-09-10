@@ -46,7 +46,9 @@ import {
   type TossConnectionResult,
 } from '@/src/features/admin/tossConnectionTest';
 
-export type AdminPaymentsTab = 'transactions' | 'pricing' | 'toss';
+import CouponsPanel from '@/src/features/admin/coupons/CouponsPanel';
+
+export type AdminPaymentsTab = 'transactions' | 'pricing' | 'toss' | 'coupons';
 
 type AdminPaymentsPageProps = {
   initialTab: AdminPaymentsTab;
@@ -95,6 +97,7 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
     () =>
       [
         { id: 'transactions' as const, label: '결제 내역' },
+        { id: 'coupons' as const, label: '쿠폰' },
         { id: 'pricing' as const, label: '가격 설정' },
         { id: 'toss' as const, label: 'Toss Payments 설정' },
       ] as const,
@@ -275,7 +278,7 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
           { label: '결제 관리' },
         ]}
         title="결제 관리"
-        description="결제 내역과 가격, Toss Payments 연결 정보를 관리합니다."
+        description="결제 내역, 쿠폰, 가격, Toss Payments 연결 정보를 관리합니다."
       />
 
       <div className={styles.section} style={{ paddingBottom: 12 }}>
@@ -285,6 +288,8 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
       {error && <AdminFeedback tone="error" message={error} />}
       <AdminFeedback tone={statusTone} message={statusMsg} />
 
+      {tab === 'coupons' && <CouponsPanel />}
+
       {tab === 'transactions' && (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
@@ -292,6 +297,7 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
               <tr>
                 <th>상태</th>
                 <th>결제금액</th>
+                <th>쿠폰</th>
                 <th>주문번호</th>
                 <th>회원</th>
                 <th>초대장</th>
@@ -303,6 +309,7 @@ export default function AdminPaymentsPage({ initialTab }: AdminPaymentsPageProps
                 <tr key={String(p.id)}>
                   <td>{formatPaymentStatus(String(p.status))}</td>
                   <td>{formatMoneyUsd(Number(p.amount || 0))}</td>
+                  <td>{String(p.couponCode || '—')}</td>
                   <td>{String(p.orderId || '')}</td>
                   <td>{String(p.userEmail || p.userId || '')}</td>
                   <td>{String(p.invitationTitle || p.invitationId)}</td>
