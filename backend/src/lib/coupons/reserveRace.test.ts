@@ -12,11 +12,11 @@ async function runParallelReserves(input: {
 }): Promise<ReserveResult[]> {
   let totalActive = 0;
   const userActive = new Map<string, number>();
-  let lock = Promise.resolve();
+  let lock: Promise<void> = Promise.resolve();
 
   return Promise.all(
     input.workers.map(async (worker) => {
-      let release = () => undefined;
+      let release: () => void = () => undefined;
       const previous = lock;
       lock = new Promise<void>((resolve) => {
         release = resolve;

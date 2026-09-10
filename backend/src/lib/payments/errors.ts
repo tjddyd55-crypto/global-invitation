@@ -60,7 +60,6 @@ export function paymentErrorHttpStatus(code: string): number {
     return 422;
   }
   if (isPaymentUnavailableCode(code)) return 503;
-  if (code.startsWith('COUPON_')) return 400;
   if (
     code === PAYMENT_ERROR_CODES.AMOUNT_MISMATCH ||
     code === PAYMENT_ERROR_CODES.CURRENCY_MISMATCH ||
@@ -72,5 +71,6 @@ export function paymentErrorHttpStatus(code: string): number {
   ) {
     return 409;
   }
+  if (code.startsWith('COUPON_')) return 400;
   return 400;
 }
