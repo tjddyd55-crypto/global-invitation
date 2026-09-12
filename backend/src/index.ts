@@ -31,6 +31,7 @@ import adminVisualTemplatesRouter from './routes/adminVisualTemplates';
 import adminFigmaRouter from './routes/adminFigma';
 import visualCatalogRouter from './routes/visualCatalog';
 import ownerPreviewPublicRouter from './routes/ownerPreviewPublic';
+import { ensureDevCouponsBootstrap } from './lib/coupons/devBootstrap';
 import { ensurePricingBootstrap } from './lib/pricing/invitationPricing';
 import { ensureSystemConfigBootstrap } from './lib/ops/systemConfig';
 import { syncVisualTemplateCatalogFromRegistry } from './lib/visualTemplates/catalogService';
@@ -196,6 +197,7 @@ app.listen(PORT, () => {
   void Promise.all([
     ensurePricingBootstrap(),
     ensureSystemConfigBootstrap(),
+    ensureDevCouponsBootstrap(),
     syncVisualTemplateCatalogFromRegistry(),
   ]).catch((error) => {
     console.warn('[startup] ops/catalog bootstrap skipped', {
