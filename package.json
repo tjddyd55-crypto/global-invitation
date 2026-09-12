@@ -20,7 +20,12 @@
     "design:qa:screenshots": "playwright test e2e/design-qa-screenshots.spec.ts --project=chromium",
     "figma:pixel:diff": "node scripts/figma-pixel-qa/pixel-diff.mjs",
     "figma:pixel:qa": "playwright test e2e/figma-pixel-overlay.spec.ts --project=chromium",
-    "assert:no-legacy-ui": "node scripts/assert-no-legacy-ui.mjs"
+    "assert:no-legacy-ui": "node scripts/assert-no-legacy-ui.mjs",
+    "native:start": "npm run start --prefix apps/native",
+    "native:dev": "npm run start --prefix apps/native -- --dev-client --port 8082",
+    "native:android": "npm run android --prefix apps/native",
+    "native:typecheck": "npm run typecheck --prefix apps/native",
+    "native:test": "npm run test --prefix apps/native"
   },
   "workspaces": [],
   "devDependencies": {

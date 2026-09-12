@@ -69,3 +69,14 @@ reports/r2-invitation-cleanup/
 
 # local brand source inputs (WebP는 R2 shared sample asset으로만 발행)
 logo/
+
+# Expo / React Native (apps/native)
+apps/native/.expo/
+apps/native/dist/
+apps/native/web-build/
+apps/native/expo-env.d.ts
+apps/native/android/
+apps/native/ios/
+apps/native/*.apk
+apps/native/*.aab
+apps/native/.metro-health-check*
