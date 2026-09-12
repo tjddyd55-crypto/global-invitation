@@ -36,7 +36,7 @@ export default function PaymentScreen() {
         return;
       }
       setFinalCents(result.finalAmountCents);
-      setCouponMessage(`쿠폰 적용: ${formatUsd(result.discountCents)} 할인`);
+      setCouponMessage(`쿠폰 적용: ${formatUsd(result.discountAmountCents)} 할인`);
     },
     onError: () => setCouponMessage('쿠폰 검증에 실패했습니다.'),
   });

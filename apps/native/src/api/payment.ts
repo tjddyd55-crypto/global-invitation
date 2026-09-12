@@ -26,10 +26,11 @@ export type PaymentSummaryResponse = {
 
 export type CouponValidateResponse = {
   ok: boolean;
-  couponCode: string;
-  discountCents: number;
-  finalAmountCents: number;
+  currency: string;
   listPriceCents: number;
+  salePriceCents: number;
+  discountAmountCents: number;
+  finalAmountCents: number;
   message?: string;
   error?: string;
 };
@@ -46,7 +47,7 @@ export async function validateCoupon(
     `/api/invitations/${invitationId}/payment/coupon/validate`,
     {
       method: 'POST',
-      body: { couponCode },
+      body: { code: couponCode },
     },
   );
 }
