@@ -18,38 +18,6 @@ function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
 }
 
-function isRailwayRuntime(): boolean {
-  return Boolean(
-    process.env.RAILWAY_ENVIRONMENT_NAME?.trim() ||
-      process.env.RAILWAY_PROJECT_ID?.trim() ||
-      process.env.RAILWAY_SERVICE_ID?.trim()
-  );
-}
-
-/**
- * User session cookie options.
- *
- * Browser auth uses same-origin `/api/auth/*` proxy on the frontend host, so Lax + host-only cookie is correct.
- * Local HTTP (no Railway) keeps non-secure Lax for localhost development.
- */
-export function resolveAuthSessionCookieOptions(): {
-  httpOnly: true;
-  secure: boolean;
-  sameSite: 'lax';
-  maxAge: number;
-  path: '/';
-} {
-  const maxAge = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
-  const isLocalHttp = !isRailwayRuntime() && !isProduction();
-  return {
-    httpOnly: true,
-    secure: !isLocalHttp,
-    sameSite: 'lax',
-    maxAge,
-    path: '/',
-  };
-}
-
 function parseCookieValue(req: Request, cookieName: string): string | null {
   const cookieHeader = req.headers.cookie;
   if (!cookieHeader) return null;
@@ -80,16 +48,25 @@ export function resolveSessionToken(req: Request): string | null {
 }
 
 export function setAuthSessionCookie(res: Response, token: string) {
-  res.cookie(AUTH_SESSION_COOKIE, token, resolveAuthSessionCookieOptions());
+  const secure = isProduction();
+  const sameSite = secure ? 'none' : 'lax';
+  res.cookie(AUTH_SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite,
+    secure,
+    maxAge: SESSION_TTL_DAYS * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
 }
 
 export function clearAuthSessionCookie(res: Response) {
-  const options = resolveAuthSessionCookieOptions();
+  const secure = isProduction();
+  const sameSite = secure ? 'none' : 'lax';
   res.clearCookie(AUTH_SESSION_COOKIE, {
-    httpOnly: options.httpOnly,
-    sameSite: options.sameSite,
-    secure: options.secure,
-    path: options.path,
+    httpOnly: true,
+    sameSite,
+    secure,
+    path: '/',
   });
 }
 

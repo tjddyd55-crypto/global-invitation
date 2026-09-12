@@ -1,7 +1,7 @@
 'use client';
 
 import type { Invitation } from '@/src/models/invitation';
-import { buildApiUrl, buildAuthApiUrl } from '@/src/lib/apiBase';
+import { buildApiUrl } from '@/src/lib/apiBase';
 import { buildAdminApiUrl } from '@/src/lib/adminApi';
 const SESSION_STORAGE_KEY = 'auth_session_v1';
 const GUEST_TOKEN_KEY = 'guest_token_v1';
@@ -229,7 +229,7 @@ export function buildAuthHeaders(): HeadersInit {
 
 export async function requestMagicLink(email: string, draftSlug?: string): Promise<MagicLinkResponse> {
   const guestToken = ensureGuestToken();
-  const response = await fetch(buildAuthApiUrl('/api/auth/magic-link'), {
+  const response = await fetch(buildApiUrl('/api/auth/magic-link'), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -252,7 +252,7 @@ export async function requestMagicLink(email: string, draftSlug?: string): Promi
 
 export async function verifyMagicLink(token: string): Promise<VerifyResponse> {
   const guestToken = getGuestToken();
-  const response = await fetch(buildAuthApiUrl('/api/auth/verify'), {
+  const response = await fetch(buildApiUrl('/api/auth/verify'), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -292,7 +292,7 @@ export async function registerAccount(input: {
   password: string;
 }): Promise<SignupResponse & { recoveryCode: string }> {
   const guestToken = getGuestToken();
-  const response = await fetch(buildAuthApiUrl('/api/auth/register'), {
+  const response = await fetch(buildApiUrl('/api/auth/register'), {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -324,7 +324,7 @@ export async function signupWithPassword(input: {
   role?: SignupRole;
 }): Promise<SignupResponse> {
   const guestToken = getGuestToken();
-  const response = await fetch(buildAuthApiUrl('/api/auth/signup'), {
+  const response = await fetch(buildApiUrl('/api/auth/signup'), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -351,7 +351,7 @@ export async function loginWithPassword(input: {
   username: string;
   password: string;
 }): Promise<LoginResponse> {
-  const response = await fetch(buildAuthApiUrl('/api/auth/login'), {
+  const response = await fetch(buildApiUrl('/api/auth/login'), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -375,7 +375,7 @@ export async function verifyRecoveryCredentials(input: {
   email: string;
   recoveryCode: string;
 }): Promise<{ recoveryToken: string }> {
-  const response = await fetch(buildAuthApiUrl('/api/auth/recovery/verify'), {
+  const response = await fetch(buildApiUrl('/api/auth/recovery/verify'), {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -394,7 +394,7 @@ export async function resetPasswordWithRecovery(input: {
   recoveryToken: string;
   newPassword: string;
 }): Promise<{ newRecoveryCode: string }> {
-  const response = await fetch(buildAuthApiUrl('/api/auth/recovery/reset'), {
+  const response = await fetch(buildApiUrl('/api/auth/recovery/reset'), {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -410,7 +410,7 @@ export async function resetPasswordWithRecovery(input: {
 }
 
 export async function validateAdminResetToken(token: string): Promise<void> {
-  const response = await fetch(buildAuthApiUrl('/api/auth/admin-reset/validate'), {
+  const response = await fetch(buildApiUrl('/api/auth/admin-reset/validate'), {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -426,7 +426,7 @@ export async function resetPasswordWithAdminLink(input: {
   token: string;
   newPassword: string;
 }): Promise<{ newRecoveryCode: string }> {
-  const response = await fetch(buildAuthApiUrl('/api/auth/admin-reset/reset'), {
+  const response = await fetch(buildApiUrl('/api/auth/admin-reset/reset'), {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -445,7 +445,7 @@ export async function changeAccountPassword(input: {
   currentPassword: string;
   newPassword: string;
 }): Promise<void> {
-  const response = await fetch(buildAuthApiUrl('/api/auth/change-password'), {
+  const response = await fetch(buildApiUrl('/api/auth/change-password'), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -461,7 +461,7 @@ export async function changeAccountPassword(input: {
 }
 
 export async function regenerateRecoveryCode(currentPassword: string): Promise<{ recoveryCode: string }> {
-  const response = await fetch(buildAuthApiUrl('/api/auth/recovery-code/regenerate'), {
+  const response = await fetch(buildApiUrl('/api/auth/recovery-code/regenerate'), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -489,7 +489,7 @@ export async function fetchCurrentUser(options?: { useCache?: boolean }): Promis
     }
   }
 
-  const response = await fetch(buildAuthApiUrl('/api/auth/me'), {
+  const response = await fetch(buildApiUrl('/api/auth/me'), {
     credentials: 'include',
     headers: {
       ...buildAuthHeaders(),
@@ -540,7 +540,7 @@ export async function fetchNavbarUser(options?: { useCache?: boolean }): Promise
 
 export async function logoutCurrentSession(): Promise<void> {
   const requests = [
-    fetch(buildAuthApiUrl('/api/auth/logout'), {
+    fetch(buildApiUrl('/api/auth/logout'), {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -592,7 +592,7 @@ function mapEmailAuthError(code: string | undefined, fallback: string): string {
 }
 
 export async function requestEmailVerificationCode(email: string): Promise<EmailCodeRequestResponse> {
-  const response = await fetch(buildAuthApiUrl('/api/auth/email/request-code'), {
+  const response = await fetch(buildApiUrl('/api/auth/email/request-code'), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -612,7 +612,7 @@ export async function verifyEmailVerificationCode(input: {
   email: string;
   code: string;
 }): Promise<EmailCodeVerifyResponse> {
-  const response = await fetch(buildAuthApiUrl('/api/auth/email/verify-code'), {
+  const response = await fetch(buildApiUrl('/api/auth/email/verify-code'), {
     method: 'POST',
     credentials: 'include',
     headers: {

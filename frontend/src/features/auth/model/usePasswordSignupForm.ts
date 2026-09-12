@@ -3,7 +3,6 @@
 import { useCallback, useState } from 'react';
 import { registerAccount } from '@/src/lib/auth';
 import { mapAuthErrorCode } from '@/src/shared/auth/authErrorMessages';
-import { useAuth } from '@/src/shared/hooks';
 
 export type SignupStep = 'form' | 'recovery-code';
 
@@ -25,7 +24,6 @@ export interface UsePasswordSignupFormResult {
 }
 
 export function usePasswordSignupForm(onComplete: () => void): UsePasswordSignupFormResult {
-  const { refresh } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,10 +66,9 @@ export function usePasswordSignupForm(onComplete: () => void): UsePasswordSignup
     [email, password, passwordConfirm, submitting, username]
   );
 
-  const confirmRecoverySaved = useCallback(async () => {
-    await refresh();
+  const confirmRecoverySaved = useCallback(() => {
     onComplete();
-  }, [onComplete, refresh]);
+  }, [onComplete]);
 
   return {
     username,
