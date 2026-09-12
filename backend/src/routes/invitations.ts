@@ -13,6 +13,7 @@ import {
 } from '../lib/invitationLocale';
 import { getSystemRuntimeSettings } from '../lib/ops/systemConfig';
 import { assertVisualTemplateSelectable } from '../lib/visualTemplates/catalogService';
+import { createOwnerPreviewToken } from '../lib/ownerPreviewToken';
 
 const router = Router();
 const INVITATION_STATUS_VALUES = new Set<string>(['DRAFT', 'SHARED', 'PUBLISHED']);
@@ -677,6 +678,36 @@ router.get('/share/:slug', async (req, res) => {
   } catch (error) {
     console.error('Error fetching invitation by share slug:', error);
     return res.status(500).json({ error: 'FAILED_TO_FETCH_SHARED_INVITATION' });
+  }
+});
+
+// POST /api/invitations/:id/owner-preview-token — Native/WebView owner draft preview
+router.post('/:id/owner-preview-token', async (req, res) => {
+  try {
+    const identifier = normalizeText(req.params.id);
+    if (!identifier) {
+      return res.status(400).json({ error: 'INVITATION_ID_REQUIRED' });
+    }
+
+    const user = await getAuthUser(req);
+    if (!user) {
+      return res.status(401).json({ error: 'UNAUTHORIZED' });
+    }
+
+    const invitation = await findInvitationByIdentifier(identifier);
+    if (!invitation) {
+      return res.status(404).json({ error: 'NOT_FOUND' });
+    }
+
+    if (invitation.userId !== user.id) {
+      return res.status(403).json({ error: 'FORBIDDEN' });
+    }
+
+    const token = createOwnerPreviewToken(invitation.id, user.id);
+    return res.status(200).json({ token });
+  } catch (error) {
+    console.error('Error creating owner preview token:', error);
+    return res.status(500).json({ error: 'FAILED_TO_CREATE_PREVIEW_TOKEN' });
   }
 });
 
