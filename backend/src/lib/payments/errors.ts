@@ -7,6 +7,9 @@ export const PAYMENT_ERROR_CODES = {
   LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT: 'LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT',
   PAYMENTS_DISABLED: 'PAYMENTS_DISABLED',
   DOMESTIC_KRW_DISABLED: 'DOMESTIC_KRW_DISABLED',
+  DOMESTIC_KRW_RATE_NOT_CONFIGURED: 'DOMESTIC_KRW_RATE_NOT_CONFIGURED',
+  INVALID_CHECKOUT_METHOD: 'INVALID_CHECKOUT_METHOD',
+  COUNTRY_REQUIRED: 'COUNTRY_REQUIRED',
   UNSUPPORTED_CURRENCY: 'UNSUPPORTED_CURRENCY',
   AMOUNT_MISMATCH: 'AMOUNT_MISMATCH',
   CURRENCY_MISMATCH: 'CURRENCY_MISMATCH',
@@ -35,8 +38,11 @@ export const PAYMENT_ERROR_MESSAGES_KO: Record<PaymentErrorCode, string> = {
   PAYMENT_PROVIDER_CONFIG_INVALID: '현재 해외 결제 서비스 준비 중입니다. 잠시 후 다시 시도해 주세요.',
   LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT: '개발 환경에서는 실제 결제를 진행할 수 없습니다.',
   PAYMENTS_DISABLED: '결제가 일시적으로 중단되었습니다. 잠시 후 다시 시도해 주세요.',
-  DOMESTIC_KRW_DISABLED: '국내 KRW 결제는 지원하지 않습니다. 해외 USD 결제를 이용해 주세요.',
-  UNSUPPORTED_CURRENCY: '지원하지 않는 결제 통화입니다.',
+  DOMESTIC_KRW_DISABLED: '국내 원화 결제가 비활성화되어 있습니다. 해외 USD 결제를 이용해 주세요.',
+  DOMESTIC_KRW_RATE_NOT_CONFIGURED: '국내 결제 환율이 설정되지 않았습니다. 해외 USD 결제를 이용해 주세요.',
+  INVALID_CHECKOUT_METHOD: '결제 수단을 확인해 주세요.',
+  COUNTRY_REQUIRED: '한국 이외의 결제 국가를 선택해 주세요.',
+  UNSUPPORTED_CURRENCY: '결제 수단에 맞지 않는 통화입니다.',
   AMOUNT_MISMATCH: '결제 금액이 일치하지 않습니다. 다시 시도해 주세요.',
   CURRENCY_MISMATCH: '결제 통화가 일치하지 않습니다. 다시 시도해 주세요.',
   COUPON_SNAPSHOT_MISMATCH: '쿠폰 결제 정보가 변경되어 결제를 완료할 수 없습니다. 다시 시도해 주세요.',
@@ -56,7 +62,7 @@ export function paymentErrorMessageKo(code: string): string {
 }
 
 export function paymentErrorHttpStatus(code: string): number {
-  if (code === PAYMENT_ERROR_CODES.UNSUPPORTED_CURRENCY || code === PAYMENT_ERROR_CODES.DOMESTIC_KRW_DISABLED) {
+  if (code === PAYMENT_ERROR_CODES.UNSUPPORTED_CURRENCY || code === PAYMENT_ERROR_CODES.DOMESTIC_KRW_DISABLED || code === PAYMENT_ERROR_CODES.DOMESTIC_KRW_RATE_NOT_CONFIGURED) {
     return 422;
   }
   if (isPaymentUnavailableCode(code)) return 503;

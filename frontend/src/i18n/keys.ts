@@ -1,4 +1,21 @@
 export const I18N_KEYS = {
+  checkoutErrors: {
+    DOMESTIC_KRW_DISABLED: 'checkout.error.DOMESTIC_KRW_DISABLED',
+    DOMESTIC_KRW_RATE_NOT_CONFIGURED: 'checkout.error.DOMESTIC_KRW_RATE_NOT_CONFIGURED',
+    INVALID_CHECKOUT_METHOD: 'checkout.error.INVALID_CHECKOUT_METHOD',
+    COUNTRY_REQUIRED: 'checkout.error.COUNTRY_REQUIRED',
+  },
+  checkoutMethod: {
+    title: 'checkout.method.title',
+    DOMESTIC: 'checkout.method.DOMESTIC',
+    OVERSEAS_CARD: 'checkout.method.OVERSEAS_CARD',
+    OVERSEAS_EASY_PAY: 'checkout.method.OVERSEAS_EASY_PAY',
+    krwHint: 'checkout.method.krwHint',
+    usdHint: 'checkout.method.usdHint',
+    country: 'checkout.method.country',
+    adminEnabled: 'checkout.method.adminEnabled',
+    adminRate: 'checkout.method.adminRate',
+  },
   common: {
     create: 'create',
     createButton: 'createButton',

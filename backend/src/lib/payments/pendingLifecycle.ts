@@ -1,3 +1,4 @@
+import { matchesCheckoutIdentity, type CheckoutIdentity } from './checkoutIdentity';
 import { InvitationPaymentStatus } from '@prisma/client';
 import prisma from '../prisma';
 import { releaseReservationForPayment } from '../coupons/lifecycle';
@@ -41,6 +42,7 @@ export async function cancelIncompatiblePendingPayments(input: {
   snapshot: PaymentCouponSnapshot | null;
   chargedAmountCents: number;
   now?: Date;
+  checkout?: CheckoutIdentity;
 }): Promise<number> {
   const now = input.now ?? new Date();
   const pendings = await prisma.invitationPayment.findMany({
@@ -51,7 +53,9 @@ export async function cancelIncompatiblePendingPayments(input: {
   });
   let canceled = 0;
   for (const payment of pendings) {
-    if (sameCouponSnapshot(payment, input.snapshot, input.chargedAmountCents)) continue;
+    const matches = sameCouponSnapshot(payment, input.snapshot, input.chargedAmountCents)
+      && (!input.checkout || matchesCheckoutIdentity(payment, input.checkout));
+    if (matches) continue;
     await cancelPendingPayment(payment.id, 'replaced_by_new_prepare', now);
     canceled += 1;
   }

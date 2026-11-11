@@ -25,6 +25,7 @@ export default function PaymentFailPage({ invitationId }: Props) {
           <p className={styles.stateBody}>
             {canceled ? t('checkout.canceled.body') : t('checkout.failed.body')}
           </p>
+          <p>{[code, searchParams.get('message')].filter(Boolean).join(': ')}</p>
           <div className={styles.actions}>
             <Link className={styles.primary} href={`/invitations/${invitationId}/payment`}>
               {t('checkout.cta.retry')}

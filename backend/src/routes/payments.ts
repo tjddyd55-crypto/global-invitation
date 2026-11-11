@@ -191,6 +191,8 @@ router.post('/invitations/:id/payment/prepare', async (req, res) => {
       userId: access.user?.id || invitation.userId,
       locale,
       couponCode,
+      checkoutMethod: req.body?.checkoutMethod,
+      country: req.body?.country,
     });
 
     if (!result.ok) {
@@ -212,6 +214,8 @@ router.post('/invitations/:id/payment/prepare', async (req, res) => {
       paymentId: result.paymentId,
       orderId: result.orderId,
       provider: result.provider,
+      checkoutMethod: result.checkoutMethod,
+      country: result.country,
       paymentChannel: result.paymentChannel,
       orderName: result.orderName,
       amount: result.amount,

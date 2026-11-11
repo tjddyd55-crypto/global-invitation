@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable i18next/no-literal-string */
 
+import DomesticPaymentSettings from '@/src/features/admin/DomesticPaymentSettings';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import AdminPageHeader from '@/src/features/admin/AdminPageHeader';
@@ -174,6 +175,7 @@ export default function AdminSystemClient({ initialTab }: AdminSystemClientProps
       {tab === 'runtime' && (
         <section className={styles.section}>
           <h2 className={styles.pageTitle}>운영 설정</h2>
+          <DomesticPaymentSettings settings={settings} disabled={!isSuper} onSave={save} />
           {(
             [
               ['paymentsEnabled', '결제 기능'],

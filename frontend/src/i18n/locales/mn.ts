@@ -2,6 +2,21 @@ import type { LocaleDictionary } from '../types';
 import { PRODUCT_MODE_MN } from '../productModeCopy';
 
 const mn: LocaleDictionary = {
+  'checkout.error.DOMESTIC_KRW_DISABLED': 'Дотоодын KRW төлбөр идэвхгүй байна. Гадаад төлбөр сонгоно уу.',
+  'checkout.error.DOMESTIC_KRW_RATE_NOT_CONFIGURED': 'Дотоодын ханш тохируулаагүй байна. Гадаад төлбөр сонгоно уу.',
+  'checkout.error.INVALID_CHECKOUT_METHOD': 'Зөв төлбөрийн арга сонгоно уу.',
+  'checkout.error.COUNTRY_REQUIRED': 'Өмнөд Солонгосоос өөр улс сонгоно уу.',
+
+  'checkout.method.title': 'Төлбөрийн арга',
+  'checkout.method.DOMESTIC': 'Дотоод карт / хялбар төлбөр',
+  'checkout.method.OVERSEAS_CARD': 'Гадаад карт',
+  'checkout.method.OVERSEAS_EASY_PAY': 'PayPal',
+  'checkout.method.krwHint': 'Администраторын тогтоосон ханшаар KRW төлнө.',
+  'checkout.method.usdHint': 'USD доллараар төлнө.',
+  'checkout.method.country': 'Төлбөрийн улс',
+  'checkout.method.adminEnabled': 'Дотоодын KRW төлбөрийг идэвхжүүлэх',
+  'checkout.method.adminRate': 'Тогтмол USD/KRW ханш (100–10000)',
+
   create: 'Урилга үүсгэх',
   createButton: 'Урилга үүсгэх',
   creating: 'Үүсгэж байна...',

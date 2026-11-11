@@ -1156,6 +1156,12 @@ router.put('/ops/system', async (req, res) => {
   if (!session) return;
 
   try {
+    if (req.body?.usdKrwRate != null && (!Number.isInteger(req.body.usdKrwRate) || req.body.usdKrwRate < 100 || req.body.usdKrwRate > 10000)) {
+      return res.status(400).json({ error: 'INVALID_USD_KRW_RATE' });
+    }
+    if (req.body?.domesticKrwEnabled !== undefined && typeof req.body.domesticKrwEnabled !== 'boolean') {
+      return res.status(400).json({ error: 'INVALID_DOMESTIC_KRW_ENABLED' });
+    }
     const before = await getSystemRuntimeSettings();
     const activePaymentEnvironment = req.body?.activePaymentEnvironment
       ? String(req.body.activePaymentEnvironment).toUpperCase()
@@ -1181,6 +1187,8 @@ router.put('/ops/system', async (req, res) => {
 
     const after = await updateSystemRuntimeSettings(
       {
+        domesticKrwEnabled: typeof req.body?.domesticKrwEnabled === 'boolean' ? req.body.domesticKrwEnabled : undefined,
+        usdKrwRate: req.body?.usdKrwRate,
         paymentsEnabled:
           typeof req.body?.paymentsEnabled === 'boolean' ? req.body.paymentsEnabled : undefined,
         publishingEnabled:

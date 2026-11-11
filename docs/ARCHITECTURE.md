@@ -121,3 +121,7 @@ DashboardScreen ─▶ useSubscription() → { subscription: { state, ... } }
 1. `src/lib/` 에 구현체.
 2. `src/shared/<domain>/` 에 barrel + React 훅/Provider.
 3. feature 에서는 반드시 `src/shared/<domain>` 만 import.
+
+### 결제 수단 선택
+
+기존 단일 결제 페이지는 공통 model의 선택 상태·서버 prepare 견적을 사용한다. SDK 요청 빌더는 `shared/payments/tossCheckoutMethod.ts`의 순수 함수이며 UI를 참조하지 않는다. USD 상품 가격은 유지하고 국내 KRW 금액은 백엔드 prepare에서만 관리자 환율로 계산한다. 신규 플랫폼 라우트는 추가하지 않는다.

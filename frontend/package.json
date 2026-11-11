@@ -11,7 +11,7 @@
     "assert:no-dev-home-ui": "node ../scripts/assert-no-dev-home-ui.mjs",
     "assert:map-provider": "node ../scripts/assert-map-provider.mjs",
     "assert:google-only-maps": "node ../scripts/assert-map-provider.mjs",
-    "test:payments": "npx --yes tsx --test src/features/payments/model/checkoutState.test.ts src/features/admin/coupons/couponForm.test.ts src/i18n/dictionaryParity.test.ts"
+    "test:payments": "npx --yes tsx --test src/features/payments/model/checkoutState.test.ts src/features/admin/coupons/couponForm.test.ts src/i18n/dictionaryParity.test.ts src/shared/payments/tossCheckoutMethod.test.ts"
   },
   "dependencies": {
     "@tosspayments/tosspayments-sdk": "^2.7.1",

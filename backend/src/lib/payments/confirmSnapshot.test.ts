@@ -44,7 +44,7 @@ test('coupon snapshot mismatch or expired reservation fails confirm', () => {
   };
   assert.equal(matchCouponSnapshotAtConfirm(payment, usage, new Date('2026-09-10T00:00:00.000Z')).ok, true);
   assert.deepEqual(
-    matchCouponSnapshotAtConfirm({ ...payment, chargedAmount: 1000 }, usage),
+    matchCouponSnapshotAtConfirm({ ...payment, chargedAmount: 1000 }, usage, new Date('2026-09-10T00:00:00.000Z')),
     { ok: false, code: 'COUPON_SNAPSHOT_MISMATCH' }
   );
   assert.deepEqual(
