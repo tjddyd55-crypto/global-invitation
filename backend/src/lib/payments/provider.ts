@@ -243,7 +243,7 @@ export async function getPaymentDiagnostics(): Promise<{
   tossSecretKeyConfigured: boolean;
   tossVariantKeyConfigured: boolean;
   paymentConfigSource: 'db' | 'env' | 'none';
-  domesticKrwEnabled: false;
+  domesticKrwEnabled: boolean;
   mockAllowed: boolean;
   paymentsEnabled: boolean;
 }> {
@@ -278,7 +278,7 @@ export async function getPaymentDiagnostics(): Promise<{
     tossSecretKeyConfigured,
     tossVariantKeyConfigured,
     paymentConfigSource: keys.ok ? keys.source : 'none',
-    domesticKrwEnabled: false,
+    domesticKrwEnabled: system.domesticKrwEnabled,
     mockAllowed,
     paymentsEnabled: system.paymentsEnabled,
   };

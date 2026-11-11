@@ -5,7 +5,11 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
 import { useI18n } from '@/src/contexts/I18nContext';
-import { publishInvitationById } from '@/src/lib/api';
+import { publishInvitationById } from '@/src/shared/api';
+import { checkoutErrorKey } from '../model/checkoutError';
+import { useCheckoutQuote } from '../model/useCheckoutQuote';
+import { useCheckoutMethod } from '../model/useCheckoutMethod';
+import PaymentMethodSelector from './PaymentMethodSelector';
 import {
   fetchInvitationPaymentStatus,
   fetchInvitationPaymentSummary,
@@ -47,6 +51,8 @@ const POLL_MS = 1500;
 
 export default function PaymentPage({ invitationId }: PaymentPageProps) {
   const { t, language } = useI18n();
+  const method = useCheckoutMethod();
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const [phase, setPhase] = useState<UiPhase>('loading');
   const [summary, setSummary] = useState<InvitationPaymentSummaryResponse | null>(null);
@@ -61,6 +67,8 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
   const listCents = summary?.pricing.listPriceCents ?? INVITATION_PRICING.listPriceCents;
   const saleCents = summary?.pricing.salePriceCents ?? INVITATION_PRICING.salePriceCents;
   const productLocale = language === 'en' ? 'en-US' : 'ko-KR';
+  const quote = useCheckoutQuote({ invitationId, checkoutMethod: method.checkoutMethod, country: method.country,
+    couponCode: appliedCoupon?.code, locale: productLocale, enabled: phase === 'default' && !busy && method.checkoutMethod === 'DOMESTIC' });
 
   const publishAfterPaid = useCallback(async () => {
     const published = await publishInvitationById(invitationId);
@@ -163,6 +171,8 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
     setBusy(true);
     try {
       const prepared = await prepareInvitationPayment(invitationId, {
+        checkoutMethod: method.checkoutMethod,
+        country: method.country,
         locale: productLocale,
         couponCode: appliedCoupon?.code || null,
       });
@@ -177,13 +187,15 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
       }
       await requestTossPaymentWindow(prepared, { locale: productLocale });
     } catch (error) {
+      const failure = error as { code?: string; message?: string };
+      setPaymentError([failure.code, failure.message].filter(Boolean).join(': '));
       startedCheckout.current = false;
       setBusy(false);
-      if (error instanceof Error && (error.message === 'ALREADY_PAID' || error.message === 'COUPON_ALREADY_PAID')) {
+      if (failure.code === 'ALREADY_PAID' || failure.code === 'COUPON_ALREADY_PAID' || failure.message === 'ALREADY_PAID') {
         setPhase('already_paid');
         return;
       }
-      if (error instanceof Error && isProviderUnavailableCode(error.message)) {
+      if (error instanceof Error && isProviderUnavailableCode(failure.code || error.message)) {
         setUnavailableMessage(t('checkout.unavailable.banner'));
         setPhase('default');
         return;
@@ -227,7 +239,13 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
           </div>
         ) : null}
 
+        {phase === 'default' && quote?.error ? <p role="alert">{t(checkoutErrorKey(quote.error))} ({quote.error})</p> : null}
+        {paymentError ? <p role="alert">{paymentError}</p> : null}
         {phase === 'default' ? (
+          <>
+          <PaymentMethodSelector method={method.checkoutMethod} country={method.country} disabled={busy}
+            onMethod={value => { method.setCheckoutMethod(value); setPaymentError(null); }} onCountry={method.setCountry} />
+          {quote?.prepared?.amount.currency === 'KRW' ? <p>{new Intl.NumberFormat(productLocale, { style: 'currency', currency: 'KRW' }).format(quote.prepared.amount.value)}</p> : null}
           <PaymentCheckoutPanel
             invitationId={invitationId}
             title={title}
@@ -242,6 +260,7 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
             onRemoved={() => setAppliedCoupon(null)}
             onCheckout={() => void handleCheckout()}
           />
+          </>
         ) : null}
 
         {phase === 'processing' ? (

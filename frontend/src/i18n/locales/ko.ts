@@ -2,6 +2,21 @@ import type { LocaleDictionary } from '../types';
 import { PRODUCT_MODE_KO } from '../productModeCopy';
 
 const ko: LocaleDictionary = {
+  'checkout.error.DOMESTIC_KRW_DISABLED': '국내 원화 결제가 비활성화되어 있습니다. 해외 결제를 선택해 주세요.',
+  'checkout.error.DOMESTIC_KRW_RATE_NOT_CONFIGURED': '국내 결제 환율이 설정되지 않았습니다. 해외 결제를 선택해 주세요.',
+  'checkout.error.INVALID_CHECKOUT_METHOD': '올바른 결제 수단을 선택해 주세요.',
+  'checkout.error.COUNTRY_REQUIRED': '한국 이외의 결제 국가를 선택해 주세요.',
+
+  'checkout.method.title': '결제 수단',
+  'checkout.method.DOMESTIC': '국내 카드 · 간편결제',
+  'checkout.method.OVERSEAS_CARD': '해외 카드',
+  'checkout.method.OVERSEAS_EASY_PAY': '해외 간편결제 (PayPal)',
+  'checkout.method.krwHint': '관리자가 설정한 환율로 원화(KRW) 청구됩니다.',
+  'checkout.method.usdHint': '미국 달러(USD)로 청구됩니다.',
+  'checkout.method.country': '결제 국가',
+  'checkout.method.adminEnabled': '국내 원화 결제 활성화',
+  'checkout.method.adminRate': '고정 USD/KRW 환율 (100–10000)',
+
   create: '초대장 만들기',
   createButton: '초대장 만들기',
   creating: '생성 중...',

@@ -1,3 +1,4 @@
+import type { CheckoutMethod } from './tossCheckoutMethod';
 import { buildApiUrl, buildRequestInit } from '@/src/shared/api';
 import { buildAuthHeaders } from '@/src/lib/auth';
 
@@ -34,6 +35,8 @@ export type InvitationPaymentSummaryResponse = {
 };
 
 export type PreparePaymentResponse = {
+  checkoutMethod?: CheckoutMethod;
+  country?: string | null;
   paymentId: string;
   orderId: string;
   provider: 'mock' | 'toss_payments' | 'coupon';
@@ -89,7 +92,7 @@ export async function fetchInvitationPaymentSummary(
 
 export async function prepareInvitationPayment(
   invitationId: string,
-  opts?: { locale?: string | null; couponCode?: string | null }
+  opts?: { locale?: string | null; couponCode?: string | null; checkoutMethod?: CheckoutMethod; country?: string }
 ): Promise<PreparePaymentResponse> {
   const response = await fetch(
     buildApiUrl(`/api/invitations/${encodeURIComponent(invitationId)}/payment/prepare`),
@@ -100,6 +103,8 @@ export async function prepareInvitationPayment(
         ...buildAuthHeaders(),
       },
       body: JSON.stringify({
+        checkoutMethod: opts?.checkoutMethod,
+        country: opts?.country,
         locale: opts?.locale || undefined,
         couponCode: opts?.couponCode || undefined,
       }),
@@ -110,7 +115,8 @@ export async function prepareInvitationPayment(
   }
   if (!response.ok) {
     const data = (await response.json().catch(() => ({}))) as { error?: string; message?: string };
-    throw new Error(data.error || 'PREPARE_FAILED');
+    const code = data.error || 'PREPARE_FAILED';
+    throw Object.assign(new Error(data.message || code), { code });
   }
   return response.json();
 }

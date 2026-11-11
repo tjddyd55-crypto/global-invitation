@@ -1,6 +1,9 @@
 import prisma from '../prisma';
+import { isValidUsdKrwRate } from '../payments/checkoutMethod';
 
 export type SystemRuntimeSettings = {
+  domesticKrwEnabled: boolean;
+  usdKrwRate: number | null;
   paymentsEnabled: boolean;
   publishingEnabled: boolean;
   invitationCreationEnabled: boolean;
@@ -22,6 +25,8 @@ export function invalidateSystemConfigCache(): void {
 
 function defaults(): SystemRuntimeSettings {
   return {
+    domesticKrwEnabled: envDomesticKrwEnabled(),
+    usdKrwRate: envUsdKrwRate(),
     paymentsEnabled: true,
     publishingEnabled: true,
     invitationCreationEnabled: true,
@@ -33,7 +38,20 @@ function defaults(): SystemRuntimeSettings {
   };
 }
 
+/** Env bootstrap for domestic KRW checkout; admin DB values (non-null) take precedence. */
+export function envDomesticKrwEnabled(): boolean {
+  return (process.env.TOSS_DOMESTIC_KRW_ENABLED || '').trim().toLowerCase() === 'true';
+}
+
+export function envUsdKrwRate(): number | null {
+  const raw = (process.env.TOSS_DOMESTIC_USD_KRW_RATE || '').trim();
+  const rate = raw ? Number(raw) : NaN;
+  return isValidUsdKrwRate(rate) ? rate : null;
+}
+
 function mapRow(row: {
+  domesticKrwEnabled: boolean | null;
+  usdKrwRate: number | null;
   paymentsEnabled: boolean;
   publishingEnabled: boolean;
   invitationCreationEnabled: boolean;
@@ -46,6 +64,8 @@ function mapRow(row: {
   const env =
     row.activePaymentEnvironment.toUpperCase() === 'LIVE' ? 'LIVE' : 'TEST';
   return {
+    domesticKrwEnabled: row.domesticKrwEnabled ?? envDomesticKrwEnabled(),
+    usdKrwRate: row.usdKrwRate ?? envUsdKrwRate(),
     paymentsEnabled: row.paymentsEnabled,
     publishingEnabled: row.publishingEnabled,
     invitationCreationEnabled: row.invitationCreationEnabled,
@@ -84,6 +104,8 @@ export async function getSystemRuntimeSettings(): Promise<SystemRuntimeSettings>
 
 export async function updateSystemRuntimeSettings(
   input: Partial<{
+    domesticKrwEnabled: boolean;
+    usdKrwRate: number | null;
     paymentsEnabled: boolean;
     publishingEnabled: boolean;
     invitationCreationEnabled: boolean;
@@ -93,10 +115,13 @@ export async function updateSystemRuntimeSettings(
   }>,
   updatedBy: string
 ): Promise<SystemRuntimeSettings> {
+  if (input.usdKrwRate != null && !isValidUsdKrwRate(input.usdKrwRate)) throw new Error('INVALID_USD_KRW_RATE');
   await ensureSystemConfigBootstrap();
   const row = await prisma.systemRuntimeConfig.update({
     where: { id: SYSTEM_ID },
     data: {
+      ...(input.domesticKrwEnabled !== undefined ? { domesticKrwEnabled: input.domesticKrwEnabled } : {}),
+      ...(input.usdKrwRate !== undefined ? { usdKrwRate: input.usdKrwRate } : {}),
       ...(typeof input.paymentsEnabled === 'boolean'
         ? { paymentsEnabled: input.paymentsEnabled }
         : {}),

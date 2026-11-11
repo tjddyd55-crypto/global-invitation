@@ -913,6 +913,10 @@ model FigmaIntegrationConfig {
 /// Singleton operational feature flags (id = "default").
 model SystemRuntimeConfig {
   id                         String   @id @default("default")
+  /// null = fall back to env TOSS_DOMESTIC_KRW_ENABLED (default off). Admin toggle stores an explicit value.
+  domesticKrwEnabled         Boolean? @map("domestic_krw_enabled")
+  /// Fixed USD->KRW won rate for domestic checkout. null = fall back to env TOSS_DOMESTIC_USD_KRW_RATE.
+  usdKrwRate                 Int?     @map("usd_krw_rate")
   paymentsEnabled            Boolean  @default(true) @map("payments_enabled")
   publishingEnabled          Boolean  @default(true) @map("publishing_enabled")
   invitationCreationEnabled  Boolean  @default(true) @map("invitation_creation_enabled")

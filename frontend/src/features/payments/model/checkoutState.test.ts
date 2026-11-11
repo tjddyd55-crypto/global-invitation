@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   canStartCheckout,
+  resolveCheckoutSelection,
   isProviderUnavailableCode,
   restorePendingCoupon,
 } from './checkoutState';
@@ -43,4 +44,12 @@ test('refresh restores pending coupon from server snapshot', () => {
   });
   assert.equal(restored?.code, 'JCI50');
   assert.equal(restored?.quote.finalAmountCents, 500);
+});
+
+
+test('locale supplies the default without overriding a user selection', () => {
+  assert.equal(resolveCheckoutSelection(null, 'ko-KR'), 'DOMESTIC');
+  assert.equal(resolveCheckoutSelection(null, 'en-US'), 'OVERSEAS_CARD');
+  assert.equal(resolveCheckoutSelection('OVERSEAS_EASY_PAY', 'ko-KR'), 'OVERSEAS_EASY_PAY');
+  assert.equal(resolveCheckoutSelection('DOMESTIC', 'en-US'), 'DOMESTIC');
 });

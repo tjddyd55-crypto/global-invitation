@@ -1,3 +1,4 @@
+import type { CheckoutMethod } from '@/src/shared/payments/tossCheckoutMethod';
 import type { InvitationPaymentSummaryResponse } from '@/src/shared/payments/invitationPaymentApi';
 import type { CouponQuoteResponse } from '@/src/shared/payments/invitationCouponApi';
 
@@ -14,6 +15,7 @@ export const PROVIDER_UNAVAILABLE_CODES = new Set([
   'PAYMENT_PROVIDER_CONFIG_INVALID',
   'PAYMENTS_DISABLED',
   'DOMESTIC_KRW_DISABLED',
+  'DOMESTIC_KRW_RATE_NOT_CONFIGURED',
   'UNSUPPORTED_CURRENCY',
   'LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT',
 ]);
@@ -45,4 +47,8 @@ export function restorePendingCoupon(
       finalAmountCents: data.payment.chargedAmountCents,
     },
   };
+}
+
+export function resolveCheckoutSelection(choice: CheckoutMethod | null, browserLocale: string): CheckoutMethod {
+  return choice ?? (browserLocale.toLowerCase().startsWith('ko') ? 'DOMESTIC' : 'OVERSEAS_CARD');
 }

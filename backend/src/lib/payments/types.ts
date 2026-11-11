@@ -2,11 +2,13 @@
  * Payment provider names (runtime).
  * Stripe is intentionally not an active provider.
  */
+import type { CheckoutMethod } from './checkoutMethod';
+
 export type PaymentProviderName = 'mock' | 'toss_payments' | 'coupon';
 
 /**
  * INTERNATIONAL_USD — primary (Toss 외화결제 MID, overseas card / optional PayPal later).
- * DOMESTIC_KRW — secondary, not enabled in runtime yet (separate KRW MID later).
+ * DOMESTIC_KRW — opt-in domestic checkout at the configured fixed rate.
  */
 export type PaymentChannel = 'INTERNATIONAL_USD' | 'DOMESTIC_KRW';
 
@@ -14,7 +16,7 @@ export type TossChargeAmount = {
   /**
    * Provider charge unit expected by Toss for the selected currency.
    * USD (외화결제): major units (e.g. 10 = $10).
-   * KRW (future domestic): won integer — not used as canonical product path.
+   * KRW: integer won, calculated on the server from USD product pricing.
    */
   value: number;
   currency: 'KRW' | 'USD';
@@ -27,6 +29,8 @@ export type PreparePaymentResult =
       paymentId: string;
       orderId: string;
       provider: PaymentProviderName;
+      checkoutMethod: CheckoutMethod;
+      country: string | null;
       paymentChannel: PaymentChannel;
       orderName: string;
       /** Domain product pricing currency (USD). */
@@ -54,6 +58,9 @@ export type PreparePaymentResult =
         | 'ALREADY_PAID'
         | 'UNSUPPORTED_CURRENCY'
         | 'FOREIGN_MID_NOT_CONFIGURED'
+        | 'DOMESTIC_KRW_RATE_NOT_CONFIGURED'
+        | 'INVALID_CHECKOUT_METHOD'
+        | 'COUNTRY_REQUIRED'
         | 'DOMESTIC_KRW_DISABLED'
         | 'MISSING_TOSS_KEYS'
         | 'PREPARE_FAILED'

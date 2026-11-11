@@ -2,6 +2,21 @@ import type { LocaleDictionary } from '../types';
 import { PRODUCT_MODE_EN } from '../productModeCopy';
 
 const en: LocaleDictionary = {
+  'checkout.error.DOMESTIC_KRW_DISABLED': 'Domestic KRW checkout is disabled. Please choose an overseas method.',
+  'checkout.error.DOMESTIC_KRW_RATE_NOT_CONFIGURED': 'The domestic exchange rate is not configured. Please choose an overseas method.',
+  'checkout.error.INVALID_CHECKOUT_METHOD': 'Choose a valid payment method.',
+  'checkout.error.COUNTRY_REQUIRED': 'Choose a payment country other than South Korea.',
+
+  'checkout.method.title': 'Payment method',
+  'checkout.method.DOMESTIC': 'Domestic card / easy pay',
+  'checkout.method.OVERSEAS_CARD': 'Overseas card',
+  'checkout.method.OVERSEAS_EASY_PAY': 'PayPal',
+  'checkout.method.krwHint': 'Charged in KRW at the administrator configured exchange rate.',
+  'checkout.method.usdHint': 'Charged in USD.',
+  'checkout.method.country': 'Payment country',
+  'checkout.method.adminEnabled': 'Enable domestic KRW checkout',
+  'checkout.method.adminRate': 'Fixed USD/KRW rate (100–10000)',
+
   create: 'Create Invitation',
   createButton: 'Create Invitation',
   creating: 'Creating...',
