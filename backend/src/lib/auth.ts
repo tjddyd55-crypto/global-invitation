@@ -14,8 +14,20 @@ const EMAIL_CODE_MAX_REQUESTS_PER_WINDOW = 5;
 const EMAIL_CODE_MAX_ATTEMPTS = 5;
 const EMAIL_CODE_PURPOSE_LOGIN = 'LOGIN';
 
-function isProduction(): boolean {
-  return process.env.NODE_ENV === 'production';
+export function resolveAuthSessionCookieOptions() {
+  const isRailwayRuntime = Boolean(
+    process.env.RAILWAY_ENVIRONMENT_NAME?.trim() ||
+      process.env.RAILWAY_PROJECT_ID?.trim() ||
+      process.env.RAILWAY_SERVICE_ID?.trim()
+  );
+  const secure = isRailwayRuntime || process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true as const,
+    secure,
+    sameSite: secure ? 'none' as const : 'lax' as const,
+    maxAge: SESSION_TTL_DAYS * 24 * 60 * 60 * 1000,
+    path: '/',
+  };
 }
 
 function parseCookieValue(req: Request, cookieName: string): string | null {
@@ -48,26 +60,12 @@ export function resolveSessionToken(req: Request): string | null {
 }
 
 export function setAuthSessionCookie(res: Response, token: string) {
-  const secure = isProduction();
-  const sameSite = secure ? 'none' : 'lax';
-  res.cookie(AUTH_SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite,
-    secure,
-    maxAge: SESSION_TTL_DAYS * 24 * 60 * 60 * 1000,
-    path: '/',
-  });
+  res.cookie(AUTH_SESSION_COOKIE, token, resolveAuthSessionCookieOptions());
 }
 
 export function clearAuthSessionCookie(res: Response) {
-  const secure = isProduction();
-  const sameSite = secure ? 'none' : 'lax';
-  res.clearCookie(AUTH_SESSION_COOKIE, {
-    httpOnly: true,
-    sameSite,
-    secure,
-    path: '/',
-  });
+  const { httpOnly, secure, sameSite, path } = resolveAuthSessionCookieOptions();
+  res.clearCookie(AUTH_SESSION_COOKIE, { httpOnly, secure, sameSite, path });
 }
 
 export function normalizeEmail(email: string): string {
