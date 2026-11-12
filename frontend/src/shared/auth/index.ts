@@ -47,3 +47,4 @@ export {
   requireAuthenticatedNextPath,
 } from './authEntryPaths';
 export { AuthProvider, useAuthSession, useAuthStatus } from './AuthProvider';
+export { getAuthReturnParam, sanitizeReturnPath } from '@/src/lib/loginRedirect';

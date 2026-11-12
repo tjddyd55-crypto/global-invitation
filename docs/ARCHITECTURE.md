@@ -62,6 +62,16 @@
 ## 3. 데이터 흐름 (대표 시나리오)
 
 ### 3-1. 로그인
+
+웹 브라우저의 `/api/*` 요청은 Next.js rewrite를 거쳐 백엔드로 전달한다.
+기존 `/api/admin/*` 규칙이 먼저 적용되며 관리자 전용 proxy target을 유지한다.
+일반 API target은 `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_BACKEND_URL`,
+`NEXT_PUBLIC_API_URL` 순으로 선택한다. 서버 측 호출은 절대 backend URL을 사용한다.
+네이티브 앱은 `apps/native/src/config/environment.ts`의 API URL을 계속 사용한다.
+로그인·회원가입은 세션 저장 후 `AuthProvider.refresh()`를 기다린 다음 이동한다.
+복귀 쿼리는 `next`를 우선하고 `redirect`도 지원하며 내부 경로만 허용한다.
+Railway 사용자 세션 쿠키는 `NODE_ENV`와 관계없이 Secure·HttpOnly·Path=/이며 host-only다.
+
 ```
 LoginCard(ui/pc) ─▶ useLoginForm(features/auth/model)
                     ├─▶ shared/auth.loginWithPassword

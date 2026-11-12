@@ -10,6 +10,7 @@ import { useLoginForm } from '@/src/features/auth/model/useLoginForm';
 import { usePasswordSignupForm } from '@/src/features/auth/model/usePasswordSignupForm';
 import { useForgotPasswordForm } from '@/src/features/auth/model/useForgotPasswordForm';
 import { useResetPasswordForm } from '@/src/features/auth/model/useResetPasswordForm';
+import { getAuthReturnParam } from '@/src/shared/auth';
 import AuthFormLayout from './AuthFormLayout';
 import RecoveryCodeDisplay from './RecoveryCodeDisplay';
 import formStyles from './AuthFormFields.module.css';
@@ -17,7 +18,7 @@ import formStyles from './AuthFormFields.module.css';
 export function LoginScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = resolveAuthNextPath(searchParams.get('next'));
+  const nextPath = resolveAuthNextPath(getAuthReturnParam(searchParams));
   const signupHref = `/signup?next=${encodeURIComponent(nextPath)}`;
   const forgotHref = `/forgot-password?next=${encodeURIComponent(nextPath)}`;
   const { username, password, submitting, error, setUsername, setPassword, submit } = useLoginForm();
@@ -69,7 +70,7 @@ export function LoginScreen() {
 export function SignupScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = resolveAuthNextPath(searchParams.get('next'));
+  const nextPath = resolveAuthNextPath(getAuthReturnParam(searchParams));
   const form = usePasswordSignupForm(() => router.replace(nextPath));
 
   if (form.step === 'recovery-code' && form.recoveryCode) {

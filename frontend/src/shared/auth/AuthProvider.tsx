@@ -32,6 +32,15 @@ export interface AuthSessionContextValue {
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 
+function useAuthBootstrap(pathname: string | null, refresh: () => Promise<void>) {
+  const hasBootstrappedRef = useRef(false);
+  useEffect(() => {
+    if (hasBootstrappedRef.current || isAdminPortalPath(pathname)) return;
+    hasBootstrappedRef.current = true;
+    void refresh();
+  }, [pathname, refresh]);
+}
+
 /**
  * 앱 전역 인증 SSOT. sessionStorage 캐시만으로 authenticated 를 선언하지 않는다.
  * 반드시 /api/auth/me 부트스트랩 결과로 status 를 확정한다.
@@ -39,48 +48,36 @@ const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [status, setStatus] = useState<AuthStatus>('loading');
-  const hasBootstrappedRef = useRef(false);
+  const [status, setStatus] = useState<AuthStatus>(isAdminPortalPath(pathname) ? 'unauthenticated' : 'loading');
+  const requestVersion = useRef(0);
 
   const refresh = useCallback(async () => {
+    const version = ++requestVersion.current;
+    setStatus('loading');
     try {
       const next = await fetchNavbarUser({ useCache: false });
+      if (version !== requestVersion.current) return;
       setUser(next);
       setStatus(next ? 'authenticated' : 'unauthenticated');
     } catch {
+      if (version !== requestVersion.current) return;
       setUser(null);
       setStatus('unauthenticated');
     }
   }, []);
 
-  useEffect(() => {
-    if (hasBootstrappedRef.current) return;
-    hasBootstrappedRef.current = true;
-    // Admin portal uses /api/admin/me only — do not couple to user /api/auth/me.
-    if (isAdminPortalPath(pathname)) {
-      setUser(null);
-      setStatus('unauthenticated');
-      return;
-    }
-    void refresh();
-  }, [pathname, refresh]);
+  useAuthBootstrap(pathname, refresh);
 
   const signOut = useCallback(async () => {
+    ++requestVersion.current;
     await logoutCurrentSession();
+    ++requestVersion.current;
     clearStoredSession();
     setUser(null);
     setStatus('unauthenticated');
   }, []);
 
-  const value = useMemo(
-    () => ({
-      user,
-      status,
-      refresh,
-      signOut,
-    }),
-    [user, status, refresh, signOut]
-  );
+  const value = useMemo(() => ({ user, status, refresh, signOut }), [user, status, refresh, signOut]);
 
   return <AuthSessionContext.Provider value={value}>{children}</AuthSessionContext.Provider>;
 }

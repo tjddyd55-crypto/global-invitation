@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { setStoredSession, signupWithPassword } from '@/src/lib/auth';
+import { setStoredSession, signupWithPassword } from '@/src/shared/auth';
+import { useAuth } from '@/src/shared/hooks/useAuth';
+import { getAuthReturnParam, sanitizeReturnPath } from '@/src/lib/loginRedirect';
 
 export type SignupRole = 'USER' | 'CREATOR';
 
@@ -30,8 +32,7 @@ export interface UseSignupFormOptions {
  * - 초기 role 은 ?role=CREATOR 쿼리로 덮어쓸 수 있다.
  * - 성공 시 redirectByRole 로 이동한다.
  */
-export function useSignupForm(options: UseSignupFormOptions): UseSignupFormResult {
-  const router = useRouter();
+function useSignupFields() {
   const [email, setEmail] = useState('');
   const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
@@ -47,31 +48,6 @@ export function useSignupForm(options: UseSignupFormOptions): UseSignupFormResul
     }
   }, []);
 
-  const submit = useCallback(
-    async (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      if (submitting) return;
-
-      setSubmitting(true);
-      setError(null);
-      try {
-        const created = await signupWithPassword({
-          email: email.trim(),
-          nickname: nickname.trim(),
-          password,
-          role,
-        });
-        setStoredSession({ token: created.token, user: created.user });
-        router.replace(options.redirectByRole[created.user.role === 'CREATOR' ? 'CREATOR' : 'USER']);
-      } catch (signupError) {
-        setError(signupError instanceof Error ? signupError.message : '회원가입에 실패했습니다.');
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    [email, nickname, password, role, submitting, router, options.redirectByRole],
-  );
-
   return {
     email,
     nickname,
@@ -83,8 +59,50 @@ export function useSignupForm(options: UseSignupFormOptions): UseSignupFormResul
     setNickname,
     setPassword,
     setRole,
-    submit,
+    setSubmitting,
+    setError,
   };
+}
+
+async function submitSignup(
+  event: React.FormEvent<HTMLFormElement>,
+  fields: ReturnType<typeof useSignupFields>,
+  complete: (role: SignupRole) => Promise<void>,
+) {
+  event.preventDefault();
+  if (fields.submitting) return;
+  fields.setSubmitting(true);
+  fields.setError(null);
+  try {
+    const created = await signupWithPassword({
+      email: fields.email.trim(),
+      nickname: fields.nickname.trim(),
+      password: fields.password,
+      role: fields.role,
+    });
+    setStoredSession({ token: created.token, user: created.user });
+    await complete(created.user.role === 'CREATOR' ? 'CREATOR' : 'USER');
+  } catch (signupError) {
+    fields.setError(signupError instanceof Error ? signupError.message : '회원가입에 실패했습니다.');
+  } finally {
+    fields.setSubmitting(false);
+  }
+}
+
+export function useSignupForm(options: UseSignupFormOptions): UseSignupFormResult {
+  const router = useRouter();
+  const { refresh } = useAuth();
+  const fields = useSignupFields();
+  const complete = useCallback(async (role: SignupRole) => {
+    await refresh();
+    const returnParam = getAuthReturnParam(new URLSearchParams(window.location.search));
+    router.replace(sanitizeReturnPath(returnParam ?? options.redirectByRole[role]));
+  }, [refresh, router, options.redirectByRole]);
+  const submit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => submitSignup(event, fields, complete),
+    [fields, complete],
+  );
+  return { ...fields, submit };
 }
 
 export const CREATOR_BENEFITS = [

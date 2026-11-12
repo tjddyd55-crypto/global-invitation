@@ -25,16 +25,30 @@ const AUTH_ROUTE_BLOCKLIST = [
 export function sanitizeReturnPath(path: string | null | undefined): string {
   if (!path || typeof path !== 'string') return '/';
   const trimmed = path.trim();
-  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return '/';
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//') || /[\\\u0000-\u001f\u007f]/.test(trimmed)) return '/';
+  let url: URL;
+  let pathname: string;
+  try {
+    url = new URL(trimmed, 'https://return-path.invalid');
+    pathname = decodeURIComponent(url.pathname);
+  } catch {
+    return '/';
+  }
+  if (pathname.startsWith('//') || /[\\\u0000-\u001f\u007f]/.test(pathname)) return '/';
   if (
     AUTH_ROUTE_BLOCKLIST.some(
       (blocked) =>
-        trimmed === blocked || trimmed.startsWith(`${blocked}?`) || trimmed.startsWith(`${blocked}/`)
+        pathname === blocked || pathname.startsWith(`${blocked}/`)
     )
   ) {
     return '/';
   }
-  return trimmed;
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+/** URLSearchParams values are already decoded. Prefer next when both are present. */
+export function getAuthReturnParam(params: { get: (name: string) => string | null }): string | null {
+  return params.get('next') || params.get('redirect');
 }
 
 export function buildLoginHref(pathnameWithOptionalSearch: string): string {
@@ -59,12 +73,7 @@ export function resolveLoginRedirectForStorage(
   windowOrigin: string
 ): string {
   if (redirectParam) {
-    try {
-      const decoded = decodeURIComponent(redirectParam);
-      return sanitizeReturnPath(decoded);
-    } catch {
-      return '/';
-    }
+    return sanitizeReturnPath(redirectParam);
   }
   if (documentReferrer) {
     try {

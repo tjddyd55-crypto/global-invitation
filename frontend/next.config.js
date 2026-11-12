@@ -44,6 +44,22 @@ function resolveAdminApiProxyTarget() {
   }
 }
 
+function resolveApiProxyTarget() {
+  const raw =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_BACKEND_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_URL?.trim() ||
+    ''
+  if (!raw) return null
+  try {
+    const url = new URL(raw)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
+    return url.origin
+  } catch {
+    return null
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -51,16 +67,19 @@ const nextConfig = {
     remotePatterns,
   },
   async rewrites() {
-    const backendOrigin = resolveAdminApiProxyTarget()
-    if (!backendOrigin) {
-      return []
-    }
-    return [
-      {
+    const adminOrigin = resolveAdminApiProxyTarget()
+    const apiOrigin = resolveApiProxyTarget()
+    const rules = []
+    if (adminOrigin) {
+      rules.push({
         source: '/api/admin/:path*',
-        destination: `${backendOrigin}/api/admin/:path*`,
-      },
-    ]
+        destination: `${adminOrigin}/api/admin/:path*`,
+      })
+    }
+    if (apiOrigin) {
+      rules.push({ source: '/api/:path*', destination: `${apiOrigin}/api/:path*` })
+    }
+    return rules
   },
   webpack: (config) => {
     config.resolve.alias = {

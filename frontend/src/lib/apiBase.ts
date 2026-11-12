@@ -10,8 +10,8 @@ export function normalizeApiBaseUrl(value: string): string {
 
 /**
  * API Base URL
- * - env가 있으면 해당 URL 사용
- * - 없으면 same-origin "/api" 경로 사용 (rewrite/proxy 전제)
+ * - 브라우저는 same-origin "/api" 경로 사용 (Next rewrite)
+ * - 서버는 env의 backend URL 사용
  * - "localhost fallback" 금지
  */
 export function getApiBaseUrl(): string {
@@ -20,6 +20,9 @@ export function getApiBaseUrl(): string {
 
 export function buildApiUrl(path: string): string {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  if (typeof window !== 'undefined' && normalizedPath.startsWith('/api/')) {
+    return normalizedPath;
+  }
   const base = getApiBaseUrl();
   return base ? `${base}${normalizedPath}` : normalizedPath;
 }
