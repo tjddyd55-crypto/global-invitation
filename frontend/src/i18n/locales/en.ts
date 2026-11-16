@@ -2,6 +2,7 @@ import type { LocaleDictionary } from '../types';
 import { PRODUCT_MODE_EN } from '../productModeCopy';
 
 const en: LocaleDictionary = {
+  'checkout.testMode': 'Test payment',
   'checkout.error.DOMESTIC_KRW_DISABLED': 'Domestic KRW checkout is disabled. Please choose an overseas method.',
   'checkout.error.DOMESTIC_KRW_RATE_NOT_CONFIGURED': 'The domestic exchange rate is not configured. Please choose an overseas method.',
   'checkout.error.INVALID_CHECKOUT_METHOD': 'Choose a valid payment method.',

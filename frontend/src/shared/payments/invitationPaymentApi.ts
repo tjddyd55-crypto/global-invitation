@@ -3,6 +3,7 @@ import { buildApiUrl, buildRequestInit } from '@/src/shared/api';
 import { buildAuthHeaders } from '@/src/lib/auth';
 
 export type InvitationPaymentSummaryResponse = {
+  paymentEnvironment?: 'TEST' | 'LIVE';
   invitationId: string;
   title: string | null;
   templateKey: string;
@@ -35,6 +36,7 @@ export type InvitationPaymentSummaryResponse = {
 };
 
 export type PreparePaymentResponse = {
+  paymentEnvironment?: 'TEST' | 'LIVE';
   checkoutMethod?: CheckoutMethod;
   country?: string | null;
   paymentId: string;

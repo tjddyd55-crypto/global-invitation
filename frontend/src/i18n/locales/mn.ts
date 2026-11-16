@@ -2,6 +2,7 @@ import type { LocaleDictionary } from '../types';
 import { PRODUCT_MODE_MN } from '../productModeCopy';
 
 const mn: LocaleDictionary = {
+  'checkout.testMode': 'Туршилтын төлбөр',
   'checkout.error.DOMESTIC_KRW_DISABLED': 'Дотоодын KRW төлбөр идэвхгүй байна. Гадаад төлбөр сонгоно уу.',
   'checkout.error.DOMESTIC_KRW_RATE_NOT_CONFIGURED': 'Дотоодын ханш тохируулаагүй байна. Гадаад төлбөр сонгоно уу.',
   'checkout.error.INVALID_CHECKOUT_METHOD': 'Зөв төлбөрийн арга сонгоно уу.',

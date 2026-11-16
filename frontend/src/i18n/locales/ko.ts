@@ -2,6 +2,7 @@ import type { LocaleDictionary } from '../types';
 import { PRODUCT_MODE_KO } from '../productModeCopy';
 
 const ko: LocaleDictionary = {
+  'checkout.testMode': '테스트 결제',
   'checkout.error.DOMESTIC_KRW_DISABLED': '국내 원화 결제가 비활성화되어 있습니다. 해외 결제를 선택해 주세요.',
   'checkout.error.DOMESTIC_KRW_RATE_NOT_CONFIGURED': '국내 결제 환율이 설정되지 않았습니다. 해외 결제를 선택해 주세요.',
   'checkout.error.INVALID_CHECKOUT_METHOD': '올바른 결제 수단을 선택해 주세요.',

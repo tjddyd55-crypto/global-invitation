@@ -12,6 +12,7 @@ export type PrepareInput = {
 };
 
 export type PrepareAttemptArgs = {
+  paymentEnvironment: 'TEST' | 'LIVE';
   input: PrepareInput;
   pricing: Awaited<ReturnType<typeof getInvitationPricingSnapshot>>;
   provider: PaymentProviderName;

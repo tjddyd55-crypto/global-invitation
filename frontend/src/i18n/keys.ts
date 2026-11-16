@@ -1,4 +1,5 @@
 export const I18N_KEYS = {
+  checkoutTestMode: 'checkout.testMode',
   checkoutErrors: {
     DOMESTIC_KRW_DISABLED: 'checkout.error.DOMESTIC_KRW_DISABLED',
     DOMESTIC_KRW_RATE_NOT_CONFIGURED: 'checkout.error.DOMESTIC_KRW_RATE_NOT_CONFIGURED',

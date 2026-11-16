@@ -6,6 +6,7 @@ import { createOrReuseAttempt } from './prepareRecord';
 import type { PrepareAttemptArgs } from './prepareTypes';
 
 const args: PrepareAttemptArgs = {
+  paymentEnvironment: 'TEST',
   input: { invitationId: 'invitation', checkoutMethod: 'DOMESTIC' },
   pricing: { currency: 'USD', listPriceCents: 3000, chargedAmountCents: 1000,
     promotionCode: 'OPENING', source: 'code_default' },
@@ -37,6 +38,7 @@ test('prepare persists USD product cents and authoritative KRW metadata separate
     const result = await createOrReuseAttempt(args);
     assert.equal(result.ok && !result.alreadyPaid && result.checkoutMethod, 'DOMESTIC');
     assert.deepEqual(result.ok && !result.alreadyPaid && result.amount, { currency: 'KRW', value: 13500 });
+    assert.equal(result.ok && !result.alreadyPaid && result.paymentEnvironment, 'TEST');
     assert.equal(writes[0].currency, 'USD');
     assert.equal(writes[0].chargedAmount, 1000);
     const meta = JSON.parse(String(writes[1].rawProviderStatus));

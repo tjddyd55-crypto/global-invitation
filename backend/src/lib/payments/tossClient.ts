@@ -1,4 +1,4 @@
-import { resolveTossRuntimeKeys, getTossSecretKey } from './provider';
+import { resolveTossRuntimeKeys } from './provider';
 
 const TOSS_API_BASE = 'https://api.tosspayments.com';
 
@@ -17,10 +17,16 @@ function buildBasicAuthHeader(secretKey: string): string {
   return `Basic ${Buffer.from(`${secretKey}:`, 'utf8').toString('base64')}`;
 }
 
+class TossCredentialsError extends Error {
+  constructor(readonly code: string) {
+    super(code);
+  }
+}
+
 async function resolveSecretKey(): Promise<string> {
   const keys = await resolveTossRuntimeKeys();
   if (keys.ok) return keys.secretKey;
-  return getTossSecretKey();
+  throw new TossCredentialsError(keys.code);
 }
 
 async function tossFetch<T>(
@@ -38,7 +44,7 @@ async function tossFetch<T>(
     return {
       ok: false,
       status: 503,
-      code: 'FOREIGN_MID_NOT_CONFIGURED',
+      code: error instanceof TossCredentialsError ? error.code : 'FOREIGN_MID_NOT_CONFIGURED',
       message: error instanceof Error ? error.message : 'Toss secret not configured',
     };
   }

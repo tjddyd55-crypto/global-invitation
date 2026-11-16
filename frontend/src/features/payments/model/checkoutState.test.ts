@@ -10,9 +10,11 @@ import {
 test('provider unavailable codes stay on checkout, not raw 500', () => {
   assert.equal(isProviderUnavailableCode('PAYMENT_PROVIDER_NOT_CONFIGURED'), true);
   assert.equal(isProviderUnavailableCode('PREPARE_FAILED'), false);
+  assert.equal(isProviderUnavailableCode('TOSS_LIVE_KEY_FORBIDDEN_IN_TEST'), true);
 });
 
 test('zero-amount coupon can checkout even when provider is not ready', () => {
+  assert.equal(canStartCheckout({ providerChargeReady: true, dueCents: 500 }), true);
   assert.equal(canStartCheckout({ providerChargeReady: false, dueCents: 0 }), true);
   assert.equal(canStartCheckout({ providerChargeReady: false, dueCents: 500 }), false);
 });
