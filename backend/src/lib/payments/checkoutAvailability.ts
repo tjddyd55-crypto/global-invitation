@@ -1,6 +1,7 @@
 import { getSystemRuntimeSettings } from '../ops/systemConfig';
 import {
   assertTossKeySafety,
+  TossKeySafetyError,
   resolveTossRuntimeKeys,
   tryResolvePaymentProvider,
 } from './provider';
@@ -35,28 +36,26 @@ export async function resolveCheckoutAvailability(): Promise<CheckoutAvailabilit
     return { provider: resolved.provider, providerChargeReady: true, unavailableCode: null };
   }
 
-  return resolveTossCheckoutAvailability(resolved.provider);
+  return resolveTossCheckoutAvailability(resolved.provider, system.activePaymentEnvironment);
 }
 
 async function resolveTossCheckoutAvailability(
-  provider: PaymentProviderName
+  provider: PaymentProviderName,
+  environment: 'TEST' | 'LIVE'
 ): Promise<CheckoutAvailability> {
   const keys = await resolveTossRuntimeKeys();
   if (!keys.ok) {
-    const code =
-      keys.code === 'LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT' ||
-      keys.code === 'PAYMENT_PROVIDER_CONFIG_INVALID'
-        ? keys.code
-        : 'FOREIGN_MID_NOT_CONFIGURED';
+    const code = keys.code;
     return { provider, providerChargeReady: false, unavailableCode: code };
   }
   try {
-    assertTossKeySafety(keys.clientKey, keys.secretKey);
-  } catch {
+    assertTossKeySafety(keys.clientKey, keys.secretKey, environment);
+  } catch (error) {
+    if (!(error instanceof TossKeySafetyError)) throw error;
     return {
       provider,
       providerChargeReady: false,
-      unavailableCode: 'FOREIGN_MID_NOT_CONFIGURED',
+      unavailableCode: error.code,
     };
   }
   return { provider, providerChargeReady: true, unavailableCode: null };

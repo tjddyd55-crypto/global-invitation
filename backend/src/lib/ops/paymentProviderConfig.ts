@@ -1,5 +1,6 @@
 import { PaymentProviderEnvironment } from '@prisma/client';
 import prisma from '../prisma';
+import { assertTossKeySafety, TossKeySafetyError } from '../payments/tossKeySafety';
 import {
   decryptSecretFromJson,
   encryptSecretToJson,
@@ -217,7 +218,7 @@ export async function resolveTossCredentialsForRuntime(): Promise<
 > {
   const system = await getSystemRuntimeSettings();
   const appEnv = resolveRuntimeAppEnvironment();
-  let environment = system.activePaymentEnvironment;
+  const environment = system.activePaymentEnvironment;
 
   if (appEnv !== 'production' && environment === 'LIVE') {
     return {
@@ -234,16 +235,7 @@ export async function resolveTossCredentialsForRuntime(): Promise<
     const secretKey = safeDecrypt(row.encryptedSecretKey) || '';
     const variantKey = safeDecrypt(row.encryptedVariantKey);
     if (clientKey && secretKey) {
-      return {
-        ok: true,
-        credentials: {
-          source: 'db',
-          environment,
-          clientKey,
-          secretKey,
-          variantKey,
-        },
-      };
+      return validateRuntimeCredentials({ source: 'db', environment, clientKey, secretKey, variantKey });
     }
     if (row.enabled && (!clientKey || !secretKey)) {
       return {
@@ -265,24 +257,9 @@ export async function resolveTossCredentialsForRuntime(): Promise<
     '';
 
   if (envClient && envSecret) {
-    const envIsLive = envClient.startsWith('live_') || envSecret.startsWith('live_');
-    if (appEnv !== 'production' && envIsLive) {
-      return {
-        ok: false,
-        code: 'LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT',
-        message: 'LIVE Toss env keys are forbidden outside production.',
-      };
-    }
-    return {
-      ok: true,
-      credentials: {
-        source: 'env',
-        environment: envIsLive ? 'LIVE' : 'TEST',
-        clientKey: envClient,
-        secretKey: envSecret,
-        variantKey: envVariant || null,
-      },
-    };
+    return validateRuntimeCredentials({
+      source: 'env', environment, clientKey: envClient, secretKey: envSecret, variantKey: envVariant || null,
+    });
   }
 
   return {
@@ -290,4 +267,16 @@ export async function resolveTossCredentialsForRuntime(): Promise<
     code: 'FOREIGN_MID_NOT_CONFIGURED',
     message: 'Toss USD credentials are not configured in Admin DB or environment.',
   };
+}
+
+function validateRuntimeCredentials(credentials: ResolvedTossCredentials):
+  | { ok: true; credentials: ResolvedTossCredentials }
+  | { ok: false; code: string; message: string } {
+  try {
+    assertTossKeySafety(credentials.clientKey, credentials.secretKey, credentials.environment);
+    return { ok: true, credentials };
+  } catch (error) {
+    if (!(error instanceof TossKeySafetyError)) throw error;
+    return { ok: false, code: error.code, message: error.message };
+  }
 }

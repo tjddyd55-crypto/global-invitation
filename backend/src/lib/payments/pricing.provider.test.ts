@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  assertTossKeySafety,
+  TossKeySafetyError,
   buildOrderId,
   getPaymentOrderName,
   getPrimaryPaymentChannel,
@@ -129,3 +131,22 @@ test('toss status mapping', () => {
   assert.equal(mapTossPaymentStatus('ABORTED'), 'FAILED');
   assert.equal(mapTossPaymentStatus('IN_PROGRESS'), 'PENDING');
 });
+
+// Prefix-only synthetic fixtures: these are not provider-issued credentials.
+for (const [nodeEnv, environment, clientPrefix, secretPrefix, code] of [
+  ['production', 'TEST', 'test', 'test', null],
+  ['production', 'LIVE', 'test', 'test', 'TOSS_TEST_KEY_FORBIDDEN_IN_PRODUCTION'],
+  ['production', 'TEST', 'live', 'live', 'TOSS_LIVE_KEY_FORBIDDEN_IN_TEST'],
+  ['development', 'TEST', 'live', 'live', 'TOSS_LIVE_KEY_FORBIDDEN_IN_NON_PRODUCTION'],
+  ['development', 'LIVE', 'live', 'live', 'TOSS_LIVE_KEY_FORBIDDEN_IN_NON_PRODUCTION'],
+  ['development', 'TEST', 'test', 'test', null],
+  ['production', 'TEST', 'test', 'live', 'TOSS_KEY_MISMATCH'],
+  ['production', 'LIVE', 'live', 'test', 'TOSS_KEY_MISMATCH'],
+  ['production', 'LIVE', 'live', 'live', null],
+] as const) {
+  test('key safety: ' + [nodeEnv, environment, clientPrefix, secretPrefix].join('/'), () => {
+    const run = () => assertTossKeySafety(clientPrefix + '_', secretPrefix + '_', environment, nodeEnv);
+    if (!code) assert.doesNotThrow(run);
+    else assert.throws(run, error => error instanceof TossKeySafetyError && error.code === code);
+  });
+}

@@ -2,6 +2,7 @@
  * Payment provider names (runtime).
  * Stripe is intentionally not an active provider.
  */
+import type { TossKeySafetyCode } from './tossKeySafety';
 import type { CheckoutMethod } from './checkoutMethod';
 
 export type PaymentProviderName = 'mock' | 'toss_payments' | 'coupon';
@@ -29,6 +30,7 @@ export type PreparePaymentResult =
       paymentId: string;
       orderId: string;
       provider: PaymentProviderName;
+      paymentEnvironment: 'TEST' | 'LIVE';
       checkoutMethod: CheckoutMethod;
       country: string | null;
       paymentChannel: PaymentChannel;
@@ -55,6 +57,7 @@ export type PreparePaymentResult =
   | {
       ok: false;
       code:
+        | TossKeySafetyCode
         | 'ALREADY_PAID'
         | 'UNSUPPORTED_CURRENCY'
         | 'FOREIGN_MID_NOT_CONFIGURED'

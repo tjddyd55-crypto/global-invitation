@@ -145,3 +145,10 @@ prepare는 `checkoutMethod`(기본 `OVERSEAS_CARD`)와 PayPal용 `country`(KR �
 상품·쿠폰 SSOT는 USD cents를 유지하고 서버 prepare만 `round(chargedCents * rate / 100)`로 KRW를 확정한다. 결제 메타에 수단·국가·환율·Toss 금액/통화를 저장하고 승인 시 저장된 금액과 통화를 검증한다.
 해외카드는 USD / CARD / 국제카드 전용 및 대문자 KO·EN을 사용하며 PayPal은 USD / FOREIGN_EASY_PAY / PAYPAL과 국가를 전달한다. Mock도 같은 준비 금액을 사용한다.
 환경변수 부트스트랩: DB 값이 비어 있으면(null) `TOSS_DOMESTIC_KRW_ENABLED=true`, `TOSS_DOMESTIC_USD_KRW_RATE=<정수>`를 사용한다. 관리자 화면에서 저장한 값이 항상 우선한다. 코드에는 환율 기본값이 없다.
+
+## Production TEST 결제 정책
+
+- 운영 배포에서도 관리자 런타임 activePaymentEnvironment가 TEST이면 서로 일치하는 테스트 키로 실제 Toss sandbox checkout/confirm을 사용한다. TEST 환경의 LIVE 키, LIVE 환경의 TEST 키, 비운영 배포의 LIVE 키 및 혼합 키는 차단한다.
+- 환경변수 fallback도 키 접두사로 활성 환경을 바꾸지 않고 동일한 안전성 검사를 통과해야 한다. confirm은 검증 실패 시 다른 secret으로 재시도하지 않는다.
+- 운영 TEST에서 Toss sandbox confirm이 성공하면 개발 TEST와 동일하게 일반 PAID 결제로 저장하고 초대장 유료 권한을 부여한다. 별도 isTest 상태는 도입하지 않는다. 금액·통화 검사와 실제 Toss confirm API 호출은 그대로 유지한다.
+- summary/prepare의 paymentEnvironment와 public-config의 environment로 활성 환경을 전달하고 결제 화면에 TEST 안내를 표시한다. 유효한 운영 TEST 결제의 CTA는 차단하지 않는다.

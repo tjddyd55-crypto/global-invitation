@@ -102,7 +102,7 @@ export function getTossVariantKey(): string | null {
 }
 
 export async function resolveTossRuntimeKeys(): Promise<
-  | { ok: true; clientKey: string; secretKey: string; variantKey: string | null; source: 'db' | 'env' }
+  | { ok: true; clientKey: string; secretKey: string; variantKey: string | null; source: 'db' | 'env'; environment: 'TEST' | 'LIVE' }
   | { ok: false; code: string; message: string }
 > {
   const resolved = await resolveTossCredentialsForRuntime();
@@ -115,32 +115,11 @@ export async function resolveTossRuntimeKeys(): Promise<
     secretKey: resolved.credentials.secretKey,
     variantKey: resolved.credentials.variantKey,
     source: resolved.credentials.source,
+    environment: resolved.credentials.environment,
   };
 }
 
-/**
- * test_* / live_* key pair guard.
- * Rejects mixed environments and production mock/test misuse.
- */
-export function assertTossKeySafety(clientKey: string, secretKey: string): void {
-  const nodeEnv = resolveNodeEnv();
-  const clientTest = clientKey.startsWith('test_');
-  const clientLive = clientKey.startsWith('live_');
-  const secretTest = secretKey.startsWith('test_');
-  const secretLive = secretKey.startsWith('live_');
-
-  if ((clientTest && secretLive) || (clientLive && secretTest)) {
-    throw new Error('TOSS_KEY_MISMATCH: client/secret test/live keys must match');
-  }
-
-  if (nodeEnv === 'production') {
-    if (clientTest || secretTest) {
-      throw new Error('TOSS_TEST_KEY_FORBIDDEN_IN_PRODUCTION');
-    }
-  } else if (clientLive || secretLive) {
-    throw new Error('TOSS_LIVE_KEY_FORBIDDEN_IN_NON_PRODUCTION');
-  }
-}
+export { assertTossKeySafety, TossKeySafetyError } from './tossKeySafety';
 
 /**
  * Domain minor units (USD cents) → Toss provider charge amount.

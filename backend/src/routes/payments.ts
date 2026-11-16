@@ -136,10 +136,11 @@ router.get('/invitations/:id/payment', async (req, res) => {
 
     const invitation = access.invitation!;
     await expireStalePendingPayments(invitation.id);
-    const [summary, pricing, checkout] = await Promise.all([
+    const [summary, pricing, checkout, system] = await Promise.all([
       getPaymentSummaryForInvitation(invitation.id),
       getInvitationPricingSnapshot(),
       resolveCheckoutAvailability(),
+      getSystemRuntimeSettings(),
     ]);
 
     return res.status(200).json({
@@ -150,6 +151,7 @@ router.get('/invitations/:id/payment', async (req, res) => {
       shareSlug: invitation.shareSlug,
       isPublished: invitation.status === 'PUBLISHED',
       provider: checkout.provider,
+      paymentEnvironment: system.activePaymentEnvironment,
       checkout: {
         providerChargeReady: checkout.providerChargeReady,
         unavailableCode: checkout.unavailableCode,

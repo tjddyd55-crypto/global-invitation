@@ -1,11 +1,11 @@
 import { convertUsdCentsToKrw, isValidUsdKrwRate, parseCheckoutMethod } from './checkoutMethod';
 import { getSystemRuntimeSettings } from '../ops/systemConfig';
-import { assertTossKeySafety, resolveTossChargeAmount, resolveTossRuntimeKeys, tryResolvePaymentProvider } from './provider';
+import { assertTossKeySafety, TossKeySafetyError, resolveTossChargeAmount, resolveTossRuntimeKeys, tryResolvePaymentProvider } from './provider';
 import type { PrepareInput } from './prepareTypes';
 import type { PaymentChannel, PaymentProviderName, PreparePaymentResult, TossChargeAmount } from './types';
 
 type PrepareFailure = Extract<PreparePaymentResult, { ok: false }>;
-type ReadyProvider = { ok: true; provider: PaymentProviderName; chargeAmount: TossChargeAmount;
+type ReadyProvider = { ok: true; paymentEnvironment: 'TEST' | 'LIVE'; provider: PaymentProviderName; chargeAmount: TossChargeAmount;
   usdKrwRate: number | null; paymentChannel: PaymentChannel; clientKey: string | null; variantKey: string | null };
 
 export async function resolvePrepareProvider(
@@ -35,11 +35,12 @@ export async function resolvePrepareProvider(
     amount = usd.amount;
   }
   const providerCharge = { amount, channel: domestic ? 'DOMESTIC_KRW' as const : 'INTERNATIONAL_USD' as const };
-  const keys = await loadProviderKeys(provider, isZero);
+  const keys = await loadProviderKeys(provider, isZero, system.activePaymentEnvironment);
   if (!keys.ok) return keys;
   return {
     ok: true,
     provider,
+    paymentEnvironment: system.activePaymentEnvironment,
     chargeAmount: providerCharge.amount,
     usdKrwRate: domestic ? system.usdKrwRate : null,
     paymentChannel: providerCharge.channel,
@@ -50,7 +51,8 @@ export async function resolvePrepareProvider(
 
 async function loadProviderKeys(
   provider: PaymentProviderName,
-  isZero: boolean
+  isZero: boolean,
+  environment: 'TEST' | 'LIVE'
 ): Promise<
   | { ok: true; clientKey: string | null; variantKey: string | null }
   | Extract<PreparePaymentResult, { ok: false }>
@@ -62,16 +64,17 @@ async function loadProviderKeys(
   if (!keys.ok) {
     return {
       ok: false,
-      code: keys.code === 'LIVE_PAYMENT_BLOCKED_IN_DEVELOPMENT' ? keys.code : 'FOREIGN_MID_NOT_CONFIGURED',
+      code: keys.code as PrepareFailure['code'],
       message: keys.message,
     };
   }
   try {
-    assertTossKeySafety(keys.clientKey, keys.secretKey);
+    assertTossKeySafety(keys.clientKey, keys.secretKey, environment);
   } catch (error) {
+    if (!(error instanceof TossKeySafetyError)) throw error;
     return {
       ok: false,
-      code: 'FOREIGN_MID_NOT_CONFIGURED',
+      code: error.code,
       message: error instanceof Error ? error.message : 'Toss USD MID key validation failed',
     };
   }

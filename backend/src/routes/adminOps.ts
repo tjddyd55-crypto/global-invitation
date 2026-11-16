@@ -1,4 +1,5 @@
-﻿import { Router, type Request, type Response } from 'express';
+﻿import { assertTossKeySafety, TossKeySafetyError } from '../lib/payments/tossKeySafety';
+import { Router, type Request, type Response } from 'express';
 import { InvitationPaymentStatus, InvitationStatus, Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import {
@@ -961,6 +962,13 @@ router.post('/ops/payments/provider-config/test', async (req, res) => {
       });
     }
 
+    const system = await getSystemRuntimeSettings();
+    try {
+      assertTossKeySafety(clientKey, secretKey, system.activePaymentEnvironment);
+    } catch (error) {
+      if (!(error instanceof TossKeySafetyError)) throw error;
+      return res.status(400).json({ ok: false, error: error.code, code: error.code, environment });
+    }
     const probe = await probeTossCredentials(secretKey);
     const body = {
       ...probe,

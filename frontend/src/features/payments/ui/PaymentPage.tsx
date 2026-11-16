@@ -223,6 +223,9 @@ export default function PaymentPage({ invitationId }: PaymentPageProps) {
     <div className={styles.page} data-testid="payment-page" data-phase={phase}>
       <MarketingDesktopHeader showNav={false} />
       <main className={styles.main}>
+        {summary?.paymentEnvironment === 'TEST' ? (
+          <p className={styles.muted} data-testid="payment-test-notice">{t('checkout.testMode')}</p>
+        ) : null}
         {phase === 'loading' ? (
           <p className={styles.headerDesc} role="status">
             {t('checkout.loading')}
