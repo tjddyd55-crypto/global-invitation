@@ -6,6 +6,7 @@ import { useAuth } from '@/src/shared/hooks';
 import { getCreateInvitationEntryPath, getConceptCardEntryPath } from '@/src/shared/auth/authEntryPaths';
 import MarketingDesktopHeader from '@/src/features/marketing/ui/MarketingDesktopHeader';
 import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
+import SiteLegalFooterNav from '@/src/components/layout/SiteLegalFooterNav';
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -142,6 +143,7 @@ export default function DesktopMainScreen() {
             <SparklesIcon size={16} />
             <span>Invite</span>
           </div>
+          <SiteLegalFooterNav />
           <SiteBusinessFooter className={styles.footerBusiness} />
         </div>
       </footer>

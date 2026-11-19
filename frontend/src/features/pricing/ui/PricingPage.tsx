@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import MarketingSiteHeader from '@/src/features/marketing/ui/MarketingSiteHeader';
 import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
+import SiteLegalFooterNav from '@/src/components/layout/SiteLegalFooterNav';
 import { getCreateInvitationEntryPath } from '@/src/shared/auth/authEntryPaths';
 import { useAuth } from '@/src/shared/hooks';
 import {
@@ -129,6 +130,7 @@ export default function PricingPage() {
         </section>
       </main>
       <div className={styles.footerWrap}>
+        <SiteLegalFooterNav />
         <SiteBusinessFooter />
       </div>
     </div>

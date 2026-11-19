@@ -63,6 +63,7 @@ export const PUBLIC_PATH_PREFIXES: readonly string[] = [
   '/contact',
   '/terms',
   '/privacy',
+  '/refund-policy',
   '/payment-info',
   '/pwa-settings',
   '/auth',

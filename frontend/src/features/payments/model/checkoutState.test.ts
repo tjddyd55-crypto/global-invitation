@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   canStartCheckout,
+  canSubmitCheckout,
   resolveCheckoutSelection,
   isProviderUnavailableCode,
   restorePendingCoupon,
@@ -17,6 +18,20 @@ test('zero-amount coupon can checkout even when provider is not ready', () => {
   assert.equal(canStartCheckout({ providerChargeReady: true, dueCents: 500 }), true);
   assert.equal(canStartCheckout({ providerChargeReady: false, dueCents: 0 }), true);
   assert.equal(canStartCheckout({ providerChargeReady: false, dueCents: 500 }), false);
+});
+
+test('paid checkout requires digital consent and keeps provider and busy guards', () => {
+  const ready = { providerChargeReady: true, dueCents: 1000, busy: false };
+  assert.equal(canSubmitCheckout({ ...ready, digitalConsent: false }), false);
+  assert.equal(canSubmitCheckout({ ...ready, digitalConsent: true }), true);
+  assert.equal(canSubmitCheckout({ ...ready, digitalConsent: true, busy: true }), false);
+  assert.equal(canSubmitCheckout({ ...ready, digitalConsent: true, providerChargeReady: false }), false);
+});
+
+test('zero-amount checkout does not require digital consent or a payment provider', () => {
+  const free = { providerChargeReady: false, dueCents: 0, busy: false, digitalConsent: false };
+  assert.equal(canSubmitCheckout(free), true);
+  assert.equal(canSubmitCheckout({ ...free, busy: true }), false);
 });
 
 test('refresh restores pending coupon from server snapshot', () => {

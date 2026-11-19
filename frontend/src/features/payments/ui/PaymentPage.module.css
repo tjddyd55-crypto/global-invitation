@@ -163,6 +163,27 @@
   margin: 0 auto;
 }
 
+.consentNotice {
+  line-height: 1.6;
+  color: var(--mk-text-muted, #666);
+}
+
+.consentLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.consentLabel input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 3px;
+}
+
 .couponRow {
   display: flex;
   gap: 8px;

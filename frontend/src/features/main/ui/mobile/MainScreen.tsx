@@ -6,6 +6,7 @@ import { useAuth } from '@/src/shared/hooks';
 import { getCreateInvitationEntryPath, getConceptCardEntryPath } from '@/src/shared/auth/authEntryPaths';
 import MarketingMobileHeader from '@/src/features/marketing/ui/MarketingMobileHeader';
 import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
+import SiteLegalFooterNav from '@/src/components/layout/SiteLegalFooterNav';
 import { ArrowRightIcon } from '@/src/ui/icons/MarketingIcons';
 import { listMainConceptCards } from '@/src/features/main/model/mainConceptCards';
 import HomeInvitationExamplesSection from '@/src/features/main/ui/shared/HomeInvitationExamplesSection';
@@ -86,6 +87,7 @@ export default function MainScreen() {
         </div>
       </div>
 
+      <SiteLegalFooterNav />
       <SiteBusinessFooter className={styles.footer} />
     </div>
   );

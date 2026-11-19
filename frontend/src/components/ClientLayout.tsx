@@ -13,7 +13,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const isPublicInvite = isPublicInvitationPath(pathname);
   const isPlatformShell = isPlatformAppPath(pathname);
-  const showSaasChrome = !isPublicInvite && !isPlatformShell;
+  // This public legal page owns its marketing header; it is not a platform app path.
+  const hasLegalMarketingHeader = pathname === '/refund-policy' || pathname?.startsWith('/refund-policy/');
+  const showSaasChrome = !isPublicInvite && !isPlatformShell && !hasLegalMarketingHeader;
 
   return (
     <I18nProvider>

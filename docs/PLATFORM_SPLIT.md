@@ -107,7 +107,7 @@ public/
 |---|---|---|
 | `/`, `/login`, `/signup`, `/dashboard`, `/my`, `/my-invitations`, `/editor`, `/create`, `/templates`, `/settings`, `/message/editor` | middleware 307 → `/m` 또는 `/pc` 하위 경로 | "앱 라우트" — 같은 URL 공유 시 유지보수 최악 |
 | `/i/[slug]`, `/invitation/[slug]`, `/preview/[slug]`, `/message/*` (editor 제외) | 통과 — 기존 반응형 페이지 | SEO·공유·OG |
-| `/admin/*`, `/creator/*`, `/pricing`, `/about`, `/contact`, `/terms`, `/privacy`, `/payment-info`, `/pwa-settings`, `/auth/*` | 통과 — 단일 URL | 공개 마케팅 / 관리자 전용 |
+| `/admin/*`, `/creator/*`, `/pricing`, `/about`, `/contact`, `/terms`, `/privacy`, `/refund-policy`, `/payment-info`, `/pwa-settings`, `/auth/*` | 통과 — 단일 URL | 공개 마케팅 / 관리자 전용 |
 | `/api/*`, `/_next/*`, `/assets/*`, `/icons/*`, `/manifest.webmanifest` 등 정적 | middleware matcher 에서 제외 | 성능 |
 
 단일 진실 원천: `src/shared/platform/routing.ts`
@@ -183,3 +183,7 @@ public/
 - [ ] Vercel `Cache-Control: Vary: Cookie, User-Agent` 를 앱 라우트에만 제한.
 - [ ] PWA Lighthouse ≥ 90 (PNG 아이콘 업로드 후 재측정).
 - [ ] 공개 초대장 URL (`/i/[slug]`) 은 리다이렉트되지 않음을 확인.
+
+### 공개 환불 정책
+
+`/refund-policy`는 로그인 없이 접근하는 단일 반응형 법적 페이지다. 기존 i18n과 MarketingSiteHeader를 사용하고, 사업자 정보는 SiteBusinessFooter를 재사용한다. SiteLegalFooterNav는 마케팅·법적 페이지와 PC·모바일 홈에 공통으로 표시하며 공개 초대장·에디터·결제 페이지에는 추가하지 않는다. 결제 화면의 사전 고지와 동의는 UI에서만 관리하고 유료 결제 CTA에만 적용한다. 0원 결제 및 결제 API·가격·제공자 선택은 유지한다.

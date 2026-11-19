@@ -1,6 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useI18n } from '@/src/contexts/I18nContext';
+import { canSubmitCheckout } from '../model/checkoutState';
+import PaymentDigitalConsent from './PaymentDigitalConsent';
 import { formatUsdAmountLabel, formatUsdFromCents } from '@/src/shared/pricing/invitationPricing';
 import PaymentCouponField, { type AppliedCoupon } from './PaymentCouponField';
 import styles from './PaymentPage.module.css';
@@ -35,7 +38,9 @@ export default function PaymentCheckoutPanel({
   onCheckout,
 }: Props) {
   const { t } = useI18n();
+  const [digitalConsent, setDigitalConsent] = useState(false);
   const dueCents = applied?.quote.finalAmountCents ?? saleCents;
+  const canSubmit = canSubmitCheckout({ dueCents, providerChargeReady, digitalConsent, busy });
   const list = formatUsdAmountLabel(listCents);
   const sale = formatUsdAmountLabel(saleCents);
   const discount = formatUsdFromCents(listCents - saleCents);
@@ -105,15 +110,17 @@ export default function PaymentCheckoutPanel({
         </p>
       </section>
 
+      <PaymentDigitalConsent checked={digitalConsent} disabled={busy} required={dueCents > 0} onChange={setDigitalConsent} />
+
       <div className={styles.stickyBar}>
         <div className={styles.stickyInner}>
           <button
             type="button"
             className={styles.primary}
             style={{ width: '100%' }}
-            disabled={busy || chargeBlocked}
+            disabled={!canSubmit}
             data-testid="payment-checkout-cta"
-            onClick={onCheckout}
+            onClick={() => { if (canSubmit) onCheckout(); }}
           >
             {ctaLabel}
           </button>
