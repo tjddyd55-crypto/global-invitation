@@ -1,4 +1,19 @@
 export const I18N_KEYS = {
+  paymentInfo: {
+    title: 'paymentInfo.title',
+    overviewTitle: 'paymentInfo.overview.title',
+    overviewBody: 'paymentInfo.overview.body',
+    overviewDigital: 'paymentInfo.overview.digital',
+    howTitle: 'paymentInfo.how.title',
+    howBody: 'paymentInfo.how.body',
+    pricingTitle: 'paymentInfo.pricing.title',
+    pricingBody: 'paymentInfo.pricing.body',
+    pricingEdit: 'paymentInfo.pricing.edit',
+    refundTitle: 'paymentInfo.refund.title',
+    refundBody: 'paymentInfo.refund.body',
+    supportTitle: 'paymentInfo.support.title',
+    supportBody: 'paymentInfo.support.body',
+  },
   refundPolicy: {
     footerRefund: 'marketing.footer.refund',
     footerLegalAria: 'marketing.footer.legalAria',

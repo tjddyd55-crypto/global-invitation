@@ -2,6 +2,19 @@ import type { LocaleDictionary } from '../types';
 import { PRODUCT_MODE_EN } from '../productModeCopy';
 
 const en: LocaleDictionary = {
+  'paymentInfo.title': "Payment Information",
+  'paymentInfo.overview.title': "Service Overview",
+  'paymentInfo.overview.body': "Global Invitation is a digital platform that allows users to create and share online invitations for weddings, events, and special occasions.",
+  'paymentInfo.overview.digital': "All invitations are created and delivered digitally. No physical goods are sold.",
+  'paymentInfo.how.title': "How It Works",
+  'paymentInfo.how.body': "Create invitations for free. A one-time payment per invitation unlocks publishing and sharing for that invitation.",
+  'paymentInfo.pricing.title': "Pricing",
+  'paymentInfo.pricing.body': "The list price is {list}. The current opening sale price charged is {sale} per invitation (one-time payment).",
+  'paymentInfo.pricing.edit': "You can edit your invitation freely before the event date.",
+  'paymentInfo.refund.title': "Refund Policy",
+  'paymentInfo.refund.body': "See our Refund Policy for refund eligibility, digital content withdrawal limitations, and processing details.",
+  'paymentInfo.support.title': "Customer Support",
+  'paymentInfo.support.body': "Contact us by email:",
   'marketing.footer.refund': "Refund Policy",
   'marketing.footer.legalAria': "Legal policies and customer support",
   'refund.title': "Refund Policy",
