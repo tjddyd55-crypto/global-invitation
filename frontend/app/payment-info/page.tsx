@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import styles from './page.module.css'
 
 export default function PaymentInfoPage() {
@@ -42,8 +43,8 @@ export default function PaymentInfoPage() {
       <section className={styles.section}>
         <h2>Refund Policy</h2>
         <p>
-          Due to the nature of digital services,
-          payments are non-refundable once the invitation sharing feature is activated.
+          Refund eligibility, digital content withdrawal limitations, and processing details
+          are explained in our <Link href="/refund-policy">Refund Policy</Link>.
         </p>
       </section>
 

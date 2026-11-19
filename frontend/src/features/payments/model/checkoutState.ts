@@ -35,6 +35,15 @@ export function canStartCheckout(input: {
   return input.dueCents === 0 || input.providerChargeReady;
 }
 
+export function canSubmitCheckout(input: {
+  providerChargeReady: boolean;
+  dueCents: number;
+  digitalConsent: boolean;
+  busy: boolean;
+}): boolean {
+  return !input.busy && canStartCheckout(input) && (input.dueCents === 0 || input.digitalConsent);
+}
+
 export function restorePendingCoupon(
   data: InvitationPaymentSummaryResponse
 ): RestoredCoupon | null {

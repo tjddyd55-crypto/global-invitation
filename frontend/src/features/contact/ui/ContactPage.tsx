@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import MarketingSiteHeader from '@/src/features/marketing/ui/MarketingSiteHeader';
 import SiteBusinessFooter from '@/src/components/layout/SiteBusinessFooter';
+import SiteLegalFooterNav from '@/src/components/layout/SiteLegalFooterNav';
 import { SUPPORT_EMAIL, supportMailtoHref } from '@/src/shared/marketing/supportContact';
 import { useI18n } from '@/src/contexts/I18nContext';
 import styles from './ContactPage.module.css';
@@ -61,6 +62,7 @@ export default function ContactPage() {
         </section>
       </main>
       <div className={styles.footerWrap}>
+        <SiteLegalFooterNav />
         <SiteBusinessFooter />
       </div>
     </div>
