@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useI18n } from '@/src/contexts/I18nContext';
+import { interpolate } from '@/src/i18n';
 import { canSubmitCheckout } from '../model/checkoutState';
 import PaymentDigitalConsent from './PaymentDigitalConsent';
 import { formatUsdAmountLabel, formatUsdFromCents } from '@/src/shared/pricing/invitationPricing';
@@ -55,7 +56,7 @@ export default function PaymentCheckoutPanel({
   return (
     <>
       <h1 className={styles.headerTitle}>{t('checkout.title')}</h1>
-      <p className={styles.headerDesc}>{t('checkout.lead')}</p>
+      <p className={styles.headerDesc}>{interpolate(t('checkout.lead'), { sale })}</p>
 
       <section className={styles.card} aria-label={t('checkout.summaryAria')}>
         <h2 className={styles.summaryTitle}>{title}</h2>

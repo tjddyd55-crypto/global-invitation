@@ -2,6 +2,19 @@ import type { LocaleDictionary } from '../types';
 import { PRODUCT_MODE_MN } from '../productModeCopy';
 
 const mn: LocaleDictionary = {
+  'paymentInfo.title': 'Төлбөрийн мэдээлэл',
+  'paymentInfo.overview.title': 'Үйлчилгээний танилцуулга',
+  'paymentInfo.overview.body': 'Global Invitation нь хурим, арга хэмжээ, онцгой өдрүүдэд зориулсан цахим урилга үүсгэж, хуваалцах дижитал платформ юм.',
+  'paymentInfo.overview.digital': 'Бүх урилгыг цахим хэлбэрээр үүсгэж, хүргэнэ. Биет бараа худалдахгүй.',
+  'paymentInfo.how.title': 'Хэрхэн ашиглах вэ',
+  'paymentInfo.how.body': 'Урилгаа үнэгүй үүсгэнэ. Урилга бүрд нэг удаа төлбөр төлснөөр тухайн урилгыг нийтэлж, хуваалцах боломж нээгдэнэ.',
+  'paymentInfo.pricing.title': 'Үнэ',
+  'paymentInfo.pricing.body': 'Үндсэн үнэ {list}. Одоогийн нээлтийн хямдралаар урилга бүрд {sale} төлнө (нэг удаагийн төлбөр).',
+  'paymentInfo.pricing.edit': 'Арга хэмжээний өдрөөс өмнө урилгаа чөлөөтэй засах боломжтой.',
+  'paymentInfo.refund.title': 'Буцаан олголтын бодлого',
+  'paymentInfo.refund.body': 'Буцаан олголтын нөхцөл, дижитал контентын худалдан авалтаас татгалзах эрхийн хязгаарлалт болон боловсруулах журмыг буцаан олголтын бодлогоос үзнэ үү.',
+  'paymentInfo.support.title': 'Хэрэглэгчийн дэмжлэг',
+  'paymentInfo.support.body': 'Имэйлээр холбогдоно уу:',
   'marketing.footer.refund': "Буцаан олголтын бодлого",
   'marketing.footer.legalAria': "Хууль эрх зүйн бодлого болон хэрэглэгчийн тусламж",
   'refund.title': "Буцаан олголтын бодлого",

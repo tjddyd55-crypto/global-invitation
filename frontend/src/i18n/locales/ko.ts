@@ -2,6 +2,19 @@ import type { LocaleDictionary } from '../types';
 import { PRODUCT_MODE_KO } from '../productModeCopy';
 
 const ko: LocaleDictionary = {
+  'paymentInfo.title': '결제 안내',
+  'paymentInfo.overview.title': '서비스 소개',
+  'paymentInfo.overview.body': 'Global Invitation은 결혼식, 행사, 특별한 날을 위한 온라인 초대장을 만들고 공유할 수 있는 디지털 플랫폼입니다.',
+  'paymentInfo.overview.digital': '모든 초대장은 디지털 방식으로 제작·제공됩니다. 실물 상품은 판매하지 않습니다.',
+  'paymentInfo.how.title': '이용 방법',
+  'paymentInfo.how.body': '초대장은 무료로 만들 수 있습니다. 초대장마다 1회 결제하면 해당 초대장의 공개 및 공유 기능을 이용할 수 있습니다.',
+  'paymentInfo.pricing.title': '요금 안내',
+  'paymentInfo.pricing.body': '정가는 {list}입니다. 현재 오픈 할인으로 초대장당 {sale}가 청구됩니다(1회 결제).',
+  'paymentInfo.pricing.edit': '행사일 전까지 초대장을 자유롭게 수정할 수 있습니다.',
+  'paymentInfo.refund.title': '환불 정책',
+  'paymentInfo.refund.body': '환불 가능 조건, 디지털 콘텐츠 청약철회 제한 및 처리 절차는 환불 정책에서 확인하세요.',
+  'paymentInfo.support.title': '고객 지원',
+  'paymentInfo.support.body': '이메일로 문의해 주세요:',
   'marketing.footer.refund': "환불 정책",
   'marketing.footer.legalAria': "법적 정책 및 고객센터",
   'refund.title': "환불 정책",
